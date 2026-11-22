@@ -504,8 +504,8 @@ def joinSolverK : ContextualDependentWorklist.Solver S.levels where
 
 /-- **The rules never refute.** -/
 theorem joinRoundK_ne_refuted {Γ : Context S.R} (problem : EquationStore (TotalTerm Γ))
-    (missing : ¬ (frames S.levels).Solvable problem) :
-    joinRoundK facts roots heads algebra rigid complete headsTyped join joinSound problem ≠ .refuted missing := by
+    (absent : ¬ (frames S.levels).Solvable problem) :
+    joinRoundK facts roots heads algebra rigid complete headsTyped join joinSound problem ≠ .refuted absent := by
   cases problem with
   | nil => intro h; cases h
   | cons e rest =>
@@ -602,9 +602,9 @@ theorem joinK_decided {Θ : Context S.R} {original : EquationStore (TotalTerm Θ
         ((∃ state finished,
             run (joinSolverK facts roots heads algebra rigid complete headsTyped join joinSound) original larger =
               .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ missing,
+          (∃ absent,
             run (joinSolverK facts roots heads algebra rigid complete headsTyped join joinSound) original larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (joinFragmentK facts roots heads algebra rigid complete headsTyped join joinSound total).decided inside
 
 include facts roots heads algebra rigid complete headsTyped joinSound total in
@@ -613,12 +613,12 @@ theorem principal_of_inJoinFragmentK {Θ : Context S.R} {original : EquationStor
     (inside : InJoinFragmentK original) :
     ∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), (frames S.levels).Principal original answer := by
   obtain ⟨fuel, ends⟩ := joinK_decided facts roots heads algebra rigid complete headsTyped join joinSound total inside
-  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨missing, refuted⟩
+  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨absent, refuted⟩
   · exact ⟨_, _, principal⟩
   · exact absurd refuted (drive_ne_refuted (joinSolverK facts roots heads algebra rigid complete headsTyped join
-      joinSound) (fun problem missing =>
-        joinRoundK_ne_refuted facts roots heads algebra rigid complete headsTyped join joinSound problem missing)
-      fuel _ missing)
+      joinSound) (fun problem absent =>
+        joinRoundK_ne_refuted facts roots heads algebra rigid complete headsTyped join joinSound problem absent)
+      fuel _ absent)
 
 end Solver
 

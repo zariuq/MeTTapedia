@@ -27,7 +27,7 @@ open ConstraintMultisetRewriting.Controls (signature A)
 open AnnotatedRuns.Controls (label Run zeros)
 open AnnotatedRunBranchCollection.Controls.Superpose (root first second first_valid second_valid
   alternatives)
-open AmplitudeControls (everything regionBranches_everything refused_of_not_present class_bag)
+open AmplitudeControls (everything regionBranches_everything refused_of_absent class_bag)
 open AmplitudeControls.Superposed (shifted shifted_first shifted_second)
 open AnnotatedRunUnfolding (CausalClass mem_frontier Terminal)
 open AnnotatedRunBranchCollection (terminalBranches mem_terminalBranches Closed)
@@ -65,25 +65,25 @@ theorem at_root {g : Run} (member : g ∈ erasing) (valid : g.Valid A label root
   rcases member with rfl | rfl | rfl | rfl
   · exact Or.inl rfl
   · exact Or.inr rfl
-  · exact absurd valid (refused_of_not_present (o := 20) (by simp [eraseFirst]) (by decide))
-  · exact absurd valid (refused_of_not_present (o := 21) (by simp [eraseSecond]) (by decide))
+  · exact absurd valid (refused_of_absent (o := 20) (by simp [eraseFirst]) (by decide))
+  · exact absurd valid (refused_of_absent (o := 21) (by simp [eraseSecond]) (by decide))
 
 theorem after_first {h : Run} (member : h ∈ erasing)
     (valid : h.Valid A label (first.result label root)) : h = eraseFirst := by
   simp only [erasing, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl | rfl
-  · exact absurd valid (refused_of_not_present (o := 9) (by simp [first]) (by decide))
-  · exact absurd valid (refused_of_not_present (o := 9) (by simp [second]) (by decide))
+  · exact absurd valid (refused_of_absent (o := 9) (by simp [first]) (by decide))
+  · exact absurd valid (refused_of_absent (o := 9) (by simp [second]) (by decide))
   · rfl
-  · exact absurd valid (refused_of_not_present (o := 21) (by simp [eraseSecond]) (by decide))
+  · exact absurd valid (refused_of_absent (o := 21) (by simp [eraseSecond]) (by decide))
 
 theorem after_second {h : Run} (member : h ∈ erasing)
     (valid : h.Valid A label (second.result label root)) : h = eraseSecond := by
   simp only [erasing, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl | rfl
-  · exact absurd valid (refused_of_not_present (o := 9) (by simp [first]) (by decide))
-  · exact absurd valid (refused_of_not_present (o := 9) (by simp [second]) (by decide))
-  · exact absurd valid (refused_of_not_present (o := 20) (by simp [eraseFirst]) (by decide))
+  · exact absurd valid (refused_of_absent (o := 9) (by simp [first]) (by decide))
+  · exact absurd valid (refused_of_absent (o := 9) (by simp [second]) (by decide))
+  · exact absurd valid (refused_of_absent (o := 20) (by simp [eraseFirst]) (by decide))
   · rfl
 
 theorem erased_terminal_first :
@@ -91,20 +91,20 @@ theorem erased_terminal_first :
   intro f member
   simp only [erasing, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl | rfl
-  · exact refused_of_not_present (o := 9) (by simp [first]) (by decide)
-  · exact refused_of_not_present (o := 9) (by simp [second]) (by decide)
-  · exact refused_of_not_present (o := 20) (by simp [eraseFirst]) (by decide)
-  · exact refused_of_not_present (o := 21) (by simp [eraseSecond]) (by decide)
+  · exact refused_of_absent (o := 9) (by simp [first]) (by decide)
+  · exact refused_of_absent (o := 9) (by simp [second]) (by decide)
+  · exact refused_of_absent (o := 20) (by simp [eraseFirst]) (by decide)
+  · exact refused_of_absent (o := 21) (by simp [eraseSecond]) (by decide)
 
 theorem erased_terminal_second :
     Terminal A label erasing (eraseSecond.result label (second.result label root)) := by
   intro f member
   simp only [erasing, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl | rfl
-  · exact refused_of_not_present (o := 9) (by simp [first]) (by decide)
-  · exact refused_of_not_present (o := 9) (by simp [second]) (by decide)
-  · exact refused_of_not_present (o := 20) (by simp [eraseFirst]) (by decide)
-  · exact refused_of_not_present (o := 21) (by simp [eraseSecond]) (by decide)
+  · exact refused_of_absent (o := 9) (by simp [first]) (by decide)
+  · exact refused_of_absent (o := 9) (by simp [second]) (by decide)
+  · exact refused_of_absent (o := 20) (by simp [eraseFirst]) (by decide)
+  · exact refused_of_absent (o := 21) (by simp [eraseSecond]) (by decide)
 
 theorem erasing_closed : Closed A label erasing 2 root := by
   intro word member

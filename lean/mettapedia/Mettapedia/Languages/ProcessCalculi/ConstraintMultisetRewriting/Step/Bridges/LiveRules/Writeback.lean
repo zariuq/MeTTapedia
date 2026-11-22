@@ -45,17 +45,17 @@ theorem bisimulation :
       (Succ (rstep X O R E (codes zones) (∅ : Set (Rule Tm))).toStep)
       (Represents zones program) := by
   constructor
-  · rintro origin after current ⟨ids, code, offers, ⟨spare, missing⟩, rfl⟩ ⟨firing, admitted, rfl⟩
+  · rintro origin after current ⟨ids, code, offers, ⟨spare, absent⟩, rfl⟩ ⟨firing, admitted, rfl⟩
     obtain ⟨used, present, aligned⟩ := (offers firing.rule).mp firing.member
     obtain ⟨lifted, accepted, endpoint⟩ :=
-      WritingBack.lift_admits X (zoneOf := zones) firing admitted present aligned missing
+      WritingBack.lift_admits X (zoneOf := zones) firing admitted present aligned absent
     refine ⟨_, ⟨lifted, accepted, rfl⟩, _, _,
-      WritingBack.offers_writeBack offers present missing, ⟨used, spare_again present missing⟩, endpoint⟩
+      WritingBack.offers_writeBack offers present absent, ⟨used, spare_again present absent⟩, endpoint⟩
   · rintro origin current next ⟨ids, code, offers, _, rfl⟩ moved
-    obtain ⟨after, used, fresh, present, missing, endpoint, projected⟩ :=
+    obtain ⟨after, used, fresh, present, absent, endpoint, projected⟩ :=
       WritingBack.consumed_closed R X E offers moved
-    exact ⟨after, projected, _, _, WritingBack.offers_writeBack offers present missing,
-      ⟨used, spare_again present missing⟩, endpoint⟩
+    exact ⟨after, projected, _, _, WritingBack.offers_writeBack offers present absent,
+      ⟨used, spare_again present absent⟩, endpoint⟩
 
 def correspondence := Transitions.correspondence (bisimulation X E (O := O) (R := R) zones program)
 

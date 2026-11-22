@@ -43,7 +43,7 @@ theorem free_execution (value : Tm) :
       (Subst.id rowSig) (Interface.Frames.models_nil
         (X := X) (a := PUnit.unit) (b := PUnit.unit) _) value).mp (free_reading value)
   refine ⟨execution (codeBook freeSchema) {true} (source []) 0 0 1 true materialized consumed,
-    execution_length _ _ _ _ _ _ _ _ _, temporary_not_present _ _ _ _ _ _ _ _ _ (by decide),
+    execution_length _ _ _ _ _ _ _ _ _, temporary_absent _ _ _ _ _ _ _ _ _ (by decide),
     ?_, point, model, output⟩
   rw [final_rules _ _ _ _ _ _ _ _ _ rfl]
   decide

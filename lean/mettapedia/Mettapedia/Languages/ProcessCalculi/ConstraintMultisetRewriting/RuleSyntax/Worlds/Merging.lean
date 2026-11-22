@@ -17,20 +17,20 @@ exactly under the condition `stepParallelSolvable` asks of a composable pair, so
   system, the system with the row `ω!(0)` reaches success; the merge of the two is refused; and their
   tensor, the composite when every pair is composable, never reaches success (`Encodings.junk_switches`).
   In every bag, with every space, the junk system is no neighbour (`junk_is_no_neighbour`).
-* **A rule guarded by the none query of a row** (`none_as_worlds`): side by side with the system
+* **A rule guarded by the absence of a row** (`absence_as_worlds`): side by side with the system
   that holds the row `*@0`, the guarded spawn reaches success; the merge of the two is admitted
   (`spawn_blocker_mergeable`); and merged they never reach success
-  (`Encodings.blocked_never_succeeds`). A none check reads the rows of its own world.
+  (`Encodings.blocked_never_succeeds`). An absence check reads the rows of its own world.
 
 ## The fate of the separation
 
 * `worldsParallel ω`: bags of worlds at the twin-binder frames, side by side, success the output barb on
   `ω` in some world. It is persistent (`worldsParallel_persistent`), so it has no switching pair, for
-  any rules, none checks included.
+  any rules, absence checks included.
 * `incumbent_not_into_worlds`: by the tree's separation theorem, **the calculus of systems under the
   tensor has no uniform translation into the calculus of worlds side by side**, although both run the
   same step with the same rules: the criterion separates two compositions of one calculus. Under the
-  tensor a none check reads the neighbour's rows; side by side it does not.
+  tensor an absence check reads the neighbour's rows; side by side it does not.
 * `image_par_is_one_merge`: the translation of a parallel composition of the reflective calculus is one
   merge away from the translations of its two components side by side. The composition of the
   reflective calculus corresponds to the merge, not to side by side.
@@ -75,7 +75,7 @@ theorem worldsParallel_persistent (ω : G [] .nm) : (worldsParallel ω).Persiste
     (family := events knowledge ℕ decl) (events_program_monotone knowledge decl) (OutBarb ω)
 
 /-- **The calculus of systems under the tensor has no uniform translation into the calculus of worlds
-side by side.** The first is switchable by none queries (`Encodings.solvable_switchable`); the second is
+side by side.** The first is switchable by absence (`Encodings.solvable_switchable`); the second is
 persistent. -/
 theorem incumbent_not_into_worlds (ω : G [] .nm) :
     IsEmpty (UniformTranslation (stepParallelSolvable ω) (worldsParallel ω)) :=
@@ -163,10 +163,10 @@ theorem spawn_blocker_mergeable (ω : G [] .nm) :
   change e ∈ knowledge.applyStore _ ([] : List _) ++ knowledge.applyStore _ ([] : List _) at member
   exact absurd member List.not_mem_nil
 
-/-- **A rule guarded by the none query of a row, as a world.** Side by side with the system that holds
+/-- **A rule guarded by the absence of a row, as a world.** Side by side with the system that holds
 the row `*@0`, the guarded spawn reaches success; the merge of the two is admitted; and merged they
-never reach success. A none check reads the rows of its own world. -/
-theorem none_as_worlds (ω : G [] .nm) :
+never reach success. An absence check reads the rows of its own world. -/
+theorem absence_as_worlds (ω : G [] .nm) :
     (worldsParallel ω).Succeeds ⟨spawnSystem ω ::ₘ blockerSystem ::ₘ 0, ∅⟩ ∧
       knowledge.Solvable (tensorJoining.join (spawnSystem ω).state blockerSystem.state).knowledge ∧
       ¬ (stepParallel ω).Succeeds ((stepParallel ω).par (spawnSystem ω) blockerSystem) := by
@@ -227,7 +227,7 @@ theorem switching_is_of_the_composition (ω : G [] .nm) :
 #print axioms junk_as_a_world
 #print axioms junk_is_no_neighbour
 #print axioms spawn_blocker_mergeable
-#print axioms none_as_worlds
+#print axioms absence_as_worlds
 #print axioms image_nil_stuck
 #print axioms merge_gives_a_reduction
 #print axioms switching_is_of_the_composition

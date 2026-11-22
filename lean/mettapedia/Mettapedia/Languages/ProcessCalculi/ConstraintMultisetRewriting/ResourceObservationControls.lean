@@ -55,15 +55,15 @@ theorem supported_refusal_is_preserved :
     runs refusedEvents (project footprint world) = none ↔ runs refusedEvents world = none :=
   runs_refusal_iff refused_events_supported world
 
-theorem supported_none_composes_with_the_mixed_commit :
-    Preserves footprint (andThen (commit [1] [2, 2] [3]) (vacantOn {1})) := by
+theorem supported_absence_composes_with_the_mixed_commit :
+    Preserves footprint (andThen (commit [1] [2, 2] [3]) (absentOn {1})) := by
   apply preserves_andThen
   · exact preserves_commit (by simp [SupportedCommit, footprint])
-  · exact preserves_vacantOn (by simp [footprint])
+  · exact preserves_absentOn (by simp [footprint])
 
-theorem actual_none_success_and_refusal :
-    andThen (commit [1] [2, 2] [3]) (vacantOn {1}) world = some {2, 3, 99} ∧
-      andThen (commit [1] [2, 2] [3]) (vacantOn {2}) world = none := by decide +kernel
+theorem actual_absence_success_and_refusal :
+    andThen (commit [1] [2, 2] [3]) (absentOn {1}) world = some {2, 3, 99} ∧
+      andThen (commit [1] [2, 2] [3]) (absentOn {2}) world = none := by decide +kernel
 
 def picked : Selection Nat := ⟨[1], [2, 2], [3]⟩
 def labels (_ : Nat) : Unit := ()

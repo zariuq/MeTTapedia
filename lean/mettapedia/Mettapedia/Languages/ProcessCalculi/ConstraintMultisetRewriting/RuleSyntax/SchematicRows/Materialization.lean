@@ -68,13 +68,13 @@ theorem persistent_source_retained (occurrence : R) (used : f.use = .held occurr
     rw [f.kept_persistent used persistent noRemoved, noMade, List.toFinset_nil, Finset.union_empty]
   · exact f.result_held_other (by simp [noMade])
 
-theorem consumed_private_instance_not_present {t : RState Tm O R C Z}
+theorem consumed_private_instance_is_absent {t : RState Tm O R C Z}
     (consumer : RFiring O R E codes t) (out : O)
     (taken : out ∈ consumer.selection.taken) (notMade : out ∉ consumer.selection.made) :
     out ∉ (consumer.result X).present := by
   change out ∉ fire t.present (consumer.selection.commit (T := Unit))
   simp only [mem_fire, Selection.commit, List.mem_toFinset, not_or, not_and]
-  exact ⟨fun _ missing => missing taken, notMade⟩
+  exact ⟨fun _ absent => absent taken, notMade⟩
 
 theorem materialized_reading (ambient : Set C) (available : s.Available ambient f.use)
     (fresh : f.Fresh X) (noTake : f.spec.body.take = []) (noRead : f.spec.body.read = [])
@@ -94,7 +94,7 @@ theorem materialized_reading (ambient : Set C) (available : s.Available ambient 
 #print axioms admits_of_reading
 #print axioms result_label_single
 #print axioms persistent_source_retained
-#print axioms consumed_private_instance_not_present
+#print axioms consumed_private_instance_is_absent
 #print axioms materialized_reading
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.SchematicRows.Materialization

@@ -31,7 +31,7 @@ path: it can make an operation read nothing.
 
 ## The worked example: `add-atom` into a set
 
-For a set kept by the program, the generic add must first check that the atom is not present: a guard
+For a set kept by the program, the generic add must first check that the atom is absent: a guard
 that queries the region (`guardedAdd`). Under a set kind the merge itself is idempotent, so
 the fast path makes the atom unconditionally (`setKind`, `setAdd`):
 
@@ -145,7 +145,7 @@ def setKind : RegionKind T := ⟨fun M made => made.ndunion M, Multiset.Nodup⟩
 /-- **The bag kind**: made atoms are added; every store is kept. -/
 def bagKind : RegionKind T := ⟨fun M made => M + made, fun _ => True⟩
 
-/-- The generic add into a set kept by the program: make the atom when it is not present. -/
+/-- The generic add into a set kept by the program: make the atom when it is absent. -/
 def guardedAdd (a : T) (M : Multiset T) : Multiset T := if a ∈ M then M else a ::ₘ M
 
 /-- The guard as an operation: what it makes depends on the snapshot. -/
@@ -189,7 +189,7 @@ end SetKind
 
 namespace Controls
 
-/-- **Two guarded adds from one snapshot store the atom twice**: both see it missing. Run in order,
+/-- **Two guarded adds from one snapshot store the atom twice**: both see it absent. Run in order,
 the second sees it and adds nothing. The result is not a set. -/
 theorem guarded_parallel_duplicates :
     bagKind.par (guardedDelta 1) (guardedDelta 1) (0 : Multiset ℕ) = {1, 1} ∧

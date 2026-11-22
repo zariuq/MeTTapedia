@@ -22,13 +22,13 @@ def search (key : OccurrenceKey) : List OccurrenceKey → Nat × Option Nat
         let later := search key rest
         (later.1 + 1, later.2.map (· + 1))
 
-theorem notMem_search (key : OccurrenceKey) (rows : List OccurrenceKey) (missing : key ∉ rows) :
+theorem absent_search (key : OccurrenceKey) (rows : List OccurrenceKey) (absent : key ∉ rows) :
     search key rows = (rows.length, none) := by
   induction rows with
   | nil => rfl
   | cons first rows ih =>
-      have unequal : key ≠ first := fun equal => missing (List.mem_cons.mpr (Or.inl equal))
-      have later : key ∉ rows := fun member => missing (List.mem_cons_of_mem _ member)
+      have unequal : key ≠ first := fun equal => absent (List.mem_cons.mpr (Or.inl equal))
+      have later : key ∉ rows := fun member => absent (List.mem_cons_of_mem _ member)
       simp [search, unequal, ih later]
 
 structure Registration where
@@ -42,9 +42,9 @@ def register (rows : List OccurrenceKey) (key : OccurrenceKey) : Registration :=
   | some index => ⟨found.1, index + 1, rows⟩
   | none => ⟨found.1, rows.length + 1, rows ++ [key]⟩
 
-theorem fresh_register (rows : List OccurrenceKey) (key : OccurrenceKey) (missing : key ∉ rows) :
+theorem fresh_register (rows : List OccurrenceKey) (key : OccurrenceKey) (absent : key ∉ rows) :
     register rows key = ⟨rows.length, rows.length + 1, rows ++ [key]⟩ := by
-  simp only [register, notMem_search key rows missing]
+  simp only [register, absent_search key rows absent]
 
 def run : List OccurrenceKey → List OccurrenceKey → Nat
   | _, [] => 0

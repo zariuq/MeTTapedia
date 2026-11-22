@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.PositiveR
 # Linear proof controls: genuine generation, no contraction and physical lifting
 
 A two-rule diagram consumes and produces the exact declared multiplicities
-beside a residual frame. In the lack of declarations, cardinality rejects
+beside a residual frame. In the absence of declarations, cardinality rejects
 both copying and dropping context atoms. A genuine ordinary CMR receipt then
 passes through the independent logical proof type and back to a fresh actual
 schedule under the same shared substitution.
@@ -58,10 +58,10 @@ theorem a_logical_rule_without_its_read_is_not_a_source_firing :
       ¬ readSystem.Fires [readEntry] ({0} : Multiset Nat) {1} := by
   refine ⟨⟨.rule readEntry⟩, ?_⟩
   intro fired
-  have missing : ¬ readSystem.Enables ({0} : Multiset Nat) readEntry.2 := by
+  have absent : ¬ readSystem.Enables ({0} : Multiset Nat) readEntry.2 := by
     change ¬ (({0} : Multiset Nat) + {9} ≤ {0})
     decide
-  exact missing fired.1
+  exact absent fired.1
 
 def noRules (_ : Empty) : Multiset Nat := 0
 

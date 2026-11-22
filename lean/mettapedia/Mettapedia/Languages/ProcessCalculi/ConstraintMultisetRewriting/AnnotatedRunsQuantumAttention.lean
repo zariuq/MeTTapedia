@@ -264,11 +264,11 @@ theorem commit_sound {bag : Multiset Amplitude}
 whole, so a path arriving there is seen again at the new cut. -/
 theorem commit_refuses_insertion {seen : Finset O} {r : O} {C : Configuration T O}
     (commits : (certifiedCancellationFiring A label wave status bits row region seen s r).Valid
-      A label C) {o : O} (missing : o ∉ C.present) (inRegion : region (label o) = true) :
+      A label C) {o : O} (absent : o ∉ C.present) (inRegion : region (label o) = true) :
     ¬ (certifiedCancellationFiring A label wave status bits row region seen s r).Valid A label
       ⟨C.equations, C.present ∪ {o}⟩ :=
   query_refuses_arrival A label commits (query := ⟨region, seen⟩) (List.mem_singleton_self _)
-    missing inRegion
+    absent inRegion
 
 end Commit
 
@@ -281,7 +281,7 @@ open ConstraintMultisetRewriting.Controls (signature A)
 open AnnotatedRuns.Controls (label Run zeros)
 open AnnotatedRunBranchCollection.Controls.Superpose (root first first_valid)
 open AmplitudeControls (everything regionBranches_everything single_class_injective
-  refused_of_not_present)
+  refused_of_absent)
 open AnnotatedRunUnfolding (mem_frontier)
 open AnnotatedRunBranchCollection (mem_terminalBranches)
 
@@ -312,8 +312,8 @@ theorem routes_gone : ∀ f ∈ routes, ¬ f.Valid A label (first.result label r
   intro f member
   simp only [routes, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
-  · exact refused_of_not_present (o := 9) (by simp [first]) (by decide)
-  · exact refused_of_not_present (o := 9) (by simp [quiet]) (by decide)
+  · exact refused_of_absent (o := 9) (by simp [first]) (by decide)
+  · exact refused_of_absent (o := 9) (by simp [quiet]) (by decide)
 
 theorem one_route {g : Run} (covered : ∀ f ∈ [g], f ∈ routes) : g = first ∨ g = quiet := by
   simpa [routes] using covered g (List.mem_singleton_self g)

@@ -380,7 +380,7 @@ theorem check_fails_pending {label : O → Pattern} {C : Configuration Pattern O
 
 /-- **An opening of `l` is refused while `l` has a `Done` token**: the opening asks that its child have no
 `Done(_, _, Z)` token, `Z` an unknown of its own; moving `Z` onto the accumulator of the row reading
-`Done(l, m, c)` gives a solution of the information at which the none query fails. -/
+`Done(l, m, c)` gives a solution of the information at which the absence fails. -/
 theorem check_fails_done {label : O → Pattern} {C : Configuration Pattern O} {g : Firing O QNE located PUnit.unit}
     (admitted : (RuleSyntax.step QN O QNE located).Admits (s := embed label C) g) {par : Pattern}
     (hasCheck : Check.predicate .none (doneTok (childLoc par channelUnknown reflP) par anyZ) ∈ g.rule.body.checks)
@@ -1227,27 +1227,27 @@ theorem mem_region_iff {s : Store O} {key slot : O} :
   refine and_congr_right (fun _ => ?_)
   cases s.route slot <;> simp
 
-/-- For a row none check the full region and its row bucket agree.
+/-- For a row absence check the full region and its row bucket agree.
 Ticket labels, including those of nested children, cannot count as
 data rows under any symbolic solution. -/
-theorem region_row_none_iff {s : Store O} (formed : LabelForms s) (key : O)
+theorem region_row_absence_iff {s : Store O} (formed : LabelForms s) (key : O)
     (σ : PSubst) (body loc : Pattern) :
     (∀ slot ∈ s.childRows key, ¬ NameLaws (psubst σ (atLoc body loc)) (psubst σ (s.raw.label slot))) ↔
     ∀ slot ∈ s.region key, ¬ NameLaws (psubst σ (atLoc body loc)) (psubst σ (s.raw.label slot)) := by
   constructor
-  · intro missing slot seen matchRow
+  · intro absent slot seen matchRow
     obtain ⟨live, mark, tagged, region⟩ := mem_region_iff.mp seen
     cases mark with
     | cell place =>
       change place = some key at region
       subst place
-      exact missing slot (Finset.mem_filter.mpr ⟨live, tagged⟩) matchRow
+      exact absent slot (Finset.mem_filter.mpr ⟨live, tagged⟩) matchRow
     | control t phase =>
       rw [psubst_atLoc_any] at matchRow
       exact (MarkForm.instantiate (formed tagged) σ).control_not_row _ _ matchRow.symm
-  · intro missing slot seen
+  · intro absent slot seen
     obtain ⟨live, tagged⟩ := Finset.mem_filter.mp seen
-    exact missing slot (mem_region_iff.mpr ⟨live, .cell (some key), tagged, rfl⟩)
+    exact absent slot (mem_region_iff.mpr ⟨live, .cell (some key), tagged, rfl⟩)
 
 /-- A cell reserved by an outstanding child is no longer available
 to other firings. The exact owner close uses a different check. -/
@@ -1423,7 +1423,7 @@ def update {s : Store O} (f : Candidate s) (route : Vector (Mark O) f.raw.select
         else none⟩
 
 /-- The old symbolic comparison uses the whole store. The scoped
-guard policy asks none queries of the selected or newly allocated child. -/
+guard policy asks absence of the selected or newly allocated child. -/
 inductive GuardPolicy where
   | whole | physical
 
@@ -1460,7 +1460,7 @@ theorem Candidate.guardRows_subset {s : Store O} (f : Candidate s) (policy : Gua
   · exact Finset.Subset.refl _
   · exact child_checks_subset s _ _ _ _
 
-private theorem Operation.none_checks (op : Operation) :
+private theorem Operation.absence_checks (op : Operation) :
     ∀ c ∈ op.rule.body.checks, ∃ pattern, c = .predicate .none pattern := by
   cases op <;> intro c member <;>
     simp [Operation.rule, atRule, RuleInstance.map, commRule, heatRule, clearRule,
@@ -1472,12 +1472,12 @@ private theorem Operation.none_checks (op : Operation) :
     | rcases member with rfl | rfl | rfl <;> exact ⟨_, rfl⟩
 
 omit [DecidableEq O] in
-private theorem Candidate.opened_none_checks {s : Store O} (f : Candidate s)
+private theorem Candidate.opened_absence_checks {s : Store O} (f : Candidate s)
     {c : Check (Tm (QNE.target f.raw.ext))} (member : c ∈ (f.raw.opened QN).checks) :
     ∃ pattern, c = .predicate .none pattern := by
   have authored : ∀ c ∈ f.raw.rule.body.checks, ∃ pattern, c = .predicate .none pattern := by
     rw [f.describes]
-    exact f.op.none_checks
+    exact f.op.absence_checks
   change c ∈ f.raw.rule.body.checks.map (Check.map (QN.act f.raw.opening)) at member
   obtain ⟨original, appears, rfl⟩ := List.mem_map.mp member
   obtain ⟨pattern, rfl⟩ := authored original appears
@@ -1569,7 +1569,7 @@ theorem admits_without_comm_tells (policy : GuardPolicy)
   · simp [Firing.collectOpened, f.collect_empty]
 
 /-- Whole-store admission implies admission on the physical view for
-these rules: their only observations are none checks. Neither equality
+these rules: their only observations are absences. Neither equality
 matching nor enabledness is weakened. -/
 theorem physical_admits_of_whole {s : Store O} {f : Candidate s}
     (a : (step (O := O) .whole).Admits f) : (step (O := O) .physical).Admits f := by
@@ -1577,13 +1577,13 @@ theorem physical_admits_of_whole {s : Store O} {f : Candidate s}
   refine ⟨⟨shape, enabled, solves, fun b σ models => ?_⟩, plan, fresh⟩
   constructor
   · intro c member
-    obtain ⟨p, rfl⟩ := f.opened_none_checks member
+    obtain ⟨p, rfl⟩ := f.opened_absence_checks member
     intro slot seen
     exact (checks b σ models).1 (.predicate .none p) member slot (f.guardRows_subset .physical seen)
   · simp [Firing.collectOpened, f.collect_empty]
 
 /-- Transfer an actual run without changing any selected occurrence or
-result state. This direction is not an equivalence: none queries can fail
+result state. This direction is not an equivalence: absence can fail
 on foreign equal-looking regions in the whole-store policy. -/
 def usePhysicalGuards {s : Store O} :
     (step (O := O) .whole).toStep.Run s → (step (O := O) .physical).toStep.Run s
@@ -2011,9 +2011,9 @@ theorem result_authoredReads (policy : GuardPolicy)
     exact matched
   rw [authored_routed_result policy a plan source]
   constructor
-  · intro slot missing
-    change slot ∉ (f.raw.result QN s.raw).present at missing
-    simp [update, missing]
+  · intro slot absent
+    change slot ∉ (f.raw.result QN s.raw).present at absent
+    simp [update, absent]
   · intro slot live σ solved
     change nameAction.Models σ (f.information (some equations)) at solved
     change slot ∈ (f.raw.result QN s.raw).present at live
@@ -2248,7 +2248,7 @@ private theorem physical_checks_vacant_or_no_checks {s : Store O} (linked : Scop
     obtain ⟨t, done, _, _, ⟨_, _, _, _, empty, _, _⟩, _⟩ := accepted
     exact .inl (by simp [childCheckRows, control_at_some.mpr done, empty])
 
-/-- On the proved scope invariant, the route checks settle none queries on
+/-- On the proved scope invariant, the route checks settle absence on
 the physical domain. Birth examines a never-issued region, while
 closing checks the actual child rows and nested tickets. The remaining
 symbolic admission still requires solvable matched information. -/
@@ -2264,7 +2264,7 @@ theorem physical_admits_iff {s : Store O} (linked : ScopeLinks s) (f : Candidate
     constructor
     · intro c member
       rcases physical_checks_vacant_or_no_checks linked plan fresh with vacant | none
-      · obtain ⟨p, rfl⟩ := f.opened_none_checks member
+      · obtain ⟨p, rfl⟩ := f.opened_absence_checks member
         intro slot seen
         change slot ∈ f.guardRows .physical at seen
         have noRows : f.guardRows .physical = ∅ := vacant
@@ -2942,7 +2942,7 @@ theorem result_owner_frame {s : Store O} {f : Candidate s}
 /-- Opening under one physical parent leaves the routing and allocation
 checks for a different parent's opening intact. This is the physical
 part of the swap: a second symbolic firing must still establish its
-equations and none checks. -/
+equations and absence checks. -/
 theorem separate_parent_open_plan {s : Store O} {f : Candidate s}
     (a : (step (O := O) policy).Admits (s := s) f) (covered : s.ledger.Covers s.raw.present)
     (linked : ScopeLinks s)

@@ -16,7 +16,7 @@ usual rewriting of terms, at any position, is not of that kind.
 * Control: `ctxStep_deep`, the rewrite at depth `n` is a step of `CtxStep`.
 
 These are statements about `Rewrites`, which is the step for range-restricted positive programs
-(`Machines.NoneReading`). A finite program can host rewriting at depth only by a machine that walks the
+(`Machines.AbsenceReading`). A finite program can host rewriting at depth only by a machine that walks the
 row, with many firings per rewrite; no such machine is built here.
 -/
 

@@ -23,7 +23,7 @@ unknowns (`Scope.independent_of_fixed`, and joint freshness for the openings). T
 * **`admitsOwn_iff_members`**: a bag is admitted (guards at each member's own information) exactly when
   it is jointly fresh, its takes and made identities are apart, its joint selection is enabled as one
   commit, and **each member is admitted by the step of the program**. This holds for every rule,
-  including rules with none queries, counts and collect query.
+  including rules with absence, counts and collect query.
 * **`any_order`**: for positive rules, an admitted bag is, in every order of its members, a run of the
   step of the program ending at the bag's result (same rows and labels; knowledge up to order).
 

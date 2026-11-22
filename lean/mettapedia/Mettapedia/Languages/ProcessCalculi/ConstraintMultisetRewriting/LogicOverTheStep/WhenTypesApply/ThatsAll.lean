@@ -3,10 +3,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NativeTyp
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LogicOverTheStep.ProgramAdequacy
 
 /-!
-# "That's all": a closure clause is a none statement, sound exactly on an owned region
+# "That's all": a closure clause is an absence statement, sound exactly on an owned region
 
 A closure clause ("these constructors and no others", "these equations cover the function") says
-that nothing else is there. On the step that is a none statement about a region of rows: every
+that nothing else is there. On the step that is an absence statement about a region of rows: every
 row of the region is among the listed ones (`ClosedBy`).
 
 * **Exact theorem** (`closedReadingSurvives_iff_owned`): every such statement true before a step of
@@ -36,7 +36,7 @@ row of the region is among the listed ones (`ClosedBy`).
   closure statement about protected rows survives every step of another actor.
 
 So **a constructor-defined type is a type whose defining region is owned**: its closure clause is a
-none statement, sound in an open world exactly when nobody else creates rows of its region. Its
+absence statement, sound in an open world exactly when nobody else creates rows of its region. Its
 inductive reading survives every other creation that goes through its constructors
 (`generated_survives`) and fails when another party creates a row that no rule makes
 (`adding_breaks_generated`).
@@ -50,7 +50,7 @@ open Set
 
 universe u v w
 
-/-! ## The none query over a region -/
+/-! ## Absence over a region -/
 
 section Abstract
 

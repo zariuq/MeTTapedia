@@ -25,8 +25,8 @@ the observed value no longer agrees. The successor's new answer comes from
 running the original query again, not from running that closed residual.
 A complete positive read depends on the whole ordered list. Replacing that
 list can change candidates, count, and the first element while both answers
-stay nonempty, so the none query versus presence does not classify the dependency.
-A none read of the same key is not agreement. A suffix extension is called
+stay nonempty, so absence versus presence does not classify the dependency.
+An absence read of the same key is not agreement. A suffix extension is called
 an append example only under the ordering assumption stated on
 `Controls.snapshot_advance_differs_from_validated_fresh`.
 -/
@@ -58,7 +58,7 @@ def run (store : Key → Value) : Program Key Value Answer → Observation Key V
       let rest := run store (next observed)
       ⟨rest.answer, (key, observed) :: rest.reads⟩
 
-/-- Every read, including a missing lookup, must retain its observed value. -/
+/-- Every read, including an absent lookup, must retain its observed value. -/
 def Agrees (store : Key → Value) (reads : Reads Key Value) : Prop :=
   ∀ read ∈ reads, store read.1 = read.2
 
@@ -355,10 +355,10 @@ theorem run_foldQueries {Item : Type x} (store : Key → Value)
 A paused query has performed some reads in the store where it ran, and its
 residual program closes over the values it saw. Resumed in another store, the
 residual's later reads see that store. The resumed result is the fresh result
-there whenever every performed read still agrees, none checks included
+there whenever every performed read still agrees, absences included
 (`resumed_eq_fresh_of_prefix_agrees`). A check confined to the reads the
 residual has still to make does not establish this
-(`Controls.pending_only_check_accepts_stale_none`), and agreement of the
+(`Controls.pending_only_check_accepts_stale_absence`), and agreement of the
 performed reads does not require an unchanged store
 (`Controls.prefix_check_accepts_unrelated_change`). A residual that has already
 closed over its value returns that value in either store. The successor answer
@@ -544,13 +544,13 @@ theorem root_only_certificate_is_insufficient :
   decide
 
 /-- A failed lookup is a dependency: a later successful write changes it. -/
-def negativeLookupQuery : Program Nat (Option Nat) Bool :=
+def absenceQuery : Program Nat (Option Nat) Bool :=
   .read 4 fun value => .pure value.isNone
 
 theorem negative_lookup_must_be_recorded :
-    (run (fun _ => none) negativeLookupQuery).reads = [(4, none)] ∧
+    (run (fun _ => none) absenceQuery).reads = [(4, none)] ∧
       checkReads (Function.update (fun _ => none) 4 (some 9))
-        (run (fun _ => none) negativeLookupQuery).reads = false := by
+        (run (fun _ => none) absenceQuery).reads = false := by
   decide
 
 /-- The complete ordered answer list is one read value, including emptiness
@@ -598,16 +598,16 @@ theorem unrelated_match_write_preserves_composition :
     · decide
     · decide
 
-/-- Read whether key 4 is not present, then read key 5; the answer uses both. -/
+/-- Read whether key 4 is absent, then read key 5; the answer uses both. -/
 def guardedQuery : Program Nat (Option Nat) (Bool × Option Nat) :=
   .read 4 fun guard => .read 5 fun value => .pure (guard.isNone, value)
 
 def guardStore : Nat → Option Nat := fun key => if key = 5 then some 1 else none
 
-/-- Pause after the none query of key 4 was read, then let key 4 appear. The
+/-- Pause after the absence of key 4 was read, then let key 4 appear. The
 reads the residual still makes agree, yet the resumed answer keeps the stale
-none query and differs from the fresh run; the performed prefix is refused. -/
-theorem pending_only_check_accepts_stale_none :
+absence and differs from the fresh run; the performed prefix is refused. -/
+theorem pending_only_check_accepts_stale_absence :
     let paused := pausePrefix guardStore 1 guardedQuery
     let changed := Function.update guardStore 4 (some 9)
     checkReads changed (run guardStore paused.2).reads = true ∧
@@ -626,7 +626,7 @@ theorem prefix_check_accepts_unrelated_change :
       (run changed paused.2).answer = (run changed guardedQuery).answer := by
   decide
 
-theorem retained_validation_refuses_stale_none :
+theorem retained_validation_refuses_stale_absence :
     let paused := pausePrefix guardStore 1 guardedQuery
     Retained.resumeValidated (Function.update guardStore 4 (some 9)) 1 paused = none := by
   decide
@@ -661,8 +661,8 @@ def positiveBefore : Nat → List Nat
   | 0 => [2, 2]
   | _ => []
 
-/-- Every key is not present. -/
-def emptyBefore : Nat → List Nat := fun _ => []
+/-- Every key is absent. -/
+def absentBefore : Nat → List Nat := fun _ => []
 
 /-- Every key was read as zero. -/
 def seenBefore : Nat → Nat := fun _ => 0
@@ -682,13 +682,13 @@ theorem snapshot_residual_closed_over_zero :
 
 /-- Replacing the stored list changes a nonempty positive answer's candidates,
 count, and first element. Under the suffix-extension assumption above,
-`[2, 2] ++ [9] = [2, 2, 9]` is the append-shaped successor. A none query at the
+`[2, 2] ++ [9] = [2, 2, 9]` is the append-shaped successor. An absence at the
 key is not agreement. The closed residual returns 0 in both stores; answer 1
 is a new run of `seenQuery`, and the cached certificate fails on the successor. -/
 theorem snapshot_advance_differs_from_validated_fresh :
     let positiveAfter := Function.update positiveBefore 0 [9, 2, 2]
     let suffixAfter := Function.update positiveBefore 0 [2, 2, 9]
-    let emptyAfter := Function.update emptyBefore 0 [4]
+    let absentAfter := Function.update absentBefore 0 [4]
     let seenAfter := Function.update seenBefore 0 1
     let paused := pausePrefix seenBefore 1 seenQuery
     (run positiveBefore positiveQuery).answer = [2, 2] ∧
@@ -708,10 +708,10 @@ theorem snapshot_advance_differs_from_validated_fresh :
       (run suffixAfter positiveQuery).answer.length = 3 ∧
       (run suffixAfter positiveQuery).answer.head? = some 2 ∧
       checkReads suffixAfter (run positiveBefore positiveQuery).reads = false ∧
-      (run emptyBefore positiveQuery).answer = [] ∧
-      (run emptyBefore positiveQuery).reads = [(0, [])] ∧
-      (run emptyAfter positiveQuery).answer = [4] ∧
-      checkReads emptyAfter (run emptyBefore positiveQuery).reads = false ∧
+      (run absentBefore positiveQuery).answer = [] ∧
+      (run absentBefore positiveQuery).reads = [(0, [])] ∧
+      (run absentAfter positiveQuery).answer = [4] ∧
+      checkReads absentAfter (run absentBefore positiveQuery).reads = false ∧
       paused.1 = [(0, 0)] ∧
       (run seenBefore paused.2).answer = 0 ∧
       (run seenAfter paused.2).answer = 0 ∧
@@ -725,7 +725,7 @@ theorem snapshot_advance_differs_from_validated_fresh :
 new value. Keeping only that later read would fabricate validation. -/
 theorem newer_read_does_not_rebase_cached :
     let current : Nat → List Nat := fun key => if key = 0 then [4] else []
-    let cached := run emptyBefore positiveQuery
+    let cached := run absentBefore positiveQuery
     let combined := cached.extend current fun _ => positiveQuery
     combined.answer = [4] ∧
       combined.reads = [(0, []), (0, [4])] ∧
@@ -789,7 +789,7 @@ def completeScan : List Key →
         bind (completeScan rest) fun tail => .pure (here ++ tail)
 
 /-- Reads of a first success: every earlier empty list, then the selected
-candidate's full list. Later candidates are not present. -/
+candidate's full list. Later candidates are absent. -/
 def dependencyReads (store : Key → List (Occurrence Id Payload)) : List Key →
     Reads Key (List (Occurrence Id Payload))
   | [] => []
@@ -871,7 +871,7 @@ theorem completeScan_reads_eq (store : Key → List (Occurrence Id Payload)) :
       rw [completeScan_reads_eq store rest]
 
 /-- Validating the recorded reads preserves the chosen occurrence and the read
-path. Keys missing from that path, including candidates after the success, may
+path. Keys absent from that path, including candidates after the success, may
 change without disturbing this run. -/
 theorem validated_first_success
     [DecidableEq Id] [DecidableEq Payload]
@@ -885,12 +885,12 @@ theorem unread_key_may_change
     [DecidableEq Key] [DecidableEq Id] [DecidableEq Payload]
     (store : Key → List (Occurrence Id Payload)) (candidates : List Key)
     (key : Key) (value : List (Occurrence Id Payload))
-    (missing : ∀ read ∈ (run store (firstSuccessScan candidates)).reads, read.1 ≠ key) :
+    (absent : ∀ read ∈ (run store (firstSuccessScan candidates)).reads, read.1 ≠ key) :
     run (Function.update store key value) (firstSuccessScan candidates) =
       run store (firstSuccessScan candidates) := by
   apply run_eq_of_agrees store (Function.update store key value)
   intro read member
-  have different : read.1 ≠ key := missing read member
+  have different : read.1 ≠ key := absent read member
   rw [Function.update_apply, if_neg different]
   exact run_agrees store (firstSuccessScan candidates) read member
 
@@ -1019,7 +1019,7 @@ theorem unrelated_later_change_preserves_first :
         (run singletonWorld (firstSuccessScan [0, 1])).reads := by
   decide
 
-theorem retained_none_preserves_and_stale_plan_refuses :
+theorem retained_absence_preserves_and_stale_plan_refuses :
     (pausePrefix fallbackWorld 1 (firstSuccessScan [0, 1])).1 = [(0, [])] ∧
       (run fallbackWorld (pausePrefix fallbackWorld 1 (firstSuccessScan [0, 1])).2).answer =
         (run fallbackWorld (firstSuccessScan [0, 1])).answer ∧

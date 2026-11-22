@@ -27,12 +27,12 @@ chain of the worlds above it, itself last; a store of equations and rows at each
 
 ## What is not
 
-A none query at a world is not inherited, and it is not reflected; a may-barb is not inherited; the
+An absence at a world is not inherited, and it is not reflected; a may-barb is not inherited; the
 number of rows at a world and below it (`Tree.gathered`, what a collection at the world gathers) is
-not stable while a child still makes rows (`Worlds.Controls`). One case of the none query is inherited:
+not stable while a child still makes rows (`Worlds.Controls`). One case of absence is inherited:
 
-* `none_below_of_no_new_row`: **a none query known at a world is known at a world below it that sees
-  no further row.** Knowledge added below only removes solutions, and a none query holds at every
+* `absent_below_of_no_new_row`: **an absence known at a world is known at a world below it that sees
+  no further row.** Knowledge added below only removes solutions, and an absence holds at every
   solution; what can end it is a row.
 -/
 
@@ -135,8 +135,8 @@ theorem mustBarb_below (X : Frames Tm Hom) {t : Tree Tm O N} {n m : N} (below : 
   exact ⟨o, visible_mono below present, fun b σ solved =>
     every b σ (Frames.models_of_subset (known_mono below) solved)⟩
 
-/-- **A none query known at a world is known at a world below it that sees no further row.** -/
-theorem none_below_of_no_new_row (X : Frames Tm Hom) {t : Tree Tm O N} {n m : N}
+/-- **An absence known at a world is known at a world below it that sees no further row.** -/
+theorem absent_below_of_no_new_row (X : Frames Tm Hom) {t : Tree Tm O N} {n m : N}
     (below : t.Below n m) (sameRows : t.visible m = t.visible n) (pattern : Tm t.frame)
     (asked : X.Entails (t.known n)
       (fun _ σ => checkHolds X σ t.label (t.visible n) (.predicate .none pattern))) :
@@ -209,7 +209,7 @@ end DepthOne
 #print axioms Tree.known_child
 #print axioms Tree.visible_mono
 #print axioms Tree.mustBarb_below
-#print axioms Tree.none_below_of_no_new_row
+#print axioms Tree.absent_below_of_no_new_row
 #print axioms ofLocated_below
 #print axioms view_ofLocated
 

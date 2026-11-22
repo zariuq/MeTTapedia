@@ -116,7 +116,7 @@ theorem communicates_up_to_name_equivalence :
 
 theorem other_input_prime : IsPrime (input otherChannel body) := by
   refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.input (.quote (.output (.quote .unit (by decide)) .unit) (by decide)) (.drop (.bvar rfl)), ?_⟩, ?_, ?_, ?_⟩
+    ⟨.input (.quote (.output (.quote .unit) .unit)) (.drop (.bvar rfl)), ?_⟩, ?_, ?_, ?_⟩
   · rfl
   · simp [input, otherChannel, body, payload, output, channel, zero, IsCanonical,
       IsCanonicalList]
@@ -172,7 +172,7 @@ theorem ordinary_substitution_gives_drop :
 def receiver : Pattern := input channel zero
 
 theorem receiver_prime : IsPrime receiver := by
-  refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr ⟨.input (.quote .unit (by decide)) .unit, ?_⟩, ?_, ?_, ?_⟩
+  refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr ⟨.input (.quote .unit) .unit, ?_⟩, ?_, ?_, ?_⟩
   · rfl
   · simp [receiver, input, channel, zero, IsCanonical, IsCanonicalList]
   · simp [receiver, input]
@@ -180,7 +180,7 @@ theorem receiver_prime : IsPrime receiver := by
     simp [receiver, input]
 
 theorem payload_prime : IsPrime payload := by
-  refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr ⟨.output (.quote .unit (by decide)) .unit, ?_⟩, ?_, ?_, ?_⟩
+  refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr ⟨.output (.quote .unit) .unit, ?_⟩, ?_, ?_, ?_⟩
   · rfl
   · simp [payload, output, channel, zero, IsCanonical, IsCanonicalList]
   · simp [payload, output]
@@ -189,7 +189,7 @@ theorem payload_prime : IsPrime payload := by
 
 theorem ordinary_prime : IsPrime ordinaryContractum := by
   refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.drop (.quote (.output (.quote .unit (by decide)) .unit) (by decide)), ?_⟩, ?_, ?_, ?_⟩
+    ⟨.drop (.quote (.output (.quote .unit) .unit)), ?_⟩, ?_, ?_, ?_⟩
   · rfl
   · simp [ordinaryContractum, payload, output, channel, zero, IsCanonical, IsCanonicalList]
   · simp [ordinaryContractum]

@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 Guard terms may already be evaluated in the model family while stored rows
 retain their own captured declarations. This presentation separates the two
-without changing none queries, counts or the original world being observed.
+without changing absence, counts or the original world being observed.
 -/
 
 set_option autoImplicit false

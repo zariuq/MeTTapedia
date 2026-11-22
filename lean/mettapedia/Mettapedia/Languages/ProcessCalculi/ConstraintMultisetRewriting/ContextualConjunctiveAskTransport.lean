@@ -1,9 +1,9 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveCaptureTransport
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveNone
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveAbsence
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPrefixAsks
 
 /-!
-# Original joined-none asks transport and reflect unused declarations
+# Original joined-absence asks transport and reflect unused declarations
 
 The port bijection transports every occupied tuple, including repeated rows
 and the empty tuple. Query-local images stay shared and row locals remain
@@ -12,7 +12,7 @@ private per use. All quantifiers are the existing all-future ask contract.
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveNone
+namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveAbsence
 
 open Mettapedia.OSLF.Binding hiding instantiate instantiateArgs
 open Mettapedia.OSLF.Binding.ContextualFamily
@@ -31,12 +31,12 @@ theorem holds_after_capture_transport (change : Assignment captures later)
         (fun occurrence => (rows occurrence).map locals change) world ↔
       Holds queries locals captures (Assignment.compose candidate change) patterns rows world := by
   constructor
-  · intro missing chosen present matched
-    exact missing (mapChoice queries change patterns chosen)
+  · intro absent chosen present matched
+    exact absent (mapChoice queries change patterns chosen)
       (fun port => present (sourcePort queries change patterns port))
       ((ContextualConjunctiveQueries.matches_after_capture_transport queries locals change candidate
         patterns rows chosen).mpr matched)
-  · intro missing chosen present matched
+  · intro absent chosen present matched
     let original := restoreChoice queries change patterns chosen
     have oldMatch : ContextualConjunctiveQueries.Matches queries locals captures
         (Assignment.compose candidate change) patterns rows original := by
@@ -44,7 +44,7 @@ theorem holds_after_capture_transport (change : Assignment captures later)
         patterns rows original).mp
       rw [show mapChoice queries change patterns original = chosen from map_restore_choice queries change patterns chosen]
       exact matched
-    exact missing original (fun port => present (targetPort queries change patterns port)) oldMatch
+    exact absent original (fun port => present (targetPort queries change patterns port)) oldMatch
 
 theorem Ask.transport {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
@@ -86,4 +86,4 @@ theorem Ask.unused_extension_iff (unused : Extra → MetaArity S) {Γ : Ctx S} {
   · intro admitted
     exact Ask.transport queries locals captures problem patterns rows world (inclusion unused captures) admitted
 
-end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveNone
+end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveAbsence

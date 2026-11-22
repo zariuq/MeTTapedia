@@ -13,7 +13,7 @@ then fails at one rule: take `*@0`, make `ω!(0)`, with the row `*@0` (`withRule
 `blockerOnly_never`).
 
 * `step_not_into_rho_by_idempotence`: the negative half of `strict_separation_solvable`, with no
-  none check and a finite program.
+  absence check and a finite program.
 * `positive_not_into_rho_by_idempotence`: the positive step does not embed either, with finite
   programs.
 * The argument needs the target's equivalence to cancel a common parallel component; it does not
@@ -170,7 +170,7 @@ theorem single_solvable : knowledge.Solvable (single blockerRow).knowledge :=
 /-! ## The separations -/
 
 /-- **The negative half of the separation, by idempotence**: no uniform translation of the step with
-restricted composition into the reflective calculus, with no none check and a one-rule program. -/
+restricted composition into the reflective calculus, with no absence check and a one-rule program. -/
 theorem step_not_into_rho_by_idempotence (ω : G [] .nm) :
     IsEmpty (UniformTranslation (stepParallelSolvable ω) (rhoParallel ω)) :=
   ⟨fun τ => blockerOnly_never ω (τ.reflects _ ((succeeds_congr ω

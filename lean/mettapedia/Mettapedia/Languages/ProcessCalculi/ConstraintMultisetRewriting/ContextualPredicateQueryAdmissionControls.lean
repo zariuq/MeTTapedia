@@ -180,10 +180,10 @@ theorem actual_data_query_refuses_the_phantom
   have asked := observed.observations (matchingQuery none (symbol 2) ∅)
     (by rw [queries]; exact List.mem_singleton_self _)
   obtain ⟨Future, future, candidate, model⟩ := observed.firing.admitted.solvable
-  have missing := (matching_empty_iff none (symbol 2)
+  have absent := (matching_empty_iff none (symbol 2)
     (ContextualConditionalExecution.guardRows none captures storedRows) (state true).present
     ⟨Future, future, candidate⟩).mp (asked Future future candidate model)
-  apply missing 3 (by decide +kernel)
+  apply absent 3 (by decide +kernel)
   have actual : ContextualConditionalExecution.guardRows none captures storedRows 3 =
       ofStored none nativeFamily (.shared (symbol 2)) := by with_unfolding_all rfl
   rw [actual, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
@@ -209,7 +209,7 @@ theorem actual_data_query_admits_the_same_program_before_the_insertion (fuel : N
   have impossible : (2 : Nat) = 1 := DataOperator.symbol.inj (Sum.inl.inj (Term.op.inj matched).1)
   omega
 
-/-- The inserted symbol 2 is unrelated to a none query for symbol 7. -/
+/-- The inserted symbol 2 is unrelated to an absence query for symbol 7. -/
 theorem an_unrelated_actual_data_query_is_still_admitted (fuel : Nat) :
     ∃ observed : WithQueries none ((state true).native ∅),
       observed.firing.fuel = fuel ∧ observed.queries = [matchingQuery none (symbol 7) ∅] := by

@@ -246,3 +246,93 @@ Theorem Lean_prop_In_LeanUniv : forall n, nat_p n -> forall p :e LeanProp, p :e 
 let n. assume Hn: nat_p n. let p. assume Hp: p :e LeanProp.
 exact LeanUniv_TransSet n Hn LeanProp (LeanProp_In_LeanUniv n Hn) p Hp.
 Qed.
+
+(** ---- products at sorts: Lean's formation rule ---- **)
+
+(** A sort at a level not above k + 1 is within Type k. **)
+Theorem LeanSort_Subq_LeanUniv : forall a, nat_p a -> forall n, nat_p n -> a c= ordsucc n -> LeanSort a c= LeanUniv n.
+let a. assume Ha: nat_p a. let n. assume Hn: nat_p n. assume Han: a c= ordsucc n.
+apply nat_inv a Ha.
+- assume H0: a = 0. rewrite H0. rewrite LeanSort_0. exact LeanProp_sub_In n Hn.
+- assume H: exists k, nat_p k /\ a = ordsucc k.
+  apply H. let k. assume Hk0: nat_p k /\ a = ordsucc k.
+  apply Hk0. assume Hk: nat_p k. assume Hak: a = ordsucc k.
+  claim Lka: k :e a.
+  { rewrite Hak. exact ordsuccI2 k. }
+  rewrite Hak. rewrite LeanSort_S k Hk.
+  apply ordsuccE n k (Han k Lka).
+  + assume H1: k :e n. exact LeanUniv_TransSet n Hn (LeanUniv k) (LeanUniv_cumulative n Hn k H1).
+  + assume H1: k = n. rewrite H1. exact Subq_ref (LeanUniv n).
+Qed.
+
+(** X in Sort u and each Y x in Sort v: the product is in Sort (imax u v). **)
+Theorem LeanPi_LeanSort_In : forall u, nat_p u -> forall v, nat_p v -> forall X :e LeanSort u, forall Y:set -> set,
+  (forall x :e X, Y x :e LeanSort v) -> (Pi_ x :e X, Y x) :e LeanSort (LeanLevelIMax u v).
+let u. assume Hu: nat_p u. let v. assume Hv: nat_p v. let X. assume HX: X :e LeanSort u.
+let Y. assume HY: forall x :e X, Y x :e LeanSort v.
+prove (Pi_ x :e X, Y x) :e LeanSort (if v = 0 then 0 else u :\/: v).
+apply xm (v = 0).
+- assume H: v = 0.
+  claim L: LeanSort v = LeanProp.
+  { rewrite H. exact LeanSort_0. }
+  rewrite If_i_1 (v = 0) 0 (u :\/: v) H. rewrite LeanSort_0.
+  apply LeanPi_prop X Y.
+  let x. assume Hx: x :e X.
+  rewrite <- L. exact HY x Hx.
+- assume H: v <> 0.
+  rewrite If_i_0 (v = 0) 0 (u :\/: v) H.
+  apply nat_inv (u :\/: v) (LeanLevelMax_nat u Hu v Hv).
+  + assume H0: u :\/: v = 0.
+    claim L0: v c= 0.
+    { rewrite <- H0. exact binunion_Subq_2 u v. }
+    apply H (Empty_Subq_eq v L0).
+  + assume H1: exists n, nat_p n /\ u :\/: v = ordsucc n.
+    apply H1. let n. assume H2: nat_p n /\ u :\/: v = ordsucc n.
+    apply H2. assume Hn: nat_p n. assume Hw: u :\/: v = ordsucc n.
+    claim Lu: u c= ordsucc n.
+    { rewrite <- Hw. exact binunion_Subq_1 u v. }
+    claim Lv: v c= ordsucc n.
+    { rewrite <- Hw. exact binunion_Subq_2 u v. }
+    rewrite Hw. rewrite LeanSort_S n Hn.
+    exact LeanPi_LeanUniv n Hn X (LeanSort_Subq_LeanUniv u Hu n Hn Lu X HX) Y
+      (fun x Hx => LeanSort_Subq_LeanUniv v Hv n Hn Lv (Y x) (HY x Hx)).
+Qed.
+
+(** The same where v is a successor, in the order Lean writes that maximum:
+    each Y x in Type v, the product in Sort (max (v + 1) u). **)
+Theorem LeanPi_LeanSort_max_In : forall u, nat_p u -> forall v, nat_p v -> forall X :e LeanSort u, forall Y:set -> set,
+  (forall x :e X, Y x :e LeanUniv v) -> (Pi_ x :e X, Y x) :e LeanSort (ordsucc v :\/: u).
+let u. assume Hu: nat_p u. let v. assume Hv: nat_p v. let X. assume HX: X :e LeanSort u.
+let Y. assume HY: forall x :e X, Y x :e LeanUniv v.
+claim L: LeanLevelIMax u (ordsucc v) = u :\/: ordsucc v.
+{ exact If_i_0 (ordsucc v = 0) 0 (u :\/: ordsucc v) (neq_ordsucc_0 v). }
+rewrite binunion_com (ordsucc v) u. rewrite <- L.
+apply LeanPi_LeanSort_In u Hu (ordsucc v) (nat_ordsucc v Hv) X HX Y.
+let x. assume Hx: x :e X.
+rewrite LeanSort_S v Hv. exact HY x Hx.
+Qed.
+
+(** Control: predicates on a type of Sort u are in Sort (max 1 u) ... **)
+Theorem control_predicates_at_max : forall u, nat_p u -> forall X :e LeanSort u, (Pi_ x :e X, LeanProp) :e LeanSort (1 :\/: u).
+let u. assume Hu: nat_p u. let X. assume HX: X :e LeanSort u.
+exact LeanPi_LeanSort_max_In u Hu 0 nat_0 X HX (fun x => LeanProp) (fun x Hx => LeanProp_In_LeanUniv 0 nat_0).
+Qed.
+
+(** ... and not in Sort u: at u = 0 such a type has two predicates on it. **)
+Theorem control_predicates_not_at_domain :
+  ~ (forall u, nat_p u -> forall X :e LeanSort u, (Pi_ x :e X, LeanProp) :e LeanSort u).
+assume H: forall u, nat_p u -> forall X :e LeanSort u, (Pi_ x :e X, LeanProp) :e LeanSort u.
+claim L1: 1 :e LeanSort 0.
+{ rewrite LeanSort_0. exact LeanProp_true. }
+claim LP: (Pi_ x :e 1, LeanProp) :e LeanProp.
+{ exact In_eq_r (Pi_ x :e 1, LeanProp) (LeanSort 0) LeanProp LeanSort_0 (H 0 nat_0 1 L1). }
+claim L: (fun x :e 1 => 1) = (fun x :e 1 => 0).
+{ exact LeanProp_proof_irrelevant (Pi_ x :e 1, LeanProp) LP
+    (fun x :e 1 => 1) (lam_Pi 1 (fun x => LeanProp) (fun x => 1) (fun x Hx => LeanProp_true))
+    (fun x :e 1 => 0) (lam_Pi 1 (fun x => LeanProp) (fun x => 0) (fun x Hx => LeanProp_false)). }
+apply neq_1_0.
+prove 1 = 0.
+rewrite <- beta 1 (fun x => 1) 0 In_0_1 at 1.
+rewrite L.
+exact beta 1 (fun x => 0) 0 In_0_1.
+Qed.

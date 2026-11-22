@@ -164,12 +164,12 @@ def decomposeEquation (fuel : Nat) {Θ : Context S.R} (equation : Equation (Tota
                     computed rest)
               match localsRule rigid complete facts roots heads algebra declared choices reducer root fuel
                   (closed.equation :: rest) with
-              | some missing => some (.refuted fun solvable => missing.down (moved.solvable_iff.mp solvable))
+              | some absent => some (.refuted fun solvable => absent.down (moved.solvable_iff.mp solvable))
               | none =>
                   match ContextualDependentPatternSolver.patternRule rigid facts complete roots heads algebra declared
                       choices reducer root normalizes certifyNormal fuel (closed.equation :: rest) with
                   | some (.solved solved smaller) => some (.solved (moved.then solved) smaller)
-                  | some (.refuted missing) => some (.refuted fun solvable => missing (moved.solvable_iff.mp solvable))
+                  | some (.refuted absent) => some (.refuted fun solvable => absent (moved.solvable_iff.mp solvable))
                   | none => none
 
 /-- Search the store for an equation on which decomposition decides. -/
@@ -188,7 +188,7 @@ def decomposeRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Tot
   match decomposeSearch rigid facts complete roots heads algebra declared choices reducer root normalizes
       certifyNormal fuel problem with
   | some (.solved update smaller) => .progress update (Prod.Lex.left _ _ smaller)
-  | some (.refuted missing) => .refuted missing
+  | some (.refuted absent) => .refuted absent
   | none => rigidRound rigid complete facts roots heads algebra declared choices reducer root normalizes certifyNormal
       headTypingUnique fuel problem
 

@@ -174,7 +174,7 @@ theorem source_iff_completed_invocation (schedule : Schedule S O Γ sort before 
     obtain ⟨observed, rule, selection, outputs, flags, budget, queries, equivalent⟩ :=
       (schedule.source_iff_native_body occupied fuel).mp source
     exact ⟨observed, rule, selection, outputs, flags, budget, queries, equivalent,
-      schedule.native.completed_control_not_present occupied observed.firing selection,
+      schedule.native.completed_control_absent occupied observed.firing selection,
       schedule.native.invocation_pending_decreases occupied observed.firing selection⟩
   · rintro ⟨observed, rule, selection, outputs, flags, budget, queries, equivalent, _completed, _progress⟩
     exact (schedule.source_iff_native_body occupied fuel).mpr

@@ -336,8 +336,8 @@ information, despite joint consistency of the full three-event family. -/
 theorem reader_not_clear : ¬ Clear firing pureWriter.selection pureWriter.rule pureWriter.outputs := by
   intro clear
   have ignored := (clear.blindTakes target projectionJoint 1 (List.mem_singleton_self _)).1
-  have missing := ignored (.count pattern 1) (by rw [reader_checks]; exact List.mem_singleton_self _)
-  exact missing projection_matches_one
+  have absent := ignored (.count pattern 1) (by rw [reader_checks]; exact List.mem_singleton_self _)
+  exact absent projection_matches_one
 
 theorem pair_not_clears : ¬ NativeIterated.Clears firing pureWriter := fun clear => reader_not_clear clear.1
 

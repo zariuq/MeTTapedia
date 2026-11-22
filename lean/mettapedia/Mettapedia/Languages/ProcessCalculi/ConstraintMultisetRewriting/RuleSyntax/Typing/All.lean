@@ -26,6 +26,6 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 * `Limits`: deciding the judgment at an initial solution of the tells
   (`wellTypedRule_iff_of_initial`); the knowledge holds equations between terms of different types
   (`heterogeneous_take`); typing does not give termination (`spin_runs_forever`), uniqueness of
-  answers (`answers_not_unique`) or none checks beside another program (`none_not_compositional`,
+  answers (`answers_not_unique`) or absences beside another program (`absence_not_compositional`,
   with locality: `locality_outside`, `locality_inside`).
 -/

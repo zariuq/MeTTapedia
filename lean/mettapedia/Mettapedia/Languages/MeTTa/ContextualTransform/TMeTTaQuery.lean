@@ -663,17 +663,17 @@ private theorem chosen_label {datum : ClosedTerm} (found : atTime view view.cloc
   have distinct : rowId host occurrence ≠ revisionId host view.clock := by unfold rowId revisionId; omega
   simp [withRead, distinct, found]
 
-theorem stale_not_present {time : Nat} (stale : time ≠ view.clock) :
+theorem stale_absent {time : Nat} (stale : time ≠ view.clock) :
     revisionId host time ∉ (withRead N host address view occurrence).present := by
   have rev : revisionId host time ≠ revisionId host view.clock := by unfold revisionId; omega
   have row : revisionId host time ≠ rowId host occurrence := by unfold revisionId rowId; omega
-  have missing : revisionId host time ∉ host.present := by
+  have absent : revisionId host time ∉ host.present := by
     intro h
     have bound := below host h
     unfold revisionId at bound
     omega
   simp only [withRead, Finset.mem_insert, rev, false_or]
-  split <;> simp [row, missing]
+  split <;> simp [row, absent]
 
 variable {prog : RuleSyntax.Program (RuleSyntax.Contextual.Terms S)}
   (member : Hosted.rule (S := S) (Γ := []) (star := star) N ∈ prog)
@@ -687,7 +687,7 @@ theorem stale_refused (stale : time ≠ view.clock) :
     ¬ (select N host address view occurrence member control time).Admits ReadFrames (withRead N host address view occurrence) :=
   Hosted.stale_refused N member (withRead N host address view occurrence) control (rowId host occurrence)
     (revisionId host time) (freshId (withRead N host address view occurrence))
-    (stale_not_present N host address view occurrence stale)
+    (stale_absent N host address view occurrence stale)
 
 /-- Source matching in the addressed view is exactly admission of the
 concrete versioned firing. The returned row uses the original stack and
@@ -896,22 +896,22 @@ abbrev readSchema :=
 private theorem opening_fresh :
     rowId host occurrence ∉ (revisionState N host address view.clock).present := by
   have different : rowId host occurrence ≠ revisionId host view.clock := by unfold rowId revisionId; omega
-  have missing : rowId host occurrence ∉ host.present := by
+  have absent : rowId host occurrence ∉ host.present := by
     intro here
     have small := below host here
     unfold rowId at small
     omega
-  simp [revisionState, withRead, atTime, different, missing]
+  simp [revisionState, withRead, atTime, different, absent]
 
 theorem stale_schema_read (stale : time ≠ view.clock) :
     ¬ (readSchema N host address view catalogue occurrence member control time).Admits ReadFrames
       (openedState N host address view catalogue occurrence) := by
   apply Hosted.stale_refused N
   rw [activation_present]
-  have missing := stale_not_present N host address (⟨view.clock, 0, fun _ => none⟩ : Store ClosedTerm) 0 stale
-  change revisionId host time ∉ (revisionState N host address view.clock).present at missing
+  have absent := stale_absent N host address (⟨view.clock, 0, fun _ => none⟩ : Store ClosedTerm) 0 stale
+  change revisionId host time ∉ (revisionState N host address view.clock).present at absent
   have different : revisionId host time ≠ rowId host occurrence := by unfold revisionId rowId; omega
-  simp [missing, different]
+  simp [absent, different]
 
 private theorem opened_labels {key : Nat}
     (here : (occurrence, key) ∈ liveRows view) (present : control ∈ host.present)
@@ -965,7 +965,7 @@ private theorem opened_labels {key : Nat}
   exact ⟨issued, version, body, rowLabel⟩
 
 /-- The two-firing result projects exactly to the chosen caller assignment,
-including names that are missing from the selected pattern. The template and
+including names that are absent from the selected pattern. The template and
 stack are interpreted by that same assignment. -/
 theorem schema_answer_models {target : Interface.Frames.Frame S} {key : Nat}
     (here : (occurrence, key) ∈ liveRows view) (present : control ∈ host.present)

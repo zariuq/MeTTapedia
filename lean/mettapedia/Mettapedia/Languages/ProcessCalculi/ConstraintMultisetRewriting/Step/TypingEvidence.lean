@@ -309,7 +309,7 @@ theorem number_checked (W : Finset Nat) (present : 0 ∈ W) :
     (List.mem_flatMap.mpr ⟨0, List.mem_filter.mpr ⟨by simp [rows], decide_eq_true present⟩,
       by simp [row, numberRules]⟩) Empty.elim (fun i => i.elim0)
 
-theorem number_unchecked (W : Finset Nat) (missing : 0 ∉ W) :
+theorem number_unchecked (W : Finset Nat) (absent : 0 ∉ W) :
     ¬ Checked rows row check W := by
   intro checked
   have typed := checked _ (List.mem_singleton.mpr rfl)
@@ -319,7 +319,7 @@ theorem number_unchecked (W : Finset Nat) (missing : 0 ∉ W) :
     obtain ⟨_, inW⟩ := List.mem_filter.mp kept
     by_cases zero : o = 0
     · subst zero
-      exact missing (of_decide_eq_true inW)
+      exact absent (of_decide_eq_true inW)
     · simp [row, zero, boolRules] at declared
   · obtain ⟨o, _, declared⟩ := List.mem_flatMap.mp present
     by_cases zero : o = 0 <;> simp [row, zero] at declared

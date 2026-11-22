@@ -109,8 +109,8 @@ theorem selectionAt_enabled (layout : Layout) (writes : List Field) (made : List
     · exact layout.request_not_field name same.symm
     · obtain ⟨other, written, equal⟩ := List.mem_map.mp taken
       have same := layout.field_injective equal
-      have missing : name ∉ writes := by simpa using (List.mem_filter.mp readMember).2
-      exact missing (same ▸ written)
+      have absent : name ∉ writes := by simpa using (List.mem_filter.mp readMember).2
+      exact absent (same ▸ written)
   · intro query member
     cases member
 
@@ -410,11 +410,11 @@ theorem result_at_view
       exact congrFun (RuleSyntax.Firing.result_label_made active admitted.1 made) environment
     · have oldPresent : layout.field name ∈ state.present :=
         view.exact.symm ▸ NativeRecordLayouts.field_mem_support layout name
-      have missing : layout.field name ∉ selected.made := by
+      have absent : layout.field name ∉ selected.made := by
         intro made
         exact (Finset.disjoint_left.mp admitted.2.1.fresh) (List.mem_toFinset.mpr made) oldPresent
       have labelled := congrFun (RuleSyntax.Firing.result_label_other
-        (X := frames (AtomData Cell (Record × Effect.Carrier))) active missing) environment
+        (X := frames (AtomData Cell (Record × Effect.Carrier))) active absent) environment
       exact (congrArg (fun occurrence => after.label occurrence environment)
         (replacement.unwritten name written)).trans
         (labelled.trans ((view.field name).trans
@@ -728,7 +728,7 @@ theorem result_view
       exact (congrArg (fun occurrence => after.label occurrence environment) rowSame).trans labelled
     · have rowSame : row (generationAfter clause.writes generation) name = row generation name := by
         simp [row, generationAfter, written]
-      have missing : row generation name ∉ active.selection.made := by
+      have absent : row generation name ∉ active.selection.made := by
         intro inside
         rcases List.mem_cons.mp inside with impossible | inside
         · cases impossible
@@ -747,7 +747,7 @@ theorem result_view
         exact List.mem_map.mpr ⟨name, readMember, rfl⟩
       have matched := information.2.2.1 _ readPair
       have labelled := congrFun (RuleSyntax.Firing.result_label_other
-        (X := frames (AtomData Cell (Record × Effect.Carrier))) active missing) environment
+        (X := frames (AtomData Cell (Record × Effect.Carrier))) active absent) environment
       exact (congrArg (fun occurrence => after.label occurrence environment) rowSame).trans
         (labelled.trans (matched.symm.trans
           (congrArg (AtomData.field name) (clause.unchanged name written environment.2.values).symm)))

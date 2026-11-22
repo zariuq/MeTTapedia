@@ -111,19 +111,19 @@ theorem lookup_none_iff (key : Nat → Nat) (size needle : Nat)
   · intro miss slot inside hit
     rw [(lookup_some_iff key size needle slot sorted).mpr ⟨inside, hit⟩] at miss
     cases miss
-  · intro notMem
+  · intro absent
     cases result : lookup key size needle with
     | none => rfl
     | some slot =>
       obtain ⟨inside, hit⟩ := (lookup_some_iff key size needle slot sorted).mp result
-      exact (notMem slot inside hit).elim
+      exact (absent slot inside hit).elim
 
 /-- A decoder of Boolean comparison transcripts must distinguish every stored
-occurrence plus none queries. Keeping the original payload at a leaf cannot merge
+occurrence plus absence. Keeping the original payload at a leaf cannot merge
 two different requested occurrence identities. -/
 theorem lookup_transcript_bound (key : Nat → Nat) (size cap missing : Nat)
     (sorted : StrictMonoOn key (Set.Iio size))
-    (notMem : ∀ i < size, key i ≠ missing)
+    (absent : ∀ i < size, key i ≠ missing)
     (transcript : Nat → Fin cap → Bool) (decode : (Fin cap → Bool) → Option Nat)
     (correct : ∀ k, decode (transcript k) = lookup key size k) :
     size + 1 ≤ 2 ^ cap := by
@@ -133,7 +133,7 @@ theorem lookup_transcript_bound (key : Nat → Nat) (size cap missing : Nat)
   have read : ∀ choice, decode (encode choice) = (choice : Option (Fin size)).map Fin.val := by
     intro choice
     cases choice with
-    | none => exact (correct missing).trans ((lookup_none_iff key size missing sorted).mpr notMem)
+    | none => exact (correct missing).trans ((lookup_none_iff key size missing sorted).mpr absent)
     | some slot =>
       exact (correct (key slot)).trans ((lookup_some_iff key size (key slot) slot sorted).mpr ⟨slot.isLt, rfl⟩)
   have injective : Function.Injective encode := by
@@ -153,11 +153,11 @@ theorem lookup_comparison_upper (key : Nat → Nat) (size needle : Nat) :
 best possible worst-case transcript length. -/
 theorem lookup_within_one (key : Nat → Nat) (size cap missing needle : Nat)
     (nonempty : size ≠ 0) (sorted : StrictMonoOn key (Set.Iio size))
-    (notMem : ∀ i < size, key i ≠ missing)
+    (absent : ∀ i < size, key i ≠ missing)
     (transcript : Nat → Fin cap → Bool) (decode : (Fin cap → Bool) → Option Nat)
     (correct : ∀ k, decode (transcript k) = lookup key size k) :
     probes (fun i => decide (key i < needle)) size 0 size + 1 ≤ cap + 1 := by
-  have lower := lookup_transcript_bound key size cap missing sorted notMem transcript decode correct
+  have lower := lookup_transcript_bound key size cap missing sorted absent transcript decode correct
   have depth := (Nat.log2_lt nonempty).mpr (by omega : size < 2 ^ cap)
   have upper := lookup_comparison_upper key size needle
   omega

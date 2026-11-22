@@ -42,7 +42,7 @@ def resolvedCheck (A : SubstitutionAction T S) (σ : S) : Check T →
       fun _ _ => A.E (A.apply σ left) (A.apply σ right)⟩
   | .predicate .any pattern => ⟨A.apply σ pattern, fun _ bag => bag ≠ 0⟩
   | .predicate .none pattern =>
-      Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.Check.noneMatch (A.apply σ pattern)
+      Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.Check.absent (A.apply σ pattern)
   | .count pattern n =>
       Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.Check.count (A.apply σ pattern) n
 

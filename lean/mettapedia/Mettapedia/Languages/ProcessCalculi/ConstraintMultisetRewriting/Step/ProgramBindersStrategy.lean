@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersStrategyPaths
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersNone
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersAbsence
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersCached
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersSolvers
 
@@ -13,13 +13,13 @@ its position passes (R98's `raiseAt`).
 **The reference semantics** (`Innermost`) is reduction in λ contexts restricted to that strategy. It
 is defined from source plugging and `Matches` alone (`InnerNormal`).
 
-**On the step**, an innermost firing is one guarded firing (`ProgramBindersNoneGuards`) of the
+**On the step**, an innermost firing is one guarded firing (`ProgramBindersAbsenceGuards`) of the
 plugged equation `(= C[lhs] C[rhs])`, keyed by the context `C`, the equation and a depth `bound`:
-- one none query carrier per path of length `1 … bound` below `C` and per equation: the equation, raised
+- one absence carrier per path of length `1 … bound` below `C` and per equation: the equation, raised
   along the path's binders, at the end of the path, with every sibling a fresh hole;
-- one none query carrier per path of length `bound + 1` below `C`: "some term is there".
-Each carrier is an existing `.predicate .none` guard asked over every future solution, so the decision is the
-certified refutation of `ProgramBindersNoneGuards` (`ProgramBindersStrategyDecision`). A firing is admitted exactly when the redex matches, nothing strictly inside it is
+- one absence carrier per path of length `bound + 1` below `C`: "some term is there".
+Each carrier is an existing `.absent` guard asked over every future solution, so the decision is the
+certified refutation of `ProgramBindersAbsenceGuards` (`ProgramBindersStrategyDecision`). A firing is admitted exactly when the redex matches, nothing strictly inside it is
 matched, and it has no position deeper than `bound` (`innermost_admitted_iff`); the size of the redex is
 always a large enough bound.
 
@@ -228,8 +228,8 @@ theorem atContext_matches_iff {Δ : Ctx sig} (context : Context Γ Δ) (e : Equa
   · rintro ⟨inner, isCall, θ, matched⟩
     exact ⟨θ, (atContext_reads (grammar := grammar) context e θ e.lhs call).mpr ⟨inner, isCall, matched⟩⟩
 
-/-- **The carriers are not present exactly at innermost redexes of bounded depth.** -/
-theorem noCarrier_at_iff [Fintype ι] {Δ : Ctx sig} (context : Context Γ Δ) (index : ι) (bound : Nat)
+/-- **The carriers are absent exactly at innermost redexes of bounded depth.** -/
+theorem carriers_absent_at_iff [Fintype ι] {Δ : Ctx sig} (context : Context Γ Δ) (index : ι) (bound : Nat)
     (inner : Term sig Δ .term) :
     (∀ carrier ∈ carriersOf ⟨Δ, context, index, bound⟩, ∀ θ,
         ¬ Matches (strategyProgram program carrier) (context.plug inner) θ) ↔
@@ -248,16 +248,16 @@ theorem noCarrier_at_iff [Fintype ι] {Δ : Ctx sig} (context : Context Γ Δ) (
       exact ⟨inner, rfl, (pathEquation_matches_iff path target inner).mpr matched⟩
   have bounded : (∀ carrier ∈ carriersOf ⟨Δ, context, index, bound⟩, ∀ θ,
       ¬ Matches (strategyProgram program carrier) (context.plug inner) θ) → Bounded bound inner := by
-    intro missing Θ path siblings term same
+    intro absent Θ path siblings term same
     by_contra deep
     obtain ⟨Θ', shorter, others, rest, sameLength, shorterSame⟩ :=
       Path.prefix_of_path path siblings term (bound + 1) (by omega)
     obtain ⟨θ, matched⟩ := (atPosition (returnEquation Θ' .term) shorter).mpr
       ⟨others, rest, same.trans shorterSame, fun _ => rest, return_matches rest⟩
-    exact missing _ ((mem_carriersOf _ _).mpr (Or.inr ⟨⟨Θ', shorter⟩, sameLength, rfl⟩)) θ matched
+    exact absent _ ((mem_carriersOf _ _).mpr (Or.inr ⟨⟨Θ', shorter⟩, sameLength, rfl⟩)) θ matched
   constructor
-  · intro missing
-    have isBounded : Bounded bound inner := bounded missing
+  · intro absent
+    have isBounded : Bounded bound inner := bounded absent
     refine ⟨?_, isBounded⟩
     intro Θ below term positive same ⟨other, θ, matched⟩
     have raised : ∃ θ, Matches (raiseAt (comp context below) (program other)) term θ := ⟨θ, matched⟩
@@ -267,7 +267,7 @@ theorem noCarrier_at_iff [Fintype ι] {Δ : Ctx sig} (context : Context Γ Δ) (
     have short := isBounded (contextPath below) (contextSiblings below) term same
     obtain ⟨θ', carried⟩ := (atPosition (raiseAlong (contextPath below) (raiseAt context (program other)))
       (contextPath below)).mpr ⟨contextSiblings below, term, same, θ, matched⟩
-    exact missing _ ((mem_carriersOf _ _).mpr (Or.inl ⟨⟨Θ, contextPath below⟩, other,
+    exact absent _ ((mem_carriersOf _ _).mpr (Or.inl ⟨⟨Θ, contextPath below⟩, other,
       by rw [toPath_length]; exact positive, short, rfl⟩)) θ' carried
   · rintro ⟨normal, isBounded⟩ carrier member θ matched
     rcases (mem_carriersOf _ _).mp member with ⟨⟨Θ, path⟩, other, positive, _, rfl⟩ | ⟨⟨Θ, path⟩, sameLength, rfl⟩
@@ -304,10 +304,10 @@ theorem innermost_admitted_iff (state : State (strategyProgram program)) (call :
   change ((∃ θ, Matches (atContext grammar context (raiseAt context (program index))) call θ) ∧ _) ↔ _
   rw [atContext_matches_iff]
   constructor
-  · rintro ⟨⟨inner, rfl, matched⟩, missing⟩
-    exact ⟨inner, rfl, matched, (noCarrier_at_iff program context index bound inner).mp missing⟩
+  · rintro ⟨⟨inner, rfl, matched⟩, absent⟩
+    exact ⟨inner, rfl, matched, (carriers_absent_at_iff program context index bound inner).mp absent⟩
   · rintro ⟨inner, rfl, matched, normal⟩
-    exact ⟨⟨inner, rfl, matched⟩, (noCarrier_at_iff program context index bound inner).mpr normal⟩
+    exact ⟨⟨inner, rfl, matched⟩, (carriers_absent_at_iff program context index bound inner).mpr normal⟩
 
 /-- The state after an innermost firing. -/
 noncomputable abbrev innermostDestination (state : State (strategyProgram program)) (key : InnermostKey Γ ι)
@@ -357,14 +357,14 @@ theorem innermost_reflected {before after : State (strategyProgram program)}
   obtain ⟨⟨Δ, context, index, bound⟩, valid, rfl⟩ := transition
   obtain ⟨old, call, readsCall, answered⟩ := destination_reflected before _ valid.toPlain value holds solution answer
     ((guarded_reads_as_plain before _ _ valid solution answer).mp reads)
-  have missing : NoCarrier (strategyProgram program) before (fireOf ⟨Δ, context, index, bound⟩)
+  have absent : CarriersAbsent (strategyProgram program) before (fireOf ⟨Δ, context, index, bound⟩)
       (carriersOf ⟨Δ, context, index, bound⟩) :=
     ((guarded_admitted_iff before value holds _ _ (fire_apart _)).mp valid).2
   obtain ⟨θ, matched, read⟩ := answered
-  have free := missing (ground sig) old call readsCall θ matched
+  have free := absent (ground sig) old call readsCall θ matched
   obtain ⟨inner, result, rfl, rfl, branch⟩ :=
     (atContext_answers (grammar := grammar) context _ call answer).mp ⟨θ, matched, read⟩
-  have normal : InnerNormal program context inner := ((noCarrier_at_iff program context index bound inner).mp free).1
+  have normal : InnerNormal program context inner := ((carriers_absent_at_iff program context index bound inner).mp free).1
   exact ⟨old, _, readsCall, Δ, context, index, inner, result, rfl, rfl, branch, normal⟩
 
 /-- Every reading after a run of innermost firings is reached by innermost reduction. -/
@@ -430,7 +430,7 @@ theorem innermost_execution_iff
 #print axioms pathEquation_matches_iff
 #print axioms pathEquation_pattern
 #print axioms mem_carriersOf
-#print axioms noCarrier_at_iff
+#print axioms carriers_absent_at_iff
 #print axioms innermost_admitted_iff
 #print axioms innermost_step_iff
 #print axioms innermost_reflected

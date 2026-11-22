@@ -62,7 +62,7 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
 def sortOf (fuel : Nat) {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
     (prepared : Update S.levels problem) : Option (PLift (¬ (frames S.levels).Solvable problem)) :=
   (clashStore facts roots heads algebra rigid complete declared choices reducer headTypingUnique candidates fuel
-    prepared.remaining).map fun missing => ⟨fun solvable => missing.down (prepared.solvable_iff.mp solvable)⟩
+    prepared.remaining).map fun absent => ⟨fun solvable => absent.down (prepared.solvable_iff.mp solvable)⟩
 
 /-- **The refutation on the η-long prepared store η-expanded at Σ bases.** -/
 noncomputable def sortRefuted (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) :
@@ -98,7 +98,7 @@ theorem sortRound_eq_of_least (fuel : Nat) {Θ : Context S.R} {problem : Equatio
       certifyNormal headTypingUnique rootComplete strengthening candidates fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the family below decides, this family decides with the same outcome.** -/
 theorem sort_run_of_least (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -125,7 +125,7 @@ theorem sortRound_not_stuck_of_refuted (fuel : Nat) {Θ : Context S.R} {problem 
     sortRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
       headTypingUnique rootComplete strengthening candidates fuel problem ≠ .stuck := by
   unfold sortRound
-  obtain ⟨missing, computed⟩ := Option.isSome_iff_exists.mp read
+  obtain ⟨absent, computed⟩ := Option.isSome_iff_exists.mp read
   cases leastRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete strengthening candidates fuel problem with
   | stuck =>
@@ -134,7 +134,7 @@ theorem sortRound_not_stuck_of_refuted (fuel : Nat) {Θ : Context S.R} {problem 
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **The family's readers**: a reader of the family below, or the refutation. -/
 def SortReads (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Prop :=
@@ -174,7 +174,7 @@ theorem sortRefuted_const {Θ : Context S.R} (problem : EquationStore (TotalTerm
     (elimSigmaUpdate_const facts roots heads algebra reducer root rootComplete stable problem)
     (fun prepared => EventuallyConst.comp
       (fun found : Option (PLift (¬ (frames S.levels).Solvable prepared.remaining)) =>
-        found.map fun missing => (⟨fun solvable => missing.down (prepared.solvable_iff.mp solvable)⟩ :
+        found.map fun absent => (⟨fun solvable => absent.down (prepared.solvable_iff.mp solvable)⟩ :
           PLift (¬ (frames S.levels).Solvable problem)))
       (clashStore_const facts roots heads algebra rigid complete declared choices reducer headTypingUnique stable
         candidates prepared.remaining))
@@ -244,7 +244,7 @@ theorem sortRound_closure (fuel : Nat) :
       | none =>
           rw [refuted] at fired
           cases fired
-      | some missing =>
+      | some absent =>
           rw [refuted] at fired
           cases fired
   | progress first firstSmaller =>
@@ -252,7 +252,7 @@ theorem sortRound_closure (fuel : Nat) :
       cases fired
       exact leastRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening candidates sn directed fuel _ _ _ permuted computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
 
@@ -276,9 +276,9 @@ theorem sort_decided_of_firing
       ((∃ state finished, run ((sortFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening candidates).solver larger) problem
               larger = .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((sortFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((sortFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening candidates).solver larger) problem
-              larger = .refuted missing)) :=
+              larger = .refuted absent)) :=
   (sortSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening candidates stable
     (fun problem => PermutedMiller S.levels problem)
@@ -347,7 +347,7 @@ theorem tower_sort_decided_of_firing
       run (sortTower.solver larger) problem larger = run (sortTower.solver budget) problem budget ∧
       ((∃ state finished, run (sortTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (sortTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (sortTower.solver larger) problem larger = .refuted absent)) :=
   sort_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
@@ -368,7 +368,7 @@ theorem tower_sort_decided_of_reads
       run (sortTower.solver larger) problem larger = run (sortTower.solver budget) problem budget ∧
       ((∃ state finished, run (sortTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (sortTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (sortTower.solver larger) problem larger = .refuted absent)) :=
   tower_sort_decided_of_firing (fun held nonempty => by
     obtain ⟨bound, read⟩ := reads held nonempty
     exact ⟨bound, fun larger enough => sortRound_not_stuck_of_reads (S := setting) TowerModel.facts TowerModel.roots
@@ -410,7 +410,7 @@ theorem tower_sort_decided_of_uncovered
       run (sortTower.solver larger) problem larger = run (sortTower.solver budget) problem budget ∧
       ((∃ state finished, run (sortTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (sortTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (sortTower.solver larger) problem larger = .refuted absent)) :=
   tower_sort_decided_of_reads (fun {_} {problem} permuted nonempty => by
       obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : MixedCoveredHead equation

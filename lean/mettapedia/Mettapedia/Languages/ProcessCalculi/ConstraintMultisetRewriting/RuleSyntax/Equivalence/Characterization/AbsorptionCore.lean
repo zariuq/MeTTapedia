@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 
 `everyRule` is the program of every rule, and `positiveRules` the program of every positive rule (its
 checks are equation guards, and it has no collect query). A state `fiveMore a d` is `a` with one more row `5`,
-at an identity `d` missing from `a`. This module proves the facts the candidate of `Absorption` uses:
+at an identity `d` absent from `a`. This module proves the facts the candidate of `Absorption` uses:
 
 * **Static equivalence from the rows** (`static_of_perm`, `static_of_rows`): equivalent knowledge with
   the same mentioned unknowns, and present rows that a permutation matches label for label (or the
@@ -108,7 +108,7 @@ theorem static_of_rows {s t : State Tm ℕ}
 /-- Every rule. -/
 abbrev everyRule : Program Tm := Set.univ
 
-/-- **A positive rule**: its checks are equation guards (no none query and no count query), and it has no
+/-- **A positive rule**: its checks are equation guards (no absence and no count query), and it has no
 collect query. -/
 def Positive (r : Rule Tm) : Prop :=
   (∀ check ∈ r.body.checks, ∃ left right, check = Check.equal left right) ∧ r.collect = []

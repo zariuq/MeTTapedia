@@ -549,7 +549,7 @@ mutual
             objectPattern := fun _ => normalized.objectPattern
             reflectiveScope := by
               intro presentation membership depth availableWithin safe
-              exact binderSafeAt_mono presentation.quoteConstructor
+              exact scopeSafeAt_mono
                 (normalized.reflectiveScope presentation membership)
                 availableWithin
             matchesParameterRepresentation := by
@@ -577,28 +577,15 @@ mutual
             reflectiveScope := by
               intro presentation presentationMembership depth availableWithin
                 safe
-              have notThisQuote :
-                  rule.label ≠ presentation.quoteConstructor := by
-                intro labelEquality
-                have detected : ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeReflectionProfile rule.label = true := by
-                  unfold ReflectiveContextSupport.isQuoteConstructor
-                  rw [List.any_eq_true]
-                  exact ⟨presentation, presentationMembership,
-                    by simp [labelEquality]⟩
-                rw [detected] at ordinary
-                contradiction
-              have inputList : binderSafeListAt presentation.quoteConstructor
+              have notThisQuote :=
+                ReflectiveContextSupport.not_sealing_of_ordinary presentationMembership ordinary
+              have inputList : scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                   depth arguments = true :=
-                binderSafeListAt_of_binderSafeAt_apply_of_ne
-                  presentation.quoteConstructor rule.label depth arguments
-                  notThisQuote safe
+                scopeSafeListAt_of_apply notThisQuote safe
               have outputList := normalized.result.reflectiveScope presentation
                 presentationMembership availableWithin inputList
-              exact binderSafeAt_apply_of_spines
-                presentation.quoteConstructor rule.label depth
-                normalized.result.patterns
-                (fun equality => (notThisQuote equality).elim)
+              exact scopeSafeAt_apply_of_arguments
+                (fun closed equality => (notThisQuote closed equality).elim)
                 outputList
             matchesParameterRepresentation := by
               intro parameter representation
@@ -625,8 +612,7 @@ mutual
                 simpa [WellSorted.isObjectPattern] using objects)
             reflectiveScope := by
               intro presentation presentationMembership depth _ safe
-              exact binderSafeAt_apply_of_length_eq_of_list_preserving
-                presentation.quoteConstructor rule.label depth
+              exact scopeSafeAt_apply_of_length_eq_of_list_preserving
                 normalized.result.length_eq
                 (fun localDepth inputList =>
                   normalized.result.reflectiveScope presentation
@@ -657,7 +643,7 @@ mutual
             reflectiveScope := by
               intro presentation presentationMembership depth availableWithin
                 safe
-              simp only [binderSafeAt] at safe ⊢
+              simp only [scopeSafeAt_lambda] at safe ⊢
               exact normalized.result.reflectiveScope presentation
                 presentationMembership (by simp; omega) safe
             matchesParameterRepresentation := by
@@ -685,7 +671,7 @@ mutual
             reflectiveScope := by
               intro presentation presentationMembership depth availableWithin
                 safe
-              simp only [binderSafeAt] at safe ⊢
+              simp only [scopeSafeAt_multiLambda] at safe ⊢
               exact normalized.result.reflectiveScope presentation
                 presentationMembership (by
                   simp [List.length_append, List.length_replicate]
@@ -717,7 +703,7 @@ mutual
             reflectiveScope := by
               intro presentation presentationMembership depth availableWithin
                 safe
-              simp only [binderSafeAt, Bool.and_eq_true] at safe ⊢
+              simp only [scopeSafeAt_subst, Bool.and_eq_true] at safe ⊢
               exact ⟨normalizedBody.result.reflectiveScope presentation
                   presentationMembership (by simp; omega) safe.1,
                 normalizedReplacement.result.reflectiveScope presentation
@@ -748,10 +734,10 @@ mutual
             reflectiveScope := by
               intro presentation presentationMembership depth availableWithin
                 safe
-              have inputList : binderSafeListAt presentation.quoteConstructor
+              have inputList : scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                   depth elements = true := by
-                simpa [binderSafeAt] using safe
-              simpa [binderSafeAt] using
+                simpa using safe
+              simpa using
                 normalized.result.reflectiveScope presentation
                   presentationMembership availableWithin inputList
             matchesParameterRepresentation := by
@@ -782,7 +768,7 @@ mutual
             canonicalBinderMetadata := by
               simp [Pattern.hasCanonicalBinderMetadataList]
             objectPatterns := by simp [WellSorted.isObjectPatternList]
-            reflectiveScope := by simp [binderSafeListAt] }
+            reflectiveScope := by simp }
           trees := .nil }
     | @CostSemanticArgumentTrees.cons _ _ available outer argument arguments
         parameter parameters expected representation parameterType head tail =>
@@ -812,7 +798,7 @@ mutual
             reflectiveScope := by
               intro presentation presentationMembership depth availableWithin
                 safe
-              simp only [binderSafeListAt, Bool.and_eq_true] at safe ⊢
+              simp only [scopeSafeListAt_cons, Bool.and_eq_true] at safe ⊢
               exact ⟨normalizedHead.result.reflectiveScope presentation
                   presentationMembership availableWithin safe.1,
                 normalizedTail.result.reflectiveScope presentation
@@ -843,7 +829,7 @@ mutual
             canonicalBinderMetadata := by
               simp [Pattern.hasCanonicalBinderMetadataList]
             objectPatterns := by simp [WellSorted.isObjectPatternList]
-            reflectiveScope := by simp [binderSafeListAt] }
+            reflectiveScope := by simp }
           trees := .nil available outer elementType }
     | @CostSemanticElementTrees.cons _ _ available outer element elements
         elementType head tail =>
@@ -870,7 +856,7 @@ mutual
             reflectiveScope := by
               intro presentation presentationMembership depth availableWithin
                 safe
-              simp only [binderSafeListAt, Bool.and_eq_true] at safe ⊢
+              simp only [scopeSafeListAt_cons, Bool.and_eq_true] at safe ⊢
               exact ⟨normalizedHead.result.reflectiveScope presentation
                   presentationMembership availableWithin safe.1,
                 normalizedTail.result.reflectiveScope presentation

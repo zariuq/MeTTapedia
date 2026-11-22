@@ -86,6 +86,12 @@ lean/mettapedia/data/
 lean/mettapedia/scripts/*
 !lean/mettapedia/scripts/generate_self_interp_checkpoints.lean
 !lean/mettapedia/scripts/generate_vibe_itp_rule_shapes.py
+!lean/mettapedia/scripts/generate_vibe_itp_binary_source.py
+!lean/mettapedia/scripts/generate_vibe_itp_binary_scan.py
+!lean/mettapedia/scripts/generate_vibe_itp_binary_lex.py
+!lean/mettapedia/scripts/gen_native_ops_source_replay.py
+!lean/mettapedia/scripts/gen_native_ops_source_snapshot.py
+!lean/mettapedia/scripts/vibe_itp_source_slices.py
 !lean/mettapedia/scripts/check_prime_spec_boundary.py
 !lean/mettapedia/scripts/check_two_sort_boundaries.py
 !lean/mettapedia/scripts/check_faddeev_axioms.lean
@@ -100,6 +106,7 @@ lean/mettapedia/scripts/*
 !lean/mettapedia/scripts/export_mm0_module_controls.lean
 !lean/mettapedia/scripts/export_match_automata_controls.lean
 !lean/mettapedia/scripts/check_resource_history.lean
+!lean/mettapedia/scripts/check_tmetta_transform.lean
 !lean/mettapedia/scripts/check_headline_witnesses.py
 !lean/mettapedia/scripts/check_observation_qualified_regions.py
 !lean/mettapedia/scripts/headline_witness_scan.lean

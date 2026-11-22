@@ -476,6 +476,28 @@ def ReflectiveNameResultsQuoted (language : LanguageDef) : Prop :=
               true ∧
             ¬ UsesBareCollection rule
 
+/-- Over a valid profile, when every name-result constructor is a quotation
+boundary, each selected presentation's own quotation constructor is one. -/
+theorem ReflectiveNameResultsQuoted.quoteBoundary {language : LanguageDef}
+    (quotedResults : ReflectiveNameResultsQuoted (profile := profile) language)
+    (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate language profile = [])
+    {declaration : ReflectivePresentationDecl}
+    (declarationMembership : declaration ∈ profile.presentations) :
+    ReflectiveContextSupport.isQuoteConstructor profile declaration.quoteConstructor = true := by
+  have declarationValid :=
+    presentation_validate_eq_nil_of_validate_eq_nil profileValid declarationMembership
+  obtain ⟨witness⟩ :=
+    LanguageDef.reflectivePresentationWitness_of_validate_eq_nil language declaration
+      declarationValid
+  have filtered : witness.quote ∈ language.terms.filter
+      (fun candidate => candidate.label == declaration.quoteConstructor) := by
+    rw [witness.quoteUnique]
+    simp
+  obtain ⟨quoteMembership, quoteLabel⟩ := List.mem_filter.mp filtered
+  have boundary := (quotedResults declaration declarationMembership witness.quote
+    quoteMembership witness.quoteCategory).1
+  rwa [beq_iff_eq.mp quoteLabel] at boundary
+
 /-- Canonicalization of a well-sorted process may expose the selected Drop
 constructor only with a name argument that remains in the same exact typing
 and reflective-support fiber.  This is the weakest support-preservation fact
@@ -498,17 +520,21 @@ def ReflectiveDropCanonicalSupportStable (language : LanguageDef) : Prop :=
             nameTyped.ReflectiveSupportSafeAt profile support available binderImage ∧
               isObjectPattern name = true
 
-/-- The single-declaration sealing condition implies the language-wide quote
-boundary condition. -/
+/-- Over a profile that keeps quoted code closed, the single-declaration
+sealing condition implies the language-wide quote boundary condition.  A
+reaching presentation's quotation is no boundary
+(`QuoteBoundaryDivergence`), so the closed profile is needed. -/
 theorem ReflectiveNameResultSealed.resultsQuoted
-    {language : LanguageDef} (sealed : ReflectiveNameResultSealed (profile := profile) language) :
+    {language : LanguageDef} (closed : ReflectiveWellSorted.ClosedProfile profile)
+    (sealed : ReflectiveNameResultSealed (profile := profile) language) :
     ReflectiveNameResultsQuoted (profile := profile) language := by
   intro declaration declarationMembership rule ruleMembership categoryEquality
   have sealedRule := sealed declaration declarationMembership rule
     ruleMembership categoryEquality
   refine ⟨?_, sealedRule.2⟩
-  simp only [ReflectiveContextSupport.isQuoteConstructor, List.any_eq_true]
-  exact ⟨declaration, declarationMembership, by simp [sealedRule.1]⟩
+  rw [sealedRule.1]
+  exact ReflectiveContextSupport.isQuoteConstructor_of_mem declarationMembership
+    (closed declaration declarationMembership)
 
 /-- A well-sorted object in a reflective name fibre that is support-safe at
 the empty quote-visible context remains support-safe at every ambient
@@ -691,10 +717,11 @@ theorem ArgumentsHaveTypes.selectedQuoteArgument
           (argumentTyped := argumentTyped) (argumentsTyped := emptyTyped)
           exactSpineSafe⟩
 
-/-- Invert a support-safe application of one selected quote constructor
-without performing dependent elimination on its typing derivation.  The
-argument is checked beneath the quotation reset, so its support witness is
-returned at the empty available context. -/
+/-- Invert a support-safe application of the quote constructor of one
+selected presentation that keeps quoted code closed, without performing
+dependent elimination on its typing derivation.  The argument is checked
+beneath the quotation reset, so its support witness is returned at the empty
+available context. -/
 theorem HasType.selectedQuoteArgument
     {language : LanguageDef} (valid : language.validate = [])
     (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
@@ -703,6 +730,7 @@ theorem HasType.selectedQuoteArgument
     {bound available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
     {declaration : ReflectivePresentationDecl}
     (declarationMembership : declaration ∈ profile.presentations)
+    (closed : declaration.quoteScope = .closed)
     {arguments : List Pattern} {type : TypeExpr}
     (typed : HasType language free bound
       (.apply declaration.quoteConstructor arguments) type)
@@ -749,10 +777,8 @@ theorem HasType.selectedQuoteArgument
       injection patternEquality with labelEquality argumentsEquality
       have quoted : ReflectiveContextSupport.isQuoteConstructor profile
           rule.label = true := by
-        simp only [ReflectiveContextSupport.isQuoteConstructor,
-          List.any_eq_true]
-        exact ⟨declaration, declarationMembership,
-          by simpa using labelEquality.symm⟩
+        rw [labelEquality]
+        exact ReflectiveContextSupport.isQuoteConstructor_of_mem declarationMembership closed
       rw [quoted] at ordinary
       contradiction)
     (by
@@ -1023,13 +1049,16 @@ quotation boundary is insensitive to the ambient substitution depth.
 The free-variable case uses support safety at the empty context to show that
 the assigned value is closed with respect to de Bruijn indices.  Bound
 variables are excluded by quote-aware scope safety.  Every remaining name
-constructor is a quotation boundary by `ReflectiveNameResultSealed`, so both
-substitutions recurse at depth zero. -/
+constructor is a quotation boundary by `ReflectiveNameResultSealed` over a
+closed profile, so both substitutions recurse at depth zero.  Below a reaching
+quotation the support is not reset, and a parameter supported by binders of
+the quoted code is lifted by the ambient depth. -/
 theorem nameResult_substituteAt_eq_of_safeAt_zero
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {pattern : Pattern} {resultType : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
+    (closed : ReflectiveWellSorted.ClosedProfile profile)
     (sealed : ReflectiveNameResultSealed (profile := profile) language)
     (assignment : SupportedOpenAssignment profile language source target support)
     (declaration : ReflectivePresentationDecl)
@@ -1044,12 +1073,13 @@ theorem nameResult_substituteAt_eq_of_safeAt_zero
       ReflectiveContextSupport.substituteAt profile support
         assignment.assignment availableDepth pattern := by
   exact nameResult_substituteAt_eq_of_safeAt_zero_of_resultsQuoted
-    sealed.resultsQuoted assignment declaration declarationMembership typed
+    (sealed.resultsQuoted closed) assignment declaration declarationMembership typed
       resultType_eq safeAtZero object availableDepth
 
 /-- Supported substitution preserves the selected declaration's exact
 Quote/Drop representative at every ambient depth when every constructor
-returning its name sort is an authored quote boundary.  This is the
+returning its name sort is an authored quote boundary, whether or not the
+declaration's own quotation resets the support.  This is the
 proof-relevant leaf behind the direct generator theorem below: the declaration
 identity remains explicit rather than being reconstructed from an erased
 contextual-equivalence proof. -/
@@ -1077,14 +1107,12 @@ theorem quoteDrop_substituteAt_canonicalize_eq_of_resultsQuoted
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
         (ReflectiveContextSupport.substituteAt profile support
           assignment.assignment availableDepth name) := by
-  have depthIndependent :=
-    nameResult_substituteAt_eq_of_safeAt_zero_of_resultsQuoted quotedResults
+  have depthFree : ∀ depth, ReflectiveContextSupport.substituteAt profile support
+      assignment.assignment depth name =
+        ReflectiveContextSupport.substituteAt profile support assignment.assignment 0 name :=
+    fun depth => (nameResult_substituteAt_eq_of_safeAt_zero_of_resultsQuoted quotedResults
       assignment declaration declarationMembership typed resultType_eq
-      safeAtZero object availableDepth
-  have quoteStatus : ReflectiveContextSupport.isQuoteConstructor profile
-      declaration.quoteConstructor = true := by
-    simp only [ReflectiveContextSupport.isQuoteConstructor, List.any_eq_true]
-    exact ⟨declaration, declarationMembership, by simp⟩
+      safeAtZero object depth).symm
   have leftSubstitution :
       ReflectiveContextSupport.substituteAt profile support
           assignment.assignment availableDepth
@@ -1094,15 +1122,13 @@ theorem quoteDrop_substituteAt_canonicalize_eq_of_resultsQuoted
           [.apply declaration.dropConstructor
             [ReflectiveContextSupport.substituteAt profile support
               assignment.assignment 0 name]] := by
-    simp [ReflectiveContextSupport.substituteAt, quoteStatus]
-  rw [leftSubstitution]
-  simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+    simp only [ReflectiveContextSupport.substituteAt, List.map_cons, List.map_nil]
+    rw [depthFree]
+  rw [leftSubstitution, depthFree availableDepth]
+  simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
-    quote_ne_drop, Ne.symm quote_ne_drop]
-    using congrArg
-      (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration)
-      depthIndependent
+    Ne.symm quote_ne_drop]
 
 /-- The declaration-authored Quote/Drop generator remains one generator after
 supported substitution at every ambient depth when every constructor returning
@@ -1866,9 +1892,8 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.quoteConstructor_ne_dropConstructor_of_validate
       language declaration declarationValid
   have chosenQuote : ReflectiveContextSupport.isQuoteConstructor profile
-      declaration.quoteConstructor = true := by
-    simp only [ReflectiveContextSupport.isQuoteConstructor, List.any_eq_true]
-    exact ⟨declaration, declarationMembership, by simp⟩
+      declaration.quoteConstructor = true :=
+    quotedResults.quoteBoundary profileValid declarationMembership
   exact HasType.ReflectiveSupportSafeAt.rec
     (motive_1 := fun {bound pattern type}
       (typed : HasType language source bound pattern type)
@@ -2011,11 +2036,6 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
       have lifted := equationEquiv_apply_of_forall₂ rule.label pointwise
       have selected : rule.label ≠ declaration.quoteConstructor := by
         intro equality
-        have chosenQuote : ReflectiveContextSupport.isQuoteConstructor profile
-            declaration.quoteConstructor = true := by
-          simp only [ReflectiveContextSupport.isQuoteConstructor,
-            List.any_eq_true]
-          exact ⟨declaration, declarationMembership, by simp⟩
         rw [equality] at ordinary
         exact Bool.noConfusion (ordinary.symm.trans chosenQuote)
       have selectedFalse : (rule.label == declaration.quoteConstructor) = false := by
@@ -3373,8 +3393,7 @@ def toReflectiveOpenPattern
       pattern.objectPattern, pattern.typed.isWellScopedAt⟩,
     by
       intro presentation membership
-      exact binderSafeAt_mono presentation.quoteConstructor
-        (pattern.reflectiveScope presentation membership) (by simp)⟩
+      exact scopeSafeAt_mono (pattern.reflectiveScope presentation membership) (by simp)⟩
 
 @[simp]
 theorem toReflectiveOpenPattern_pattern
@@ -3668,7 +3687,7 @@ def substitute
   objectPattern := safe.substituteObjectPattern assignment pattern.objectPattern
   reflectiveScope := by
     intro presentation membership
-    exact safe.substituteBinderSafeAt assignment presentation membership
+    exact safe.substituteScopeSafeAt assignment presentation membership
       (Nat.le_refl available.length)
       (pattern.reflectiveScope presentation membership)
 
@@ -3912,7 +3931,7 @@ structure AvailableOpenArguments (profile : ReflectionProfile) (language : Langu
     Pattern.hasCanonicalBinderMetadataList patterns = true
   objectPatterns : isObjectPatternList patterns = true
   reflectiveScope : ∀ presentation ∈ profile.presentations,
-    binderSafeListAt presentation.quoteConstructor available.length
+    scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
       patterns = true
 
 namespace AvailableOpenArguments
@@ -3928,7 +3947,7 @@ def ofCertificates
     (canonical : Pattern.hasCanonicalBinderMetadataList patterns = true)
     (objects : isObjectPatternList patterns = true)
     (scope : ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         patterns = true) :
     AvailableOpenArguments profile language free available outer parameters :=
   ⟨patterns, typed, canonical, objects, scope⟩
@@ -3943,7 +3962,7 @@ theorem ofCertificates_patterns
     (canonical : Pattern.hasCanonicalBinderMetadataList patterns = true)
     (objects : isObjectPatternList patterns = true)
     (scope : ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         patterns = true) :
     (ofCertificates typed canonical objects scope).patterns = patterns :=
   rfl
@@ -3967,7 +3986,7 @@ def nil (language : LanguageDef) (free : FreeTypeContext)
   typed := .nil
   canonicalBinderMetadata := by simp [Pattern.hasCanonicalBinderMetadataList]
   objectPatterns := by simp [isObjectPatternList]
-  reflectiveScope := by simp [binderSafeListAt]
+  reflectiveScope := by simp
 
 @[simp]
 theorem nil_patterns (language : LanguageDef) (free : FreeTypeContext)
@@ -3995,7 +4014,7 @@ def cons
     simp [isObjectPatternList, head.term.objectPattern, tail.objectPatterns]
   reflectiveScope := by
     intro presentation membership
-    simp [binderSafeListAt, head.term.reflectiveScope presentation membership,
+    simp [head.term.reflectiveScope presentation membership,
       tail.reflectiveScope presentation membership]
 
 @[simp]
@@ -4038,16 +4057,11 @@ theorem object_append_true
       exact ⟨leftObject.1, inductionHypothesis leftObject.2⟩
 
 theorem scope_append_true
-    (quote : String) (depth : Nat) (left right : List Pattern)
-    (leftScope : binderSafeListAt quote depth left = true)
-    (rightScope : binderSafeListAt quote depth right = true) :
-    binderSafeListAt quote depth (left ++ right) = true := by
-  induction left with
-  | nil => simpa using rightScope
-  | cons head tail inductionHypothesis =>
-      rw [binderSafeListAt, Bool.and_eq_true] at leftScope
-      rw [List.cons_append, binderSafeListAt, Bool.and_eq_true]
-      exact ⟨leftScope.1, inductionHypothesis leftScope.2⟩
+    (scope : QuoteScope) (quote : String) (depth : Nat) (left right : List Pattern)
+    (leftScope : scopeSafeListAt scope quote depth left = true)
+    (rightScope : scopeSafeListAt scope quote depth right = true) :
+    scopeSafeListAt scope quote depth (left ++ right) = true := by
+  simp [leftScope, rightScope]
 
 /-- Concatenate certified argument spines without rechecking their syntax. -/
 def append
@@ -4067,7 +4081,7 @@ def append
     right.objectPatterns
   reflectiveScope := by
     intro presentation membership
-    exact scope_append_true presentation.quoteConstructor available.length
+    exact scope_append_true presentation.quoteScope presentation.quoteConstructor available.length
       _ _ (left.reflectiveScope presentation membership)
       (right.reflectiveScope presentation membership)
 
@@ -4219,36 +4233,6 @@ theorem EquationForall₂.assembleWithPrefix
       rw [finalEquality] at tailStep
       exact Relation.EqvGen.trans _ _ _ headStep tailStep
 
-private theorem scope_mono (quote : String) {small large : Nat}
-    (patterns : List Pattern)
-    (safe : binderSafeListAt quote small patterns = true)
-    (order : small ≤ large) :
-    binderSafeListAt quote large patterns = true := by
-  induction patterns with
-  | nil => simp [binderSafeListAt]
-  | cons head tail inductionHypothesis =>
-      simp only [binderSafeListAt, Bool.and_eq_true] at safe ⊢
-      exact ⟨binderSafeAt_mono quote safe.1 order,
-        inductionHypothesis safe.2⟩
-
-private theorem application_scope (quote constructor : String) (depth : Nat)
-    (arguments : List Pattern)
-    (resetSafe : constructor = quote →
-      binderSafeListAt quote 0 arguments = true)
-    (ordinarySafe : binderSafeListAt quote depth arguments = true) :
-    binderSafeAt quote depth (.apply constructor arguments) = true := by
-  cases arguments with
-  | nil => simp [binderSafeAt, binderSafeListAt]
-  | cons argument arguments =>
-      cases arguments with
-      | nil =>
-          by_cases quoted : constructor = quote
-          · simpa [binderSafeAt, binderSafeListAt, quoted] using
-              resetSafe quoted
-          · simpa [binderSafeAt, binderSafeListAt, quoted] using ordinarySafe
-      | cons second remainder =>
-          simpa [binderSafeAt] using ordinarySafe
-
 /-- Assemble an ordinary authored application from a spine whose visible
 binder prefix is the application's visible prefix. -/
 def applyOrdinary
@@ -4271,19 +4255,14 @@ def applyOrdinary
     simpa [isObjectPattern] using arguments.objectPatterns
   reflectiveScope := by
     intro presentation presentationMembership
-    have notThisQuote : rule.label ≠ presentation.quoteConstructor := by
-      intro equality
-      have detected : ReflectiveContextSupport.isQuoteConstructor profile
-          rule.label = true := by
-        unfold ReflectiveContextSupport.isQuoteConstructor
-        rw [List.any_eq_true]
-        exact ⟨presentation, presentationMembership, by simp [equality]⟩
-      rw [detected] at ordinary
-      contradiction
-    exact application_scope presentation.quoteConstructor rule.label
-      available.length arguments.patterns
-      (fun equality => (notThisQuote equality).elim)
+    refine scopeSafeAt_apply_of_arguments (fun closed equality => ?_)
       (arguments.reflectiveScope presentation presentationMembership)
+    have detected : ReflectiveContextSupport.isQuoteConstructor profile
+        rule.label = true := by
+      rw [equality]
+      exact ReflectiveContextSupport.isQuoteConstructor_of_mem presentationMembership closed
+    rw [detected] at ordinary
+    contradiction
 
 @[simp]
 theorem applyOrdinary_pattern
@@ -4324,10 +4303,8 @@ def applyQuote
   reflectiveScope := by
     intro presentation presentationMembership
     have reset := arguments.reflectiveScope presentation presentationMembership
-    exact application_scope presentation.quoteConstructor rule.label
-      available.length arguments.patterns (fun _ => reset)
-      (scope_mono presentation.quoteConstructor arguments.patterns reset
-        (Nat.zero_le available.length))
+    exact scopeSafeAt_apply_of_arguments (fun _ _ => reset)
+      (scopeSafeListAt_mono reset (Nat.zero_le available.length))
 
 @[simp]
 theorem applyQuote_pattern
@@ -4412,7 +4389,7 @@ def substitute
     arguments.objectPatterns
   reflectiveScope := by
     intro presentation membership
-    exact safe.substituteBinderSafeListAt assignment presentation membership
+    exact safe.substituteScopeSafeListAt assignment presentation membership
       (Nat.le_refl available.length)
       (arguments.reflectiveScope presentation membership)
 
@@ -4458,7 +4435,7 @@ structure AvailableOpenElements (profile : ReflectionProfile) (language : Langua
     Pattern.hasCanonicalBinderMetadataList patterns = true
   objectPatterns : isObjectPatternList patterns = true
   reflectiveScope : ∀ presentation ∈ profile.presentations,
-    binderSafeListAt presentation.quoteConstructor available.length patterns =
+    scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length patterns =
       true
 
 namespace AvailableOpenElements
@@ -4473,7 +4450,7 @@ def ofCertificates
     (canonical : Pattern.hasCanonicalBinderMetadataList patterns = true)
     (objects : isObjectPatternList patterns = true)
     (scope : ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         patterns = true) :
     AvailableOpenElements profile language free available outer elementType :=
   ⟨patterns, typed, canonical, objects, scope⟩
@@ -4488,7 +4465,7 @@ theorem ofCertificates_patterns
     (canonical : Pattern.hasCanonicalBinderMetadataList patterns = true)
     (objects : isObjectPatternList patterns = true)
     (scope : ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         patterns = true) :
     (ofCertificates typed canonical objects scope).patterns = patterns :=
   rfl
@@ -4512,7 +4489,7 @@ def nil (language : LanguageDef) (free : FreeTypeContext)
   typed := .nil _ _
   canonicalBinderMetadata := by simp [Pattern.hasCanonicalBinderMetadataList]
   objectPatterns := by simp [isObjectPatternList]
-  reflectiveScope := by simp [binderSafeListAt]
+  reflectiveScope := by simp
 
 @[simp]
 theorem nil_patterns (language : LanguageDef) (free : FreeTypeContext)
@@ -4535,7 +4512,7 @@ def cons
     simp [isObjectPatternList, head.objectPattern, tail.objectPatterns]
   reflectiveScope := by
     intro presentation membership
-    simp [binderSafeListAt, head.reflectiveScope presentation membership,
+    simp [head.reflectiveScope presentation membership,
       tail.reflectiveScope presentation membership]
 
 @[simp]
@@ -4563,7 +4540,7 @@ def append
     left.objectPatterns right.objectPatterns
   reflectiveScope := by
     intro presentation membership
-    exact AvailableOpenArguments.scope_append_true
+    exact AvailableOpenArguments.scope_append_true presentation.quoteScope
       presentation.quoteConstructor available.length _ _
       (left.reflectiveScope presentation membership)
       (right.reflectiveScope presentation membership)
@@ -4814,7 +4791,7 @@ def substitute
     elements.objectPatterns
   reflectiveScope := by
     intro presentation membership
-    exact safe.substituteBinderSafeListAt assignment presentation membership
+    exact safe.substituteScopeSafeListAt assignment presentation membership
       (Nat.le_refl available.length)
       (elements.reflectiveScope presentation membership)
 
@@ -4898,13 +4875,15 @@ def SupportedOpenAssignment.weakenedValue
   · simpa using assignment.objectPattern lookup
   · exact (assignment.typed lookup).liftBVars_insert
       (inner := []) (outer := support name) (inserted := inner) |>.isWellScopedAt
-  · intro presentation membership
-    have lifted := ContextSubstitution.binderSafeAt_liftBVars
-      presentation.quoteConstructor
-      (ambient := (support name).length) (cutoff := 0)
-      (shift := inner.length)
-      (assignment.reflectiveScopeSafe lookup presentation membership)
-    simpa only [List.length_append, Nat.add_zero, Nat.add_comm] using lifted
+  · refine (assignment.reflectiveScopeSafe lookup).map (fun quoteConstructor sealed => ?_)
+      (fun inScope => ?_)
+    · have lifted := ContextSubstitution.binderSafeAt_liftBVars
+        quoteConstructor (ambient := (support name).length) (cutoff := 0)
+        (shift := inner.length) sealed
+      simpa only [List.length_append, Nat.add_zero, Nat.add_comm] using lifted
+    · have lifted := liftBVars_isWellScopedAt (ambient := (support name).length) (cutoff := 0)
+        (shift := inner.length) inScope
+      simpa only [List.length_append, Nat.add_zero, Nat.add_comm] using lifted
 
 @[simp]
 theorem SupportedOpenAssignment.weakenedValue_pattern
@@ -5137,8 +5116,7 @@ mutual
         have fullScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile
             (available ++ outer).length (.apply rule.label arguments) := by
           intro presentation presentationMembership
-          exact binderSafeAt_mono presentation.quoteConstructor
-            (scope presentation presentationMembership) (by simp)
+          exact scopeSafeAt_mono (scope presentation presentationMembership) (by simp)
         have resetScope := reflectiveScopeSafeListAt_zero_of_typed_quote
           valid profileValid membership argumentsTyped quoted fullScope
         let argumentsTerm : AvailableOpenArguments profile language source []
@@ -5309,7 +5287,7 @@ mutual
               simpa [isObjectPattern] using objectPattern
             have elementScope : ∀ presentation ∈
                 profile.presentations,
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                   available.length elements = true := by
               intro presentation presentationMembership
               simpa [binderSafeAt] using
@@ -5364,7 +5342,7 @@ mutual
               simpa [isObjectPattern] using objectPattern
             have elementScope : ∀ presentation ∈
                 profile.presentations,
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                   available.length elements = true := by
               intro presentation presentationMembership
               simpa [binderSafeAt] using
@@ -5663,7 +5641,7 @@ mutual
         Pattern.hasCanonicalBinderMetadataList sourceArguments = true)
       (objects : isObjectPatternList sourceArguments = true)
       (scope : ∀ presentation ∈ profile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           sourceArguments = true)
       (first second : SupportedOpenAssignment profile language source target support)
       (equivalent : first.FiberEquivalent second) :
@@ -5703,21 +5681,21 @@ mutual
           intro presentation presentationMembership
           have full := scope presentation presentationMembership
           have parts :
-              binderSafeAt presentation.quoteConstructor available.length
+              scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
                     argument = true ∧
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length arguments = true := by
             simpa [binderSafeListAt] using full
           exact parts.1
         have tailScope : ∀ presentation ∈ profile.presentations,
-            binderSafeListAt presentation.quoteConstructor available.length
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               arguments = true := by
           intro presentation presentationMembership
           have full := scope presentation presentationMembership
           have parts :
-              binderSafeAt presentation.quoteConstructor available.length
+              scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
                     argument = true ∧
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length arguments = true := by
             simpa [binderSafeListAt] using full
           exact parts.2
@@ -5788,7 +5766,7 @@ mutual
         Pattern.hasCanonicalBinderMetadataList sourceElements = true)
       (objects : isObjectPatternList sourceElements = true)
       (scope : ∀ presentation ∈ profile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           sourceElements = true)
       (first second : SupportedOpenAssignment profile language source target support)
       (equivalent : first.FiberEquivalent second) :
@@ -5830,21 +5808,21 @@ mutual
           intro presentation presentationMembership
           have full := scope presentation presentationMembership
           have parts :
-              binderSafeAt presentation.quoteConstructor available.length
+              scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
                     element = true ∧
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length elements = true := by
             simpa [binderSafeListAt] using full
           exact parts.1
         have tailScope : ∀ presentation ∈ profile.presentations,
-            binderSafeListAt presentation.quoteConstructor available.length
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               elements = true := by
           intro presentation presentationMembership
           have full := scope presentation presentationMembership
           have parts :
-              binderSafeAt presentation.quoteConstructor available.length
+              scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
                     element = true ∧
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length elements = true := by
             simpa [binderSafeListAt] using full
           exact parts.2

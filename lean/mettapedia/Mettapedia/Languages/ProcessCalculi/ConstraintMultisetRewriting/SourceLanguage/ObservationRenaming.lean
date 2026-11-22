@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SourceLan
 # The renaming law for what a configuration shows
 
 Renaming bound names (`Renaming.KeyRenaming`) keeps the bag of answers (`answers_rConfig`). With the
-typed none query, a configuration also shows its refusals and the reasons its alternatives wait on. These
+typed absence, a configuration also shows its refusals and the reasons its alternatives wait on. These
 carry data, and the renaming maps them: a renamed configuration shows the same answers, the renamed
 refusals, and the renamed reasons (`observe_rConfig`). Each reason is kept because the renaming keeps
 most general solutions (`principal_iff_rename`), determination of an address and readings.

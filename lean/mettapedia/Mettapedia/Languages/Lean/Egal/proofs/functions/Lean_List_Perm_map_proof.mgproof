@@ -1,5 +1,3 @@
-let A B f. assume Hf: f :e (Pi_ ux :e A, B).
-let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
-assume H: 0 :e Lean_List_Perm_Prop A xs ys.
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let A. assume H_A: A :e LeanUniv l_u_1. let B. assume H_B: B :e LeanUniv l_u_2. let f. assume Hf: f :e (Pi_ ux :e A, B). let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A. assume H: 0 :e Lean_List_Perm_Prop A xs ys.
 exact LeanListPerm_to_prop B (Lean_List_map A B f xs) (Lean_List_map A B f ys)
   (LeanListPerm_map A B f Hf xs ys (LeanListPerm_from_prop A xs ys H)).

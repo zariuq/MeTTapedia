@@ -8,7 +8,7 @@ holds the theorem space, reaches far, and reach does not stop it from being stee
 premise spaces comes from a request, the requester chooses where the kernel reads. The cure is a
 discipline on the chosen rule set, not a law for every rule.
 
-* **`LiteralSpaces r`**: every space position of `r` (take, read, produce, none queries, count) is a
+* **`LiteralSpaces r`**: every space position of `r` (take, read, produce, absence, count) is a
   written name. Such a rule meets the old law at every store (`LiteralSpaces.resolved`), and under
   a consistent store its footprint is exactly the names it writes (`LiteralSpaces.footprint_iff`).
 * **Not steered** (`literal_footprint`): in every well-located configuration, whatever requesters

@@ -125,7 +125,7 @@ theorem etaRound_eq_of_under (fuel : Nat) {Θ : Context S.R} {problem : Equation
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the under-binder family decides, the η-long prepared family decides with the same outcome.** -/
 theorem eta_run_of_under (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -156,7 +156,7 @@ theorem liftCollapsed_not_stuck {Θ : Context S.R} {problem : EquationStore (Tot
   cases round with
   | stuck => exact absurd rfl moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 omit [DecidableEq Head] [∀ head, Decidable (S.R.isUniverse head)] [DecidableRel S.R.headEq]
   [DecidableRel S.R.cumulative] in
@@ -179,7 +179,7 @@ theorem liftCollapsed_keeps (holds : {Γ : Context S.R} → EquationStore (Total
   | progress first firstSmaller =>
       cases fired
       exact inner first firstSmaller rfl
-  | refuted missing => cases fired
+  | refuted absent => cases fired
   | stuck => cases fired
 
 /-- **The η-long prepared reader**: the round moves wherever the under-binder round moves on the η-long prepared
@@ -197,7 +197,7 @@ theorem etaRound_not_stuck_of_long (fuel : Nat) {Θ : Context S.R} {problem : Eq
       exact liftCollapsed_not_stuck facts roots heads algebra rigid complete _
         (longUpdate_rank facts roots heads algebra rigid complete reducer root rootComplete fuel problem) moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **The η-long prepared family's readers**: an under-binder reader on the store or on its η-long prepared store. -/
 def EtaReads (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Prop :=
@@ -358,7 +358,7 @@ theorem etaRound_closure (fuel : Nat) :
       cases fired
       exact underRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening sn directed fuel _ _ _ permuted computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
 
@@ -384,9 +384,9 @@ theorem eta_decided_of_firing
       ((∃ state finished, run ((etaFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((etaFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((etaFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (etaSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -415,9 +415,9 @@ theorem eta_decided_of_etaReads
       ((∃ state finished, run ((etaFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((etaFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((etaFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   eta_decided_of_firing facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable sn directed
     (fun permuted nonempty => by
@@ -475,7 +475,7 @@ theorem tower_eta_decided_of_firing
       run (etaTower.solver larger) problem larger = run (etaTower.solver budget) problem budget ∧
       ((∃ state finished, run (etaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (etaTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (etaTower.solver larger) problem larger = .refuted absent)) :=
   eta_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
@@ -498,7 +498,7 @@ theorem tower_eta_decided_of_etaReads
       run (etaTower.solver larger) problem larger = run (etaTower.solver budget) problem budget ∧
       ((∃ state finished, run (etaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (etaTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (etaTower.solver larger) problem larger = .refuted absent)) :=
   eta_decided_of_etaReads (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices

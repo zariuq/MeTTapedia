@@ -68,12 +68,12 @@ theorem same_keys_batch_value_states (s : State (Terms (Term signature)) O)
   apply relabel_transport rename
   · rw [List.length_map]
     exact bag_made_length s first firstOwn.1
-  · intro missing
+  · intro absent
     have old : o ∈ s.present := by
       change o ∈ (s.present \ first.selection.taken.toFinset) ∪ first.selection.made.toFinset at inside
       rcases Finset.mem_union.mp inside with retained | made
       · exact (Finset.mem_sdiff.mp retained).1
-      · exact False.elim (missing (List.mem_toFinset.mp made))
+      · exact False.elim (absent (List.mem_toFinset.mp made))
     rw [fixes o old]
     exact (agrees (s.label o) (Or.inr (Or.inr ⟨o, old, rfl⟩))).symm
 

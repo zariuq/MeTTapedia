@@ -191,8 +191,8 @@ def normalizingRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (T
   | .progress update smaller =>
       .progress ((prepare root rootComplete facts roots heads fuel problem).then update)
         (by rw [prepare_size] at smaller; exact smaller)
-  | .refuted notMem =>
-      .refuted fun solvable => notMem ((prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp solvable)
+  | .refuted absent =>
+      .refuted fun solvable => absent ((prepare root rootComplete facts roots heads fuel problem).solvable_iff.mp solvable)
   | .stuck => .stuck
 
 /-- **The normalizing solver** at one budget. -/
@@ -210,17 +210,17 @@ def family : ContextualDependentDecisiveDriver.Family S.levels where
 /-- **Every refutation of the normalizing round is a refutation of the prepared store** by the rigid
 round, which is certified. -/
 theorem normalizingRound_refuted {fuel : Nat} {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    {notMem : ¬ (frames S.levels).Solvable problem}
+    {absent : ¬ (frames S.levels).Solvable problem}
     (refuted : normalizingRound rigid complete facts roots heads algebra declared choices reducer root rootComplete
-      normalizes certifyNormal headTypingUnique fuel problem = .refuted notMem) :
-    ∃ notMem', ContextualDependentRigidDecomposition.rigidRound rigid complete facts roots heads algebra declared choices
+      normalizes certifyNormal headTypingUnique fuel problem = .refuted absent) :
+    ∃ absent', ContextualDependentRigidDecomposition.rigidRound rigid complete facts roots heads algebra declared choices
       reducer root normalizes certifyNormal headTypingUnique fuel
-      (prepare root rootComplete facts roots heads fuel problem).remaining = .refuted notMem' := by
+      (prepare root rootComplete facts roots heads fuel problem).remaining = .refuted absent' := by
   unfold normalizingRound at refuted
   split at refuted
   · cases refuted
-  · rename_i notMem' computed
-    exact ⟨notMem', computed⟩
+  · rename_i absent' computed
+    exact ⟨absent', computed⟩
   · cases refuted
 
 /-- The normalizing round makes progress, refutes or is stuck exactly when the rigid round does on

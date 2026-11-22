@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Presentation.Possibility
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.NoneNotCompositional
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.AbsenceNotCompositional
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.Invariance
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.Generated
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.BagCanonicalForms
@@ -26,7 +26,7 @@ a bag, so `split .hashBag A B` is generated (`split_generated`): **"A beside B"*
   `NullsOnTheStep.Composition.positive_admission_monotone`: for rules whose checks are equations, a firing of a
   configuration is a firing of the configuration beside another one with trivial knowledge and fresh
   identities. On `RuleSyntax.step` itself the law is `StepBeside.admitted_beside`.
-* **Control**: a none-guarded rule breaks the law on the instance-set step (`spawn_fires_alone`,
+* **Control**: an absence-guarded rule breaks the law on the instance-set step (`spawn_fires_alone`,
   `spawn_refused_beside`): `Examples.spawn` fires on the empty store and does not fire beside the row `11`;
   so the presentation of its rule, whose possibility obeys the law, has possibility the step does not have
   (`spawn_presentation_control`).
@@ -304,7 +304,7 @@ theorem split_possibly (A B : Formula 0) (rows : List Expr)
   · refine (sat_split_iff A B _).mpr ⟨R.yielded r ++ rest, right, ?_, holdsA, holdsB⟩
     rw [List.append_assoc]
 
-/-! ## The same law on the instance-set step, and where the none query breaks it -/
+/-! ## The same law on the instance-set step, and where absence breaks it -/
 
 section Step
 
@@ -349,7 +349,7 @@ end Step
 /-- One copy of the row `11`. -/
 def elevenConf : Conf := ⟨[], {(.sym 11, 0)}⟩
 
-/-- **The none query fires alone**: `spawn` (make `12` where `11` is not present) fires on the empty store. -/
+/-- **Absence fires alone**: `spawn` (make `12` where `11` is absent) fires on the empty store. -/
 theorem spawn_fires_alone :
     ∃ C', Succ (program ground Prod.fst (bodies {r | r ∈ [Examples.spawn]})) Examples.emptyConf C' := by
   refine ⟨_, (program_succ_iff ground Prod.fst _ _ _).mpr ⟨Examples.spawn.body, ⟨[], [], [(.sym 12, 0)]⟩,
@@ -371,7 +371,7 @@ theorem spawn_fires_alone :
       intro o present
       exact absurd present (Finset.notMem_empty o) }
 
-/-- **The none query is refused beside the row `11`**: no firing of `spawn` from the empty store beside `11`. -/
+/-- **Absence is refused beside the row `11`**: no firing of `spawn` from the empty store beside `11`. -/
 theorem spawn_refused_beside :
     ¬ ∃ C', Succ (program ground Prod.fst (bodies {r | r ∈ [Examples.spawn]}))
       (unionOf Examples.emptyConf elevenConf) C' := by
@@ -379,14 +379,14 @@ theorem spawn_refused_beside :
   obtain ⟨_, sel, ⟨r, inRules, rfl⟩, valid, -⟩ := (program_succ_iff ground Prod.fst _ _ _).mp step
   obtain rfl : r = Examples.spawn := List.mem_singleton.mp inRules
   obtain ⟨σ, solved⟩ := valid.consistent
-  have missing := valid.checks (.predicate .none (.sym 11)) List.mem_cons_self σ solved
-  exact missing (.sym 11, 0) (by simp [unionOf, Examples.emptyConf, elevenConf]) rfl
+  have absent := valid.checks (.predicate .none (.sym 11)) List.mem_cons_self σ solved
+  exact absent (.sym 11, 0) (by simp [unionOf, Examples.emptyConf, elevenConf]) rfl
 
 theorem storeOf_union_eleven : storeOf Prod.fst (unionOf Examples.emptyConf elevenConf) = storeCode [.sym 11] := by
   simp [storeOf, unionOf, Examples.emptyConf, elevenConf, Finset.toList_singleton]
 
-/-- **Control: a none-guarded rule is outside the fragment for a reason.** Its rule, presented (the
-none check is not a rewrite), steps at the store `{11}`, where the step of the program fires nothing. -/
+/-- **Control: an absence-guarded rule is outside the fragment for a reason.** Its rule, presented (the
+absence check is not a rewrite), steps at the store `{11}`, where the step of the program fires nothing. -/
 theorem spawn_presentation_control :
     (langDiamondUsing relEnv (present [Examples.spawn]) (Examples.everything relEnv _)).1
         (storeOf Prod.fst (unionOf Examples.emptyConf elevenConf)) ∧

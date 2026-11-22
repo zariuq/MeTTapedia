@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrde
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.EquationWakeupControls
 
 /-!
-# An unrelated binding preserves a shared-row none verdict
+# An unrelated binding preserves a shared-row absence verdict
 
 The query is closed, but its observed row contains a shared variable. A tell
 about another variable preserves the verdict; a tell about the row's variable
@@ -22,8 +22,8 @@ def unrelated : EquationStore (Term signature) := [(.var 1, .const 2)]
 def observation (assignment : Subst signature) : Prop :=
   (Check.predicate .none (f zeroTerm)).Holds A assignment label before.present
 
-theorem none_reads_the_row_component : ReadsOnly component observation := by
-  apply none_reads_query_and_rows component label before.present (f zeroTerm)
+theorem absence_reads_the_row_component : ReadsOnly component observation := by
+  apply absent_reads_query_and_rows component label before.present (f zeroTerm)
   · intro name member
     simp [f, ConstraintMultisetRewriting.Controls.f, zeroTerm, Term.freeVars] at member
   · intro occurrence present name member
@@ -58,7 +58,7 @@ theorem unrelated_tell_keeps_both_verdicts :
       (A.Entails unrelated (fun assignment => ¬ observation assignment) ↔
         A.Entails [] (fun assignment => ¬ observation assignment)) :=
   verdicts_local component [] unrelated empty_store_is_closed unrelated_avoids_component
-    unrelated_is_consistent observation none_reads_the_row_component
+    unrelated_is_consistent observation absence_reads_the_row_component
 
 theorem query_is_closed : (f zeroTerm).freeVars = ∅ := by
   simp [f, ConstraintMultisetRewriting.Controls.f, zeroTerm, Term.freeVars]

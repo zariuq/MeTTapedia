@@ -73,7 +73,7 @@ support (`support_eq_of_models`, `readings_eq`), so the support does not depend 
 ## What is not shown
 
 * Rules that take: the support map is then no simulation (`SupportControls`).
-* Counts: the support forgets multiplicities, and count and none guards are outside `Propagates`
+* Counts: the support forgets multiplicities, and count and absence guards are outside `Propagates`
   (`SupportControls` shows a count guard separating the two stores).
 * States that are not settled; any correspondence that preserves divergence; a joint set step as
   one bag step (one bag step makes the rows of one match).

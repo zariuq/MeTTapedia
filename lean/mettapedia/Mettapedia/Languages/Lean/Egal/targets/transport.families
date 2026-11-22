@@ -1,0 +1,24 @@
+# The families Lean's proofs of the reading's cited lemmas use, in document order (artifacts/lean-declarations/transport).
+Nat
+Nat.le
+Bool
+PUnit
+Option
+List
+True
+False
+And
+Or
+Iff
+Exists
+Eq
+HEq
+Decidable
+List.Mem
+List.Pairwise
+List.Sublist
+List.Perm
+PProd
+LeftCommutative
+# Needed, not yet read: List.Mem.below List.Pairwise.below List.Sublist.below (an erased proof field
+# referred to by a later field or an index is not yet read as 0).

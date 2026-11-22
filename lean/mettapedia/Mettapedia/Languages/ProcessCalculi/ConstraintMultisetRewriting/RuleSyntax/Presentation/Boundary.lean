@@ -3,19 +3,19 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 /-!
 # Where presentation without premises stops
 
-**The none query is not presented by premise-free rewrites beside a rest.** Read on the composition terms of
+**Absence is not presented by premise-free rewrites beside a rest.** Read on the composition terms of
 `StoreComposition` through their leaves, the step of every presented program, under every reading, is closed
 under parallel composition (`onTerms_parClosed`, from `Language.semanticStep_beside`; the rewrites of `present`
-have no premise). So by the tree's `NullsOnTheStep.Composition.parClosed_not_noneReduces` it is never the none step
-(`presented_not_none`). On stores of configurations: no presented program has the generated possibility of the
-none program `Examples.spawn` (`none_not_presented`).
+have no premise). So by the tree's `NullsOnTheStep.Composition.parClosed_not_absence` it is never the absence step
+(`presented_not_absence`). On stores of configurations: no presented program has the generated possibility of the
+absence program `Examples.spawn` (`absence_not_presented`).
 
 **A premise over the whole store is an oracle.** A relation premise asks the framework's relation environment
 (`RelationEnv.tuples`), which is an arbitrary function of the relation's name and its instantiated arguments.
 The language `wholeStore` has one rewrite, `{...rest} ⟶ {12, ...rest}`, whose premise asks such a relation of the
-whole store, "no row of this bag is `11`" (`noneRelation`). Its step on stores is exactly "make `12` where `11`
-is not present" (`whole_semanticStep_iff`), so read on composition terms it is the none step
-(`whole_presents_none`), and it is not closed under parallel composition (`whole_not_parClosed`). The same
+whole store, "no row of this bag is `11`" (`absenceRelation`). Its step on stores is exactly "make `12` where `11`
+is absent" (`whole_semanticStep_iff`), so read on composition terms it is the absence step
+(`whole_presents_absence`), and it is not closed under parallel composition (`whole_not_parClosed`). The same
 device presents every yes/no question of the store (`Oracle.oracle_step_iff`; the count of `Examples.countOne`,
 `Oracle.count_presented`): it marks no limit of the format. The limit this module proves is a limit of
 presentations whose rewrites ask nothing of the store beyond what they match: premise-free ones here, and ones
@@ -48,7 +48,7 @@ open NamesOnTheStep (Expr)
 open NamesOnTheStep.IssuingControls (ground Conf)
 open LogicOverTheStep.ProgramAdequacy (program)
 open LogicOverTheStep.StepSpan (Succ)
-open NullsOnTheStep.Composition (ParClosed NoneReduces NoneStep parClosed_not_noneReduces unionOf)
+open NullsOnTheStep.Composition (ParClosed AbsentReduces AbsentStep parClosed_not_absence unionOf)
 open OneFrame (bodies)
 
 /-! ## Rewrites beside a rest are closed under parallel composition -/
@@ -63,16 +63,16 @@ variable {R : Reading} {rules : List (Rule Rows)} {relEnv : RelationEnv}
 theorem onTerms_parClosed : ParClosed (onTerms relEnv (presentWith R rules)) :=
   fun _ _ u step => semanticStep_beside u.leaves step
 
-/-- **No presented program steps as the none step**: the corollary of
-`NullsOnTheStep.Composition.parClosed_not_noneReduces`, for every reading and every program. -/
-theorem presented_not_none (missing made : Expr) :
-    ¬ ∀ t t', onTerms relEnv (presentWith R rules) t t' ↔ NoneReduces missing made t t' :=
-  parClosed_not_noneReduces onTerms_parClosed missing made
+/-- **No presented program steps as the absence step**: the corollary of
+`NullsOnTheStep.Composition.parClosed_not_absence`, for every reading and every program. -/
+theorem presented_not_absence (absent made : Expr) :
+    ¬ ∀ t t', onTerms relEnv (presentWith R rules) t t' ↔ AbsentReduces absent made t t' :=
+  parClosed_not_absence onTerms_parClosed absent made
 
-/-- **No presented program has the generated possibility of the none program**, for every reading and
+/-- **No presented program has the generated possibility of the absence program**, for every reading and
 every program: wherever the presented language steps from the empty store it also steps beside the row `11`,
 and `spawn` does not. -/
-theorem none_not_presented (R : Reading) (rules : List (Rule Rows)) :
+theorem absence_not_presented (R : Reading) (rules : List (Rule Rows)) :
     ¬ ∀ C : Conf, Trivial C.equations →
       ((langDiamondUsing relEnv (presentWith R rules) (Examples.everything relEnv _)).1 (storeOf Prod.fst C) ↔
         ∃ C', Succ (program ground Prod.fst (bodies {r | r ∈ [Examples.spawn]})) C C') := by
@@ -89,11 +89,11 @@ theorem none_not_presented (R : Reading) (rules : List (Rule Rows)) :
   simp only [empty.1, List.nil_append]
   exact List.Perm.refl _
 
-/-! ## A premise over the whole store presents none queries, as it presents every question of the store -/
+/-! ## A premise over the whole store presents absence, as it presents every question of the store -/
 
 /-- **"No row of this bag is `11`"**, as a relation environment: a decision on the bag, by an arbitrary function
 of the framework's relation environments (`Oracle.guardRelation` is the general form). -/
-def noneRelation : RelationEnv where
+def absenceRelation : RelationEnv where
   tuples relation arguments :=
     if relation = "noEleven" then
       match arguments with
@@ -101,7 +101,7 @@ def noneRelation : RelationEnv where
       | _ => []
     else []
 
-/-- **Make `12` where `11` is not present, with the whole store in scope**: the rest is the whole store, and the
+/-- **Make `12` where `11` is absent, with the whole store in scope**: the rest is the whole store, and the
 premise asks the relation of it. -/
 def spawnWhole : RewriteRule where
   name := "SpawnWhole"
@@ -112,20 +112,20 @@ def spawnWhole : RewriteRule where
 
 /-- The language of that one rewrite, over the same sorts and constructors. -/
 def wholeStore : LanguageDef where
-  name := "NoneWithTheWholeStore"
+  name := "AbsenceWithTheWholeStore"
   types := ["Nat", "Row", "Store"]
   terms := rowFormers ++ [storeFormer]
   equations := []
   rewrites := [spawnWhole]
 
 theorem premises_whole (elements : List Pattern) :
-    applyPremisesWithEnv noneRelation wholeStore spawnWhole.premises
+    applyPremisesWithEnv absenceRelation wholeStore spawnWhole.premises
         [("rest", .collection .hashBag elements none)] =
       if rowCode (.sym 11) ∈ elements then [] else [[("rest", .collection .hashBag elements none)]] := by
   by_cases eleven : rowCode (.sym 11) ∈ elements
-  · simp [applyPremisesWithEnv, spawnWhole, premiseStepWithEnv, relationQueryStep, noneRelation,
+  · simp [applyPremisesWithEnv, spawnWhole, premiseStepWithEnv, relationQueryStep, absenceRelation,
       Mettapedia.OSLF.NativeTypes.GeneratedLogic.builtinRelationTuples_single, applyBindings, eleven]
-  · simp [applyPremisesWithEnv, spawnWhole, premiseStepWithEnv, relationQueryStep, noneRelation,
+  · simp [applyPremisesWithEnv, spawnWhole, premiseStepWithEnv, relationQueryStep, absenceRelation,
       Mettapedia.OSLF.NativeTypes.GeneratedLogic.builtinRelationTuples_single, applyBindings, eleven,
       matchRelationArgs, matchRelationArgument, Bindings.lookup, mergeBindings]
 
@@ -134,9 +134,9 @@ theorem whole_noncontextual : ∀ rule ∈ wholeStore.rewrites, NoncontextualPre
   rw [List.mem_singleton.mp member]
   exact .relationQuery .nil
 
-/-- **The primitive step of the whole-store language from a store**: make `12` where `11` is not present. -/
+/-- **The primitive step of the whole-store language from a store**: make `12` where `11` is absent. -/
 theorem whole_step_iff {rows : List Expr} {target : Pattern} :
-    Mettapedia.OSLF.MeTTaIL.ContextualStep.Step (engineBasePremises noneRelation) wholeStore (storeCode rows)
+    Mettapedia.OSLF.MeTTaIL.ContextualStep.Step (engineBasePremises absenceRelation) wholeStore (storeCode rows)
         target ↔
       Expr.sym 11 ∉ rows ∧ target = storeCode (.sym 12 :: rows) := by
   rw [step_iff_rootStep_of_noncontextualRules whole_noncontextual]
@@ -161,11 +161,11 @@ theorem whole_step_iff {rows : List Expr} {target : Pattern} :
           change applyBindings _ (besideRest [.sym 12]) = _
           rw [applyBindings_besideRest]
           rfl
-  · rintro ⟨missing, rfl⟩
+  · rintro ⟨absent, rfl⟩
     have notEleven : rowCode (.sym 11) ∉ rows.map rowCode := fun inside => by
       obtain ⟨e, member, same⟩ := List.mem_map.mp inside
       rw [rowCode_injective same] at member
-      exact missing member
+      exact absent member
     refine ⟨spawnWhole, List.mem_singleton_self _, [("rest", .collection .hashBag (rows.map rowCode) none)], ?_,
       [("rest", .collection .hashBag (rows.map rowCode) none)], ?_, ?_⟩
     · rw [matchPatternForRule_eq_syntactic, matchPattern_iff_matchRel]
@@ -186,29 +186,29 @@ theorem whole_formers : rowFormers ⊆ wholeStore.terms := List.subset_append_le
 
 theorem whole_store : storeFormer ∈ wholeStore.terms := List.mem_append_right _ (List.mem_singleton_self _)
 
-/-- **The framework's step of the whole-store language**: make `12` where `11` is not present, up to the equations. -/
+/-- **The framework's step of the whole-store language**: make `12` where `11` is absent, up to the equations. -/
 theorem whole_semanticStep_iff {rows : List Expr} {target : Pattern} :
-    langSemanticReducesUsing noneRelation wholeStore (storeCode rows) target ↔
+    langSemanticReducesUsing absenceRelation wholeStore (storeCode rows) target ↔
       Expr.sym 11 ∉ rows ∧
-        EquationEquiv (engineBasePremises noneRelation) wholeStore (storeCode (.sym 12 :: rows)) target := by
-  change StepModuloEquations (engineBasePremises noneRelation) wholeStore (storeCode rows) target ↔ _
+        EquationEquiv (engineBasePremises absenceRelation) wholeStore (storeCode (.sym 12 :: rows)) target := by
+  change StepModuloEquations (engineBasePremises absenceRelation) wholeStore (storeCode rows) target ↔ _
   constructor
   · rintro ⟨redex, contractum, before, step, after⟩
     obtain ⟨arranged, rfl, perm⟩ := storeCode_of_equationEquiv whole_equations whole_noAlgebra before
-    obtain ⟨missing, rfl⟩ := whole_step_iff.mp step
-    refine ⟨fun inside => missing (perm.subset inside), ?_⟩
+    obtain ⟨absent, rfl⟩ := whole_step_iff.mp step
+    refine ⟨fun inside => absent (perm.subset inside), ?_⟩
     exact Relation.EqvGen.trans _ _ _
       (equationEquiv_storeCode_of_perm whole_formers whole_store (perm.cons _)) after
-  · rintro ⟨missing, after⟩
+  · rintro ⟨absent, after⟩
     exact ⟨storeCode rows, storeCode (.sym 12 :: rows), Relation.EqvGen.refl _,
-      whole_step_iff.mpr ⟨missing, rfl⟩, after⟩
+      whole_step_iff.mpr ⟨absent, rfl⟩, after⟩
 
-/-- **The whole-store language presents none queries, by an oracle premise**: read on composition terms, its step is
-exactly the none step of `11` making `12`. Its premise asks a relation environment of the whole store; the
+/-- **The whole-store language presents absence, by an oracle premise**: read on composition terms, its step is
+exactly the absence step of `11` making `12`. Its premise asks a relation environment of the whole store; the
 same device presents every yes/no question of the store (`Oracle.oracle_step_iff`). -/
-theorem whole_presents_none (t t' : StoreComposition.Term Expr) :
-    onTerms noneRelation wholeStore t t' ↔ NoneReduces (.sym 11) (.sym 12) t t' := by
-  unfold onTerms NoneReduces NoneStep
+theorem whole_presents_absence (t t' : StoreComposition.Term Expr) :
+    onTerms absenceRelation wholeStore t t' ↔ AbsentReduces (.sym 11) (.sym 12) t t' := by
+  unfold onTerms AbsentReduces AbsentStep
   rw [whole_semanticStep_iff, equationEquiv_storeCode_iff whole_equations whole_noAlgebra whole_formers whole_store,
     StoreComposition.Term.heat_eq_leaves, StoreComposition.Term.heat_eq_leaves, Multiset.mem_coe]
   apply and_congr_right
@@ -218,11 +218,11 @@ theorem whole_presents_none (t t' : StoreComposition.Term Expr) :
     fun perm => (List.perm_append_singleton _ _).symm.trans perm.symm⟩
 
 /-- **And it has no parallel context rule**: its step is not closed under parallel composition. -/
-theorem whole_not_parClosed : ¬ ParClosed (onTerms noneRelation wholeStore) := by
+theorem whole_not_parClosed : ¬ ParClosed (onTerms absenceRelation wholeStore) := by
   intro closed
-  have here : onTerms noneRelation wholeStore .unit (.atom (.sym 12)) :=
-    (whole_presents_none _ _).mpr ⟨by simp, by simp⟩
-  have beside := (whole_presents_none _ _).mp (closed _ _ (.atom (.sym 11)) here)
+  have here : onTerms absenceRelation wholeStore .unit (.atom (.sym 12)) :=
+    (whole_presents_absence _ _).mpr ⟨by simp, by simp⟩
+  have beside := (whole_presents_absence _ _).mp (closed _ _ (.atom (.sym 11)) here)
   exact beside.1 (by simp)
 
 /-! ## The knowledge decides guards over a caller's unknown -/
@@ -252,12 +252,12 @@ theorem knowledge_decides :
   exact absurd (Mettapedia.Logic.LP.Term.const.inj seven) (by decide)
 
 #print axioms onTerms_parClosed
-#print axioms presented_not_none
-#print axioms none_not_presented
+#print axioms presented_not_absence
+#print axioms absence_not_presented
 #print axioms premises_whole
 #print axioms whole_step_iff
 #print axioms whole_semanticStep_iff
-#print axioms whole_presents_none
+#print axioms whole_presents_absence
 #print axioms whole_not_parClosed
 #print axioms knowledge_decides
 

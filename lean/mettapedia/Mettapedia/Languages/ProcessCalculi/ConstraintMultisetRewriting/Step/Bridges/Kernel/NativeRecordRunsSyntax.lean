@@ -170,8 +170,8 @@ def nativeClause (index : Fin 29) :
   guard := obligation table model contract allow index
   writes := (table index).writes
   writes_distinct := (table index).writes_distinct
-  unchanged name missing values := congrArg (fun term => model.denote term values)
-    ((table index).unchanged name missing)
+  unchanged name absent values := congrArg (fun term => model.denote term values)
+    ((table index).unchanged name absent)
 
 /-- A schematic clause adds its explicit source constraint to the actual
 information and asks the same equality after its own tells. -/

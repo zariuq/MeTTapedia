@@ -169,8 +169,8 @@ def entries : List Entry := [
     sourceProof := "none"
     evidence := [⟨"Mettapedia.OSLF.Framework.RhoScopedFundedInspection", "Mettapedia.OSLF.Framework.RhoScopedFundedInspection.inspection_falsehood", "A complete finite HML inspection on the actual scoped rho successor presentation characterizes negated modal satisfaction; inspection_truth gives the positive comparison."⟩,
       ⟨"Mettapedia.OSLF.Framework.RhoScopedInstrumentProperBase", "Mettapedia.OSLF.Framework.RhoScopedInstrumentProperBase.proper_targets_finite", "For a fixed original rho label and term, the entire target support is finite via the actual reaction catalogue."⟩,
-      ⟨"Mettapedia.OSLF.Syntax.RhoScopedNativeNone", "Mettapedia.OSLF.Binding.RhoScopedNativeNone.full_none_iff_future", "Full native absence quantifies over every future syntactic substitution."⟩,
-      ⟨"Mettapedia.OSLF.Syntax.RhoScopedNativeNone", "Mettapedia.OSLF.Binding.RhoScopedNativeNone.permitted_none_iff_current", "Only on the explicit retractable-future category does native absence reduce to current reaction absence."⟩]
+      ⟨"Mettapedia.OSLF.Syntax.RhoScopedNativeAbsence", "Mettapedia.OSLF.Binding.RhoScopedNativeAbsence.full_absence_iff_future", "Full native absence quantifies over every future syntactic substitution."⟩,
+      ⟨"Mettapedia.OSLF.Syntax.RhoScopedNativeAbsence", "Mettapedia.OSLF.Binding.RhoScopedNativeAbsence.permitted_absence_iff_current", "Only on the explicit retractable-future category does native absence reduce to current reaction absence."⟩]
     coverage := .partialCoverage
     gap := "The source proposition as written is false without qualifications: complete finite support can settle universal current-step claims and their negations. Existing results formalize the required distinctions, not the universal impossibility assertion." },
   { kind := .remarkEntry
@@ -183,7 +183,7 @@ def entries : List Entry := [
     hypotheses := ["The corrected modal distinctions of Proposition 21.2.", "A budget and an explicit completion condition for guard evaluation."]
     sourceProof := "prose"
     evidence := [⟨"Mettapedia.GSLT.Causality.FundedAssayCompletion", "Mettapedia.GSLT.Causality.ComplementaryAssay.pending_prefix_quiet", "A session with no offered message cannot emit a verdict along any actual finite funded prefix."⟩,
-      ⟨"Mettapedia.OSLF.Syntax.RhoScopedNativeNone", "Mettapedia.OSLF.Binding.RhoScopedNativeNone.full_none_iff_future", "Future-stable absence has explicit universal future quantification, rather than being identified with a failed current guard."⟩]
+      ⟨"Mettapedia.OSLF.Syntax.RhoScopedNativeAbsence", "Mettapedia.OSLF.Binding.RhoScopedNativeAbsence.full_absence_iff_future", "Future-stable absence has explicit universal future quantification, rather than being identified with a failed current guard."⟩]
     coverage := .partialCoverage
     gap := "The source sentence that both of Proposition 21.2 conclusions hold without qualification inherits its error. Modal depth is not specifically alternation depth, and the complete learner fragment cannot be inferred from depth alone." },
   { kind := .definitionEntry

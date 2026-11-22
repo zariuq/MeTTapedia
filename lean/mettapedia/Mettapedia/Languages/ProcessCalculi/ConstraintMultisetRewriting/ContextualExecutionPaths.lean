@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualExecutionEndpoints
-import Mathlib.CategoryTheory.PathCategory.Basic
+import Mettapedia.GSLT.Core.PathObservations
 
 /-!
 # Mathlib paths present existing completed contextual admissions
@@ -44,29 +44,25 @@ end Firing
 
 variable {locals O}
 
-def selections {source : Endpoint locals O Γ sort} : {target : Endpoint locals O Γ sort} →
-    Quiver.Path source target → List (Selection O)
-  | _, .nil => []
-  | _, .cons past edge => selections past ++ [edge.selection]
+def selections {source target : Endpoint locals O Γ sort}
+    (path : Quiver.Path source target) : List (Selection O) :=
+  path.observations (fun {before after} (edge : Firing locals before after) => [edge.selection])
 
-def fuels {source : Endpoint locals O Γ sort} : {target : Endpoint locals O Γ sort} →
-    Quiver.Path source target → List Nat
-  | _, .nil => []
-  | _, .cons past edge => fuels past ++ [edge.fuel]
+def fuels {source target : Endpoint locals O Γ sort}
+    (path : Quiver.Path source target) : List Nat :=
+  path.observations (fun {before after} (edge : Firing locals before after) => [edge.fuel])
 
 theorem selections_comp {source middle target : Endpoint locals O Γ sort}
     (first : Quiver.Path source middle) (second : Quiver.Path middle target) :
     selections (first.comp second) = selections first ++ selections second := by
-  induction second with
-  | nil => simp [Quiver.Path.comp, selections]
-  | cons past edge earlier => simp [Quiver.Path.comp, selections, earlier, List.append_assoc]
+  unfold selections
+  exact Quiver.Path.observations_comp _ first second
 
 theorem fuels_comp {source middle target : Endpoint locals O Γ sort}
     (first : Quiver.Path source middle) (second : Quiver.Path middle target) :
     fuels (first.comp second) = fuels first ++ fuels second := by
-  induction second with
-  | nil => simp [Quiver.Path.comp, fuels]
-  | cons past edge earlier => simp [Quiver.Path.comp, fuels, earlier, List.append_assoc]
+  unfold fuels
+  exact Quiver.Path.observations_comp _ first second
 
 theorem occupied_monotone {source target : Endpoint locals O Γ sort} (path : Quiver.Path source target) :
     source.occupied ⊆ target.occupied := by

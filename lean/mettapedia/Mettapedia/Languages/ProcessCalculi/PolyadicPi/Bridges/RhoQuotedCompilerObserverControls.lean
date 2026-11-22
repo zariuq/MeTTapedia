@@ -31,7 +31,7 @@ def quoteCode (code : Code 0) : Pattern := .apply "NQuote" [code.term]
 
 theorem quote_typed (code : Code 0) :
     NameWellSorted rhoReflectivePresentation rhoAtomicNameContext [] (quoteCode code) :=
-  NameWellSorted.quoteOfSafe code.typed code.safe
+  .quote code.typed
 
 theorem quote_safe (code : Code 0) : binderSafeAt "NQuote" 0 (quoteCode code) = true := by
   simpa [quoteCode, binderSafeAt, binderSafeListAt] using code.safe

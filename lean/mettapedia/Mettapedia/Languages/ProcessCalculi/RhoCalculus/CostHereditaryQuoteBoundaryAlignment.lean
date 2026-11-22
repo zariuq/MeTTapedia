@@ -3165,7 +3165,9 @@ theorem boundaryQuotePlanStops_sourcePatternLeafAligned_withCospan_of_closeSmall
       (smallEnvironment.restoreAt 0 smallCanonical) = true := by
     exact smallCanonicalSafeAtNil.substituteBinderSafeAt
       smallEnvironment.restorationSupportedOpenAssignment targetDeclaration
-      (rho_costStaticReflectivePresentationDecl_mem color) (Nat.le_refl 0)
+      (rho_costStaticReflectivePresentationDecl_mem color)
+      (CostCanonicalLaws.rho_costWholeReflectionProfile_closed _
+        (rho_costStaticReflectivePresentationDecl_mem color)) (Nat.le_refl 0)
       smallCanonicalSafe
   have smallRestoreZero_eq_treeNormal :
       smallEnvironment.restoreAt 0 smallCanonical =

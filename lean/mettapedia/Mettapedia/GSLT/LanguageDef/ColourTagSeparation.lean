@@ -79,19 +79,22 @@ theorem costStaticReflectivePresentationDecl_mem_profile {source : CIGSLT}
   simpa only [WrappableIGSLT.costWholeReflectionProfile_presentations] using
     costStaticReflectivePresentationDecl_mem source color declaration mem
 
-/-- **The agreement hypothesis is refuted over Cost, at both colours.**
+/-- **The agreement hypothesis is refuted over Cost, at both colours**, for a
+closed authored presentation.
 Whichever colour is being canonicalized under, the opposite colour's image of
 the same authored presentation supplies a quote that the profile recognizes
 and the declaration does not. -/
 theorem not_quoteStatusAgrees_costStatic {source : CIGSLT}
     (color : CostStaticColor) {declaration : ReflectivePresentationDecl}
-    (mem : declaration ∈ source.reflection.1.presentations) :
+    (mem : declaration ∈ source.reflection.1.presentations)
+    (closed : declaration.quoteScope = .closed) :
     ¬ CostStaticAtomKeyCospan.QuoteStatusAgrees source
         (costStaticReflectivePresentationDecl source color declaration) := by
   cases color with
   | base =>
       refine CostStaticAtomKeyCospan.not_quoteStatusAgrees_of_foreignQuote
-        (costStaticReflectivePresentationDecl_mem_profile .wrapped mem) ?_
+        (costStaticReflectivePresentationDecl_mem_profile .wrapped mem)
+        (costStaticReflectivePresentationDecl_quoteScope source .wrapped declaration closed) ?_
       simpa [costWrappedReflectivePresentationDecl,
         costBaseReflectivePresentationDecl, mapReflectivePresentation,
         costStaticReflectivePresentationDecl, costWrappedStaticReflectiveSymbols,
@@ -100,7 +103,8 @@ theorem not_quoteStatusAgrees_costStatic {source : CIGSLT}
         (costConstructorName_distinct declaration.quoteConstructor).symm
   | wrapped =>
       refine CostStaticAtomKeyCospan.not_quoteStatusAgrees_of_foreignQuote
-        (costStaticReflectivePresentationDecl_mem_profile .base mem) ?_
+        (costStaticReflectivePresentationDecl_mem_profile .base mem)
+        (costStaticReflectivePresentationDecl_quoteScope source .base declaration closed) ?_
       simpa [costWrappedReflectivePresentationDecl,
         costBaseReflectivePresentationDecl, mapReflectivePresentation,
         costStaticReflectivePresentationDecl, costWrappedStaticReflectiveSymbols,
@@ -108,20 +112,22 @@ theorem not_quoteStatusAgrees_costStatic {source : CIGSLT}
         costWrappedStaticSymbols, costBaseLanguageDefSymbolMap] using
         (costConstructorName_distinct declaration.quoteConstructor)
 
-/-- The profile recognizes **either** colour's quote as a restoration
-boundary, whichever colour is being canonicalized under.  Membership itself is
+/-- The profile recognizes **either** colour's quote of a closed authored
+presentation as a restoration boundary, whichever colour is being
+canonicalized under.  Membership itself is
 `costStaticReflectivePresentationDecl_mem` (`CostCanonicalSection`). -/
 theorem isQuoteConstructor_costStaticReflectivePresentationDecl {source : CIGSLT}
     (color : CostStaticColor) (declaration : ReflectivePresentationDecl)
-    (mem : declaration ∈ source.reflection.1.presentations) :
+    (mem : declaration ∈ source.reflection.1.presentations)
+    (closed : declaration.quoteScope = .closed) :
     ReflectiveContextSupport.isQuoteConstructor
         source.costWholeReflectionProfile
         (costStaticReflectivePresentationDecl source color
-          declaration).quoteConstructor = true := by
-  unfold ReflectiveContextSupport.isQuoteConstructor
-  refine List.any_eq_true.mpr ⟨_, ?_, beq_self_eq_true _⟩
-  simpa only [WrappableIGSLT.costWholeReflectionProfile_presentations] using
-    costStaticReflectivePresentationDecl_mem source color declaration mem
+          declaration).quoteConstructor = true :=
+  ReflectiveContextSupport.isQuoteConstructor_of_mem
+    (by simpa only [WrappableIGSLT.costWholeReflectionProfile_presentations] using
+      costStaticReflectivePresentationDecl_mem source color declaration mem)
+    (costStaticReflectivePresentationDecl_quoteScope source color declaration closed)
 
 /-- **Distinct colours spell the same authored quote differently.**  Together
 with the previous theorem this is the foreign-quote configuration: recognized

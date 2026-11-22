@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 # Adding rows commutes with a step that asks no query
 
 A firing **asks no query** (`QueryFree`) when its checks are equation guards and it has no collect query
-patterns. For such a firing, admitted at a state, adding rows at identities missing from the state and
+patterns. For such a firing, admitted at a state, adding rows at identities absent from the state and
 from the firing's made identities keeps it admitted, provided its opening is still fresh, and the
 result is the old result with the same rows added, carried along the firing's extension
 (`step_addRows_of_queryFree`, `reduces_addRows_of_queryFree`). This is the commutation of a context
@@ -12,7 +12,7 @@ with a step that a labelled semantics, or an up-to-context argument, uses.
 
 Each side condition has its counterexample in the tree:
 
-* **No query**: a row added inside a none region refuses the firing
+* **No query**: a row added inside an absence region refuses the firing
   (`RuleSyntax.Controls.row_in_region_refused`), and a two-row take or a counting rule is enabled or
   disabled by a context (`AtOneFrame.queryFree_count_separates`, `AtOneFrame.count_separates`).
 * **Freshness at the new state**: an opening that captures an unknown the new rows mention is not
@@ -65,7 +65,7 @@ theorem step_addRows_of_queryFree {P : Program Tm} {s : State Tm O} (f : Firing 
     enabled.taken_subset (by simpa [Selection.commit] using member)
   have readPresent : ∀ o ∈ f.selection.read, o ∈ s.present := fun o member =>
     enabled.kept_subset (by simpa [Selection.commit] using member)
-  have madeNotPresent : ∀ o ∈ f.selection.made, o ∉ s.present := fun o member present =>
+  have madeAbsent : ∀ o ∈ f.selection.made, o ∉ s.present := fun o member present =>
     Finset.disjoint_left.mp enabled.fresh (by simpa [Selection.commit] using member) present
   have oldRow : ∀ o, o ∉ ids → f.row X (addRows s ids label) o = f.row X s o := by
     intro o notNew
@@ -99,7 +99,7 @@ theorem step_addRows_of_queryFree {P : Program Tm} {s : State Tm O} (f : Firing 
       intro o member present
       have made : o ∈ f.selection.made := by simpa [Selection.commit] using member
       rcases Finset.mem_union.mp present with old | new
-      · exact madeNotPresent o made old
+      · exact madeAbsent o made old
       · exact notMade o made new
     · simp [Selection.commit] at member
   · rw [info]

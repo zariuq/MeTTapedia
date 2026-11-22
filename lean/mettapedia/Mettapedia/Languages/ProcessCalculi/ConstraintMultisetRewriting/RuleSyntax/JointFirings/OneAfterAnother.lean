@@ -73,9 +73,9 @@ variable [DecidableEq O]
 
 /-- A row that a firing does not make reads after it as before. -/
 theorem row_after (s : State (Terms T) O) (g r : Firing O (ext A) P PUnit.unit) {o : O}
-    (missing : o ∉ g.selection.made) :
+    (absent : o ∉ g.selection.made) :
     r.row (frames A) (g.result (frames A) s) o = r.row (frames A) s o := by
-  rw [row_one A, row_one A, Firing.result_label_other (s := s) g missing, row_one A]
+  rw [row_one A, row_one A, Firing.result_label_other (s := s) g absent, row_one A]
 
 /-- **The own equations of a member after a firing that makes none of its rows are its own equations
 before.** -/

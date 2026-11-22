@@ -72,16 +72,16 @@ theorem forward_step {before after : Code (Head := Head)} {state : State S.R Nat
   obtain ⟨instruction, output⟩ := source_complete (presentation := program.presentation)
     (configuration := configuration) step
   let fresh := configuration.fresh
-  have missing : fresh ∉ state.present := configuration.fresh_not_present
+  have absent : fresh ∉ state.present := configuration.fresh_absent
   have accepted : (restricted program qualified).Admits (instruction.compile qualified fresh) :=
-    ⟨(instruction.admitted_iff qualified fresh).mpr missing,
+    ⟨(instruction.admitted_iff qualified fresh).mpr absent,
       instruction_permitted program qualified instruction fresh⟩
-  refine ⟨(instruction.next qualified fresh missing).state,
+  refine ⟨(instruction.next qualified fresh absent).state,
     ⟨instruction.compile qualified fresh, accepted, rfl⟩, fresh,
-    next_single program qualified single instruction fresh missing,
-    (instruction.next qualified fresh missing).consistent, ?_⟩
+    next_single program qualified single instruction fresh absent,
+    (instruction.next qualified fresh absent).consistent, ?_⟩
   have readNext := congrArg (Sigma.mk state.frame.arity)
-    (instruction.next_code qualified fresh missing)
+    (instruction.next_code qualified fresh absent)
   exact readNext.trans ((congrArg (Sigma.mk state.frame.arity) output).trans afterEq.symm)
 
 omit [DecidableEq Head] in

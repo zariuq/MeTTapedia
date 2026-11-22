@@ -17,7 +17,7 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contex
 open Mettapedia.OSLF.Binding hiding instantiate instantiateArgs
 open Mettapedia.OSLF.Binding.ContextualFamily
 open ContextualConjunctiveQueries
-open ContextualConjunctiveNone
+open ContextualConjunctiveAbsence
 
 universe u
 variable {S : Signature} {Query Local Shared : Type} {O : Type u}

@@ -355,7 +355,7 @@ theorem wildcard_sees_garbage :
 /-! ### Owned and forging rules, fresh bags -/
 
 /-- **Owned, positive**: the scoped reader is owned by its label `S`: it uses only `S`, at name
-`0`, and its none region is empty. -/
+`0`, and its absence region is empty. -/
 theorem scopedRead_owned : OwnedBy naming scopedRead S := by
   refine ⟨by decide, fun x member => ?_, fun x closed => ?_⟩
   · simp [scopedRead, Rule.redex] at member

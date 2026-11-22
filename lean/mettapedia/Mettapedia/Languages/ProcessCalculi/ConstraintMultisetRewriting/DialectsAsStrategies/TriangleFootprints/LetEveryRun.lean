@@ -147,8 +147,8 @@ theorem annotations_none {target : Atom} :
     ∀ rows : List Atom, (∀ row ∈ rows, ∀ T, row ≠ .expression [.symbol ":", target, T]) →
       AnnotationTypesRel target rows []
   | [], _ => .nil
-  | row :: rows, missing => .skip (missing row List.mem_cons_self)
-      (annotations_none rows fun r member => missing r (List.mem_cons_of_mem _ member))
+  | row :: rows, absent => .skip (absent row List.mem_cons_self)
+      (annotations_none rows fun r member => absent r (List.mem_cons_of_mem _ member))
 
 theorem let_types : StorageTypesRel (Space.ofList letIfRows) (.symbol "let") [LetPlain.letArrow] := by
   have extracted := Mettapedia.Languages.MeTTa.HE.Spec.Type.AnnotationTypesRel.complete

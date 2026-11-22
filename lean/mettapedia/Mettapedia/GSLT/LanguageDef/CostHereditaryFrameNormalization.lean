@@ -1742,9 +1742,10 @@ def reifiedSourceFrame
     · rw [environment.isObjectPattern_reify]
       exact node.skeleton.2.1.2.2.1
   refine ⟨core.1, core.2, ?_⟩
-  intro declaration membership
+  refine node.skeleton.2.2.map (fun quoteConstructor sealed => ?_) (fun _ => core.2.2.2.2)
+  change binderSafeAt quoteConstructor node.sourceBound.length (environment.reify node.skeleton.1) = true
   rw [environment.binderSafeAt_reify]
-  exact node.skeleton.2.2 declaration membership
+  exact sealed
 
 @[simp]
 theorem reifiedSourceFrame_pattern
@@ -1957,7 +1958,7 @@ def reificationSupportedOpenAssignment
   reflectiveScopeSafe := by
     intro name type lookup presentation membership
     simp [CostStaticAtomEnvironment.reificationAssignment,
-      CostStaticAtomEnvironment.reifyName, binderSafeAt]
+      CostStaticAtomEnvironment.reifyName]
 
 /-- The atomized target frame is a genuine open object in the same generated
 Cost language and sort.  Its sole free context is the finite semantic-atom

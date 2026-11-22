@@ -209,8 +209,8 @@ theorem decided_of_settling_miller
       ((∃ state finished, run ((cumulativeFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((cumulativeFamily facts roots heads algebra rigid complete declared choices reducer root
-            normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run ((cumulativeFamily facts roots heads algebra rigid complete declared choices reducer root
+            normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger = .refuted absent)) :=
   (cumulativeSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete stable (fun problem => StratifiedMiller S.levels problem)
     eventual).decided (stratifiedMiller_of_fragment inside)

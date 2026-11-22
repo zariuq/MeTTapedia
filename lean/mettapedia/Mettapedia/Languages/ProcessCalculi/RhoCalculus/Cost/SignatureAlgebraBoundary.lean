@@ -49,14 +49,16 @@ def unitTerm : source.CanonicalCarrier := by
     ⟨⟨signedZero_unit_typed, rfl, rfl,
       signedZero_unit_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [signedZero, unitSignature, binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [signedZero, unitSignature, binderSafeAt, binderSafeListAt])
 
 def productTerm : source.CanonicalCarrier := by
   refine ⟨signedZero productSignature,
     ⟨⟨signedZero_product_typed, rfl, rfl,
       signedZero_product_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [signedZero, productSignature, unitSignature, binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [signedZero, productSignature, unitSignature, binderSafeAt, binderSafeListAt])
 
 private def wrappedSort : LangSort rhoCIGSLT.costWholeLanguage :=
   ⟨costWrappedSortName, rhoCIGSLT.costWrappedSortName_mem_costWhole⟩

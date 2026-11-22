@@ -101,13 +101,13 @@ theorem enabled_iff (plainP : PlainProgram P) {current : SourceState (D := D)} {
   · rintro ⟨next, moved, live⟩
     obtain ⟨state, active, history⟩ := related.reached
     let fresh := state.present.sup id + 1
-    have missing : fresh ∉ state.present := by
+    have absent : fresh ∉ state.present := by
       intro member
       have bound : fresh ≤ state.present.sup id := Finset.le_sup (f := id) member
       dsimp [fresh] at bound
       omega
     obtain ⟨after, fired, _, _⟩ := simulation_named N plainP moved
-      (related.uniform state active history) related.plain live missing
+      (related.uniform state active history) related.plain live absent
     exact ⟨after, fresh, .snoc history fired⟩
   · rintro ⟨state, active, history⟩
     obtain ⟨before, prior, historyBefore, fired⟩ := history.snoc_inv
@@ -121,11 +121,11 @@ theorem enabled_from_every_representative (plainP : PlainProgram P)
     {current : SourceState (D := D)} {word : List RuleName} {name : RuleName}
     (related : Related N P q current word) (enabled : targetEnabled N P q word name)
     {state : HostState S} {active fresh : Nat} (history : NamedFrom N P q word state active)
-    (missing : fresh ∉ state.present) :
+    (absent : fresh ∉ state.present) :
     ∃ next, FiresNamed N P name state active next fresh := by
   obtain ⟨after, move, live⟩ := (enabled_iff plainP related name).mpr enabled
   obtain ⟨next, fired, _, _⟩ := simulation_named N plainP move
-    (related.uniform state active history) related.plain live missing
+    (related.uniform state active history) related.plain live absent
   exact ⟨next, fired⟩
 
 /-- Each source ordinal is exactly one enabled name on the history-class

@@ -19,14 +19,16 @@
 ;   (lean:evaluator)           the conversion lean:compute runs
 (= (lean:equality) (Equality (lean:theory) (lean:id "eq")))
 (= (conv:run-with (Cv.lean) $E $ctx $t)
-   (let* (($epoch (typ:new-epoch))
-          ($number (conv:run $E $ctx (Cv.orelse (Cv.numeral) (Cv.numeral-lemma)) $t)))
-     (if (== $number Same)
-         (let $ruled (lean:rules-at $E $ctx $t)
-           (if (== $ruled Same)
-               (if (conv:nonlinear $E $ctx lean (mgt:head $t)) (lean:after-strong $E $ctx $t) Same)
-               $ruled))
-         $number)))
+   (let $number (conv:run $E $ctx (Cv.orelse (Cv.numeral) (Cv.numeral-lemma)) $t)
+     (lean:learned
+       (if (== $number Same)
+           (let $ruled (lean:rules-at $E $ctx $t)
+             (if (== $ruled Same)
+                 (if (conv:nonlinear $E $ctx lean (mgt:head $t)) (lean:after-strong $E $ctx $t) Same)
+                 $ruled))
+           $number))))
+; A step that was made can be learned from: the failures kept before it may no longer hold.
+(= (lean:learned $step) (if (== $step Same) Same (let $epoch (typ:new-epoch) $step)))
 (= (lean:rules-at $E $ctx $t)
    (conv:run $E $ctx (Cv.viewed lean (Cv.lean-view (Prover.lean-at $t)) (Prover.lean-at $t) None) $t))
 ; A rule that names one part of its left side twice compares two parts of

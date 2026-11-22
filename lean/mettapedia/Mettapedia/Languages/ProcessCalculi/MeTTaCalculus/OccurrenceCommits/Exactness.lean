@@ -54,8 +54,8 @@ are the same in both models (`labels_eq_system_labels`).
 
 A reader and a taker of one token (`Controls.reader_taker`): the reader first runs both, the
 taker first blocks the reader. Two takers clash (`Controls.takers_clash`). Two readers are
-independent (`Controls.readers_independent`). A none read is spoiled by a commit that makes
-inside its region (`Controls.maker_spoils_none`), and not by a commit that takes outside it.
+independent (`Controls.readers_independent`). An absence read is spoiled by a commit that makes
+inside its region (`Controls.maker_spoils_absence`), and not by a commit that takes outside it.
 -/
 
 set_option autoImplicit false
@@ -383,19 +383,19 @@ theorem lockMaker_enabled : Enabled label {0} lockMaker where
   fresh := by decide
   queries_hold := by simp [lockMaker]
 
-/-- **A maker inside a none region spoils the none read**: making a lock first disables
+/-- **A maker inside an absence region spoils the absence read**: making a lock first disables
 "add unless locked"; the other order runs both. -/
-theorem maker_spoils_none :
+theorem maker_spoils_absence :
     Enabled label (fire {0} unlessLocked) lockMaker ∧
       ¬ Enabled label (fire {0} lockMaker) unlessLocked :=
-  spoils_blocks_one_order none_holds_empty lockMaker_enabled
+  spoils_blocks_one_order absence_holds_empty lockMaker_enabled
     (by unfold Clash; simp [unlessLocked, lockMaker])
     (Or.inr ⟨⟨isLock, ∅⟩, by simp [unlessLocked], 1, by simp [lockMaker], rfl⟩)
     (by unfold Spoils WritesInto; simp [unlessLocked, lockMaker])
 
-/-- A commit that writes only outside the none region does not spoil it: the none read and
+/-- A commit that writes only outside the absence region does not spoil it: the absence read and
 a reader of the token are independent. -/
-theorem reader_and_none_independent : Independent label reader unlessLocked := by
+theorem reader_and_absence_independent : Independent label reader unlessLocked := by
   refine ⟨by unfold Clash; simp [reader, unlessLocked], ?_, ?_⟩
   · unfold Spoils WritesInto
     simp [reader, unlessLocked, label, isLock]
@@ -432,7 +432,7 @@ theorem same_value_replace :
 
 /-! ### Writing into a queried region, and spoiling -/
 
-/-- **Positive control**: making a lock writes into the region of the lock-none query. -/
+/-- **Positive control**: making a lock writes into the region of the lock-absence query. -/
 theorem lockMaker_writesInto_unlessLocked : WritesInto label lockMaker unlessLocked := by
   unfold WritesInto; decide
 
@@ -445,7 +445,7 @@ theorem taker_not_writesInto_unlessLocked : ¬ WritesInto label taker unlessLock
 theorem taker_spoils_reader : Spoils label taker reader := by
   unfold Spoils WritesInto; decide
 
-/-- **Positive control, by a write**: making a lock spoils the lock-none query. -/
+/-- **Positive control, by a write**: making a lock spoils the lock-absence query. -/
 theorem lockMaker_spoils_unlessLocked : Spoils label lockMaker unlessLocked := by
   unfold Spoils WritesInto; decide
 

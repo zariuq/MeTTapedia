@@ -79,7 +79,7 @@ theorem towerUnion_decided {Θ : Context setting.R} {original : EquationStore (T
       towerUnionRun original larger = towerUnionRun original fuel ∧
         ((∃ state finished, towerUnionRun original larger = .solved state finished ∧
             (frames setting.levels).Principal original state.answer) ∨
-          (∃ missing, towerUnionRun original larger = .refuted missing)) :=
+          (∃ absent, towerUnionRun original larger = .refuted absent)) :=
   unionRun_decided (S := setting) ExecutableTowerChoices.choices TowerModel.facts TowerModel.roots TowerModel.heads
     TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentGeneralPattern.DispatchControls.tower_normalizes Miller.Controls.towerInh

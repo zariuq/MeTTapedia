@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.Thinnings.Sh
 
 Gather recovery may extend the shared store before outputs are built. Existing
 bag references retain their meaning across both extensions. Query matching is
-complete at its declared input patterns, so none queries and exact-count checks
+complete at its declared input patterns, so absence and exact-count checks
 use the same regions as the core calculus. Output templates remain unrestricted
 by the inverse-matching profile.
 -/

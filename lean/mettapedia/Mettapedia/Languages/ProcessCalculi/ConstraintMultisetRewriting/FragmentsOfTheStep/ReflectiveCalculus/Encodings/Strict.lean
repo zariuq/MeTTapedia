@@ -28,7 +28,7 @@ equivalence is equality.
   two processes are composable (`image_composable`), and it is success sensitive
   (`encode_successSensitive`);
 * the step does not embed into the reflective calculus: in that composition the step is switchable
-  (`solvable_switchable`): the system with one rule guarded by the none query of a row (make `ω!(0)` where
+  (`solvable_switchable`): the system with one rule guarded by the absence of a row (make `ω!(0)` where
   no row is `*@0`) and no row succeeds, and beside the composable system with the row `*@0` and no
   rule it never succeeds; the reflective calculus is persistent (`rhoParallel_persistent`), so
   `no_uniformTranslation` applies. Of the reflective calculus the argument uses persistence only
@@ -46,13 +46,13 @@ switched off (`junk_switches`), and so is the translation of a process (`image_s
 same criterion the reflective calculus is then also strictly separated from the states of its own
 four-rule program (`strict_separation_fourRule`). The separation with every pair composable
 (`strict_separation`) is true, and its negative half is witnessed by that failure state as well as by
-none queries; it is kept as the control.
+absence; it is kept as the control.
 
 **What the negative half rests on** (`DividingLine`). In the restricted composition a system whose
 rules have only equation checks and no collect pattern is switched off by no composable neighbour,
 whatever the neighbour's rows and rules (`succeeds_beside`); the four-rule program of the reflective
 calculus is such a system (`image_never_switched`). So every switching pair has, in the switched
-system, a rule with a none check, a count check or a collect pattern (`switched_has_guard`), and
+system, a rule with an absence check, a count check or a collect pattern (`switched_has_guard`), and
 the calculus of the other systems is not switchable (`positiveParallel_not_switchable`): for it this
 argument gives no separation, and whether it embeds into the reflective calculus under this criterion
 is open.
@@ -294,7 +294,7 @@ theorem blocked_no_barb (ω : G [] .nm) : ¬ OutBarb ω (tensor emptyState (sing
     cases shape
 
 /-- **Beside the blocker, the guarded spawn is refused**: every firing of the program at the tensor
-of the two states fails its none check, at a solution of its information. -/
+of the two states fails its absence check, at a solution of its information. -/
 theorem blocked_stuck (ω : G [] .nm) (f : RuleSyntax.Firing ℕ (RuleSyntax.Contextual.declarations sig)
     ({guardedSpawn ω} ∪ ∅ : RuleSyntax.Program (RuleSyntax.Contextual.Terms sig))
     (tensor emptyState (single blockerRow)).frame) :
@@ -345,7 +345,7 @@ theorem blocked_never_succeeds (ω : G [] .nm) :
   · exact blocked_no_barb ω shows
   · exact blocked_stuck ω f admitted
 
-/-- **With every pair composable, the step is switchable by none queries**: the system of the guarded spawn
+/-- **With every pair composable, the step is switchable by absence**: the system of the guarded spawn
 succeeds, and beside the system with the row `*@0` it never does. The same pair is composable when
 composition asks for solvable joint knowledge (`solvable_switchable`). -/
 theorem stepParallel_switchable (ω : G [] .nm) : (stepParallel ω).Switchable :=
@@ -425,7 +425,7 @@ theorem image_composable {ω : G [] .nm} (closed : Closed ω) (P Q : RhoProcess)
   exact (ByInstantiation.solvable_iff _).mpr (tensor_represents onP onQ (fromProcess_par P Q)).solvable
 
 /-- **With composition restricted to solvable joint knowledge, the step is still switchable, by
-none queries**: the system of the guarded spawn and the system with the row `*@0` are composable (neither
+absence**: the system of the guarded spawn and the system with the row `*@0` are composable (neither
 has knowledge), the first succeeds, and side by side they never do. -/
 theorem solvable_switchable (ω : G [] .nm) : (stepParallelSolvable ω).Switchable := by
   refine ⟨spawnSystem ω, blockerSystem, ?_, spawnSystem_succeeds ω, blocked_never_succeeds ω⟩
@@ -439,7 +439,7 @@ theorem solvable_switchable (ω : G [] .nm) : (stepParallelSolvable ω).Switchab
 /-- **A strict separation under the uniform criterion, with composition restricted to solvable joint
 knowledge.** For every closed channel `ω`, with success the output barb on `ω` on both sides: a
 uniform translation of the reflective calculus into the step exists, and none of the step into the
-reflective calculus. The negative half is witnessed by a rule guarded by the none query of a row
+reflective calculus. The negative half is witnessed by a rule guarded by the absence of a row
 (`solvable_switchable`). -/
 theorem strict_separation_solvable {ω : G [] .nm} (closed : Closed ω) :
     Nonempty (UniformTranslation (rhoParallel ω) (stepParallelSolvable ω)) ∧
@@ -454,7 +454,7 @@ theorem solvable_not_into_persistent (ω : G [] .nm) (M : ParallelCalculus) (per
   isEmpty_uniformTranslation (solvable_switchable ω) persistent
 
 /-- **The control: with every pair composable.** Both halves hold here too, but the negative half
-needs no none query: a neighbour whose knowledge has no solution switches off every system
+needs no absence: a neighbour whose knowledge has no solution switches off every system
 (`junk_switches`), and by the same criterion the reflective calculus is separated from the states of
 its own four-rule program (`strict_separation_fourRule`). The separation that names its feature is
 `strict_separation_solvable`. -/

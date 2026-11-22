@@ -1,10 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Bridges.Concurrency.HostedAnswerReadings
 
 /-!
-# Real answer occurrences, dead helpers and missing labels
+# Real answer occurrences, dead helpers and absent labels
 
 An actual completed answer row remains readable after adding a genuinely new unused frame name.
-The existing source observer can also inspect the label of a missing occurrence; the physical-row
+The existing source observer can also inspect the label of an absent occurrence; the physical-row
 invariant deliberately rejects that ghost. This distinguishes the presence premise of the adapter
 law from the semantic equation for labels alone.
 -/

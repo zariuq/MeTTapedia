@@ -432,7 +432,7 @@ theorem not_quoteStatusAgrees_rho (color : CostStaticColor) :
   not_quoteStatusAgrees_costStatic color (by
     show rhoReflectivePresentation.toReflectivePresentationDecl ∈
       rhoReflectionProfile.presentations
-    simp [rhoReflectionProfile])
+    simp [rhoReflectionProfile]) rfl
 
 /-- Migration: an existing one-index apex transports to the separated form
 at the diagonal, wherever the two quotation disciplines agree.
@@ -1236,7 +1236,7 @@ theorem rho_foreign_quoteHead_configuration
         rhoReflectivePresentation).quoteConstructor ≠
         (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
           rhoReflectivePresentation).quoteConstructor := by
-  refine ⟨isQuoteConstructor_costStaticReflectivePresentationDecl color _ ?_,
+  refine ⟨isQuoteConstructor_costStaticReflectivePresentationDecl color _ ?_ rfl,
     costStaticReflectivePresentationDecl_quoteConstructor_ne
       (Ne.symm foreign) _⟩
   show rhoReflectivePresentation.toReflectivePresentationDecl ∈

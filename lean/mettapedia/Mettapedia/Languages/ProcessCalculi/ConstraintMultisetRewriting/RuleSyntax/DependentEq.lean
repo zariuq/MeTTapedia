@@ -86,7 +86,7 @@ def guardOf {Δ : Context rules} : Check (TotalTerm Δ) → Option (Equation (To
   | .count _ _ => none
 
 variable (O) in
-/-- The predicate query of a none query or count check. -/
+/-- The predicate query of an absence or count check. -/
 def queryOf {Δ : Context rules} : Check (TotalTerm Δ) → Option (Query levels O Δ)
   | .equal _ _ => none
   | .predicate q pattern => some (Query.predicate levels O q pattern)

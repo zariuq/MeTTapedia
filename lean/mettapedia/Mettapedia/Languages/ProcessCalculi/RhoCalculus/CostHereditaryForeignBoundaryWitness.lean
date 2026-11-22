@@ -161,18 +161,20 @@ theorem foreignQuoteDropContent_eq :
 theorem selectedQuoteDropContent_eq :
     selectedQuoteDropContent = quoteDropBVar .base 0 := rfl
 
-/-- Reflective admission of a quotation-rooted pattern seals its body: the
-admissible binder depth inside a quotation is zero. -/
+/-- Reflective admission of a quotation-rooted pattern of a closed presentation
+seals its body: the admissible binder depth inside a closed quotation is zero. -/
 theorem binderSafeAt_body_of_reflectiveScopeSafeAt
     {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile}
     {declaration : ReflectivePresentationDecl}
     (membership : declaration ∈ profile.presentations)
+    (closed : declaration.quoteScope = .closed)
     {depth : Nat} {body : Pattern}
     (safe : ReflectiveWellSorted.ReflectiveScopeSafeAt profile depth
       (.apply declaration.quoteConstructor [body])) :
     binderSafeAt declaration.quoteConstructor 0 body = true := by
   have applied := safe declaration membership
-  simpa [binderSafeAt] using applied
+  rw [closed, scopeSafeAt_apply_quote_closed] at applied
+  exact applied
 
 /-- Every coloured rho reflective declaration is a presentation of the whole
 Cost reflection profile. -/
@@ -207,7 +209,9 @@ theorem not_reflectivelyWellSorted_quoteDropBVar
         targetFree targetSupport targetType (quoteDropBVar color index) := by
   intro admitted
   have sealed := binderSafeAt_body_of_reflectiveScopeSafeAt
-    (rhoDecl_mem_profile color) admitted.2
+    (rhoDecl_mem_profile color)
+    (CostCanonicalLaws.rho_costWholeReflectionProfile_closed _ (rhoDecl_mem_profile color))
+    admitted.2
   simp [binderSafeAt, binderSafeListAt] at sealed
 
 /-- **Certification never accepts quote/drop over a bound variable**, at either

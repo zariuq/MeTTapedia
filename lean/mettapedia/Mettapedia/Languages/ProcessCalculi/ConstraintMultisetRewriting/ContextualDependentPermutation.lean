@@ -134,7 +134,7 @@ def rotateAt (fuel depth : Nat) {Θ : Context S.R} (problem : EquationStore (Tot
                 match patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes
                     certifyNormal fuel moved.remaining with
                 | some (.solved solved smaller) => some (.solved (moved.then solved) smaller)
-                | some (.refuted missing) => some (.refuted fun solvable => missing (moved.solvable_iff.mp solvable))
+                | some (.refuted absent) => some (.refuted fun solvable => absent (moved.solvable_iff.mp solvable))
                 | none => none
               else none
             else none
@@ -164,10 +164,10 @@ def permutingRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Tot
       match rotateRule rigid complete facts roots heads algebra declared choices reducer root normalizes certifyNormal
           fuel problem with
       | some (.solved update smaller) => .progress update (Prod.Lex.left _ _ smaller)
-      | some (.refuted missing) => .refuted missing
+      | some (.refuted absent) => .refuted absent
       | none => .stuck
   | .progress update smaller => .progress update smaller
-  | .refuted missing => .refuted missing
+  | .refuted absent => .refuted absent
 
 /-- **The permuting solver.** -/
 def permutingSolver (fuel : Nat) : Solver S.levels where
@@ -178,23 +178,23 @@ def permutingSolver (fuel : Nat) : Solver S.levels where
 /-- **The permuting round loses no solution and refutes only with a certificate**: every refutation
 is the rigid round's, or the pattern rule's after a renaming isomorphism. -/
 theorem permutingRound_refuted {fuel : Nat} {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    {missing : ¬ (frames S.levels).Solvable problem}
+    {absent : ¬ (frames S.levels).Solvable problem}
     (refuted : permutingRound rigid complete facts roots heads algebra declared choices reducer root normalizes
-      certifyNormal headTypingUnique fuel problem = .refuted missing) :
-    (∃ missing', ContextualDependentRigidDecomposition.rigidRound rigid complete facts roots heads algebra declared
-        choices reducer root normalizes certifyNormal headTypingUnique fuel problem = .refuted missing') ∨
-      ∃ missing', rotateRule rigid complete facts roots heads algebra declared choices reducer root normalizes
-        certifyNormal fuel problem = some (.refuted missing') := by
+      certifyNormal headTypingUnique fuel problem = .refuted absent) :
+    (∃ absent', ContextualDependentRigidDecomposition.rigidRound rigid complete facts roots heads algebra declared
+        choices reducer root normalizes certifyNormal headTypingUnique fuel problem = .refuted absent') ∨
+      ∃ absent', rotateRule rigid complete facts roots heads algebra declared choices reducer root normalizes
+        certifyNormal fuel problem = some (.refuted absent') := by
   unfold permutingRound at refuted
   split at refuted
   · split at refuted
     · cases refuted
-    · rename_i missing' computed
-      exact .inr ⟨missing', computed⟩
+    · rename_i absent' computed
+      exact .inr ⟨absent', computed⟩
     · cases refuted
   · cases refuted
-  · rename_i missing' computed
-    exact .inl ⟨missing', computed⟩
+  · rename_i absent' computed
+    exact .inl ⟨absent', computed⟩
 
 end ContextualDependentPermutation
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

@@ -191,9 +191,9 @@ theorem reconcile_sound : ∀ (os : List (Occurrence Head V))
         obtain ⟨grow, only, head⟩ := solveOccurrence_sound solved
         obtain ⟨more, tailOnly, tailValues⟩ := reconcile_sound rest targets next τ tail
         refine ⟨grow.trans more, ?_, ?_⟩
-        · intro v missing
-          exact (tailOnly v (fun p member => missing p (by simp [member]))).trans
-            (only v (missing o (by simp)))
+        · intro v absent
+          exact (tailOnly v (fun p member => absent p (by simp [member]))).trans
+            (only v (absent o (by simp)))
         · intro p member
           rcases List.mem_cons.mp member with rfl | member
           · exact (atOccurrence_extends more head).trans found.symm

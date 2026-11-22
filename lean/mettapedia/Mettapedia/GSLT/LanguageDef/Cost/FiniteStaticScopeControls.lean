@@ -115,13 +115,19 @@ theorem nestedQuote_reinsert_sealed (color : CostStaticColor) :
     FiniteStaticTypingControls.synchronous_nonprincipal color nestedQuote_typed
   have mapped := Synchronous.communicationDecoration.reflectiveScopeSafeAt_mapStatic
     Synchronous.FiniteWhole.sourceReflection.1 color sourceSafe typed.isWellScopedAt
+  have closedProfile : ReflectiveWellSorted.ClosedProfile
+      (Synchronous.communicationDecoration.costWholeReflectionProfile
+        Synchronous.FiniteWhole.sourceReflection.1) := by
+    decide +kernel
   intro presentation member
+  have sealed := mapped presentation member
+  rw [scopeSafeAt_of_closed (closedProfile presentation member)] at sealed ⊢
   exact ContextSubstitution.binderSafeAt_renameAmbientBVarsAt
     (CostStaticTypeThinning.Controls.repeated Synchronous.rhoSyncIGSLT color (.base "Name")).toTargetIndex
     (fun _ h => PreservesBoundTypes.index_lt
       (CostStaticTypeThinning.Controls.repeated Synchronous.rhoSyncIGSLT color
         (.base "Name")).preservesBoundTypes h)
-    presentation.quoteConstructor 0 _ (mapped presentation member)
+    presentation.quoteConstructor 0 _ sealed
 
 /-- Increasing ordinary ambient space cannot open a quotation seal. -/
 theorem unsealed_quote_still_rejected (color : CostStaticColor) :

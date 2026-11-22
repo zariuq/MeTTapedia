@@ -276,12 +276,12 @@ theorem other_readout {Value : Type v} {Occurrence : Type w} [DecidableEq Occurr
     (schema : Schema Value) (member : schema.rule ∈ program)
     (state : RuleSyntax.State (Terms Value) Occurrence)
     (certificate : Occurrence) (selection : Selection Occurrence)
-    (occurrence : Occurrence) (missing : occurrence ∉ selection.made)
+    (occurrence : Occurrence) (absent : occurrence ∉ selection.made)
     (environment : (extend state.frame schema.locals).Carrier) :
     ((schema.firing (old := state.frame) member certificate selection).result (frames Value) state).label
       occurrence environment = state.label occurrence environment.1 := by
   exact congrFun (RuleSyntax.Firing.result_label_other
-    (schema.firing (old := state.frame) member certificate selection) missing) environment
+    (schema.firing (old := state.frame) member certificate selection) absent) environment
 
 theorem false_guard_refused {Value : Type v} {Occurrence : Type w} [DecidableEq Occurrence]
     {program : RuleSyntax.Program (Terms Value)}

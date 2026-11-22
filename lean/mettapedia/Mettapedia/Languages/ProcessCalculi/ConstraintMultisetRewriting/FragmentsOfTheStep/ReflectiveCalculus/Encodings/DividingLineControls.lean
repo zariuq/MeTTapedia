@@ -20,7 +20,7 @@ are free. Each control below fails exactly one hypothesis, or shows that a free 
   solution. With no row it succeeds; beside the composable system holding the row `*@0`, the rows the
   pattern sees depend on the solution, no report holds at all of them, and the composite never
   succeeds (`collect_switched`).
-* **The none query** is `solvable_switchable`; **knowledge without a solution**, once every pair is
+* **Absence** is `solvable_switchable`; **knowledge without a solution**, once every pair is
   composable, is `junk_switches`.
 -/
 

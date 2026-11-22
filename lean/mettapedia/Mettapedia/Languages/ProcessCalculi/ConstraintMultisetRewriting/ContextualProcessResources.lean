@@ -49,7 +49,10 @@ theorem certificate_resource_word {source target : Endpoint locals O Γ sort}
   induction certificate with
   | nil => rfl
   | snoc past next earlier =>
-      simp only [Certificate.selections, List.map_append, List.map_cons, List.map_nil, resource_runs_append]
+      change ResourceOccupation.runs
+        ((past.selections ++ [next.selection]).map ResourceProcess.ports)
+        source.inventory.configuration.present = some next.target.inventory.configuration.present
+      simp only [List.map_append, List.map_cons, List.map_nil, resource_runs_append]
       change (ResourceOccupation.runs (past.selections.map ResourceProcess.ports)
         source.inventory.configuration.present).bind _ = _
       rw [earlier, Option.bind_some]

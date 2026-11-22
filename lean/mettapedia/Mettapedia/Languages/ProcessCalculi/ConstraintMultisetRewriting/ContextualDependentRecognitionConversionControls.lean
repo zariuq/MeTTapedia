@@ -74,7 +74,7 @@ def conversionOnly : Solver setting.levels where
   round problem :=
     match rule 16 problem with
     | some (.solved update smaller) => .progress update (Prod.Lex.left _ _ smaller)
-    | some (.refuted missing) => .refuted missing
+    | some (.refuted absent) => .refuted absent
     | none => .stuck
 
 /-- **Run in the driver, it commits** with a principal answer. -/

@@ -84,20 +84,20 @@ theorem the_actual_table_is_complete :
     ContextualQueryAnswers.certifies queries locals captures [] single alternatives domain budget = true := by
   apply decide_eq_true
   intro chosen member
-  have present := (ContextualConjunctiveNone.mem_candidates domain chosen).mp member ⟨0, by decide⟩
+  have present := (ContextualConjunctiveAbsence.mem_candidates domain chosen).mp member ⟨0, by decide⟩
   rw [tuple_eq chosen]
   exact (actual_jobs_finish _ present).1
 
 theorem the_answer_tuples_are_exact :
     ContextualQueryAnswers.answers queries locals captures [] single alternatives domain budget =
-      ContextualConjunctiveNone.candidates domain single.length := by
+      ContextualConjunctiveAbsence.candidates domain single.length := by
   ext chosen
-  change chosen ∈ (ContextualConjunctiveNone.candidates domain single.length).filter
+  change chosen ∈ (ContextualConjunctiveAbsence.candidates domain single.length).filter
     (fun choice => ContextualQueryAnswers.successful
       (ContextualQueryAnswers.scan queries locals captures [] single alternatives budget choice) = true) ↔ _
   rw [Finset.mem_filter, and_iff_left_iff_imp]
   intro member
-  have present := (ContextualConjunctiveNone.mem_candidates domain chosen).mp member ⟨0, by decide⟩
+  have present := (ContextualConjunctiveAbsence.mem_candidates domain chosen).mp member ⟨0, by decide⟩
   rw [tuple_eq chosen]
   exact (actual_jobs_finish _ present).2
 
@@ -109,10 +109,10 @@ theorem every_physical_alternative_is_retained :
   constructor
   · rintro member
     obtain ⟨chosen, present, rfl⟩ := Finset.mem_image.mp member
-    exact (ContextualConjunctiveNone.mem_candidates domain chosen).mp present _
+    exact (ContextualConjunctiveAbsence.mem_candidates domain chosen).mp present _
   · intro member
     exact Finset.mem_image.mpr ⟨tuple occurrence,
-      (ContextualConjunctiveNone.mem_candidates domain _).mpr (fun _ => member), rfl⟩
+      (ContextualConjunctiveAbsence.mem_candidates domain _).mpr (fun _ => member), rfl⟩
 
 theorem unfinished_jobs_are_not_a_complete_empty_answer :
     ContextualQueryAnswers.certifies queries locals captures [] single alternatives domain (fun _ => 0) = false ∧
@@ -160,7 +160,7 @@ theorem the_schema_answer_retains_every_future_solution :
             ∀ identity, candidate identity = instantiate residual (update.answer identity) := by
   apply ContextualQueryAnswers.answer_factors queries locals captures [] single alternatives domain budget (tuple 3)
   rw [the_answer_tuples_are_exact]
-  exact (ContextualConjunctiveNone.mem_candidates domain _).mpr
+  exact (ContextualConjunctiveAbsence.mem_candidates domain _).mpr
     (fun _ => show (3 : Nat) ∈ domain from by decide +kernel)
 
 /-- A repeated read is a candidate tuple; freshening is per port, so its two
@@ -186,10 +186,10 @@ theorem aliased_schema_ports_are_admitted :
   · apply decide_eq_true
     intro chosen member
     have same : chosen = fun _ => 7 := funext fun port =>
-      Finset.mem_singleton.mp ((ContextualConjunctiveNone.mem_candidates {7} chosen).mp member port)
+      Finset.mem_singleton.mp ((ContextualConjunctiveAbsence.mem_candidates {7} chosen).mp member port)
     rw [same]
     exact finished.1
   · exact Finset.mem_filter.mpr
-      ⟨(ContextualConjunctiveNone.mem_candidates {7} _).mpr (fun _ => Finset.mem_singleton_self _), finished.2⟩
+      ⟨(ContextualConjunctiveAbsence.mem_candidates {7} _).mpr (fun _ => Finset.mem_singleton_self _), finished.2⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualQueryAnswersControls

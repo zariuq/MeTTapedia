@@ -18,7 +18,7 @@ noncomputable section
 namespace Mettapedia.OSLF.Framework.RhoScopeFutureAssayControls
 
 open _root_.CategoryTheory Mettapedia.OSLF.Binding
-open RhoSchema RhoQuotationClassFibres RhoScopedParallelEvents RhoScopedNativeNone
+open RhoSchema RhoQuotationClassFibres RhoScopedParallelEvents RhoScopedNativeAbsence
 open RhoScopeFutureAssays RhoScopeOperationalFutureControls
 open RhoScopeMinimumReceipts RhoEquationGeneratedScope RhoGeneratedScopeDecision
 open Mettapedia.GSLT.Causality ProbeCampaign ComplementaryAssay

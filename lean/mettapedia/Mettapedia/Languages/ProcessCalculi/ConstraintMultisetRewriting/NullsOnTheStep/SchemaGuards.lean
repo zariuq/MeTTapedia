@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NamesOnTh
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventEvaluation
 
 /-!
-# Guards with three outcomes, and none queries over stored schemas
+# Guards with three outcomes, and absence over stored schemas
 
 ## Three outcomes on any step
 
@@ -26,18 +26,18 @@ unresolved work, which makes no negative claim (`ThreeValued.attempt`).
 * `evaluate_halts_unresolved`, `evaluate_sound`: driven by the existing budgeted evaluator, a
   candidate without a verdict halts the run as unresolved work, in the state it was proposed at.
 
-## The none query over stored schemas
+## Absence over stored schemas
 
 A stored schema (`storedSchema`) is a pattern whose holes are private: the occurrence stands for
-every instance (`Stands`). The none query of a term over a store (`SchemaNoneMatch`) means that no present
+every instance (`Stands`). Absence of a term over a store (`SchemaAbsent`) means that no present
 label stands for it. The evaluation available today (`evalRef`) compares ground labels and answers no
 verdict as soon as a stored schema is present; `evalHead` also refutes a match by the shape of the
 pattern, and keeps every verdict of `evalRef` (`head_refines_reference`).
 
 * `noVerdict_both_ways`: with the schema `A(_)` stored, the reference evaluation gives no verdict for
-  `A(7)`, which is not present, and for `B(7)`, which is. Turning no verdict into a refusal would
+  `A(7)`, which is not absent, and for `B(7)`, which is. Turning no verdict into a refusal would
   refuse the second; turning it into an admission would accept the first.
-* `unresolved_then_admitted`: a firing guarded by the none query of `B(7)` is unresolved under the
+* `unresolved_then_admitted`: a firing guarded by the absence of `B(7)` is unresolved under the
   reference evaluation and admitted under the evaluation by shape.
 -/
 
@@ -228,7 +228,7 @@ end ThreeValued
 
 end Generic
 
-/-! ## The none query over stored schemas -/
+/-! ## Absence over stored schemas -/
 
 namespace StoredSchemas
 
@@ -265,8 +265,8 @@ def Stands (label e : Expr) : Prop :=
   | some p => ∃ σ : ℕ → Expr, p.inst σ = e
   | none => label = e
 
-/-- **The none query over stored schemas**: no present label stands for the term. -/
-def SchemaNoneMatch (q : Expr) (C : Conf) : Prop := ∀ o ∈ C.present, ¬ Stands o.1 q
+/-- **Absence over stored schemas**: no present label stands for the term. -/
+def SchemaAbsent (q : Expr) (C : Conf) : Prop := ∀ o ∈ C.present, ¬ Stands o.1 q
 
 /-- The evaluation available today: ground labels are compared, and any stored schema leaves no
 verdict. -/
@@ -303,7 +303,7 @@ theorem stands_of_ground {label e : Expr} (ground : schemaOf label = none) :
     cases stored
   · exact Iff.rfl
 
-theorem evalRef_holds {q : Expr} {C : Conf} (holds : evalRef q C = .holds) : SchemaNoneMatch q C := by
+theorem evalRef_holds {q : Expr} {C : Conf} (holds : evalRef q C = .holds) : SchemaAbsent q C := by
   unfold evalRef at holds
   by_cases witness : ∃ o ∈ C.present, schemaOf o.1 = none ∧ o.1 = q
   · rw [if_pos witness] at holds
@@ -318,11 +318,11 @@ theorem evalRef_holds {q : Expr} {C : Conf} (holds : evalRef q C = .holds) : Sch
         exact schema ⟨o, present, notGround⟩
       exact witness ⟨o, present, ground, (stands_of_ground ground).mp stands⟩
 
-theorem evalRef_fails {q : Expr} {C : Conf} (fails : evalRef q C = .fails) : ¬ SchemaNoneMatch q C := by
+theorem evalRef_fails {q : Expr} {C : Conf} (fails : evalRef q C = .fails) : ¬ SchemaAbsent q C := by
   unfold evalRef at fails
   by_cases witness : ∃ o ∈ C.present, schemaOf o.1 = none ∧ o.1 = q
   · obtain ⟨o, present, ground, same⟩ := witness
-    exact fun missing => missing o present ((stands_of_ground ground).mpr same)
+    exact fun absent => absent o present ((stands_of_ground ground).mpr same)
   · rw [if_neg witness] at fails
     by_cases schema : ∃ o ∈ C.present, schemaOf o.1 ≠ none
     · rw [if_pos schema] at fails
@@ -331,7 +331,7 @@ theorem evalRef_fails {q : Expr} {C : Conf} (fails : evalRef q C = .fails) : ¬ 
       cases fails
 
 theorem evalHead_holds {q : Expr} {C : Conf} (holds : evalHead q C = .holds) :
-    SchemaNoneMatch q C := by
+    SchemaAbsent q C := by
   unfold evalHead at holds
   by_cases witness : ∃ o ∈ C.present, schemaOf o.1 = none ∧ o.1 = q
   · rw [if_pos witness] at holds
@@ -349,11 +349,11 @@ theorem evalHead_holds {q : Expr} {C : Conf} (holds : evalHead q C = .holds) :
           exact schema ⟨o, present, by rw [stored]; simp [couldMatch_inst]⟩
 
 theorem evalHead_fails {q : Expr} {C : Conf} (fails : evalHead q C = .fails) :
-    ¬ SchemaNoneMatch q C := by
+    ¬ SchemaAbsent q C := by
   unfold evalHead at fails
   by_cases witness : ∃ o ∈ C.present, schemaOf o.1 = none ∧ o.1 = q
   · obtain ⟨o, present, ground, same⟩ := witness
-    exact fun missing => missing o present ((stands_of_ground ground).mpr same)
+    exact fun absent => absent o present ((stands_of_ground ground).mpr same)
   · rw [if_neg witness] at fails
     by_cases schema : ∃ o ∈ C.present, (schemaOf o.1).any (fun p => couldMatch p q) = true
     · rw [if_pos schema] at fails
@@ -363,8 +363,8 @@ theorem evalHead_fails {q : Expr} {C : Conf} (fails : evalHead q C = .fails) :
 
 /-! ### On the first-order step -/
 
-/-- The none patterns a rule asks. -/
-def nonePatterns (r : RuleInstance Expr) : List Expr :=
+/-- The absence patterns a rule asks. -/
+def absences (r : RuleInstance Expr) : List Expr :=
   r.checks.filterMap fun
     | .predicate .none q => some q
     | _ => none
@@ -373,9 +373,9 @@ def nonePatterns (r : RuleInstance Expr) : List Expr :=
 def combine (verdicts : List Verdict) : Verdict :=
   if .fails ∈ verdicts then .fails else if .noVerdict ∈ verdicts then .noVerdict else .holds
 
-/-- The meaning: every asked the none query holds over stored schemas. -/
+/-- The meaning: every asked absence holds over stored schemas. -/
 abbrev meaning : ∀ {_C : Conf} (_f : Fir) (_b : PUnit.{1}), Unit → Prop :=
-  fun {C} f _ _ => ∀ q ∈ nonePatterns f.rule, SchemaNoneMatch q C
+  fun {C} f _ _ => ∀ q ∈ absences f.rule, SchemaAbsent q C
 
 theorem combine_holds {verdicts : List Verdict} (holds : combine verdicts = .holds) :
     ∀ v ∈ verdicts, v = .holds := by
@@ -405,13 +405,13 @@ theorem combine_fails {verdicts : List Verdict} (fails : combine verdicts = .fai
     · rw [if_neg none] at fails
       cases fails
 
-/-- A three-valued evaluation of stored-schema none queries on the first-order step, from any sound
-evaluation of single none checks. -/
+/-- A three-valued evaluation of stored-schema absence on the first-order step, from any sound
+evaluation of single absences. -/
 def onStep (eval : Expr → Conf → Verdict)
-    (holds : ∀ {q C}, eval q C = .holds → SchemaNoneMatch q C)
-    (fails : ∀ {q C}, eval q C = .fails → ¬ SchemaNoneMatch q C) :
+    (holds : ∀ {q C}, eval q C = .holds → SchemaAbsent q C)
+    (fails : ∀ {q C}, eval q C = .fails → ¬ SchemaAbsent q C) :
     ThreeValued base.toEffectCore @meaning where
-  eval := fun {C} f _ => combine ((nonePatterns f.rule).map fun q => eval q C)
+  eval := fun {C} f _ => combine ((absences f.rule).map fun q => eval q C)
   holds_sound := by
     intro C f _ combined b u _ q member
     exact holds (combine_holds combined _ (List.mem_map_of_mem member))
@@ -430,8 +430,8 @@ def byShape : ThreeValued base.toEffectCore @meaning := onStep evalHead evalHead
 /-- **The evaluation by shape keeps every verdict of the reference.** -/
 theorem head_refines_reference : reference.Refines byShape := by
   intro C f _ decided
-  show combine ((nonePatterns f.rule).map fun q => evalHead q C) =
-    combine ((nonePatterns f.rule).map fun q => evalRef q C)
+  show combine ((absences f.rule).map fun q => evalHead q C) =
+    combine ((absences f.rule).map fun q => evalRef q C)
   have same : ∀ q, evalRef q C ≠ .noVerdict → evalHead q C = evalRef q C := by
     intro q notNone
     unfold evalRef at notNone ⊢
@@ -451,36 +451,36 @@ theorem head_refines_reference : reference.Refines byShape := by
           rw [ground] at matching
           simp at matching
         rw [if_neg noMatch]
-  change combine ((nonePatterns f.rule).map fun q => evalRef q C) ≠ .noVerdict at decided
+  change combine ((absences f.rule).map fun q => evalRef q C) ≠ .noVerdict at decided
   unfold combine at decided ⊢
-  by_cases failed : Verdict.fails ∈ (nonePatterns f.rule).map fun q => evalRef q C
+  by_cases failed : Verdict.fails ∈ (absences f.rule).map fun q => evalRef q C
   · obtain ⟨q, member, verdict⟩ := List.mem_map.mp failed
     have verdictRef : evalRef q C = .fails := verdict
-    have headFails : Verdict.fails ∈ (nonePatterns f.rule).map fun q => evalHead q C :=
+    have headFails : Verdict.fails ∈ (absences f.rule).map fun q => evalHead q C :=
       List.mem_map.mpr ⟨q, member, (same q (by rw [verdictRef]; decide)).trans verdictRef⟩
     rw [if_pos failed, if_pos headFails]
   · rw [if_neg failed] at decided ⊢
-    by_cases none : Verdict.noVerdict ∈ (nonePatterns f.rule).map fun q => evalRef q C
+    by_cases none : Verdict.noVerdict ∈ (absences f.rule).map fun q => evalRef q C
     · rw [if_pos none] at decided
       exact absurd rfl decided
     · rw [if_neg none]
-      have allHold : ∀ q ∈ nonePatterns f.rule, evalRef q C = .holds := by
+      have allHold : ∀ q ∈ absences f.rule, evalRef q C = .holds := by
         intro q member
         cases verdict : evalRef q C with
         | holds => rfl
         | fails => exact absurd (List.mem_map.mpr ⟨q, member, verdict⟩) failed
         | noVerdict => exact absurd (List.mem_map.mpr ⟨q, member, verdict⟩) none
-      have headHold : ∀ q ∈ nonePatterns f.rule, evalHead q C = .holds := fun q member =>
+      have headHold : ∀ q ∈ absences f.rule, evalHead q C = .holds := fun q member =>
         (same q (by rw [allHold q member]; decide)).trans (allHold q member)
-      have noFail : Verdict.fails ∉ (nonePatterns f.rule).map fun q => evalHead q C := by
+      have noFail : Verdict.fails ∉ (absences f.rule).map fun q => evalHead q C := by
         intro member
-        obtain ⟨q, inNonePatterns, verdict⟩ := List.mem_map.mp member
-        rw [headHold q inNonePatterns] at verdict
+        obtain ⟨q, inAbsences, verdict⟩ := List.mem_map.mp member
+        rw [headHold q inAbsences] at verdict
         cases verdict
-      have noNone : Verdict.noVerdict ∉ (nonePatterns f.rule).map fun q => evalHead q C := by
+      have noNone : Verdict.noVerdict ∉ (absences f.rule).map fun q => evalHead q C := by
         intro member
-        obtain ⟨q, inNonePatterns, verdict⟩ := List.mem_map.mp member
-        rw [headHold q inNonePatterns] at verdict
+        obtain ⟨q, inAbsences, verdict⟩ := List.mem_map.mp member
+        rw [headHold q inAbsences] at verdict
         cases verdict
       rw [if_neg noFail, if_neg noNone]
 
@@ -493,13 +493,13 @@ def schemaA : Expr := storedSchema (.app (.lit (.sym 13)) (.hole 0))
 def schemaStore : Conf := ⟨[], {(schemaA, 0)}⟩
 
 /-- **No verdict, both ways.** The reference evaluation gives no verdict for `A(7)`, which is not
-missing, and for `B(7)`, which is. -/
+absent, and for `B(7)`, which is. -/
 theorem noVerdict_both_ways :
-    evalRef (factA (.sym 7)) schemaStore = .noVerdict ∧ ¬ SchemaNoneMatch (factA (.sym 7)) schemaStore ∧
-      evalRef (factB (.sym 7)) schemaStore = .noVerdict ∧ SchemaNoneMatch (factB (.sym 7)) schemaStore := by
+    evalRef (factA (.sym 7)) schemaStore = .noVerdict ∧ ¬ SchemaAbsent (factA (.sym 7)) schemaStore ∧
+      evalRef (factB (.sym 7)) schemaStore = .noVerdict ∧ SchemaAbsent (factB (.sym 7)) schemaStore := by
   refine ⟨by decide, ?_, by decide, ?_⟩
-  · intro missing
-    apply missing (schemaA, 0) (by simp [schemaStore])
+  · intro absent
+    apply absent (schemaA, 0) (by simp [schemaStore])
     simp only [Stands, schemaA, schemaOf_stored]
     exact ⟨fun _ => .sym 7, rfl⟩
   · intro o present stands
@@ -509,7 +509,7 @@ theorem noVerdict_both_ways :
     obtain ⟨σ, same⟩ := stands
     simp [Pat.inst, factB] at same
 
-/-- A firing guarded by the none query of `B(7)`, making `V(7)`. -/
+/-- A firing guarded by the absence of `B(7)`, making `V(7)`. -/
 def guardedB : Fir := ⟨rule [] [] [factV (.sym 7)] [.predicate .none (factB (.sym 7))], [],
   ⟨[], [], [(factV (.sym 7), 0)]⟩⟩
 

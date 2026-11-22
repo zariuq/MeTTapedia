@@ -27,7 +27,7 @@ application conditions are one predicate, `closed`, the union of the regions it 
 world must be closed.
 A rule is **enabled** at a bag `M` when what it takes and keeps is in `M` and nothing else of `M`
 lies in a closed region (`Rule.Enabled`); equivalently, each closed region of `M` holds exactly
-what the rule uses there (`Rule.enabled_iff_filter`). The none query is a closed region in which the rule
+what the rule uses there (`Rule.enabled_iff_filter`). Absence is a closed region in which the rule
 uses nothing; counts, folds, uniqueness and the completeness queries of `every` are closed regions in
 which it uses what it saw. A rule is **positive** when it closes no region.
 
@@ -60,9 +60,9 @@ whose remaining part avoids `F`, the bag `M` fires `ρ` and becomes `M'` (plus t
 ## Controls
 
 `Controls` uses a lock and a token. A reader of the token, parked at the empty bag, borrows the
-token, unconditionally; a step guarded by the none query of the lock borrows nothing and reports the
+token, unconditionally; a step guarded by the absence of the lock borrows nothing and reports the
 lock's region; beside a lock it does not fire, and it fires once the lock is gone, which is the
-environment's own step (`Controls.none_label`, `Controls.none_blocked_by_lock`).
+environment's own step (`Controls.absence_label`, `Controls.absence_blocked_by_lock`).
 -/
 
 set_option autoImplicit false
@@ -439,28 +439,28 @@ theorem reader_label :
     reader.Step 0 ⟨{tok}, fun _ => false⟩ {tok, out} ∧ reader.Positive :=
   ⟨⟨by decide, rfl, avoids_zero _, by decide⟩, fun _ => rfl⟩
 
-/-- **The none step borrows nothing and reports the lock's region.** -/
-theorem none_label : unlessLocked.Step 0 ⟨0, isLock⟩ {out} :=
+/-- **The absence step borrows nothing and reports the lock's region.** -/
+theorem absence_label : unlessLocked.Step 0 ⟨0, isLock⟩ {out} :=
   ⟨by decide, rfl, avoids_zero _, by decide⟩
 
-/-- **Negative control: beside a lock the none step does not fire.** The rest of the environment
+/-- **Negative control: beside a lock the absence step does not fire.** The rest of the environment
 does not avoid the reported region. Once the environment's own step removes the lock, the step fires
 beside what is left. -/
-theorem none_blocked_by_lock :
+theorem absence_blocked_by_lock :
     ¬ unlessLocked.Enabled (0 + 0 + {lock}) ∧ unlessLocked.Enabled (0 + 0 + 0) := by
-  refine ⟨fun enabled => ?_, (none_label.enabled_with (avoids_zero _)).1⟩
+  refine ⟨fun enabled => ?_, (absence_label.enabled_with (avoids_zero _)).1⟩
   have := enabled.2 lock (by decide)
   exact absurd this (by decide)
 
-/-- The none step is not unconditional: its rule is not positive. -/
-theorem none_conditional : ¬ unlessLocked.Positive := fun positive => by
+/-- The absence step is not unconditional: its rule is not positive. -/
+theorem absence_conditional : ¬ unlessLocked.Positive := fun positive => by
   have := positive lock
   exact absurd this (by decide)
 
-/-- **Step, negative**: parked beside a lock, the none rule has no step with the lock's region
-as its condition: the rest of the environment does not avoid it. (`none_label` is the positive
+/-- **Step, negative**: parked beside a lock, the absence rule has no step with the lock's region
+as its condition: the rest of the environment does not avoid it. (`absence_label` is the positive
 control.) -/
-theorem none_step_blocked_by_lock :
+theorem absence_step_blocked_by_lock :
     ¬ unlessLocked.Step ({lock} : Multiset Atom) ⟨0, isLock⟩ {lock, out} := fun step =>
   absurd step.2.2.1 (by decide)
 

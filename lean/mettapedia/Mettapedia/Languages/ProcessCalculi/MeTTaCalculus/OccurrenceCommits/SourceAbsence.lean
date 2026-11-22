@@ -1,12 +1,12 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.SourceSemantics
 
 /-!
-# The none query of a complete source query
+# Absence of a complete source query
 
 This operation tests the existing source-list compiler without exporting its
 bindings, takes, keeps, or computed values. A successful result retains exact
 queries of the source list's completeness regions. The independent declarative
-row relation supplies the meaning of none queries; matcher completeness is essential.
+row relation supplies the meaning of absence; matcher completeness is essential.
 
 The construction is the query component of `SourceList.absent`; its continuation
 uses the original substitution. Qualification of the native adaptive scan is a
@@ -21,7 +21,7 @@ universe uO uV uT uP
 
 variable {O : Type uO} [DecidableEq O] {V : Type uV} {T : Type uT} {P : Type uP}
 
-/-- The none query produces one query-only row precisely when the complete inner
+/-- Absence produces one query-only row precisely when the complete inner
 source query has no row. Its local substitutions never escape. -/
 def absenceRows (L : TermLayer V T P) (m : Matcher V T P) (label : O → T)
     (S : Finset O) (src : SourceList V T P) (σ : Subst V T) :
@@ -54,7 +54,7 @@ theorem mem_absenceRows {L : TermLayer V T P} {m : Matcher V T P} {label : O →
       exact empty (by rw [h]; rfl)
     simp [absenceRows, empty, nonempty]
 
-/-- The none query has a meaning independent of the matcher implementation. -/
+/-- Absence has a meaning independent of the matcher implementation. -/
 theorem rows_empty_iff_no_declarative [DecidableEq V]
     {L : TermLayer V T P} {m : Matcher V T P} {label : O → T} {S : Finset O}
     (sound : Matcher.Sound L m) (complete : Matcher.Complete L m)
@@ -67,10 +67,10 @@ theorem rows_empty_iff_no_declarative [DecidableEq V]
   · rintro empty ⟨x, declared⟩
     obtain ⟨y, member, _⟩ := agreed.2.1 σ (SubstEquiv.refl L.equivalence σ) x declared
     simp [empty] at member
-  · intro missing
+  · intro absent
     apply Multiset.eq_zero_of_forall_notMem
     intro x member
-    exact missing ⟨x, agreed.1 x member⟩
+    exact absent ⟨x, agreed.1 x member⟩
 
 /-- The result retains the caller substitution and only the observation footprint. -/
 theorem absenceRow_data {L : TermLayer V T P} {m : Matcher V T P} {label : O → T}
@@ -95,7 +95,7 @@ theorem absenceRow_holds {L : TermLayer V T P} {m : Matcher V T P} {label : O �
   rw [(absenceRow_data member).2]
   exact complQueries_holds _
 
-/-- Stable completeness observations preserve the exact none query row. -/
+/-- Stable completeness observations preserve the exact absence row. -/
 theorem absenceRows_congr {L : TermLayer V T P} {m : Matcher V T P} {label : O → T}
     (sound : Matcher.Sound L m) (monotone : Matcher.RegionMonotone m)
     {S S' : Finset O} {src : SourceList V T P} {σ : Subst V T}
@@ -112,8 +112,8 @@ theorem absenceRows_congr {L : TermLayer V T P} {m : Matcher V T P} {label : O �
     rw [show regionOf label S r = regionOf label S' r from agree r member]
   simp only [absenceRows, sameRows, sameQueries]
 
-/-- Revalidating the retained observations revalidates the exact none query result.
-The unchanged observations may be stronger than continued none query alone. -/
+/-- Revalidating the retained observations revalidates the exact absence result.
+The unchanged observations may be stronger than continued absence alone. -/
 theorem mem_absenceRows_iff_holds {L : TermLayer V T P} {m : Matcher V T P}
     {label : O → T} (sound : Matcher.Sound L m) (monotone : Matcher.RegionMonotone m)
     {S S' : Finset O} {src : SourceList V T P} {σ : Subst V T}

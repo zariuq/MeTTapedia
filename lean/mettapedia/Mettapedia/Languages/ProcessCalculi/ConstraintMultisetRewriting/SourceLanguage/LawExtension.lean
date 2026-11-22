@@ -127,8 +127,8 @@ theorem move_without {P : Program κ Γ star D.Ty} {e : Equation κ Γ star D.Ty
   | add K sp t k fs ps h addressed => exact ⟨_, 0, (add_zero _).symm, by simp, .add _ _ _ _ _ _ _ h addressed⟩
   | remove K sp t k fs ps h addressed r rest split fits =>
       exact ⟨_, 0, (add_zero _).symm, by simp, .remove _ _ _ _ _ _ _ h addressed r rest split fits⟩
-  | removeMissing K sp t k fs ps h addressed none =>
-      exact ⟨_, 0, (add_zero _).symm, by simp, .removeMissing _ _ _ _ _ _ _ h addressed none⟩
+  | removeAbsent K sp t k fs ps h addressed none =>
+      exact ⟨_, 0, (add_zero _).symm, by simp, .removeAbsent _ _ _ _ _ _ _ h addressed none⟩
   | new => exact ⟨_, 0, (add_zero _).symm, by simp, .new _ _ _ _ _ _ _⟩
   | checkStart => exact ⟨_, 0, (add_zero _).symm, by simp, .checkStart _ _ _ _ _ _⟩
   | admitted K v T fs ps all => exact ⟨_, 0, (add_zero _).symm, by simp, .admitted _ _ _ _ _ _ all⟩
@@ -180,8 +180,8 @@ theorem move_with {P : Program κ Γ star D.Ty} {e : Equation κ Γ star D.Ty}
       exact ⟨0, by simp, by rw [add_zero]; exact .add _ _ _ _ _ _ _ h addressed⟩
   | remove K sp t k fs ps h addressed r rest split fits =>
       exact ⟨0, by simp, by rw [add_zero]; exact .remove _ _ _ _ _ _ _ h addressed r rest split fits⟩
-  | removeMissing K sp t k fs ps h addressed none =>
-      exact ⟨0, by simp, by rw [add_zero]; exact .removeMissing _ _ _ _ _ _ _ h addressed none⟩
+  | removeAbsent K sp t k fs ps h addressed none =>
+      exact ⟨0, by simp, by rw [add_zero]; exact .removeAbsent _ _ _ _ _ _ _ h addressed none⟩
   | new => exact ⟨0, by simp, by rw [add_zero]; exact .new _ _ _ _ _ _ _⟩
   | checkStart => exact ⟨0, by simp, by rw [add_zero]; exact .checkStart _ _ _ _ _ _⟩
   | admitted K v T fs ps all => exact ⟨0, by simp, by rw [add_zero]; exact .admitted _ _ _ _ _ _ all⟩
@@ -250,7 +250,7 @@ theorem move_keeps {P : Program κ Γ star D.Ty} {e : Equation κ Γ star D.Ty} 
       intro b' member; rw [Multiset.mem_singleton.mp member]
       exact ⟨fun c' same => by
         simp only [Focus.eval.injEq] at same; subst same; exact focus (.remove sp t k) rfl, frames, pending⟩
-  | removeMissing K sp t k fs ps h addressed none =>
+  | removeAbsent K sp t k fs ps h addressed none =>
       intro b' member; rw [Multiset.mem_singleton.mp member]
       exact ⟨fun c' same => by
         simp only [Focus.eval.injEq] at same; subst same; exact focus (.remove sp t k) rfl, frames, pending⟩

@@ -1,6 +1,4 @@
-let A p. assume Hp: p :e (Pi_ ux :e A, LeanProp). let inst. assume Hinst: inst :e (Pi_ x :e A, (Lean_Decidable (p x))).
-let s. assume Hs: s :e Lean_Quot (Lean_List A) (LeanPermRel A).
-assume H: 0 :e Lean_Multiset_Nodup A s.
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let A. assume H_A: A :e LeanUniv l_u_1. let p. assume Hp: p :e (Pi_ ux :e A, LeanProp). let inst. assume Hinst: inst :e (Pi_ x :e A, (Lean_Decidable (p x))). let s. assume Hs: s :e Lean_Quot (Lean_List A) (LeanPermRel A). assume H: 0 :e Lean_Multiset_Nodup A s.
 claim Hq: (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) :e (Pi_ ux :e A, Lean_Bool).
 { exact lam_Pi A (fun _ => Lean_Bool) (fun b => Lean_Decidable_decide (p b) (inst b))
     (fun b Hb => Lean_Decidable_decide_In (p b) (ap_Pi A (fun _ => LeanProp) p b Hp Hb)

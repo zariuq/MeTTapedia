@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 
 One schematic row can instantiate differently at two uses under the same caller
 assignment. A shared row cannot. This distinction persists even with no outside
-rows or knowledge: none queries of an escaping variable alone does not prove that
+rows or knowledge: absence of an escaping variable alone does not prove that
 changing an existential/shared datum into a universally reusable schema preserves
 repeated-use observations. Automatic generalization needs an additional logical
 licence; an explicit binder may deliberately choose the schematic reading.
@@ -31,8 +31,8 @@ def shared : Row Tm PUnit.unit := .shared (.var 0)
 
 theorem schematic_reads (σ : Subst atoms) (n : Nat) : Row.ReadsAt X (b := PUnit.unit) σ (c n) schematic := by
   refine ⟨point n, ?_, .nil, rfl⟩
-  intro equation missing
-  cases missing
+  intro equation absent
+  cases absent
 
 theorem distinct_payloads : c 5 ≠ c 6 := by
   intro same
@@ -72,8 +72,8 @@ theorem arbitrary_local_instantiation_is_not_reversible :
       freeClosure.ReadsAt X (b := PUnit.unit) (point 5) (c 6) := by
   refine ⟨?_, ?_, schematic_reads _ _⟩
   · refine ⟨point 5, ?_, .nil, rfl⟩
-    intro equation missing
-    cases missing
+    intro equation absent
+    cases absent
   · rintro ⟨_, _, _, output⟩
     exact distinct_payloads output
 

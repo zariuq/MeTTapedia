@@ -20,7 +20,7 @@ open Mettapedia.OSLF.Binding.ContextualFamily
 open Mettapedia.Logic.LP (ScopedVar)
 open ContextualGuardMatching
 open ContextualConjunctiveQueries
-open ContextualConjunctiveNone
+open ContextualConjunctiveAbsence
 open ContextualSelectionViews.Controls (base atom pair)
 
 local instance : DecidableEq base.Srt := inferInstanceAs (DecidableEq Unit)
@@ -140,7 +140,7 @@ theorem repeated_reads_of_one_physical_row_are_enumerated :
     (fun _ : Fin 2 => 10) ∈ candidates world 2 :=
   (mem_candidates world _).mpr (fun _ => by decide +kernel)
 
-theorem the_shared_variable_conjunction_certifiably_matches_none :
+theorem the_shared_variable_conjunction_is_certifiably_absent :
     certifies queries locals captures 2 [] patterns rows world = true := by
   apply decide_eq_true
   intro chosen member
@@ -154,13 +154,13 @@ theorem the_shared_variable_conjunction_certifiably_matches_none :
   rw [shape]
   exact the_actual_tuple_refuses _ _ first second
 
-theorem the_executable_result_proves_none_at_every_future :
+theorem the_executable_result_proves_the_all_future_absence :
     Ask queries locals captures [] patterns rows world :=
-  certifies_sound queries locals captures 2 [] patterns rows world the_shared_variable_conjunction_certifiably_matches_none
+  certifies_sound queries locals captures 2 [] patterns rows world the_shared_variable_conjunction_is_certifiably_absent
 
 def addedChoice (port : Fin patterns.length) : Nat := if port.val = 0 then 10 else 30
 
-theorem q_at_the_shared_value_defeats_none_of_the_conjunction :
+theorem q_at_the_shared_value_defeats_the_conjunction_absence :
     ContextualConjunctiveQueries.Matches queries locals captures (generator captures) patterns rows addedChoice := by
   refine ⟨Extension.identity captures, (fun _ => a), (fun _ => a), ?_⟩
   intro port
@@ -176,12 +176,12 @@ theorem q_at_the_shared_value_defeats_none_of_the_conjunction :
 
 theorem adding_that_row_invalidates_the_guard :
     ¬ Ask queries locals captures [] patterns rows enlarged := by
-  intro missing
-  exact missing Nat captures (generator captures) (by intro equation member; cases member) addedChoice
+  intro absent
+  exact absent Nat captures (generator captures) (by intro equation member; cases member) addedChoice
     (fun port => by unfold addedChoice; split <;> decide +kernel)
-    q_at_the_shared_value_defeats_none_of_the_conjunction
+    q_at_the_shared_value_defeats_the_conjunction_absence
 
-theorem an_existing_join_is_not_certified_none :
+theorem an_existing_join_is_not_certified_absent :
     certifies queries locals captures 2 [] patterns rows enlarged = false := by
   apply Bool.eq_false_iff.mpr
   intro accepted
@@ -207,7 +207,7 @@ theorem one_schema_row_may_be_read_at_two_independent_instances :
     subst port
     with_unfolding_all rfl
 
-theorem those_repeated_schema_reads_are_never_certified_none (fuel : Nat) :
+theorem those_repeated_schema_reads_are_never_certified_absent (fuel : Nat) :
     certifies queries locals captures fuel [] independentPatterns schemaRows {7} = false := by
   apply Bool.eq_false_iff.mpr
   intro accepted
@@ -255,11 +255,11 @@ theorem later_binding_of_a_caller_variable_can_make_a_join :
 
 theorem the_check_cannot_manufacture_or_forget_the_caller_binding :
     ¬ Ask queries locals captures [] [p shared] rows {10} := by
-  intro missing
-  exact missing Nat captures boundLater (by intro equation member; cases member) (fun _ => 10)
+  intro absent
+  exact absent Nat captures boundLater (by intro equation member; cases member) (fun _ => 10)
     (fun _ => by decide +kernel) later_binding_of_a_caller_variable_can_make_a_join
 
-theorem a_shared_caller_variable_prevents_none_certification (fuel : Nat) :
+theorem a_shared_caller_variable_prevents_absence_certification (fuel : Nat) :
     certifies queries locals captures fuel [] [p shared] rows {10} = false := by
   apply Bool.eq_false_iff.mpr
   intro accepted
@@ -309,12 +309,12 @@ theorem empty_conjunction_has_its_empty_candidate_even_in_an_empty_world :
     ContextualConjunctiveBoundaries.emptyChoice (O := Nat) ∈ candidates (∅ : Finset Nat) 0 :=
   ContextualConjunctiveBoundaries.the_empty_tuple_is_enumerated ∅
 
-theorem empty_conjunction_does_not_match_none (fuel : Nat) :
+theorem empty_conjunction_is_not_absent (fuel : Nat) :
     certifies queries locals captures fuel [] ([] : List Pattern) rows ∅ = false :=
-  ContextualConjunctiveBoundaries.no_fuel_can_certify_none_of_a_consistent_empty_conjunction
+  ContextualConjunctiveBoundaries.no_fuel_can_certify_absence_of_a_consistent_empty_conjunction
     queries locals captures (generator captures) fuel [] rows ∅ (by intro equation member; cases member)
 
-theorem nonempty_conjunction_matches_none_in_an_empty_world :
+theorem nonempty_conjunction_is_absent_in_an_empty_world :
     certifies queries locals captures 0 [] patterns rows ∅ = true :=
   ContextualConjunctiveBoundaries.empty_world_certifies_a_nonempty_query queries locals captures 0 [] patterns (by decide +kernel) rows
 
@@ -326,7 +326,7 @@ theorem the_inconsistent_background_has_no_model {Next : Type} (next : Next → 
   change 1 = 3 at sizes
   omega
 
-theorem an_inconsistent_background_makes_even_empty_none_vacuous :
+theorem an_inconsistent_background_makes_even_empty_absence_vacuous :
     Ask queries locals captures [(a, b)] ([] : List Pattern) rows world := by
   intro Next next candidate impossible
   exact False.elim (the_inconsistent_background_has_no_model next candidate impossible)

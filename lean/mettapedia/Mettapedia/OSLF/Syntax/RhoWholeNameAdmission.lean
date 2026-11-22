@@ -195,7 +195,7 @@ theorem translate_covers_wholeNameSafe {free : FreeSortContext}
     exact ⟨nameOf t, by rw [tName_bvar, ht, Option.map_some]⟩
   · intro bound name _ _ depth Γ ρ _ _
     exact ⟨freeT name, tName_fvar ρ name⟩
-  · intro bound process _ _ ih hb depth Γ ρ hρ safe
+  · intro bound process _ ih hb depth Γ ρ hρ safe
     change wholeNameSafeAt depth (.apply "NQuote" [process]) = true at safe
     show ∃ value, tName ρ (.apply "NQuote" [process]) = some value
     by_cases hdrop : ∃ name, process = .apply "PDrop" [name]
@@ -358,36 +358,27 @@ theorem structural_unit_bound_name_admitted :
   dsimp
   refine ⟨?_, ?_, by decide, rfl⟩
   · exact .quote (.parallel (.cons (.drop (.bvar rfl))
-      (.cons .unit .nil))) (by decide)
+      (.cons .unit .nil)))
   · exact NameEquiv.trans _ _ _
       (NameEquiv.struct_equiv _ _
         (StructuralCongruence.par_nil_right (.apply "PDrop" [.bvar 0])))
       (NameEquiv.quote_drop (.bvar 0))
 
-/-- A non-unit partner keeps the quotation as code: `@(*x | @0!(0))` is
-sorted when binders reach into quotations, but its code mentions the outer
-binder, so authored rho's sorting does not admit it, it is not whole-name
-safe, and it is not translated beneath that binder. -/
+/-- A non-unit partner keeps the quotation sealed: `@(*x | @0!(0))` is a
+well-sorted name whose code mentions the outer binder, so it is neither
+admitted nor translated beneath that binder. -/
 theorem structural_partner_quote_remains_sealed :
     let sealed : Pattern := .apply "NQuote" [.collection .hashBag
       [.apply "PDrop" [.bvar 0],
         .apply "POutput" [.apply "NQuote" [.apply "PZero" []], .apply "PZero" []]] none]
-    NameWellSorted rhoApplyPresentation FreeSortContext.empty
-      [rhoReflectivePresentation.nameSort] sealed ∧
-    ¬ NameWellSorted rhoReflectivePresentation FreeSortContext.empty
+    NameWellSorted rhoReflectivePresentation FreeSortContext.empty
       [rhoReflectivePresentation.nameSort] sealed ∧
     wholeNameSafeAt 1 sealed = false ∧
     tName (Env.empty []).up sealed = none := by
   dsimp
-  refine ⟨?_, ?_, by decide, rfl⟩
-  · exact .quote (.parallel (.cons (.drop (.bvar rfl))
-      (.cons (.output (.quote .unit
-        (MeTTaIL.ReflectiveSubstitution.quoteAdmits_of_reaching rfl _)) .unit) .nil)))
-      (MeTTaIL.ReflectiveSubstitution.quoteAdmits_of_reaching rfl _)
-  · intro typed
-    have closed := typed.quotesClosed rfl
-    revert closed
-    decide
+  refine ⟨?_, by decide, rfl⟩
+  exact .quote (.parallel (.cons (.drop (.bvar rfl))
+    (.cons (.output (.quote .unit) .unit) .nil)))
 
 /-- Whole-name-aware admission is sufficient to enter the strict-core
 executor/presentation comparison. The simulation theorem itself has no

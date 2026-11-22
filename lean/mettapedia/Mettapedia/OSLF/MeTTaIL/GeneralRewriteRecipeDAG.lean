@@ -273,7 +273,7 @@ theorem Graph.check_exact (graph : Graph) (claim : Claim) :
       | none =>
           constructor
           · intro impossible
-            simp only [Graph.check, prepared, Shared.checkJudgments, Shared.checkJudgmentsWithWork,
+            simp only [Graph.check, prepared, Shared.checkJudgments, Shared.checkJudgmentsWithWork_eq_inspectRows,
               inspected, Bool.false_eq_true] at impossible
           · rintro ⟨table, valid, _⟩
             have found := (prepared_inspect_exact plan bound type prepared [] table).mpr valid
@@ -283,14 +283,14 @@ theorem Graph.check_exact (graph : Graph) (claim : Claim) :
           have valid := (prepared_inspect_exact plan bound type prepared [] table).mp inspected
           constructor
           · intro accepted
-            simp only [Graph.check, prepared, Shared.checkJudgments, Shared.checkJudgmentsWithWork,
+            simp only [Graph.check, prepared, Shared.checkJudgments, Shared.checkJudgmentsWithWork_eq_inspectRows,
               inspected, decide_eq_true_eq] at accepted
             exact ⟨table, valid, accepted⟩
           · rintro ⟨other, otherValid, atRoot⟩
             have found := (prepared_inspect_exact plan bound type prepared [] other).mpr otherValid
             have same := Option.some.inj (inspected.symm.trans found)
             cases same
-            simpa only [Graph.check, prepared, Shared.checkJudgments, Shared.checkJudgmentsWithWork,
+            simpa only [Graph.check, prepared, Shared.checkJudgments, Shared.checkJudgmentsWithWork_eq_inspectRows,
               inspected, decide_eq_true_eq] using atRoot
 
 def firings (receipt : SemanticTrace) : List GeneralRuleJobs.Receipt :=

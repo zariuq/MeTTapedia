@@ -190,7 +190,7 @@ theorem boundarySourceCanonicalOccurrences_commonRestorationApex_of_closeSmaller
         rfl, rfl, rfl⟩,
       by
         intro presentation membership
-        rfl⟩
+        simp⟩
   let pair := Classical.choice
     (closeSmaller (childOuter := []) leftWellSorted rightWellSorted
       (by simpa [leftAtRoot] using canonical)
@@ -410,7 +410,7 @@ theorem sourceBoundaryCanonicalOccurrences_commonRestorationApex_of_closeSmaller
         rfl, rfl, rfl⟩,
       by
         intro presentation membership
-        rfl⟩
+        simp⟩
   have rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
       rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       targetFree rightAtRoot.certified.typed.boundary.targetSupport

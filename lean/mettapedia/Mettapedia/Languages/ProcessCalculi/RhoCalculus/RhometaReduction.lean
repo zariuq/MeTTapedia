@@ -1,3 +1,4 @@
+import Mathlib.Data.List.Forall2
 import Mathlib.Algebra.Order.Quantale
 import Mettapedia.Algebra.QuantaleWeakness
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.MultiStep
@@ -1358,6 +1359,97 @@ private theorem strippedNonZeroElems_perm
     (List.Perm.filter (p := fun e => e ≠ .apply "PZero" [])
       (hperm.map stripSCWrappers))
 
+/-- A closed parallel collection exposes an application precisely when its
+nonzero elements consist of that application alone. -/
+private theorem strip_parallel_eq_apply_iff {kind : CollType}
+    (parallel : kind = .hashBag ∨ kind = .hashSet)
+    {elems : List Pattern} {label : String} {args : List Pattern}
+    (named : label ≠ "PZero") :
+    stripSCWrappers (.collection kind elems none) = .apply label args ↔
+      strippedNonZeroElems elems = [.apply label args] := by
+  have reduced : stripSCWrappers (.collection kind elems none) =
+      (match strippedNonZeroElems elems with
+      | [] => .apply "PZero" []
+      | [p] => p
+      | _ => .collection kind (strippedNonZeroElems elems) none) := by
+    rcases parallel with rfl | rfl <;> simp only [stripSCWrappers, strippedNonZeroElems]
+  rw [reduced]
+  cases strippedNonZeroElems elems with
+  | nil => simp [Ne.symm named]
+  | cons head tail =>
+      cases tail <;> simp
+
+private theorem atomToPattern_named (atom : Atom) :
+    ∃ label args, atomToPattern atom = .apply label args ∧ label ≠ "PZero" := by
+  cases atom
+  case grounded value =>
+    cases value
+    case int integer => cases integer <;> simp [atomToPattern, groundedValueToPattern]
+    case bool boolean => cases boolean <;> simp [atomToPattern, groundedValueToPattern]
+    all_goals simp [atomToPattern, groundedValueToPattern]
+  all_goals simp [atomToPattern]
+
+private theorem decode_parallel_eq_of_perm
+    (read : List Pattern → Option Atom) (encode : Atom → Pattern)
+    (observes : ∀ elems value, read elems = some value ↔
+      strippedNonZeroElems elems = [encode value])
+    {left right : List Pattern} (arranged : left.Perm right) :
+    read left = read right := by
+  apply Option.ext
+  intro value
+  rw [observes, observes]
+  have related := strippedNonZeroElems_perm arranged
+  exact ⟨fun h => (h ▸ related).singleton_eq.symm, fun h => (h ▸ related).eq_singleton⟩
+
+/-- Pointwise alignment of nonzero tests and a relation between retained
+elements yields that same relation after administrative units are erased. -/
+private theorem strippedNonZeroElems_forall₂ {rel : Pattern → Pattern → Prop}
+    {left right : List Pattern}
+    (aligned : List.Forall₂ (fun p q =>
+      (stripSCWrappers p = .apply "PZero" [] ↔ stripSCWrappers q = .apply "PZero" []) ∧
+        rel (stripSCWrappers p) (stripSCWrappers q)) left right) :
+    List.Forall₂ rel (strippedNonZeroElems left) (strippedNonZeroElems right) := by
+  induction aligned with
+  | nil => exact .nil
+  | @cons p q left right heads tails ih =>
+      by_cases unit : stripSCWrappers p = .apply "PZero" []
+      · have unit' := heads.1.mp unit
+        simpa [strippedNonZeroElems, stripSCWrappersList, unit, unit'] using ih
+      · have unit' := heads.1.not.mp unit
+        simpa [strippedNonZeroElems, stripSCWrappersList, unit, unit'] using
+          List.Forall₂.cons heads.2 ih
+
+private theorem strippedNonZeroElems_singleton_iff_of_pointwise
+    {left right : List Pattern} {witness : Pattern}
+    (size : left.length = right.length)
+    (unit : ∀ i (h₁ : i < left.length) (h₂ : i < right.length),
+      stripSCWrappers (left.get ⟨i, h₁⟩) = .apply "PZero" [] ↔
+        stripSCWrappers (right.get ⟨i, h₂⟩) = .apply "PZero" [])
+    (observes : ∀ i (h₁ : i < left.length) (h₂ : i < right.length),
+      stripSCWrappers (left.get ⟨i, h₁⟩) = witness ↔
+        stripSCWrappers (right.get ⟨i, h₂⟩) = witness) :
+    strippedNonZeroElems left = [witness] ↔ strippedNonZeroElems right = [witness] := by
+  have retained : List.Forall₂ (fun p q => p = witness ↔ q = witness)
+      (strippedNonZeroElems left) (strippedNonZeroElems right) :=
+    strippedNonZeroElems_forall₂
+      (List.forall₂_of_length_eq_of_get size
+        (fun i h₁ h₂ => ⟨unit i h₁ h₂, observes i h₁ h₂⟩))
+  constructor
+  · intro singleton
+    rw [singleton] at retained
+    obtain ⟨p, ps, agrees, rest, eq⟩ := List.forall₂_cons_left_iff.mp retained
+    rw [eq, agrees.mp rfl, List.forall₂_nil_left_iff.mp rest]
+  · intro singleton
+    rw [singleton] at retained
+    obtain ⟨p, ps, agrees, rest, eq⟩ := List.forall₂_cons_right_iff.mp retained
+    rw [eq, agrees.mpr rfl, List.forall₂_nil_right_iff.mp rest]
+
+/-- Multiplicity survives erasing units in a closed parallel collection. -/
+example :
+    scDecodeWrappedValue? (.collection .hashBag
+      [wrappedValue (.symbol "value"), wrappedValue (.symbol "value")] none) = none := by
+  rfl
+
 private theorem strippedNonZeroElems_eq_nil_iff_all_zero
     {elems : List Pattern} :
     strippedNonZeroElems elems = [] ↔
@@ -1373,51 +1465,12 @@ private theorem strippedNonZeroElems_eq_nil_of_pointwise_zero
         stripSCWrappers (qs.get ⟨i, h₂⟩) = .apply "PZero" [])
     (hqs : strippedNonZeroElems qs = []) :
     strippedNonZeroElems ps = [] := by
-  induction ps generalizing qs with
-  | nil =>
-      cases qs with
-      | nil =>
-          rfl
-      | cons q qs =>
-          simp at hlen
-  | cons p ps ih =>
-      cases qs with
-      | nil =>
-          simp at hlen
-      | cons q qs =>
-          have hpqzero :
-              stripSCWrappers p = .apply "PZero" [] ↔
-                stripSCWrappers q = .apply "PZero" [] :=
-            hzero 0 (Nat.zero_lt_succ _) (Nat.zero_lt_succ _)
-          have hqzero : stripSCWrappers q = .apply "PZero" [] := by
-            by_contra hqnonzero
-            unfold strippedNonZeroElems at hqs
-            simp [stripSCWrappersList, hqnonzero] at hqs
-          have hpzero : stripSCWrappers p = .apply "PZero" [] :=
-            hpqzero.mpr hqzero
-          have hlen_tail : ps.length = qs.length := by
-            simpa using Nat.succ.inj hlen
-          have hzero_tail :
-              ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-                stripSCWrappers (ps.get ⟨i, h₁⟩) = .apply "PZero" [] ↔
-                  stripSCWrappers (qs.get ⟨i, h₂⟩) = .apply "PZero" [] := by
-            intro i h₁ h₂
-            simpa using hzero (i + 1) (Nat.succ_lt_succ h₁) (Nat.succ_lt_succ h₂)
-          have hqs_tail : strippedNonZeroElems qs = [] := by
-            have hqs_all :
-                ∀ e ∈ stripSCWrappersList qs, e = .apply "PZero" [] := by
-              unfold strippedNonZeroElems at hqs
-              simp [stripSCWrappersList, hqzero] at hqs
-              exact hqs
-            exact strippedNonZeroElems_eq_nil_iff_all_zero.mpr hqs_all
-          have hps_tail : strippedNonZeroElems ps = [] :=
-            ih hlen_tail hzero_tail hqs_tail
-          have hps_all :
-              ∀ e ∈ stripSCWrappersList ps, e = .apply "PZero" [] :=
-            strippedNonZeroElems_eq_nil_iff_all_zero.mp hps_tail
-          unfold strippedNonZeroElems
-          simp [stripSCWrappersList, hpzero]
-          exact hps_all
+  have related := strippedNonZeroElems_forall₂
+    (rel := fun p q => p = .apply "PZero" [] ↔ q = .apply "PZero" [])
+    (List.forall₂_of_length_eq_of_get hlen (fun i h₁ h₂ => ⟨hzero i h₁ h₂, hzero i h₁ h₂⟩))
+  have size := related.length_eq
+  rw [hqs] at size
+  exact List.length_eq_zero_iff.mp size
 
 private theorem strippedNonZeroElems_eq_nil_iff_of_pointwise_zero
     {ps qs : List Pattern}
@@ -1510,96 +1563,6 @@ private theorem stripSCWrappers_hashSet_eq_zero_iff_of_pointwise
     stripSCWrappers_hashSet_eq_zero_iff]
   exact strippedNonZeroElems_eq_nil_iff_of_pointwise_zero hlen hzero
 
-private theorem strippedNonZeroElems_eq_singleton_deferred_of_pointwise
-    {ps qs : List Pattern} {payload : Atom}
-    (hlen : ps.length = qs.length)
-    (hzero : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-      stripSCWrappers (ps.get ⟨i, h₁⟩) = .apply "PZero" [] ↔
-        stripSCWrappers (qs.get ⟨i, h₂⟩) = .apply "PZero" [])
-    (hdefer : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-      stripSCWrappers (ps.get ⟨i, h₁⟩) = deferredPayload payload ↔
-        stripSCWrappers (qs.get ⟨i, h₂⟩) = deferredPayload payload)
-    (hps : strippedNonZeroElems ps = [deferredPayload payload]) :
-    strippedNonZeroElems qs = [deferredPayload payload] := by
-  induction ps generalizing qs with
-  | nil =>
-      cases qs with
-      | nil =>
-          unfold strippedNonZeroElems at hps
-          simp [stripSCWrappersList] at hps
-      | cons q qs =>
-          simp at hlen
-  | cons p ps ih =>
-      cases qs with
-      | nil =>
-          simp at hlen
-      | cons q qs =>
-          have hpqzero :
-              stripSCWrappers p = .apply "PZero" [] ↔
-                stripSCWrappers q = .apply "PZero" [] :=
-            hzero 0 (Nat.zero_lt_succ _) (Nat.zero_lt_succ _)
-          have hpqdefer :
-              stripSCWrappers p = deferredPayload payload ↔
-                stripSCWrappers q = deferredPayload payload :=
-            hdefer 0 (Nat.zero_lt_succ _) (Nat.zero_lt_succ _)
-          have hlen_tail : ps.length = qs.length := by
-            simpa using Nat.succ.inj hlen
-          have hzero_tail :
-              ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-                stripSCWrappers (ps.get ⟨i, h₁⟩) = .apply "PZero" [] ↔
-                  stripSCWrappers (qs.get ⟨i, h₂⟩) = .apply "PZero" [] := by
-            intro i h₁ h₂
-            simpa using hzero (i + 1) (Nat.succ_lt_succ h₁) (Nat.succ_lt_succ h₂)
-          have hdefer_tail :
-              ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-                stripSCWrappers (ps.get ⟨i, h₁⟩) = deferredPayload payload ↔
-                  stripSCWrappers (qs.get ⟨i, h₂⟩) = deferredPayload payload := by
-            intro i h₁ h₂
-            simpa using hdefer (i + 1) (Nat.succ_lt_succ h₁) (Nat.succ_lt_succ h₂)
-          by_cases hpzero : stripSCWrappers p = .apply "PZero" []
-          · have hqzero : stripSCWrappers q = .apply "PZero" [] :=
-              hpqzero.mp hpzero
-            have hps_tail : strippedNonZeroElems ps = [deferredPayload payload] := by
-              simpa [strippedNonZeroElems, stripSCWrappersList, hpzero] using hps
-            have hqs_tail : strippedNonZeroElems qs = [deferredPayload payload] :=
-              ih hlen_tail hzero_tail hdefer_tail hps_tail
-            simpa [strippedNonZeroElems, stripSCWrappersList, hqzero] using hqs_tail
-          · have hpdefer : stripSCWrappers p = deferredPayload payload := by
-              unfold strippedNonZeroElems at hps
-              simp [stripSCWrappersList, hpzero] at hps
-              exact hps.1
-            have hqdefer : stripSCWrappers q = deferredPayload payload :=
-              hpqdefer.mp hpdefer
-            have hps_tail_nil : strippedNonZeroElems ps = [] := by
-              unfold strippedNonZeroElems at hps ⊢
-              simp [stripSCWrappersList, hpzero] at hps
-              exact strippedNonZeroElems_eq_nil_iff_all_zero.mpr hps.2
-            have hqs_tail_nil : strippedNonZeroElems qs = [] :=
-              (strippedNonZeroElems_eq_nil_iff_of_pointwise_zero
-                hlen_tail hzero_tail).mp hps_tail_nil
-            unfold strippedNonZeroElems
-            simp [stripSCWrappersList, hqdefer, deferredPayload]
-            exact strippedNonZeroElems_eq_nil_iff_all_zero.mp hqs_tail_nil
-
-private theorem strippedNonZeroElems_eq_singleton_deferred_iff_of_pointwise
-    {ps qs : List Pattern} {payload : Atom}
-    (hlen : ps.length = qs.length)
-    (hzero : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-      stripSCWrappers (ps.get ⟨i, h₁⟩) = .apply "PZero" [] ↔
-        stripSCWrappers (qs.get ⟨i, h₂⟩) = .apply "PZero" [])
-    (hdefer : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-      stripSCWrappers (ps.get ⟨i, h₁⟩) = deferredPayload payload ↔
-        stripSCWrappers (qs.get ⟨i, h₂⟩) = deferredPayload payload) :
-    strippedNonZeroElems ps = [deferredPayload payload] ↔
-      strippedNonZeroElems qs = [deferredPayload payload] := by
-  constructor
-  · exact strippedNonZeroElems_eq_singleton_deferred_of_pointwise
-      hlen hzero hdefer
-  · exact strippedNonZeroElems_eq_singleton_deferred_of_pointwise
-      (ps := qs) (qs := ps) hlen.symm
-      (fun i hq hp => (hzero i hp hq).symm)
-      (fun i hq hp => (hdefer i hp hq).symm)
-
 private theorem scDecodeAtom_atomToPattern (a : Atom) :
     scDecodeAtom? (atomToPattern a) = some a := by
   simp [scDecodeAtom?, stripSCWrappers_atomToPattern,
@@ -1658,203 +1621,53 @@ private theorem scDecodeAtom_eq_some_iff_strip_eq_atomToPattern
     rw [hstrip]
     exact patternToAtom_atomToPattern a
 
+private theorem scDecodeAtom_parallel_some_iff
+    {kind : CollType} (parallel : kind = .hashBag ∨ kind = .hashSet)
+    {elems : List Pattern} {a : Atom} :
+    scDecodeAtom? (.collection kind elems none) = some a ↔
+      strippedNonZeroElems elems = [atomToPattern a] := by
+  rw [scDecodeAtom_eq_some_iff_strip_eq_atomToPattern]
+  obtain ⟨label, args, code, named⟩ := atomToPattern_named a
+  rw [code]
+  exact strip_parallel_eq_apply_iff parallel named
+
 private theorem scDecodeAtom_hashBag_of_strippedNonZeroElems
     {elems : List Pattern} {a : Atom}
     (h : strippedNonZeroElems elems = [atomToPattern a]) :
     scDecodeAtom? (.collection .hashBag elems none) = some a := by
-  unfold strippedNonZeroElems at h
-  have h' :
-      List.filter (fun e => !decide (e = .apply "PZero" []))
-        (stripSCWrappersList elems) = [atomToPattern a] := by
-    simpa using h
-  unfold scDecodeAtom?
-  simp [stripSCWrappers]
-  rw [h']
-  exact patternToAtom_atomToPattern a
+  exact (scDecodeAtom_parallel_some_iff (Or.inl rfl)).mpr h
 
 private theorem strippedNonZeroElems_eq_singleton_of_scDecodeAtom_hashBag
     {elems : List Pattern} {a : Atom}
     (h : scDecodeAtom? (.collection .hashBag elems none) = some a) :
     strippedNonZeroElems elems = [atomToPattern a] := by
-  cases hshape : strippedNonZeroElems elems with
-  | nil =>
-      have hshape' :
-          List.filter (fun e => decide (e ≠ .apply "PZero" []))
-            (stripSCWrappersList elems) = [] := by
-        simpa [strippedNonZeroElems] using hshape
-      unfold scDecodeAtom? at h
-      unfold stripSCWrappers at h
-      rw [hshape'] at h
-      simp [patternToAtom?] at h
-  | cons e es =>
-      cases es with
-      | nil =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = [e] := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold scDecodeAtom? at h
-          unfold stripSCWrappers at h
-          rw [hshape'] at h
-          have he : patternToAtom? e = some a := by
-            simpa using h
-          have heq : atomToPattern a = e :=
-            atomToPattern_of_patternToAtom?_eq_some e a he
-          simp [heq] at hshape ⊢
-      | cons e' es' =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = e :: e' :: es' := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold scDecodeAtom? at h
-          unfold stripSCWrappers at h
-          rw [hshape'] at h
-          simp [patternToAtom?] at h
+  exact (scDecodeAtom_parallel_some_iff (Or.inl rfl)).mp h
 
 private theorem scDecodeAtom_hashSet_of_strippedNonZeroElems
     {elems : List Pattern} {a : Atom}
     (h : strippedNonZeroElems elems = [atomToPattern a]) :
     scDecodeAtom? (.collection .hashSet elems none) = some a := by
-  unfold strippedNonZeroElems at h
-  have h' :
-      List.filter (fun e => !decide (e = .apply "PZero" []))
-        (stripSCWrappersList elems) = [atomToPattern a] := by
-    simpa using h
-  unfold scDecodeAtom?
-  simp [stripSCWrappers]
-  rw [h']
-  exact patternToAtom_atomToPattern a
+  exact (scDecodeAtom_parallel_some_iff (Or.inr rfl)).mpr h
 
 private theorem strippedNonZeroElems_eq_singleton_of_scDecodeAtom_hashSet
     {elems : List Pattern} {a : Atom}
     (h : scDecodeAtom? (.collection .hashSet elems none) = some a) :
     strippedNonZeroElems elems = [atomToPattern a] := by
-  cases hshape : strippedNonZeroElems elems with
-  | nil =>
-      have hshape' :
-          List.filter (fun e => decide (e ≠ .apply "PZero" []))
-            (stripSCWrappersList elems) = [] := by
-        simpa [strippedNonZeroElems] using hshape
-      unfold scDecodeAtom? at h
-      unfold stripSCWrappers at h
-      rw [hshape'] at h
-      simp [patternToAtom?] at h
-  | cons e es =>
-      cases es with
-      | nil =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = [e] := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold scDecodeAtom? at h
-          unfold stripSCWrappers at h
-          rw [hshape'] at h
-          have he : patternToAtom? e = some a := by
-            simpa using h
-          have heq : atomToPattern a = e :=
-            atomToPattern_of_patternToAtom?_eq_some e a he
-          simp [heq] at hshape ⊢
-      | cons e' es' =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = e :: e' :: es' := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold scDecodeAtom? at h
-          unfold stripSCWrappers at h
-          rw [hshape'] at h
-          simp [patternToAtom?] at h
+  exact (scDecodeAtom_parallel_some_iff (Or.inr rfl)).mp h
 
 private theorem scDecodeAtom_hashBag_eq_of_perm
     {elems₁ elems₂ : List Pattern} (hperm : elems₁.Perm elems₂) :
     scDecodeAtom? (.collection .hashBag elems₁ none) =
       scDecodeAtom? (.collection .hashBag elems₂ none) := by
-  cases h₁ : scDecodeAtom? (.collection .hashBag elems₁ none) with
-  | none =>
-      cases h₂ : scDecodeAtom? (.collection .hashBag elems₂ none) with
-      | none =>
-          rfl
-      | some a =>
-          have hs₂ : strippedNonZeroElems elems₂ = [atomToPattern a] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeAtom_hashBag h₂
-          have hsperm : (strippedNonZeroElems elems₁).Perm [atomToPattern a] := by
-            simpa [hs₂] using strippedNonZeroElems_perm hperm
-          have hs₁ : strippedNonZeroElems elems₁ = [atomToPattern a] := by
-            simp at hsperm
-            exact hsperm
-          have hsome :
-              scDecodeAtom? (.collection .hashBag elems₁ none) = some a :=
-            scDecodeAtom_hashBag_of_strippedNonZeroElems hs₁
-          rw [h₁] at hsome
-          cases hsome
-  | some a =>
-      have hs₁ : strippedNonZeroElems elems₁ = [atomToPattern a] :=
-        strippedNonZeroElems_eq_singleton_of_scDecodeAtom_hashBag h₁
-      cases h₂ : scDecodeAtom? (.collection .hashBag elems₂ none) with
-      | none =>
-          have hsperm : [atomToPattern a].Perm (strippedNonZeroElems elems₂) := by
-            simpa [hs₁] using strippedNonZeroElems_perm hperm
-          have hs₂ : strippedNonZeroElems elems₂ = [atomToPattern a] := by
-            simp at hsperm
-            symm
-            exact hsperm
-          have hsome :
-              scDecodeAtom? (.collection .hashBag elems₂ none) = some a :=
-            scDecodeAtom_hashBag_of_strippedNonZeroElems hs₂
-          rw [h₂] at hsome
-          cases hsome
-      | some b =>
-          have hs₂ : strippedNonZeroElems elems₂ = [atomToPattern b] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeAtom_hashBag h₂
-          have hsperm : [atomToPattern a].Perm [atomToPattern b] := by
-            simpa [hs₁, hs₂] using strippedNonZeroElems_perm hperm
-          simp at hsperm
-          exact congrArg some (atomToPattern_injective hsperm)
+  exact decode_parallel_eq_of_perm (fun elems => scDecodeAtom? (.collection .hashBag elems none))
+    atomToPattern (fun _ _ => (scDecodeAtom_parallel_some_iff (Or.inl rfl))) hperm
 
 private theorem scDecodeAtom_hashSet_eq_of_perm
     {elems₁ elems₂ : List Pattern} (hperm : elems₁.Perm elems₂) :
     scDecodeAtom? (.collection .hashSet elems₁ none) =
       scDecodeAtom? (.collection .hashSet elems₂ none) := by
-  cases h₁ : scDecodeAtom? (.collection .hashSet elems₁ none) with
-  | none =>
-      cases h₂ : scDecodeAtom? (.collection .hashSet elems₂ none) with
-      | none =>
-          rfl
-      | some a =>
-          have hs₂ : strippedNonZeroElems elems₂ = [atomToPattern a] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeAtom_hashSet h₂
-          have hsperm : (strippedNonZeroElems elems₁).Perm [atomToPattern a] := by
-            simpa [hs₂] using strippedNonZeroElems_perm hperm
-          have hs₁ : strippedNonZeroElems elems₁ = [atomToPattern a] := by
-            simp at hsperm
-            exact hsperm
-          have hsome :
-              scDecodeAtom? (.collection .hashSet elems₁ none) = some a :=
-            scDecodeAtom_hashSet_of_strippedNonZeroElems hs₁
-          rw [h₁] at hsome
-          cases hsome
-  | some a =>
-      have hs₁ : strippedNonZeroElems elems₁ = [atomToPattern a] :=
-        strippedNonZeroElems_eq_singleton_of_scDecodeAtom_hashSet h₁
-      cases h₂ : scDecodeAtom? (.collection .hashSet elems₂ none) with
-      | none =>
-          have hsperm : [atomToPattern a].Perm (strippedNonZeroElems elems₂) := by
-            simpa [hs₁] using strippedNonZeroElems_perm hperm
-          have hs₂ : strippedNonZeroElems elems₂ = [atomToPattern a] := by
-            simp at hsperm
-            symm
-            exact hsperm
-          have hsome :
-              scDecodeAtom? (.collection .hashSet elems₂ none) = some a :=
-            scDecodeAtom_hashSet_of_strippedNonZeroElems hs₂
-          rw [h₂] at hsome
-          cases hsome
-      | some b =>
-          have hs₂ : strippedNonZeroElems elems₂ = [atomToPattern b] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeAtom_hashSet h₂
-          have hsperm : [atomToPattern a].Perm [atomToPattern b] := by
-            simpa [hs₁, hs₂] using strippedNonZeroElems_perm hperm
-          simp at hsperm
-          exact congrArg some (atomToPattern_injective hsperm)
+  exact decode_parallel_eq_of_perm (fun elems => scDecodeAtom? (.collection .hashSet elems none))
+    atomToPattern (fun _ _ => (scDecodeAtom_parallel_some_iff (Or.inr rfl))) hperm
 
 private theorem scDecodeAtom_par_singleton (p : Pattern) :
     scDecodeAtom? (.collection .hashBag [p] none) = scDecodeAtom? p := by
@@ -2102,58 +1915,26 @@ private theorem scDecodeDeferredPayload_zero_right (payload : Atom) :
         some payload := by
   exact scDecodeDeferredPayload_deferredPayload payload
 
+private theorem scDecodeDeferredPayload_parallel_some_iff
+    {kind : CollType} (parallel : kind = .hashBag ∨ kind = .hashSet)
+    {elems : List Pattern} {payload : Atom} :
+    scDecodeDeferredPayload? (.collection kind elems none) = some payload ↔
+      strippedNonZeroElems elems = [deferredPayload payload] := by
+  rw [scDecodeDeferredPayload_eq_some_iff_strip_eq_deferredPayload]
+  unfold deferredPayload
+  exact strip_parallel_eq_apply_iff parallel (by decide)
+
 private theorem scDecodeDeferredPayload_hashBag_of_strippedNonZeroElems
     {elems : List Pattern} {payload : Atom}
     (h : strippedNonZeroElems elems = [deferredPayload payload]) :
     scDecodeDeferredPayload? (.collection .hashBag elems none) = some payload := by
-  unfold strippedNonZeroElems at h
-  have h' :
-      List.filter (fun e => !decide (e = .apply "PZero" []))
-        (stripSCWrappersList elems) = [deferredPayload payload] := by
-    simpa using h
-  unfold scDecodeDeferredPayload?
-  simp [stripSCWrappers]
-  rw [h']
-  simp [deferredPayload, patternToAtom_atomToPattern]
+  exact (scDecodeDeferredPayload_parallel_some_iff (Or.inl rfl)).mpr h
 
 private theorem strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashBag
     {elems : List Pattern} {payload : Atom}
     (h : scDecodeDeferredPayload? (.collection .hashBag elems none) = some payload) :
     strippedNonZeroElems elems = [deferredPayload payload] := by
-  have hstrip :
-      stripSCWrappers (.collection .hashBag elems none) = deferredPayload payload :=
-    stripSCWrappers_eq_deferredPayload_of_scDecodeDeferredPayload_eq_some h
-  cases hshape : strippedNonZeroElems elems with
-  | nil =>
-      have hshape' :
-          List.filter (fun e => decide (e ≠ .apply "PZero" []))
-            (stripSCWrappersList elems) = [] := by
-        simpa [strippedNonZeroElems] using hshape
-      unfold stripSCWrappers at hstrip
-      rw [hshape'] at hstrip
-      have : False := by
-        simp [deferredPayload] at hstrip
-      exact False.elim this
-  | cons e es =>
-      cases es with
-      | nil =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = [e] := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold stripSCWrappers at hstrip
-          rw [hshape'] at hstrip
-          simp [hstrip]
-      | cons e' es' =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = e :: e' :: es' := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold stripSCWrappers at hstrip
-          rw [hshape'] at hstrip
-          have : False := by
-            simp [deferredPayload] at hstrip
-          exact False.elim this
+  exact (scDecodeDeferredPayload_parallel_some_iff (Or.inl rfl)).mp h
 
 private theorem scDecodeDeferredPayload_hashBag_eq_some_iff_of_pointwise
     {ps qs : List Pattern} {payload : Atom}
@@ -2166,70 +1947,20 @@ private theorem scDecodeDeferredPayload_hashBag_eq_some_iff_of_pointwise
         stripSCWrappers (qs.get ⟨i, h₂⟩) = deferredPayload payload) :
     scDecodeDeferredPayload? (.collection .hashBag ps none) = some payload ↔
       scDecodeDeferredPayload? (.collection .hashBag qs none) = some payload := by
-  constructor
-  · intro hps
-    exact scDecodeDeferredPayload_hashBag_of_strippedNonZeroElems
-      ((strippedNonZeroElems_eq_singleton_deferred_iff_of_pointwise
-          hlen hzero hdefer).mp
-        (strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashBag hps))
-  · intro hqs
-    exact scDecodeDeferredPayload_hashBag_of_strippedNonZeroElems
-      ((strippedNonZeroElems_eq_singleton_deferred_iff_of_pointwise
-          hlen hzero hdefer).mpr
-        (strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashBag hqs))
+  rw [(scDecodeDeferredPayload_parallel_some_iff (Or.inl rfl)), (scDecodeDeferredPayload_parallel_some_iff (Or.inl rfl))]
+  exact strippedNonZeroElems_singleton_iff_of_pointwise hlen hzero hdefer
 
 private theorem scDecodeDeferredPayload_hashSet_of_strippedNonZeroElems
     {elems : List Pattern} {payload : Atom}
     (h : strippedNonZeroElems elems = [deferredPayload payload]) :
     scDecodeDeferredPayload? (.collection .hashSet elems none) = some payload := by
-  unfold strippedNonZeroElems at h
-  have h' :
-      List.filter (fun e => !decide (e = .apply "PZero" []))
-        (stripSCWrappersList elems) = [deferredPayload payload] := by
-    simpa using h
-  unfold scDecodeDeferredPayload?
-  simp [stripSCWrappers]
-  rw [h']
-  simp [deferredPayload, patternToAtom_atomToPattern]
+  exact (scDecodeDeferredPayload_parallel_some_iff (Or.inr rfl)).mpr h
 
 private theorem strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashSet
     {elems : List Pattern} {payload : Atom}
     (h : scDecodeDeferredPayload? (.collection .hashSet elems none) = some payload) :
     strippedNonZeroElems elems = [deferredPayload payload] := by
-  have hstrip :
-      stripSCWrappers (.collection .hashSet elems none) = deferredPayload payload :=
-    stripSCWrappers_eq_deferredPayload_of_scDecodeDeferredPayload_eq_some h
-  cases hshape : strippedNonZeroElems elems with
-  | nil =>
-      have hshape' :
-          List.filter (fun e => decide (e ≠ .apply "PZero" []))
-            (stripSCWrappersList elems) = [] := by
-        simpa [strippedNonZeroElems] using hshape
-      unfold stripSCWrappers at hstrip
-      rw [hshape'] at hstrip
-      have : False := by
-        simp [deferredPayload] at hstrip
-      exact False.elim this
-  | cons e es =>
-      cases es with
-      | nil =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = [e] := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold stripSCWrappers at hstrip
-          rw [hshape'] at hstrip
-          simp [hstrip]
-      | cons e' es' =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = e :: e' :: es' := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold stripSCWrappers at hstrip
-          rw [hshape'] at hstrip
-          have : False := by
-            simp [deferredPayload] at hstrip
-          exact False.elim this
+  exact (scDecodeDeferredPayload_parallel_some_iff (Or.inr rfl)).mp h
 
 private theorem scDecodeDeferredPayload_hashSet_eq_some_iff_of_pointwise
     {ps qs : List Pattern} {payload : Atom}
@@ -2242,119 +1973,22 @@ private theorem scDecodeDeferredPayload_hashSet_eq_some_iff_of_pointwise
         stripSCWrappers (qs.get ⟨i, h₂⟩) = deferredPayload payload) :
     scDecodeDeferredPayload? (.collection .hashSet ps none) = some payload ↔
       scDecodeDeferredPayload? (.collection .hashSet qs none) = some payload := by
-  constructor
-  · intro hps
-    exact scDecodeDeferredPayload_hashSet_of_strippedNonZeroElems
-      ((strippedNonZeroElems_eq_singleton_deferred_iff_of_pointwise
-          hlen hzero hdefer).mp
-        (strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashSet hps))
-  · intro hqs
-    exact scDecodeDeferredPayload_hashSet_of_strippedNonZeroElems
-      ((strippedNonZeroElems_eq_singleton_deferred_iff_of_pointwise
-          hlen hzero hdefer).mpr
-        (strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashSet hqs))
+  rw [(scDecodeDeferredPayload_parallel_some_iff (Or.inr rfl)), (scDecodeDeferredPayload_parallel_some_iff (Or.inr rfl))]
+  exact strippedNonZeroElems_singleton_iff_of_pointwise hlen hzero hdefer
 
 private theorem scDecodeDeferredPayload_hashBag_eq_of_perm
     {elems₁ elems₂ : List Pattern} (hperm : elems₁.Perm elems₂) :
     scDecodeDeferredPayload? (.collection .hashBag elems₁ none) =
       scDecodeDeferredPayload? (.collection .hashBag elems₂ none) := by
-  cases h₁ : scDecodeDeferredPayload? (.collection .hashBag elems₁ none) with
-  | none =>
-      cases h₂ : scDecodeDeferredPayload? (.collection .hashBag elems₂ none) with
-      | none =>
-          rfl
-      | some payload =>
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [deferredPayload payload] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashBag h₂
-          have hsperm : (strippedNonZeroElems elems₁).Perm [deferredPayload payload] := by
-            simpa [hs₂] using strippedNonZeroElems_perm hperm
-          have hs₁ :
-              strippedNonZeroElems elems₁ = [deferredPayload payload] := by
-            simp at hsperm
-            exact hsperm
-          have hsome :
-              scDecodeDeferredPayload? (.collection .hashBag elems₁ none) = some payload :=
-            scDecodeDeferredPayload_hashBag_of_strippedNonZeroElems hs₁
-          rw [h₁] at hsome
-          cases hsome
-  | some payload =>
-      have hs₁ :
-          strippedNonZeroElems elems₁ = [deferredPayload payload] :=
-        strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashBag h₁
-      cases h₂ : scDecodeDeferredPayload? (.collection .hashBag elems₂ none) with
-      | none =>
-          have hsperm : [deferredPayload payload].Perm (strippedNonZeroElems elems₂) := by
-            simpa [hs₁] using strippedNonZeroElems_perm hperm
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [deferredPayload payload] := by
-            simp at hsperm
-            symm
-            exact hsperm
-          have hsome :
-              scDecodeDeferredPayload? (.collection .hashBag elems₂ none) = some payload :=
-            scDecodeDeferredPayload_hashBag_of_strippedNonZeroElems hs₂
-          rw [h₂] at hsome
-          cases hsome
-      | some payload' =>
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [deferredPayload payload'] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashBag h₂
-          have hsperm : [deferredPayload payload].Perm [deferredPayload payload'] := by
-            simpa [hs₁, hs₂] using strippedNonZeroElems_perm hperm
-          simp at hsperm
-          exact congrArg some (deferredPayload_injective hsperm)
+  exact decode_parallel_eq_of_perm (fun elems => scDecodeDeferredPayload? (.collection .hashBag elems none))
+    deferredPayload (fun _ _ => (scDecodeDeferredPayload_parallel_some_iff (Or.inl rfl))) hperm
 
 private theorem scDecodeDeferredPayload_hashSet_eq_of_perm
     {elems₁ elems₂ : List Pattern} (hperm : elems₁.Perm elems₂) :
     scDecodeDeferredPayload? (.collection .hashSet elems₁ none) =
       scDecodeDeferredPayload? (.collection .hashSet elems₂ none) := by
-  cases h₁ : scDecodeDeferredPayload? (.collection .hashSet elems₁ none) with
-  | none =>
-      cases h₂ : scDecodeDeferredPayload? (.collection .hashSet elems₂ none) with
-      | none =>
-          rfl
-      | some payload =>
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [deferredPayload payload] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashSet h₂
-          have hsperm : (strippedNonZeroElems elems₁).Perm [deferredPayload payload] := by
-            simpa [hs₂] using strippedNonZeroElems_perm hperm
-          have hs₁ :
-              strippedNonZeroElems elems₁ = [deferredPayload payload] := by
-            simp at hsperm
-            exact hsperm
-          have hsome :
-              scDecodeDeferredPayload? (.collection .hashSet elems₁ none) = some payload :=
-            scDecodeDeferredPayload_hashSet_of_strippedNonZeroElems hs₁
-          rw [h₁] at hsome
-          cases hsome
-  | some payload =>
-      have hs₁ :
-          strippedNonZeroElems elems₁ = [deferredPayload payload] :=
-        strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashSet h₁
-      cases h₂ : scDecodeDeferredPayload? (.collection .hashSet elems₂ none) with
-      | none =>
-          have hsperm : [deferredPayload payload].Perm (strippedNonZeroElems elems₂) := by
-            simpa [hs₁] using strippedNonZeroElems_perm hperm
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [deferredPayload payload] := by
-            simp at hsperm
-            symm
-            exact hsperm
-          have hsome :
-              scDecodeDeferredPayload? (.collection .hashSet elems₂ none) = some payload :=
-            scDecodeDeferredPayload_hashSet_of_strippedNonZeroElems hs₂
-          rw [h₂] at hsome
-          cases hsome
-      | some payload' =>
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [deferredPayload payload'] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeDeferredPayload_hashSet h₂
-          have hsperm : [deferredPayload payload].Perm [deferredPayload payload'] := by
-            simpa [hs₁, hs₂] using strippedNonZeroElems_perm hperm
-          simp at hsperm
-          exact congrArg some (deferredPayload_injective hsperm)
+  exact decode_parallel_eq_of_perm (fun elems => scDecodeDeferredPayload? (.collection .hashSet elems none))
+    deferredPayload (fun _ _ => (scDecodeDeferredPayload_parallel_some_iff (Or.inr rfl))) hperm
 
 private theorem scDecodeDeferredPayload_par_singleton (p : Pattern) :
     scDecodeDeferredPayload? (.collection .hashBag [p] none) =
@@ -2480,201 +2114,43 @@ private theorem scDecodeWrappedValue_zero_right (value : Atom) :
         some value := by
   exact scDecodeWrappedValue?_wrappedValue value
 
+example :
+    scDecodeWrappedValue? (.collection .hashBag
+      [.apply "PZero" [], wrappedValue (.symbol "value")] none) = some (.symbol "value") := by
+  exact scDecodeWrappedValue_zero_left (.symbol "value")
+
+private theorem scDecodeWrappedValue_parallel_some_iff
+    {kind : CollType} (parallel : kind = .hashBag ∨ kind = .hashSet)
+    {elems : List Pattern} {value : Atom} :
+    scDecodeWrappedValue? (.collection kind elems none) = some value ↔
+      strippedNonZeroElems elems = [wrappedValue value] := by
+  rw [scDecodeWrappedValue_eq_some_iff_strip_eq_wrappedValue]
+  unfold wrappedValue
+  exact strip_parallel_eq_apply_iff parallel (by decide)
+
 private theorem scDecodeWrappedValue_hashBag_of_strippedNonZeroElems
     {elems : List Pattern} {value : Atom}
     (h : strippedNonZeroElems elems = [wrappedValue value]) :
     scDecodeWrappedValue? (.collection .hashBag elems none) = some value := by
-  unfold strippedNonZeroElems at h
-  have h' :
-      List.filter (fun e => !decide (e = .apply "PZero" []))
-        (stripSCWrappersList elems) = [wrappedValue value] := by
-    simpa using h
-  unfold scDecodeWrappedValue?
-  simp [stripSCWrappers]
-  rw [h']
-  simp [wrappedValue, patternToAtom_atomToPattern]
+  exact (scDecodeWrappedValue_parallel_some_iff (Or.inl rfl)).mpr h
 
 private theorem strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashBag
     {elems : List Pattern} {value : Atom}
     (h : scDecodeWrappedValue? (.collection .hashBag elems none) = some value) :
     strippedNonZeroElems elems = [wrappedValue value] := by
-  have hstrip :
-      stripSCWrappers (.collection .hashBag elems none) = wrappedValue value :=
-    stripSCWrappers_eq_wrappedValue_of_scDecodeWrappedValue_eq_some h
-  cases hshape : strippedNonZeroElems elems with
-  | nil =>
-      have hshape' :
-          List.filter (fun e => decide (e ≠ .apply "PZero" []))
-            (stripSCWrappersList elems) = [] := by
-        simpa [strippedNonZeroElems] using hshape
-      unfold stripSCWrappers at hstrip
-      rw [hshape'] at hstrip
-      have : False := by
-        simp [wrappedValue] at hstrip
-      exact False.elim this
-  | cons e es =>
-      cases es with
-      | nil =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = [e] := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold stripSCWrappers at hstrip
-          rw [hshape'] at hstrip
-          simp [hstrip]
-      | cons e' es' =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = e :: e' :: es' := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold stripSCWrappers at hstrip
-          rw [hshape'] at hstrip
-          have : False := by
-            simp [wrappedValue] at hstrip
-          exact False.elim this
+  exact (scDecodeWrappedValue_parallel_some_iff (Or.inl rfl)).mp h
 
 private theorem scDecodeWrappedValue_hashSet_of_strippedNonZeroElems
     {elems : List Pattern} {value : Atom}
     (h : strippedNonZeroElems elems = [wrappedValue value]) :
     scDecodeWrappedValue? (.collection .hashSet elems none) = some value := by
-  unfold strippedNonZeroElems at h
-  have h' :
-      List.filter (fun e => !decide (e = .apply "PZero" []))
-        (stripSCWrappersList elems) = [wrappedValue value] := by
-    simpa using h
-  unfold scDecodeWrappedValue?
-  simp [stripSCWrappers]
-  rw [h']
-  simp [wrappedValue, patternToAtom_atomToPattern]
+  exact (scDecodeWrappedValue_parallel_some_iff (Or.inr rfl)).mpr h
 
 private theorem strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashSet
     {elems : List Pattern} {value : Atom}
     (h : scDecodeWrappedValue? (.collection .hashSet elems none) = some value) :
     strippedNonZeroElems elems = [wrappedValue value] := by
-  have hstrip :
-      stripSCWrappers (.collection .hashSet elems none) = wrappedValue value :=
-    stripSCWrappers_eq_wrappedValue_of_scDecodeWrappedValue_eq_some h
-  cases hshape : strippedNonZeroElems elems with
-  | nil =>
-      have hshape' :
-          List.filter (fun e => decide (e ≠ .apply "PZero" []))
-            (stripSCWrappersList elems) = [] := by
-        simpa [strippedNonZeroElems] using hshape
-      unfold stripSCWrappers at hstrip
-      rw [hshape'] at hstrip
-      have : False := by
-        simp [wrappedValue] at hstrip
-      exact False.elim this
-  | cons e es =>
-      cases es with
-      | nil =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = [e] := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold stripSCWrappers at hstrip
-          rw [hshape'] at hstrip
-          simp [hstrip]
-      | cons e' es' =>
-          have hshape' :
-              List.filter (fun e => decide (e ≠ .apply "PZero" []))
-                (stripSCWrappersList elems) = e :: e' :: es' := by
-            simpa [strippedNonZeroElems] using hshape
-          unfold stripSCWrappers at hstrip
-          rw [hshape'] at hstrip
-          have : False := by
-            simp [wrappedValue] at hstrip
-          exact False.elim this
-
-private theorem strippedNonZeroElems_eq_singleton_wrapped_of_pointwise
-    {ps qs : List Pattern} {value : Atom}
-    (hlen : ps.length = qs.length)
-    (hzero : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-      stripSCWrappers (ps.get ⟨i, h₁⟩) = .apply "PZero" [] ↔
-        stripSCWrappers (qs.get ⟨i, h₂⟩) = .apply "PZero" [])
-    (hwrapped : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-      stripSCWrappers (ps.get ⟨i, h₁⟩) = wrappedValue value ↔
-        stripSCWrappers (qs.get ⟨i, h₂⟩) = wrappedValue value)
-    (hps : strippedNonZeroElems ps = [wrappedValue value]) :
-    strippedNonZeroElems qs = [wrappedValue value] := by
-  induction ps generalizing qs with
-  | nil =>
-      cases qs with
-      | nil =>
-          unfold strippedNonZeroElems at hps
-          simp [stripSCWrappersList] at hps
-      | cons q qs =>
-          simp at hlen
-  | cons p ps ih =>
-      cases qs with
-      | nil =>
-          simp at hlen
-      | cons q qs =>
-          have hpqzero :
-              stripSCWrappers p = .apply "PZero" [] ↔
-                stripSCWrappers q = .apply "PZero" [] :=
-            hzero 0 (Nat.zero_lt_succ _) (Nat.zero_lt_succ _)
-          have hpqwrapped :
-              stripSCWrappers p = wrappedValue value ↔
-                stripSCWrappers q = wrappedValue value :=
-            hwrapped 0 (Nat.zero_lt_succ _) (Nat.zero_lt_succ _)
-          have hlen_tail : ps.length = qs.length := by
-            simpa using Nat.succ.inj hlen
-          have hzero_tail :
-              ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-                stripSCWrappers (ps.get ⟨i, h₁⟩) = .apply "PZero" [] ↔
-                  stripSCWrappers (qs.get ⟨i, h₂⟩) = .apply "PZero" [] := by
-            intro i h₁ h₂
-            simpa using hzero (i + 1) (Nat.succ_lt_succ h₁) (Nat.succ_lt_succ h₂)
-          have hwrapped_tail :
-              ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-                stripSCWrappers (ps.get ⟨i, h₁⟩) = wrappedValue value ↔
-                  stripSCWrappers (qs.get ⟨i, h₂⟩) = wrappedValue value := by
-            intro i h₁ h₂
-            simpa using hwrapped (i + 1) (Nat.succ_lt_succ h₁) (Nat.succ_lt_succ h₂)
-          by_cases hpzero : stripSCWrappers p = .apply "PZero" []
-          · have hqzero : stripSCWrappers q = .apply "PZero" [] :=
-              hpqzero.mp hpzero
-            have hps_tail : strippedNonZeroElems ps = [wrappedValue value] := by
-              simpa [strippedNonZeroElems, stripSCWrappersList, hpzero] using hps
-            have hqs_tail : strippedNonZeroElems qs = [wrappedValue value] :=
-              ih hlen_tail hzero_tail hwrapped_tail hps_tail
-            simpa [strippedNonZeroElems, stripSCWrappersList, hqzero] using hqs_tail
-          · have hpwrapped : stripSCWrappers p = wrappedValue value := by
-              unfold strippedNonZeroElems at hps
-              simp [stripSCWrappersList, hpzero] at hps
-              exact hps.1
-            have hqwrapped : stripSCWrappers q = wrappedValue value :=
-              hpqwrapped.mp hpwrapped
-            have hps_tail_nil : strippedNonZeroElems ps = [] := by
-              unfold strippedNonZeroElems at hps ⊢
-              simp [stripSCWrappersList, hpzero] at hps
-              exact strippedNonZeroElems_eq_nil_iff_all_zero.mpr hps.2
-            have hqs_tail_nil : strippedNonZeroElems qs = [] :=
-              (strippedNonZeroElems_eq_nil_iff_of_pointwise_zero
-                hlen_tail hzero_tail).mp hps_tail_nil
-            unfold strippedNonZeroElems
-            simp [stripSCWrappersList, hqwrapped, wrappedValue]
-            exact strippedNonZeroElems_eq_nil_iff_all_zero.mp hqs_tail_nil
-
-private theorem strippedNonZeroElems_eq_singleton_wrapped_iff_of_pointwise
-    {ps qs : List Pattern} {value : Atom}
-    (hlen : ps.length = qs.length)
-    (hzero : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-      stripSCWrappers (ps.get ⟨i, h₁⟩) = .apply "PZero" [] ↔
-        stripSCWrappers (qs.get ⟨i, h₂⟩) = .apply "PZero" [])
-    (hwrapped : ∀ i (h₁ : i < ps.length) (h₂ : i < qs.length),
-      stripSCWrappers (ps.get ⟨i, h₁⟩) = wrappedValue value ↔
-        stripSCWrappers (qs.get ⟨i, h₂⟩) = wrappedValue value) :
-    strippedNonZeroElems ps = [wrappedValue value] ↔
-      strippedNonZeroElems qs = [wrappedValue value] := by
-  constructor
-  · exact strippedNonZeroElems_eq_singleton_wrapped_of_pointwise
-      hlen hzero hwrapped
-  · exact strippedNonZeroElems_eq_singleton_wrapped_of_pointwise
-      (ps := qs) (qs := ps) hlen.symm
-      (fun i hq hp => (hzero i hp hq).symm)
-      (fun i hq hp => (hwrapped i hp hq).symm)
+  exact (scDecodeWrappedValue_parallel_some_iff (Or.inr rfl)).mp h
 
 private theorem scDecodeWrappedValue_hashBag_eq_some_iff_of_pointwise
     {ps qs : List Pattern} {value : Atom}
@@ -2687,17 +2163,8 @@ private theorem scDecodeWrappedValue_hashBag_eq_some_iff_of_pointwise
         stripSCWrappers (qs.get ⟨i, h₂⟩) = wrappedValue value) :
     scDecodeWrappedValue? (.collection .hashBag ps none) = some value ↔
       scDecodeWrappedValue? (.collection .hashBag qs none) = some value := by
-  constructor
-  · intro hps
-    exact scDecodeWrappedValue_hashBag_of_strippedNonZeroElems
-      ((strippedNonZeroElems_eq_singleton_wrapped_iff_of_pointwise
-          hlen hzero hwrapped).mp
-        (strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashBag hps))
-  · intro hqs
-    exact scDecodeWrappedValue_hashBag_of_strippedNonZeroElems
-      ((strippedNonZeroElems_eq_singleton_wrapped_iff_of_pointwise
-          hlen hzero hwrapped).mpr
-        (strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashBag hqs))
+  rw [(scDecodeWrappedValue_parallel_some_iff (Or.inl rfl)), (scDecodeWrappedValue_parallel_some_iff (Or.inl rfl))]
+  exact strippedNonZeroElems_singleton_iff_of_pointwise hlen hzero hwrapped
 
 private theorem scDecodeWrappedValue_hashSet_eq_some_iff_of_pointwise
     {ps qs : List Pattern} {value : Atom}
@@ -2710,17 +2177,8 @@ private theorem scDecodeWrappedValue_hashSet_eq_some_iff_of_pointwise
         stripSCWrappers (qs.get ⟨i, h₂⟩) = wrappedValue value) :
     scDecodeWrappedValue? (.collection .hashSet ps none) = some value ↔
       scDecodeWrappedValue? (.collection .hashSet qs none) = some value := by
-  constructor
-  · intro hps
-    exact scDecodeWrappedValue_hashSet_of_strippedNonZeroElems
-      ((strippedNonZeroElems_eq_singleton_wrapped_iff_of_pointwise
-          hlen hzero hwrapped).mp
-        (strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashSet hps))
-  · intro hqs
-    exact scDecodeWrappedValue_hashSet_of_strippedNonZeroElems
-      ((strippedNonZeroElems_eq_singleton_wrapped_iff_of_pointwise
-          hlen hzero hwrapped).mpr
-        (strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashSet hqs))
+  rw [(scDecodeWrappedValue_parallel_some_iff (Or.inr rfl)), (scDecodeWrappedValue_parallel_some_iff (Or.inr rfl))]
+  exact strippedNonZeroElems_singleton_iff_of_pointwise hlen hzero hwrapped
 
 private theorem scDecodeWrappedValue_hashBag_eq_of_pointwise_wrapped
     {ps qs : List Pattern}
@@ -2733,24 +2191,8 @@ private theorem scDecodeWrappedValue_hashBag_eq_of_pointwise_wrapped
         stripSCWrappers (qs.get ⟨i, h₂⟩) = wrappedValue value) :
     scDecodeWrappedValue? (.collection .hashBag ps none) =
       scDecodeWrappedValue? (.collection .hashBag qs none) := by
-  cases hps : scDecodeWrappedValue? (.collection .hashBag ps none) with
-  | none =>
-      cases hqs : scDecodeWrappedValue? (.collection .hashBag qs none) with
-      | none =>
-          rfl
-      | some value =>
-          have hsome :
-              scDecodeWrappedValue? (.collection .hashBag ps none) = some value :=
-            (scDecodeWrappedValue_hashBag_eq_some_iff_of_pointwise
-              (value := value) hlen hzero (hwrapped value)).mpr hqs
-          rw [hps] at hsome
-          cases hsome
-  | some value =>
-      have hsome :
-          scDecodeWrappedValue? (.collection .hashBag qs none) = some value :=
-        (scDecodeWrappedValue_hashBag_eq_some_iff_of_pointwise
-          (value := value) hlen hzero (hwrapped value)).mp hps
-      rw [hsome]
+  exact Option.ext (fun value =>
+    scDecodeWrappedValue_hashBag_eq_some_iff_of_pointwise hlen hzero (hwrapped value))
 
 private theorem scDecodeWrappedValue_hashSet_eq_of_pointwise_wrapped
     {ps qs : List Pattern}
@@ -2763,126 +2205,22 @@ private theorem scDecodeWrappedValue_hashSet_eq_of_pointwise_wrapped
         stripSCWrappers (qs.get ⟨i, h₂⟩) = wrappedValue value) :
     scDecodeWrappedValue? (.collection .hashSet ps none) =
       scDecodeWrappedValue? (.collection .hashSet qs none) := by
-  cases hps : scDecodeWrappedValue? (.collection .hashSet ps none) with
-  | none =>
-      cases hqs : scDecodeWrappedValue? (.collection .hashSet qs none) with
-      | none =>
-          rfl
-      | some value =>
-          have hsome :
-              scDecodeWrappedValue? (.collection .hashSet ps none) = some value :=
-            (scDecodeWrappedValue_hashSet_eq_some_iff_of_pointwise
-              (value := value) hlen hzero (hwrapped value)).mpr hqs
-          rw [hps] at hsome
-          cases hsome
-  | some value =>
-      have hsome :
-          scDecodeWrappedValue? (.collection .hashSet qs none) = some value :=
-        (scDecodeWrappedValue_hashSet_eq_some_iff_of_pointwise
-          (value := value) hlen hzero (hwrapped value)).mp hps
-      rw [hsome]
+  exact Option.ext (fun value =>
+    scDecodeWrappedValue_hashSet_eq_some_iff_of_pointwise hlen hzero (hwrapped value))
 
 private theorem scDecodeWrappedValue_hashBag_eq_of_perm
     {elems₁ elems₂ : List Pattern} (hperm : elems₁.Perm elems₂) :
     scDecodeWrappedValue? (.collection .hashBag elems₁ none) =
       scDecodeWrappedValue? (.collection .hashBag elems₂ none) := by
-  cases h₁ : scDecodeWrappedValue? (.collection .hashBag elems₁ none) with
-  | none =>
-      cases h₂ : scDecodeWrappedValue? (.collection .hashBag elems₂ none) with
-      | none =>
-          rfl
-      | some value =>
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [wrappedValue value] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashBag h₂
-          have hsperm : (strippedNonZeroElems elems₁).Perm [wrappedValue value] := by
-            simpa [hs₂] using strippedNonZeroElems_perm hperm
-          have hs₁ :
-              strippedNonZeroElems elems₁ = [wrappedValue value] := by
-            simp at hsperm
-            exact hsperm
-          have hsome :
-              scDecodeWrappedValue? (.collection .hashBag elems₁ none) = some value :=
-            scDecodeWrappedValue_hashBag_of_strippedNonZeroElems hs₁
-          rw [h₁] at hsome
-          cases hsome
-  | some value =>
-      have hs₁ :
-          strippedNonZeroElems elems₁ = [wrappedValue value] :=
-        strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashBag h₁
-      cases h₂ : scDecodeWrappedValue? (.collection .hashBag elems₂ none) with
-      | none =>
-          have hsperm : [wrappedValue value].Perm (strippedNonZeroElems elems₂) := by
-            simpa [hs₁] using strippedNonZeroElems_perm hperm
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [wrappedValue value] := by
-            simp at hsperm
-            symm
-            exact hsperm
-          have hsome :
-              scDecodeWrappedValue? (.collection .hashBag elems₂ none) = some value :=
-            scDecodeWrappedValue_hashBag_of_strippedNonZeroElems hs₂
-          rw [h₂] at hsome
-          cases hsome
-      | some value' =>
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [wrappedValue value'] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashBag h₂
-          have hsperm : [wrappedValue value].Perm [wrappedValue value'] := by
-            simpa [hs₁, hs₂] using strippedNonZeroElems_perm hperm
-          simp at hsperm
-          exact congrArg some (wrappedValue_injective hsperm)
+  exact decode_parallel_eq_of_perm (fun elems => scDecodeWrappedValue? (.collection .hashBag elems none))
+    wrappedValue (fun _ _ => (scDecodeWrappedValue_parallel_some_iff (Or.inl rfl))) hperm
 
 private theorem scDecodeWrappedValue_hashSet_eq_of_perm
     {elems₁ elems₂ : List Pattern} (hperm : elems₁.Perm elems₂) :
     scDecodeWrappedValue? (.collection .hashSet elems₁ none) =
       scDecodeWrappedValue? (.collection .hashSet elems₂ none) := by
-  cases h₁ : scDecodeWrappedValue? (.collection .hashSet elems₁ none) with
-  | none =>
-      cases h₂ : scDecodeWrappedValue? (.collection .hashSet elems₂ none) with
-      | none =>
-          rfl
-      | some value =>
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [wrappedValue value] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashSet h₂
-          have hsperm : (strippedNonZeroElems elems₁).Perm [wrappedValue value] := by
-            simpa [hs₂] using strippedNonZeroElems_perm hperm
-          have hs₁ :
-              strippedNonZeroElems elems₁ = [wrappedValue value] := by
-            simp at hsperm
-            exact hsperm
-          have hsome :
-              scDecodeWrappedValue? (.collection .hashSet elems₁ none) = some value :=
-            scDecodeWrappedValue_hashSet_of_strippedNonZeroElems hs₁
-          rw [h₁] at hsome
-          cases hsome
-  | some value =>
-      have hs₁ :
-          strippedNonZeroElems elems₁ = [wrappedValue value] :=
-        strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashSet h₁
-      cases h₂ : scDecodeWrappedValue? (.collection .hashSet elems₂ none) with
-      | none =>
-          have hsperm : [wrappedValue value].Perm (strippedNonZeroElems elems₂) := by
-            simpa [hs₁] using strippedNonZeroElems_perm hperm
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [wrappedValue value] := by
-            simp at hsperm
-            symm
-            exact hsperm
-          have hsome :
-              scDecodeWrappedValue? (.collection .hashSet elems₂ none) = some value :=
-            scDecodeWrappedValue_hashSet_of_strippedNonZeroElems hs₂
-          rw [h₂] at hsome
-          cases hsome
-      | some value' =>
-          have hs₂ :
-              strippedNonZeroElems elems₂ = [wrappedValue value'] :=
-            strippedNonZeroElems_eq_singleton_of_scDecodeWrappedValue_hashSet h₂
-          have hsperm : [wrappedValue value].Perm [wrappedValue value'] := by
-            simpa [hs₁, hs₂] using strippedNonZeroElems_perm hperm
-          simp at hsperm
-          exact congrArg some (wrappedValue_injective hsperm)
+  exact decode_parallel_eq_of_perm (fun elems => scDecodeWrappedValue? (.collection .hashSet elems none))
+    wrappedValue (fun _ _ => (scDecodeWrappedValue_parallel_some_iff (Or.inr rfl))) hperm
 
 private theorem scDecodeWrappedValue_par_singleton (p : Pattern) :
     scDecodeWrappedValue? (.collection .hashBag [p] none) =
@@ -11297,7 +10635,7 @@ theorem self_mem_runOutcomes (sys : EventSystem R Δ Ω S) (pol) (n : ℕ)
 theorem runOutcomes_succ_of_step (sys : EventSystem R Δ Ω S) {pol} {n : ℕ}
     {c d c' : Config R Δ Ω S} (hstep : RoundStep sys pol c d)
     (h : c' ∈ runOutcomes sys pol n d) : c' ∈ runOutcomes sys pol (n + 1) c := by
-  simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq]
+  simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_ofPred_eq]
   exact Or.inr ⟨d, hstep, h⟩
 
 theorem runOutcomes_mono_fuel (sys : EventSystem R Δ Ω S) (pol) :
@@ -11311,7 +10649,7 @@ theorem runOutcomes_mono_fuel (sys : EventSystem R Δ Ω S) (pol) :
       exact self_mem_runOutcomes sys pol 1 c
   | succ n ih =>
       intro c c' h
-      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at h
+      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_ofPred_eq] at h
       rcases h with h | ⟨d, hd, hrest⟩
       · rw [Set.mem_singleton_iff.mp h]
         exact self_mem_runOutcomes sys pol (n + 2) c
@@ -11336,7 +10674,7 @@ theorem runOutcomes_trans (sys : EventSystem R Δ Ω S) (pol) :
       exact runOutcomes_le sys pol (by omega) h'
   | succ n ih =>
       intro m c c' c'' h h'
-      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at h
+      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_ofPred_eq] at h
       rcases h with h | ⟨d, hd, hrest⟩
       · rw [Set.mem_singleton_iff.mp h] at h'
         exact runOutcomes_le sys pol (by omega) h'
@@ -11353,7 +10691,7 @@ theorem runOutcomes_mono_pol (sys : EventSystem R Δ Ω S)
   | zero => intro c c' h; exact h
   | succ n ih =>
       intro c c' h
-      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at h
+      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_ofPred_eq] at h
       rcases h with h | ⟨d, hd, hrest⟩
       · rw [Set.mem_singleton_iff.mp h]
         exact self_mem_runOutcomes sys pol₂ (n + 1) c
@@ -11408,13 +10746,13 @@ theorem round_granularity_independence (sys : EventSystem R Δ Ω S) (c : Config
     {c' | ∃ n, c' ∈ runOutcomes sys allPol n c} =
     {c' | ∃ n, c' ∈ runOutcomes sys singletonPol n c} := by
   ext c'
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · rintro ⟨n, hn⟩
     induction n generalizing c with
     | zero => exact ⟨0, hn⟩
     | succ n ih =>
-        simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at hn
+        simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_ofPred_eq] at hn
         rcases hn with h | ⟨d, hd, hrest⟩
         · exact ⟨0, h⟩
         · obtain ⟨m₁, h₁⟩ := roundStep_decomposes sys hd
@@ -11430,7 +10768,7 @@ theorem quiescent_granularity_independence (sys : EventSystem R Δ Ω S)
     {c' | (∃ n, c' ∈ runOutcomes sys singletonPol n c) ∧ sys.enabled c'.1 = ∅} := by
   have h := Set.ext_iff.mp (round_granularity_independence sys c)
   ext c'
-  simp only [Set.mem_setOf_eq] at h ⊢
+  simp only [Set.mem_ofPred_eq] at h ⊢
   exact ⟨fun ⟨a, b⟩ => ⟨(h c').mp a, b⟩, fun ⟨a, b⟩ => ⟨(h c').mpr a, b⟩⟩
 
 /-- **The engine macro side conditions, as explicit model hypotheses.**  Each field corresponds
@@ -11474,7 +10812,7 @@ theorem QuietFrontier.singleton_run_shape {sys : EventSystem R Δ Ω S} {s : S}
       exact ⟨L, ρ, hnd, hsub, rfl, rfl⟩
   | succ n ih =>
       rintro L ρ c' hnd hsub hc'
-      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_setOf_eq] at hc'
+      simp only [runOutcomes, Set.mem_union, Set.mem_iUnion, Set.mem_ofPred_eq] at hc'
       rcases hc' with hc' | ⟨d, hd, hrest⟩
       · rw [Set.mem_singleton_iff.mp hc']
         exact ⟨L, ρ, hnd, hsub, rfl, rfl⟩
@@ -11541,7 +10879,7 @@ theorem macro_collapse_corollary (sys : EventSystem R Δ Ω S) {s : S}
         sys.enabled s' = ∅} =
     {acc' | ∃ x ∈ foldOutcomesΩ (matchingPayloads M), acc' = accMul acc x} := by
   ext acc'
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · rintro ⟨s', ⟨n, hn⟩, hq⟩
     have h1 : ((s', acc') : Config R Δ Ω S) ∈
@@ -11581,7 +10919,7 @@ theorem macro_collapse_corollary (sys : EventSystem R Δ Ω S) {s : S}
         (self_mem_runOutcomes sys allPol 0 _)
     · rw [h.quiet_consume M ρ h.matching.2.nodup (fun _ he => he)]
       ext e
-      simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false, not_and, not_not]
+      simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false, not_and, not_not]
       exact fun hes => h.complete e hes
 
 end RunLayer
@@ -11776,7 +11114,7 @@ private theorem evalDropSystem_runOutcomes_source_eq_self_of_empty
       constructor
       · intro hd
         simp only [runOutcomes, Set.mem_union, Set.mem_singleton_iff,
-          Set.mem_iUnion, Set.mem_setOf_eq] at hd
+          Set.mem_iUnion, Set.mem_ofPred_eq] at hd
         rcases hd with hd | ⟨d', hstep, hd'⟩
         · simpa using hd
         · have hdself : d' = (evalDropSource chan payload, acc) :=

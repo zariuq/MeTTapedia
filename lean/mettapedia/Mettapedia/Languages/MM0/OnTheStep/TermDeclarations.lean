@@ -22,7 +22,7 @@ binder groups and dependencies: `term all {x: set} (ph: wff x): wff;`, `term imp
   argument type's sort is declared and its dependencies are bound variables; the return type's sort is declared
   and not `pure`, and its dependencies are bound variables. Sorts as in `SortDeclarations.declare`.
 * **The theorem** (`accepted_reachable_iff`, `on_the_step`): from the bag of such a file, rewriting of bags with
-  the none query reaches a bag holding `accepted` exactly when MM0's rules accept the file; on the step, for every state
+  absence reaches a bag holding `accepted` exactly when MM0's rules accept the file; on the step, for every state
   that reads as the file's bag. The invariant (`Phase`): the cursor at the rest of the file; or a term under check,
   with the verdict of the whole signature equal to the verdict of what is left to check from the cursor
   (`InTerm`); or `accepted`. The store holds the sort rows, the term name rows, and the binder rows of every term
@@ -44,7 +44,7 @@ open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax
 open NamesOnTheStep (Expr)
 open Presentation.Schematic
 open Machines (ReadsBag stepSystem listState listState_reads)
-open NoneRewriting
+open AbsenceRewriting
 open DeclarationProgram
 open SortDeclarations (SortStatement fileTree SortEnv lookupSort declare envRows mem_envRows rows_of_mem
   sortName_mem_envRows sortEntry_mem_envRows lookupSort_eq_none_iff lookupSort_of_mem mem_of_lookupSort
@@ -553,8 +553,8 @@ theorem phase_start (ss₀ : List Statement) : Phase ss₀ (start ss₀) :=
 
 /-- **Every rewrite keeps the invariant.** -/
 theorem phase_step {ss₀ : List Statement} {bag bag' : Multiset Expr} (phase : Phase ss₀ bag)
-    (step : RewritesNone program bag bag') : Phase ss₀ bag' := by
-  obtain ⟨r, member, θ, rest, split, readsIn, -, nones, rfl⟩ := step
+    (step : RewritesAbsent program bag bag') : Phase ss₀ bag' := by
+  obtain ⟨r, member, θ, rest, split, readsIn, -, absences, rfl⟩ := step
   simp only [program, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases phase with ⟨done, rest₀, env, old, decomposed, checked, shape, rfl⟩ |
     ⟨done, t, rest₀, env, old, bound, names, cursor, decomposed, checked, shape, fresh, inTerm, rfl⟩ |
@@ -581,7 +581,7 @@ theorem phase_step {ss₀ : List Statement} {bag bag' : Multiset Expr} (phase : 
               obtain ⟨hs, -⟩ := List.cons.inj fields
               have freshSort : sortName (θ 4) ∉ (([pending (fileTree ((Statement.sort d :: ss).map
                   Statement.tree))] : List Expr) : Multiset Expr) + storeBag env old :=
-                nones (rowP 1 [u 4]) (List.mem_singleton_self _)
+                absences (rowP 1 [u 4]) (List.mem_singleton_self _)
               have looked : lookupSort env.sorts d.name = none := lookupSort_eq_none_iff.mpr fun known =>
                 freshSort (mem_one_add.mpr (Or.inr (by rw [hs]; exact (sortName_mem shape).mpr known)))
               have declared : checkStatement env (.sort d) =
@@ -644,7 +644,7 @@ theorem phase_step {ss₀ : List Statement} {bag bag' : Multiset Expr} (phase : 
               obtain ⟨hn, hg, ha⟩ := node3_inv statement
               have freshTerm : termName (θ 0) ∉ (([pending (fileTree ((Statement.term t :: ss).map
                   Statement.tree))] : List Expr) : Multiset Expr) + storeBag env old :=
-                nones (rowP 3 [u 0]) (List.mem_singleton_self _)
+                absences (rowP 3 [u 0]) (List.mem_singleton_self _)
               have unnamed : t.name ∉ env.terms := fun known =>
                 freshTerm (mem_one_add.mpr (Or.inr (by rw [hn]; exact (termName_mem shape).mpr known)))
               refine Or.inr (Or.inl ⟨done, t, ss, env, old, [], [], binders t.name (groupsTree t.groups)
@@ -795,7 +795,7 @@ theorem phase_step {ss₀ : List Statement} {bag bag' : Multiset Expr} (phase : 
             have freshName : binderName (θ 0) (θ 1) ∉ (([boundNames t.name (idsTree (x :: xs)) s (groupsTree gs)
                 (arrowTree t.args t.ret) (fileTree (rest₀.map Statement.tree))] : List Expr) : Multiset Expr) +
                 storeBag ⟨env.sorts, t.name :: env.terms⟩ (old ++ current t.name bound names) :=
-              nones (rowP 12 [u 0, u 1]) (List.mem_singleton_self _)
+              absences (rowP 12 [u 0, u 1]) (List.mem_singleton_self _)
             have unnamed : x ∉ names := fun known =>
               freshName (mem_one_add.mpr (Or.inr (by rw [hn, hx]; exact (binderName_mem shape fresh).mpr known)))
             refine Or.inr (Or.inl ⟨done, t, rest₀, env, old, x :: bound, x :: names, boundNames t.name (idsTree xs)
@@ -906,7 +906,7 @@ theorem phase_step {ss₀ : List Statement} {bag bag' : Multiset Expr} (phase : 
                 have freshName : binderName (θ 0) (θ 1) ∉ (([regularNames t.name (bidsTree (some x :: xs))
                     (groupsTree gs) (arrowTree t.args t.ret) (fileTree (rest₀.map Statement.tree))] : List Expr) :
                     Multiset Expr) + storeBag ⟨env.sorts, t.name :: env.terms⟩ (old ++ current t.name bound names) :=
-                  nones (rowP 12 [u 0, u 1]) (List.mem_singleton_self _)
+                  absences (rowP 12 [u 0, u 1]) (List.mem_singleton_self _)
                 have unnamed : x ∉ names := fun known =>
                   freshName (mem_one_add.mpr (Or.inr (by
                     rw [hn, hx]
@@ -1124,8 +1124,8 @@ theorem phase_step {ss₀ : List Statement} {bag bag' : Multiset Expr} (phase : 
       rfl | rfl | rfl | rfl | rfl | rfl <;>
       exact (absurd (row_inj.mp (take_inv split (store_kinds shape (by decide))).1).1 (by decide))
 
-theorem phase_multi {ss₀ : List Statement} : ∀ {bag bag' : (rewritingNone program).Term},
-    (rewritingNone program).MultiStep bag bag' → Phase ss₀ bag → Phase ss₀ bag'
+theorem phase_multi {ss₀ : List Statement} : ∀ {bag bag' : (rewritingAbsent program).Term},
+    (rewritingAbsent program).MultiStep bag bag' → Phase ss₀ bag → Phase ss₀ bag'
   | _, _, .refl _, phase => phase
   | _, _, .step first rest, phase => phase_multi rest (phase_step phase first)
 
@@ -1148,7 +1148,7 @@ theorem accepted_of_phase {ss₀ : List Statement} {bag : Multiset Expr} (phase 
 /-- **From a cursor of the term under check, a run reaches the rest of the file**, with some binder rows. -/
 def Reaches (t : TermStatement) (restTree : Expr) (env : Env) (old : List Expr) (cursor : Expr)
     (bound names : List Expr) : Prop :=
-  ∃ bound' names', (rewritingNone program).MultiStep
+  ∃ bound' names', (rewritingAbsent program).MultiStep
     ((([cursor] : List Expr) : Multiset Expr) +
       storeBag ⟨env.sorts, t.name :: env.terms⟩ (old ++ current t.name bound names))
     ((([pending restTree] : List Expr) : Multiset Expr) +
@@ -1157,7 +1157,7 @@ def Reaches (t : TermStatement) (restTree : Expr) (env : Env) (old : List Expr) 
 theorem deps_runs_regular (t : TermStatement) (restTree : Expr) (env : Env) (old bound names : List Expr)
     (shape : LocalsIn env.terms old) (fresh : t.name ∉ env.terms) (xs : List (Option Expr)) (gs : List Group) :
     ∀ ds : List Expr, depsBound bound ds = true →
-      (rewritingNone program).MultiStep
+      (rewritingAbsent program).MultiStep
         ((([regularDeps t.name (idsTree ds) (bidsTree xs) (groupsTree gs) (arrowTree t.args t.ret) restTree] :
           List Expr) : Multiset Expr) + storeBag ⟨env.sorts, t.name :: env.terms⟩ (old ++ current t.name bound names))
         ((([regularNames t.name (bidsTree xs) (groupsTree gs) (arrowTree t.args t.ret) restTree] :
@@ -1171,7 +1171,7 @@ theorem deps_runs_regular (t : TermStatement) (restTree : Expr) (env : Env) (old
 theorem deps_runs_arrow (t : TermStatement) (restTree : Expr) (env : Env) (old bound names : List Expr)
     (shape : LocalsIn env.terms old) (fresh : t.name ∉ env.terms) (post : List Typ) :
     ∀ ds : List Expr, depsBound bound ds = true →
-      (rewritingNone program).MultiStep
+      (rewritingAbsent program).MultiStep
         ((([arrowDeps t.name (idsTree ds) (arrowTree post t.ret) restTree] : List Expr) : Multiset Expr) +
           storeBag ⟨env.sorts, t.name :: env.terms⟩ (old ++ current t.name bound names))
         ((([arrow t.name (arrowTree post t.ret) restTree] : List Expr) : Multiset Expr) +
@@ -1185,7 +1185,7 @@ theorem deps_runs_arrow (t : TermStatement) (restTree : Expr) (env : Env) (old b
 theorem deps_runs_return (t : TermStatement) (restTree : Expr) (env : Env) (old bound names : List Expr)
     (shape : LocalsIn env.terms old) (fresh : t.name ∉ env.terms) :
     ∀ ds : List Expr, depsBound bound ds = true →
-      (rewritingNone program).MultiStep
+      (rewritingAbsent program).MultiStep
         ((([returnDeps t.name (idsTree ds) restTree] : List Expr) : Multiset Expr) +
           storeBag ⟨env.sorts, t.name :: env.terms⟩ (old ++ current t.name bound names))
         ((([pending restTree] : List Expr) : Multiset Expr) +
@@ -1199,7 +1199,7 @@ theorem deps_runs_return (t : TermStatement) (restTree : Expr) (env : Env) (old 
 theorem arrow_runs (t : TermStatement) (restTree : Expr) (env : Env) (old bound names : List Expr)
     (shape : LocalsIn env.terms old) (fresh : t.name ∉ env.terms) :
     ∀ post : List Typ, checkArrow env.sorts bound post t.ret = true →
-      (rewritingNone program).MultiStep
+      (rewritingAbsent program).MultiStep
         ((([arrow t.name (arrowTree post t.ret) restTree] : List Expr) : Multiset Expr) +
           storeBag ⟨env.sorts, t.name :: env.terms⟩ (old ++ current t.name bound names))
         ((([pending restTree] : List Expr) : Multiset Expr) +
@@ -1352,7 +1352,7 @@ theorem groups_runs (t : TermStatement) (restTree : Expr) (env : Env) (old : Lis
 
 theorem runs_of_checkAll : ∀ (ss : List Statement) (env env' : Env) (old : List Expr), LocalsIn env.terms old →
     (env.sorts.map Prod.fst).Nodup → checkAll env ss = some env' →
-    ∃ old', (rewritingNone program).MultiStep
+    ∃ old', (rewritingAbsent program).MultiStep
       ((([pending (fileTree (ss.map Statement.tree))] : List Expr) : Multiset Expr) + storeBag env old)
       ((([accepted] : List Expr) : Multiset Expr) + storeBag env' old')
   | [], env, env', old, _, _, done => by
@@ -1432,9 +1432,9 @@ theorem runs_of_checkAll : ∀ (ss : List Statement) (env env' : Env) (old : Lis
 /-! ## The theorem -/
 
 /-- **A file of sort and term declarations reaches `accepted` exactly when MM0's rules accept it**, by rewriting of
-bags with none queries. -/
+bags with absence. -/
 theorem accepted_reachable_iff (ss : List Statement) :
-    (∃ bag : Multiset Expr, (rewritingNone program).MultiStep (start ss) bag ∧ accepted ∈ bag) ↔
+    (∃ bag : Multiset Expr, (rewritingAbsent program).MultiStep (start ss) bag ∧ accepted ∈ bag) ↔
       (checkAll empty ss).isSome := by
   constructor
   · rintro ⟨bag, steps, inside⟩
@@ -1453,7 +1453,7 @@ theorem on_the_step {O : Type uO} [DecidableEq O] [Infinite O] (ss : List Statem
     (reads : ReadsBag s (start ss)) :
     (∃ s', (stepSystem O program).MultiStep s s' ∧ ∃ bag, ReadsBag s' bag ∧ accepted ∈ bag) ↔
       (checkAll empty ss).isSome :=
-  (reachable_iff_none program_fragment (fun bag => accepted ∈ bag) reads).symm.trans (accepted_reachable_iff ss)
+  (reachable_iff_absent program_fragment (fun bag => accepted ∈ bag) reads).symm.trans (accepted_reachable_iff ss)
 
 theorem start_reads (ss : List Statement) :
     ReadsBag (listState [pending (fileTree (ss.map Statement.tree))]) (start ss) :=

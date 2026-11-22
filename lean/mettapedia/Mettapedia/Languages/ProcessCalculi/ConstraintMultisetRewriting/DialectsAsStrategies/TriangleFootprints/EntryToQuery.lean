@@ -38,7 +38,7 @@ The services are HE's own: the machine's argument admission is HE's historical s
 * `silent_fails` (negative): the contract is not vacuous.
 * `Controls.declared_head_blocks_tuple` (negative): with a declaration `(: f T)` in the program, the
   entry's tuple move of `entry_traced` is not available: the run's first move depends on the
-  none queries of declarations of `f`.
+  absence of declarations of `f`.
 -/
 
 set_option autoImplicit false
@@ -638,7 +638,7 @@ def declareF : Atom := .expression [.symbol ":", .symbol "f", .symbol "Number"]
 
 /-- **Negative control: a declaration of the head blocks the tuple entry.** With `(: f Number)` in
 the program, the type collection of `f` is not `%Undefined%` alone, so the entry move of
-`entry_traced` is not available: HE's run depends on the lack of declarations of `f`. -/
+`entry_traced` is not available: HE's run depends on the absence of declarations of `f`. -/
 theorem declared_head_blocks_tuple :
     ¬ TypeOccurrencesRel ((Space.ofList [declareF]).atoms : Multiset Atom) (.symbol "f")
         {Atom.undefinedType} ∧

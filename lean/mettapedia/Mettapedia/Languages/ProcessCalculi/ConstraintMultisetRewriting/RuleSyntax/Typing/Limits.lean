@@ -29,18 +29,18 @@ types, and needs no typing of its own.
 * **Uniqueness of answers** (`answers_not_unique`): two well-typed rules answer the same call
   `add 0 1 : nat` with `1` and with `0`; both firings are admitted, and no substitution equates the two
   answers.
-* **The none query beside another program** (`none_not_compositional`): a well-typed rule takes `0 : nat`,
-  asks for the none query of `1 : nat` and answers `2 : nat`, and its firing is admitted; beside another
+* **Absence beside another program** (`absence_not_compositional`): a well-typed rule takes `0 : nat`,
+  asks for the absence of `1 : nat` and answers `2 : nat`, and its firing is admitted; beside another
   well-typed rule that takes `0 : nat` and answers `1 : nat`, the union is well typed
   (`WellTypedProgram.union`) with each made row designated as the answer to the taken row, a
   designation that rejects an ill-typed rule of this package (`Programs.rigid_appendNil_not_wellTyped`);
   but after the other rule fires the same firing is refused, because the made row lies inside the
-  none region. Locality
+  absence region. Locality
   (`RuleSyntax.admits_of_outsideRegions`) says when such a change does not matter: when it lies outside
   the firing's regions. A row `add 0 1` added beside the guarded rule is outside its region, and the
   firing stays admitted by locality (`locality_outside`); a row `1` added in the same way is inside, and
   refuses it (`locality_inside`). Typing is a property of each rule, so it composes; admission with a
-  none check reads the store, and locality is what makes it compose: it is kept when the other
+  absence check reads the store, and locality is what makes it compose: it is kept when the other
   program's changes lie outside the firing's regions.
 -/
 
@@ -379,7 +379,7 @@ theorem answers_not_unique :
   ⟨twoAnswers_wellTyped, answerFiring_admitted _ _, answerFiring_admitted _ _, rfl, rfl,
     fun _ _ same => rigid_one_ne_zero same.2⟩
 
-/-! ### The none query beside another program -/
+/-! ### Absence beside another program -/
 
 /-- Take `0`, ask that no row is `1`, make `2`. -/
 def guardedBody : RuleInstance (TotalTerm (empty rigid.R)) := ⟨[zeroRow], [], [], [.predicate .none oneRow], [twoRow]⟩
@@ -457,12 +457,12 @@ theorem afterMaker_present : 6 ∈ afterMaker.present := by
   simp [afterMaker, Firing.result, makerFiring, groundFiring, canonicalFiring, pairState, fire,
     Selection.commit]
 
-/-- **Typing does not protect a none query beside another program**: the union of the guarded rule and
+/-- **Typing does not protect an absence beside another program**: the union of the guarded rule and
 the maker is well typed with each made row designated as the answer to the taken row, a designation
 that is checked (it rejects `Programs.appendNil` in this package, whose answer `vec 1` does not have
 its call's type `vec (add 0 1)`); the guarded firing is admitted; after the maker makes `1`, inside the
-none region, the same firing is refused. -/
-theorem none_not_compositional :
+absence region, the same firing is refused. -/
+theorem absence_not_compositional :
     WellTypedProgram rigid.levels both (fun _ => [some 0]) ∧
       ¬ WellTypedRule rigid.levels (Programs.appendNil rigid) [some 0] ∧
       (step (frames rigid.levels) ℕ helperExtensions both).Admits (s := pairState)
@@ -519,7 +519,7 @@ theorem guarded_admitted_withSix (six : TotalTerm (empty rigid.R)) :
     · exact rigid_one_ne_zero equated.2
     · exact rigid_one_ne_zero equated.2
 
-/-- **Outside the region, locality keeps the none query admitted**: making row `6` present with the label
+/-- **Outside the region, locality keeps the absence admitted**: making row `6` present with the label
 `add 0 1`, which no solution equates with `1`, is a change outside the guarded firing's regions, so
 `admits_of_outsideRegions` keeps it admitted. -/
 theorem locality_outside :
@@ -570,7 +570,7 @@ end Ground
 #print axioms answers_not_unique
 #print axioms both_wellTyped
 #print axioms guarded_admitted
-#print axioms none_not_compositional
+#print axioms absence_not_compositional
 #print axioms rigid_one_ne_add
 #print axioms locality_outside
 #print axioms locality_inside

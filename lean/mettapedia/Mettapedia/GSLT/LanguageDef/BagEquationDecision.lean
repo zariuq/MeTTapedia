@@ -4,7 +4,7 @@ import Mettapedia.GSLT.LanguageDef.WellSortedOccurrenceReplacement
 import Mathlib.Data.List.Forall2
 import Mettapedia.OSLF.MeTTaIL.CanonicalRenaming
 import Mettapedia.OSLF.MeTTaIL.ReferenceStepEquations
-import Mettapedia.GSLT.LanguageDef.BagNormalFormSection
+import Mettapedia.GSLT.LanguageDef.BagNormalFormEquivalence
 import Mettapedia.GSLT.LanguageDef.TypedPartialSpineRecovery
 import Mathlib.Logic.Relation
 import Mathlib.Data.List.Permutation
@@ -26,67 +26,6 @@ admissible endpoints. The actual source rows remain retained throughout.
 -/
 
 set_option autoImplicit false
-namespace Mettapedia.GSLT.LanguageDef.BagNormalForm
-open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.MeTTaIL.ContextualStep
-open Mettapedia.GSLT.LanguageDef.WellSorted
-open Mettapedia.GSLT.LanguageDef.EquationSemantics
-
-variable {language : LanguageDef} {bag : GrammarRule} {unit : Option String}
-
-/-- Two or more surviving components retain their bag wrapper. -/
-theorem collapse_eq_bag_of_length (unit : String) (elements : List Pattern)
-    (many : 2 ≤ elements.length) :
-    collapse unit elements = .collection .hashBag elements none := by
-  cases elements with
-  | nil => simp at many
-  | cons first rest =>
-      cases rest with
-      | nil => simp at many
-      | cons second tail => rfl
-
-/-- Bag shape depends on multiplicity, without evaluating the sorting order. -/
-theorem normalizeBag_isBagNode_of_length (unit : String) (elements : List Pattern)
-    (many : 2 ≤ (bagContents unit elements).length) :
-    IsBagNode (normalizeBag (some unit) elements) := by
-  refine ⟨Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatterns (bagContents unit elements), ?_⟩
-  exact collapse_eq_bag_of_length unit _ (by simpa using many)
-
-/-- The constructive normalization path is an equation derivation. -/
-theorem equationEquiv_normalForm (laws : BareBagTheory language bag unit)
-    (base : BasePremiseEvaluator) {free : FreeTypeContext} {bound : List TypeExpr}
-    {type : TypeExpr} {pattern : Pattern}
-    (admissible : Admissible language free bound type pattern)
-    (collectionless : collectionFree type = true) :
-    EquationEquiv base language pattern (normalForm unit pattern) := by
-  exact Relation.EqvGen.reflTransGen_le_eqvGen _ _ _
-    (path_normalForm laws base pattern admissible collectionless)
-
-/-- Exact equation adequacy of normalization, including open binding contexts. -/
-theorem equationEquiv_iff_normalForm_eq (laws : BareBagTheory language bag unit)
-    (base : BasePremiseEvaluator) {free : FreeTypeContext} {bound : List TypeExpr}
-    {type : TypeExpr} {left right : Pattern}
-    (leftAdmissible : Admissible language free bound type left)
-    (rightAdmissible : Admissible language free bound type right)
-    (collectionless : collectionFree type = true) :
-    EquationEquiv base language left right ↔ normalForm unit left = normalForm unit right := by
-  constructor
-  · exact normalForm_eq_of_equationEquiv laws.toBagTheory
-  · intro equal
-    exact .trans _ _ _ (equationEquiv_normalForm laws base leftAdmissible collectionless)
-      (equal ▸ (equationEquiv_normalForm laws base rightAdmissible collectionless).symm)
-
-/-- A decision procedure for the authored equation theory on its admissible terms. -/
-def decideEquationEquiv (laws : BareBagTheory language bag unit)
-    (base : BasePremiseEvaluator) {free : FreeTypeContext} {bound : List TypeExpr}
-    {type : TypeExpr} {left right : Pattern}
-    (leftAdmissible : Admissible language free bound type left)
-    (rightAdmissible : Admissible language free bound type right)
-    (collectionless : collectionFree type = true) : Decidable (EquationEquiv base language left right) :=
-  decidable_of_iff (normalForm unit left = normalForm unit right)
-    (equationEquiv_iff_normalForm_eq laws base leftAdmissible rightAdmissible collectionless).symm
-
-end Mettapedia.GSLT.LanguageDef.BagNormalForm
 
 namespace Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 open Mettapedia.OSLF.MeTTaIL.Syntax Mettapedia.OSLF.MeTTaIL.ContextualStep
@@ -443,50 +382,6 @@ theorem source_fibre_equiv_iff_normalForm_eq {language : LanguageDef} {bag : Gra
     have sameNormal : normalizeSource laws base free bound type collectionless left =
         normalizeSource laws base free bound type collectionless right := Subtype.ext same
     exact .trans _ _ _ (certified.sound left) (sameNormal ▸ (certified.sound right).symm)
-
-/-- Singleton collapse is the same existing bag normal form on arbitrary
-components; no typing or interpretation hypothesis is used here. -/
-theorem normalForm_singleton (unit : String) (pattern : Pattern) :
-    normalForm (some unit) (.collection .hashBag [pattern] none) =
-      normalForm (some unit) pattern := by
-  rw [normalForm_bag]
-  simp only [List.map_cons,List.map_nil,normalizeBag]
-  have normal := rootNormal_normalForm unit pattern
-  generalize normalForm (some unit) pattern = image at normal ⊢
-  by_cases isUnit : image = .apply unit []
-  · subst isUnit
-    simp [bagContents,splice,collapse]
-  · by_cases isBag : IsBagNode image
-    · obtain ⟨components,rfl⟩ := isBag
-      obtain ⟨sorted,long,plain⟩ := normal components rfl
-      have contents : bagContents unit [.collection .hashBag components none] = components := by
-        simp only [bagContents,List.flatMap_cons,List.flatMap_nil,List.append_nil,splice_bag]
-        apply List.filter_eq_self.mpr
-        intro component member
-        simpa using (plain component member).1
-      rw [contents,sorted]
-      match components,long with
-      | first :: second :: rest,_ => rfl
-    · have contents : bagContents unit [image] = [image] := by
-        simp [bagContents,splice_of_not_bag isBag,isUnit]
-      rw [contents,sortPatterns_singleton]
-      rfl
-
-/-- The two actual retained wrapper-unit rows are invariant under every
-binding substitution, including substitutions containing arbitrary terms. -/
-theorem normalForm_insert_unit (unit : String) (before after : List Pattern) :
-    normalForm (some unit) (.collection .hashBag (before ++ .apply unit [] :: after) none) =
-      normalForm (some unit) (.collection .hashBag (before ++ after) none) := by
-  rw [normalForm_bag,normalForm_bag]
-  apply normalizeBag_contents_perm
-  simp only [List.map_append,List.map_cons,bagContents_append]
-  rw [bagContents_cons unit (normalForm (some unit) (.apply unit []))]
-  have noUnit : bagContents unit [normalForm (some unit) (.apply unit [])] = [] := by
-    simp [normalForm,normalFormList,bagContents,splice]
-  rw [noUnit,List.nil_append]
-
-#print axioms normalForm_singleton
-#print axioms normalForm_insert_unit
 
 #print axioms source_equiv_normalForm
 #print axioms matchBag_reconstruct
@@ -846,24 +741,20 @@ singleton views retain a carrier for matching; this is not data normalization. -
 def view (unitLabel : String) (focus : Pattern) : Pattern :=
   .collection .hashBag (bagContents unitLabel [focus]) none
 
-/-- Reading a root-normal algebra value into components and rebuilding by the
-existing algebra collapse returns that value, including the declared unit. -/
-theorem collapse_contents {unitLabel : String} {focus : Pattern}
-    (normal : RootNormal unitLabel focus) :
-    collapse unitLabel (bagContents unitLabel [focus]) = focus := by
-  by_cases bagNode : IsBagNode focus
-  · obtain ⟨elements, rfl⟩ := bagNode
-    obtain ⟨_, many, plain⟩ := normal elements rfl
-    have contents : bagContents unitLabel [.collection .hashBag elements none] = elements := by
-      simp only [bagContents, List.flatMap_cons, List.flatMap_nil, List.append_nil, splice_bag]
-      apply List.filter_eq_self.mpr
-      intro element member
-      simpa using (plain element member).1
-    rw [contents, collapse_eq_bag_of_length unitLabel elements many]
-  · by_cases isUnit : focus = .apply unitLabel []
-    · subst focus
-      simp [bagContents, splice, collapse]
-    · simp [bagContents, splice_of_not_bag bagNode, isUnit, collapse]
+private theorem source_bag_element {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
+    (laws : BareBagTheory {language with equations := []} bag (some unitLabel))
+    {free : FreeTypeContext} {bound : List TypeExpr} {elements : List Pattern} {element : Pattern}
+    (good : Admissible language free bound (.base bag.category) (.collection .hashBag elements none))
+    (member : element ∈ elements) :
+    Admissible language free bound (.base bag.category) element := by
+  have comparisonGood := grammar_admissible (source := language)
+    (target := {language with equations := []}) rfl good
+  obtain ⟨_, _, typed⟩ := bag_typing laws.toBareBagPresentation comparisonGood.typed rfl
+  refine ⟨grammar_hasType (source := {language with equations := []}) (target := language) rfl
+    (elementsHaveType_iff.mp typed element member), ?_, ?_⟩
+  · exact hasCanonicalBinderMetadataList_iff.mp
+      (by simpa [Pattern.hasCanonicalBinderMetadata] using good.canonical) element member
+  · exact isObjectPatternList_iff.mp (by simpa [isObjectPattern] using good.object) element member
 
 /-- Each selected component has the same complete local typing and metadata
 as the homogeneous focus. The residual's outer carrier is not collapsed. -/
@@ -879,17 +770,7 @@ theorem component_admissible {language : LanguageDef} {bag : GrammarRule} {unitL
   by_cases bagNode : IsBagNode focus
   · obtain ⟨elements, rfl⟩ := bagNode
     have inElements : component ∈ elements := by simpa using selected
-    have comparisonGood := grammar_admissible (source := language)
-      (target := {language with equations := []}) rfl good
-    obtain ⟨_, _, typed⟩ := bag_typing laws.toBareBagPresentation comparisonGood.typed rfl
-    refine ⟨grammar_hasType (source := {language with equations := []}) (target := language) rfl
-      (elementsHaveType_iff.mp typed component inElements), ?_, ?_⟩
-    · have all : Pattern.hasCanonicalBinderMetadataList elements = true := by
-        simpa [Pattern.hasCanonicalBinderMetadata] using good.canonical
-      exact hasCanonicalBinderMetadataList_iff.mp all component inElements
-    · have all : isObjectPatternList elements = true := by
-        simpa [isObjectPattern] using good.object
-      exact isObjectPatternList_iff.mp all component inElements
+    exact source_bag_element laws good inElements
   · rw [splice_of_not_bag bagNode] at selected
     exact List.mem_singleton.mp selected ▸ good
 
@@ -908,82 +789,6 @@ theorem normalForm_bag_contents (unitLabel : String) (elements : List Pattern) :
     obtain ⟨original, _, rfl⟩ := List.mem_map.mp inElements
     exact rootNormal_normalForm unitLabel original
   · exact mem_sortPatterns.mp member
-
-private theorem source_bag_element {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
-    (laws : BareBagTheory {language with equations := []} bag (some unitLabel))
-    {free : FreeTypeContext} {bound : List TypeExpr} {elements : List Pattern} {element : Pattern}
-    (good : Admissible language free bound (.base bag.category) (.collection .hashBag elements none))
-    (member : element ∈ elements) :
-    Admissible language free bound (.base bag.category) element := by
-  have comparisonGood := grammar_admissible (source := language)
-    (target := {language with equations := []}) rfl good
-  obtain ⟨_, _, typed⟩ := bag_typing laws.toBareBagPresentation comparisonGood.typed rfl
-  refine ⟨grammar_hasType (source := {language with equations := []}) (target := language) rfl
-    (elementsHaveType_iff.mp typed element member), ?_, ?_⟩
-  · exact hasCanonicalBinderMetadataList_iff.mp
-      (by simpa [Pattern.hasCanonicalBinderMetadata] using good.canonical) element member
-  · exact isObjectPatternList_iff.mp (by simpa [isObjectPattern] using good.object) element member
-
-/-- Each flattened component is read from an actual original subterm, not
-from an invented canonical child index. Its source zipper crosses only bag
-carriers; local scopes, constructor boundaries and complete typing remain. -/
-theorem component_source_origin {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
-    (laws : BareBagTheory {language with equations := []} bag (some unitLabel))
-    {free : FreeTypeContext} {bound : List TypeExpr} :
-    ∀ (source : Pattern) {component : Pattern},
-      Admissible language free bound (.base bag.category) source →
-      component ∈ bagContents unitLabel [normalForm (some unitLabel) source] →
-      ∃ (original : Pattern) (context : OneHoleContext), Admissible language free bound (.base bag.category) original ∧
-        context.fill original = source ∧ normalForm (some unitLabel) original = component ∧
-        ∀ replacement, HasType language free bound replacement (.base bag.category) →
-          HasType language free bound (context.fill replacement) (.base bag.category)
-  | source, component, good, member => by
-    by_cases isBag : IsBagNode source
-    · obtain ⟨elements, rfl⟩ := isBag
-      rw [normalForm_bag_contents] at member
-      have contentMember := mem_sortPatterns.mp member
-      simp only [bagContents, List.mem_filter, List.mem_flatMap, List.mem_map,
-        decide_eq_true_eq] at contentMember
-      obtain ⟨⟨_, ⟨element, elementMember, rfl⟩, spliced⟩, notUnit⟩ := contentMember
-      have inside : component ∈ bagContents unitLabel [normalForm (some unitLabel) element] := by
-        simp only [bagContents, List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_filter,
-          decide_eq_true_eq]
-        exact ⟨spliced, notUnit⟩
-      obtain ⟨original, inner, originalGood, innerFill, image, rebuild⟩ :=
-        component_source_origin laws element (source_bag_element laws good elementMember) inside
-      obtain ⟨index, selected⟩ := List.mem_iff_getElem?.mp elementMember
-      have within := (List.getElem?_eq_some_iff.mp selected).1
-      have split : elements.take index ++ element :: elements.drop (index + 1) = elements := by
-        rw [← (List.getElem?_eq_some_iff.mp selected).2, List.getElem_cons_drop within]
-        exact List.take_append_drop index elements
-      refine ⟨original, .collection .hashBag (elements.take index) inner (elements.drop (index + 1)) none,
-        originalGood, ?_, image, ?_⟩
-      · simp only [OneHoleContext.fill, innerFill, split]
-      · intro replacement replacementTyped
-        apply grammar_hasType (source := {language with equations := []}) (target := language) rfl
-        apply bag_hasType laws.toBareBagPresentation
-        apply grammar_elements (source := language) (target := {language with equations := []}) rfl
-        apply elementsHaveType_iff.mpr
-        intro item itemMember
-        simp only [List.mem_append, List.mem_cons] at itemMember
-        rcases itemMember with earlier | replaced | later
-        · exact (source_bag_element laws good (List.mem_of_mem_take earlier)).typed
-        · subst item
-          exact rebuild replacement replacementTyped
-        · exact (source_bag_element laws good (List.mem_of_mem_drop later)).typed
-    · have normalizedNotBag : ¬ IsBagNode (normalForm (some unitLabel) source) := by
-        cases source with
-        | collection kind elements rest =>
-          cases kind <;> cases rest <;>
-            simp_all [IsBagNode, normalForm]
-        | _ => simp_all [IsBagNode, normalForm]
-      have selected : component ∈ splice (normalForm (some unitLabel) source) := by
-        exact (List.mem_filter.mp (by simpa only [bagContents, List.flatMap_cons,
-          List.flatMap_nil, List.append_nil] using member)).1
-      rw [splice_of_not_bag normalizedNotBag] at selected
-      have same := List.mem_singleton.mp selected
-      exact ⟨source, .hole, good, rfl, same.symm, fun _ typed => typed⟩
-termination_by source => sizeOf source
 
 /-- The view is admissible as the declared algebra's base-sort value. -/
 theorem view_admissible {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
@@ -1063,13 +868,7 @@ theorem component_origin {unitLabel : String} {focus component : Pattern} {index
           context = .collection .hashBag (elements.take index) .hole (elements.drop (index + 1)) none) := by
   by_cases bagNode : IsBagNode focus
   · obtain ⟨elements, rfl⟩ := bagNode
-    obtain ⟨_, _, plain⟩ := normal elements rfl
-    have contents : bagContents unitLabel [.collection .hashBag elements none] = elements := by
-      simp only [bagContents, List.flatMap_cons, List.flatMap_nil, List.append_nil, splice_bag]
-      apply List.filter_eq_self.mpr
-      intro element member
-      simpa using (plain element member).1
-    rw [contents] at selected
+    rw [bagContents_of_rootNormal_bag normal] at selected
     refine ⟨.collection .hashBag (elements.take index) .hole (elements.drop (index + 1)) none, ?_,
       .inr ⟨elements, rfl, selected, rfl⟩⟩
     simp only [OneHoleContext.fill]
@@ -1147,7 +946,6 @@ theorem component_origin_in_context {unitLabel : String} {focus component : Patt
 #print axioms component_admissible
 #print axioms normalForm_bag_contents
 #print axioms source_bag_element
-#print axioms component_source_origin
 #print axioms view_admissible
 #print axioms residual_admissible
 #print axioms view_equivalent
@@ -1206,20 +1004,14 @@ decreasing_by
   simp_wf
   omega
 
-private theorem zipIdx_mapValues {α β : Type} (f : α → β) :
-    ∀ (items : List α) (start : Nat),
-      (items.map f).zipIdx start = (items.zipIdx start).map (fun pair => (f pair.1,pair.2))
-  | [], _ => rfl
-  | head :: tail, start => by
-      simp only [List.map_cons, List.zipIdx_cons, List.map_cons, zipIdx_mapValues f tail (start + 1)]
-
 private theorem attach_zipIdx_flatMap {α β : Type} (items : List α) (f : α → Nat → List β) :
     items.attach.zipIdx.flatMap (fun pair => f pair.1.val pair.2) =
       items.zipIdx.flatMap (fun pair => f pair.1 pair.2) := by
-  have mapped : items.attach.map (fun entry => entry.val) = items := by
-    exact List.attach_map_subtype_val items
-  conv_rhs => rw [← mapped, zipIdx_mapValues]
+  have mapped : items.attach.map (fun entry => entry.val) = items :=
+    List.attach_map_subtype_val items
+  conv_rhs => rw [← mapped, List.zipIdx_map]
   simp only [List.flatMap_map]
+  rfl
 
 /-- The source traversal's child indices are the actual original list
 indices, independent of the termination proof's attached membership data. -/
@@ -1271,7 +1063,7 @@ termination_by source => sizeOf source
 
 /-- Every enumerated record carries its real original typed subterm and
 source zipper, with no change to the local free or bound typing context. -/
-theorem sourceOccurrences_sound {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
+private theorem sourceOccurrences_qualified {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
     (laws : BareBagTheory {language with equations := []} bag (some unitLabel))
     {free : FreeTypeContext} {bound : List TypeExpr} :
     ∀ (source : Pattern), Admissible language free bound (.base bag.category) source →
@@ -1280,6 +1072,8 @@ theorem sourceOccurrences_sound {language : LanguageDef} {bag : GrammarRule} {un
           occurrence.context.fill occurrence.original = source ∧
           occurrence.value = normalForm (some unitLabel) occurrence.original ∧
           contextAddress occurrence.context = occurrence.address ∧
+          TypedAt language free occurrence.original occurrence.context bound (.base bag.category)
+            bound (.base bag.category) ∧
           ∀ replacement, HasType language free bound replacement (.base bag.category) →
             HasType language free bound (occurrence.context.fill replacement) (.base bag.category)
   | source, good, occurrence, member => by
@@ -1291,15 +1085,22 @@ theorem sourceOccurrences_sound {language : LanguageDef} {bag : GrammarRule} {un
       have atIndex := List.mk_mem_zipIdx_iff_getElem?.mp selected
       have within := (List.getElem?_eq_some_iff.mp atIndex).1
       have elementGood := source_bag_element laws good (List.mem_of_getElem? atIndex)
-      obtain ⟨originalGood, fills, image, address, rebuild⟩ :=
-        sourceOccurrences_sound laws element elementGood inner inInner
+      obtain ⟨originalGood, fills, image, address, typedAt, rebuild⟩ :=
+        sourceOccurrences_qualified laws element elementGood inner inInner
       have split : elements.take index ++ element :: elements.drop (index + 1) = elements := by
         rw [← (List.getElem?_eq_some_iff.mp atIndex).2, List.getElem_cons_drop within]
         exact List.take_append_drop index elements
-      refine ⟨originalGood, ?_, image, ?_, ?_⟩
+      refine ⟨originalGood, ?_, image, ?_, ?_, ?_⟩
       · simp only [SourceOccurrence.wrap, OneHoleContext.fill, fills, split]
       · simp only [SourceOccurrence.wrap, contextAddress, address, List.length_take,
           Nat.min_eq_left (Nat.le_of_lt within)]
+      · have comparisonGood := grammar_admissible (source := language)
+          (target := {language with equations := []}) rfl good
+        have elementsTyped := (bag_typing laws.toBareBagPresentation comparisonGood.typed rfl).2.2
+        obtain ⟨parameterName, shape⟩ := laws.bareShape
+        apply TypedAt.collectionConstructor (language := language) laws.bagAuthored shape ?_ typedAt
+        rw [fills, split]
+        exact grammar_elements (source := {language with equations := []}) (target := language) rfl elementsTyped
       · intro replacement replacementTyped
         apply grammar_hasType (source := {language with equations := []}) (target := language) rfl
         apply bag_hasType laws.toBareBagPresentation
@@ -1314,7 +1115,7 @@ theorem sourceOccurrences_sound {language : LanguageDef} {bag : GrammarRule} {un
         · exact (source_bag_element laws good (List.mem_of_mem_drop later)).typed
     · rw [sourceOccurrences_nonbag isBag] at member
       obtain rfl := List.mem_singleton.mp member
-      exact ⟨good, rfl, rfl, rfl, fun _ typed => typed⟩
+      exact ⟨good, rfl, rfl, rfl, .here good.typed, fun _ typed => typed⟩
 termination_by source => sizeOf source
 decreasing_by
   all_goals
@@ -1322,6 +1123,22 @@ decreasing_by
     have smaller := List.sizeOf_lt_of_mem (List.mem_of_getElem? atIndex)
     simp_all
     omega
+
+theorem sourceOccurrences_sound {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
+    (laws : BareBagTheory {language with equations := []} bag (some unitLabel))
+    {free : FreeTypeContext} {bound : List TypeExpr} :
+    ∀ (source : Pattern), Admissible language free bound (.base bag.category) source →
+      ∀ occurrence ∈ sourceOccurrences unitLabel source,
+        Admissible language free bound (.base bag.category) occurrence.original ∧
+          occurrence.context.fill occurrence.original = source ∧
+          occurrence.value = normalForm (some unitLabel) occurrence.original ∧
+          contextAddress occurrence.context = occurrence.address ∧
+          ∀ replacement, HasType language free bound replacement (.base bag.category) →
+            HasType language free bound (occurrence.context.fill replacement) (.base bag.category) := by
+  intro source good occurrence member
+  obtain ⟨admissible, fills, image, address, _, rebuild⟩ :=
+    sourceOccurrences_qualified laws source good occurrence member
+  exact ⟨admissible, fills, image, address, rebuild⟩
 
 /-- Physical components omit actual unit leaves, while preserving their
 source records in the separate administrative account. -/
@@ -1345,21 +1162,7 @@ theorem sortOccurrences_perm (occurrences : List SourceOccurrence) :
 theorem sortOccurrences_values (occurrences : List SourceOccurrence) :
     (sortOccurrences occurrences).map SourceOccurrence.value =
       sortPatterns (occurrences.map SourceOccurrence.value) := by
-  have ordered : (sortOccurrences occurrences).Pairwise
-      (fun first second => patternCode first.value ≤ patternCode second.value) := by
-    have sorted := List.pairwise_mergeSort
-      (le := fun first second : SourceOccurrence => decide (patternCode first.value ≤ patternCode second.value))
-      (fun first second third earlier later => by
-        simp only [decide_eq_true_eq] at earlier later ⊢
-        exact Nat.le_trans earlier later)
-      (fun first second => by simp only [Bool.or_eq_true, decide_eq_true_eq]; exact Nat.le_total _ _) occurrences
-    simpa [sortOccurrences] using sorted
-  have imageOrdered : ((sortOccurrences occurrences).map SourceOccurrence.value).Pairwise
-      (fun first second => patternCode first ≤ patternCode second) := List.pairwise_map.mpr ordered
-  calc
-    _ = sortPatterns ((sortOccurrences occurrences).map SourceOccurrence.value) :=
-      (sortPatterns_of_sorted imageOrdered).symm
-    _ = _ := sortPatterns_eq_of_perm ((sortOccurrences_perm occurrences).map SourceOccurrence.value)
+  exact List.map_mergeSort (fun _ _ _ _ => rfl)
 
 /-- Sorting preserves every source tag and address, including duplicates in
 value. This theorem does not identify operational receipt keys. -/
@@ -1427,23 +1230,6 @@ theorem componentOccurrences_values (unitLabel : String) :
       split <;> simp_all
 termination_by source => sizeOf source
 
-private theorem rootContents_sorted {unitLabel : String} {focus : Pattern}
-    (normal : RootNormal unitLabel focus) :
-    sortPatterns (bagContents unitLabel [focus]) = bagContents unitLabel [focus] := by
-  by_cases isBag : IsBagNode focus
-  · obtain ⟨elements, rfl⟩ := isBag
-    obtain ⟨sorted, _, plain⟩ := normal elements rfl
-    have contents : bagContents unitLabel [.collection .hashBag elements none] = elements := by
-      simp only [bagContents, List.flatMap_cons, List.flatMap_nil, List.append_nil, splice_bag]
-      apply List.filter_eq_self.mpr
-      intro component member
-      simpa using (plain component member).1
-    rw [contents, sorted]
-  · by_cases isUnit : focus = .apply unitLabel []
-    · subst focus
-      simp [bagContents, splice]
-    · simp [bagContents, splice_of_not_bag isBag, isUnit]
-
 /-- Sorting complete tags yields the exact existing canonical component
 list, with multiplicity; it is not a second value normalizer. -/
 theorem normalizedOccurrences_values (unitLabel : String) (source : Pattern) :
@@ -1452,6 +1238,12 @@ theorem normalizedOccurrences_values (unitLabel : String) (source : Pattern) :
   rw [normalizedOccurrences, sortOccurrences_values,
     sortPatterns_eq_of_perm (componentOccurrences_values unitLabel source),
     rootContents_sorted (rootNormal_normalForm unitLabel source)]
+
+theorem normalizedOccurrences_componentMultiset (unitLabel : String) (source : Pattern) :
+    (((normalizedOccurrences unitLabel source).map SourceOccurrence.value) : Multiset Pattern) =
+      componentMultiset unitLabel source := by
+  rw [normalizedOccurrences_values]
+  rfl
 
 /-- Every sorted component still has a different physical source address. -/
 theorem normalizedOccurrences_distinct (unitLabel : String) (source : Pattern) :
@@ -1537,6 +1329,27 @@ theorem normalizedOccurrences_sound {language : LanguageDef} {bag : GrammarRule}
   rw [← image] at valueGood
   exact ⟨originalGood, valueGood, fills, image, address, rebuild⟩
 
+/-- Each flattened component is read from an actual original subterm, not
+from an invented canonical child index. Its source zipper crosses only bag
+carriers; local scopes, constructor boundaries and complete typing remain. -/
+theorem component_source_origin {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
+    (laws : BareBagTheory {language with equations := []} bag (some unitLabel))
+    {free : FreeTypeContext} {bound : List TypeExpr} :
+    ∀ (source : Pattern) {component : Pattern},
+      Admissible language free bound (.base bag.category) source →
+      component ∈ bagContents unitLabel [normalForm (some unitLabel) source] →
+      ∃ (original : Pattern) (context : OneHoleContext), Admissible language free bound (.base bag.category) original ∧
+        context.fill original = source ∧ normalForm (some unitLabel) original = component ∧
+        ∀ replacement, HasType language free bound replacement (.base bag.category) →
+          HasType language free bound (context.fill replacement) (.base bag.category) := by
+  intro source component good member
+  rw [← normalizedOccurrences_values unitLabel source] at member
+  obtain ⟨occurrence, selected, value⟩ := List.mem_map.mp member
+  obtain ⟨admissible, _, fills, image, _, rebuild⟩ :=
+    normalizedOccurrences_sound laws good selected
+  exact ⟨occurrence.original, occurrence.context, admissible, fills,
+    image.symm.trans value, rebuild⟩
+
 /-- Source occurrences are conserved exactly when source-unit administration
 is included. No derivation identity is selected by this accounting theorem. -/
 theorem occurrence_account_length (unitLabel : String) (source : Pattern) :
@@ -1610,12 +1423,26 @@ theorem empty_unit_origin_separator :
       normalizedOccurrences "unit" (.apply "unit" []) = [] ∧
       (unitOccurrences "unit" (.apply "unit" [])).length = 1 := by cbv
 
+/-- The empty source and its unit share a bag value, with distinct source accounts. -/
+theorem empty_and_unit_value_eq_occurrences_ne :
+    let empty := Pattern.collection .hashBag [] none
+    let unit := Pattern.apply "unit" []
+    componentMultiset "unit" empty = componentMultiset "unit" unit ∧
+      sourceOccurrences "unit" empty ≠ sourceOccurrences "unit" unit := by
+  dsimp only
+  refine ⟨(componentMultiset_eq_iff_normalForm_eq _ _ _).mpr
+    empty_unit_origin_separator.1, ?_⟩
+  rw [empty_unit_origin_separator.2.1,
+    sourceOccurrences_nonbag (by simp [IsBagNode])]
+  simp
+
 /-- The physical account does not descend through a constructor boundary. -/
 theorem constructor_occurrence_boundary (unitLabel constructorLabel : String) (arguments : List Pattern) :
     sourceOccurrences unitLabel (.apply constructorLabel arguments) =
       [SourceOccurrence.leaf unitLabel (.apply constructorLabel arguments)] :=
   sourceOccurrences_nonbag (by simp [IsBagNode])
 
+#print axioms component_source_origin
 #print axioms sourceOccurrences_distinct
 #print axioms sourceOccurrences_sound
 #print axioms sourceOccurrences_bag
@@ -2603,33 +2430,9 @@ theorem sourceOccurrences_typedAt {language : LanguageDef} {bag : GrammarRule} {
     ∀ source,Admissible language free bound (.base bag.category) source →
       ∀ occurrence,occurrence ∈ sourceOccurrences unitLabel source →
       TypedAt language free occurrence.original occurrence.context bound (.base bag.category)
-        bound (.base bag.category)
-  | source,good,occurrence,member => by
-    by_cases isBag : IsBagNode source
-    · obtain ⟨elements,rfl⟩ := isBag
-      rw [sourceOccurrences_bag] at member
-      obtain ⟨⟨element,index⟩,indexed,mapped⟩ := List.mem_flatMap.mp member
-      obtain ⟨inside,inChild,rfl⟩ := List.mem_map.mp mapped
-      have selected := List.mk_mem_zipIdx_iff_getElem?.mp indexed
-      have within := (List.getElem?_eq_some_iff.mp selected).1
-      have elementMember := List.mem_of_getElem? selected
-      have elementGood := source_bag_element laws good elementMember
-      have childTyped := sourceOccurrences_typedAt laws element elementGood inside inChild
-      have childFilled := (sourceOccurrences_sound laws element elementGood inside inChild).2.1
-      have split : elements.take index ++ element :: elements.drop (index + 1) = elements := by
-        rw [← (List.getElem?_eq_some_iff.mp selected).2,List.getElem_cons_drop within]
-        exact List.take_append_drop index elements
-      have comparisonGood := grammar_admissible (source := language)
-        (target := {language with equations := []}) rfl good
-      have elementsTyped := (bag_typing laws.toBareBagPresentation comparisonGood.typed rfl).2.2
-      obtain ⟨parameterName,shape⟩ := laws.bareShape
-      apply TypedAt.collectionConstructor (language := language) laws.bagAuthored shape ?_ childTyped
-      rw [childFilled,split]
-      exact grammar_elements (source := {language with equations := []}) (target := language) rfl elementsTyped
-    · rw [sourceOccurrences_nonbag isBag] at member
-      obtain rfl := List.mem_singleton.mp member
-      exact .here good.typed
-termination_by source => sizeOf source
+        bound (.base bag.category) := by
+  intro source good occurrence member
+  exact (sourceOccurrences_qualified laws source good occurrence member).2.2.2.2.1
 
 /-- Sorting and unit filtering preserve the real typed occurrence, not only
 its endpoint type. -/
@@ -11301,20 +11104,22 @@ open Mettapedia.GSLT.LanguageDef.WellSorted EquationSemantics
 def sortTagged (occurrences : List SourceOccurrence) : List SourceOccurrence :=
   occurrences.mergeSort fun first second => lexLe (ser first.value) (ser second.value)
 
+private def sortTaggedCached (occurrences : List SourceOccurrence) : List SourceOccurrence :=
+  List.mergeSortWithOrderedCheck (fun occurrence => ser occurrence.value) lexLe occurrences
+
+@[csimp] theorem sortTagged_eq_cached : sortTagged = sortTaggedCached := by
+  funext occurrences
+  exact (List.mergeSortWithOrderedCheck_eq
+    (fun occurrence : SourceOccurrence => ser occurrence.value) lexLe lexLe_trans occurrences).symm
+
 theorem sortTagged_perm (occurrences : List SourceOccurrence) :
     (sortTagged occurrences).Perm occurrences := List.mergeSort_perm _ _
 
 /-- Value readout of the tagged sorter is the actual native value sorter. -/
 theorem sortTagged_values (occurrences : List SourceOccurrence) :
     (sortTagged occurrences).map SourceOccurrence.value = sortLex (occurrences.map SourceOccurrence.value) := by
-  have ordered : (sortTagged occurrences).Pairwise
-      (fun first second => PatternLe first.value second.value) := by
-    exact List.pairwise_mergeSort
-      (le := fun first second : SourceOccurrence => lexLe (ser first.value) (ser second.value))
-      (fun first second third earlier later => lexLe_trans _ _ _ earlier later)
-      (fun first second => by simpa only [Bool.or_eq_true] using lexLe_total (ser first.value) (ser second.value)) occurrences
-  exact List.Perm.eq_of_pairwise' (List.pairwise_map.mpr ordered)
-    (sortLex_pairwise _) (((sortTagged_perm occurrences).map SourceOccurrence.value).trans (sortLex_perm _).symm)
+  rw [sortLex_eq_mergeSort]
+  exact List.map_mergeSort (fun _ _ _ _ => rfl)
 
 /-- The same original syntax, address and zipper accompany the native value. -/
 def nativeRecord (language : LanguageDef) (occurrence : SourceOccurrence) : SourceOccurrence :=

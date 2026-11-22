@@ -21,7 +21,7 @@ So, on ground rules, the reading of joint admission that asks the guards at the 
 one-match step of the program closed under tensors: one match of `r₁ ⊗ … ⊗ rₖ` for a bag of matches of
 `r₁ … rₖ`. The one-match firing is the restriction to the rules of the program; the bag step adds the
 tensors, and every finite tensor (a finite program cannot list them: `Representation.allAtOnce_not_finite`
-for "every copy at once"). `every`, `unique` and maximal bags add to this a none query of a further match,
+for "every copy at once"). `every`, `unique` and maximal bags add to this an absence of a further match,
 which no tensor says (`Collect`, `Unique.Neighbour`).
 -/
 

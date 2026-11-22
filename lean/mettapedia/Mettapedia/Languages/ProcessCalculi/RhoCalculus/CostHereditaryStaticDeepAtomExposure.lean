@@ -436,7 +436,7 @@ noncomputable def stoppedAtomShellSourceVariableOfCloseSmaller
     refine ⟨⟨WellSorted.HasType.fvar ?_, rfl, rfl, rfl⟩, ?_⟩
     · simpa only [boundaryType] using nameLookup
     · intro declaration _declarationMembership
-      rfl
+      exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_fvar _ _ _ _
   have boundaryMember : state.certified.typed ∈
       leftView.node.plan.boundaryTable.entries :=
     entryEmbedding.subset (by simp)

@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Brid
 The store is a bag of physical occurrences, the commit one prepared match,
 the guards are asked after that match's own tells, the family program is
 fixed, and knowledge is one store. Equation checks stay ordinary checks;
-none queries, cardinality and exact collect queries use the actual decoded row region.
+absence, cardinality and exact collect queries use the actual decoded row region.
 
 This is the canonical tagged common image. Query terms have explicit scope
 support below. Freshness of arbitrary openings cannot be inferred from an
@@ -136,7 +136,7 @@ theorem predicate_ask_iff {s : NativeState S O Γ sort} (members : List (LiveFir
   · intro asked substitution model
     exact (point substitution model).mpr (bridge.mpr asked substitution model)
 
-theorem none_ask_iff {s : NativeState S O Γ sort} (members : List (LiveFiring s)) (index : Fin members.length)
+theorem absence_ask_iff {s : NativeState S O Γ sort} (members : List (LiveFiring s)) (index : Fin members.length)
     (enabled : Enabled (fun _ : O => ()) s.state.present (members[index].selection.commit (T := Unit)))
     (pattern : Term (signature S (ContextualActivatedStep.target s.locals s.state.declarations)) Γ sort) :
     (RegionQuery.predicate .none (NativePacketQueryView.region (NativePacketStep.useObject s (NativePacketRounds.useTag index)) pattern)).Ask

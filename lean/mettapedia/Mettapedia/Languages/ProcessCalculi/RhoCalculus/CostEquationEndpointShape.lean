@@ -130,9 +130,9 @@ theorem rho_isQuoteConstructor_cases {constructor : String}
     rfl
   rw [tableShape] at isQuote
   simp only [List.any_cons, List.any_nil, Bool.or_false,
-    Bool.or_eq_true, beq_iff_eq] at isQuote
+    Bool.or_eq_true, Bool.and_eq_true, beq_iff_eq] at isQuote
   rcases isQuote with baseCase | wrappedCase
-  · exact Or.inl baseCase.symm
-  · exact Or.inr wrappedCase.symm
+  · exact Or.inl baseCase.2.symm
+  · exact Or.inr wrappedCase.2.symm
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

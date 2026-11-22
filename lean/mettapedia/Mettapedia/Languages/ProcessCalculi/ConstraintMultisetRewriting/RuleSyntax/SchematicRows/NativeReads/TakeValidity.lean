@@ -83,8 +83,8 @@ theorem current_requires_live_record (store : Store Value) (valid : Valid store)
   cases death : row.death with
   | none => rfl
   | some stamp =>
-      have missing := retired_is_not_current store valid offered.1 row found stamp death
-      rw [missing] at ready
+      have absent := retired_is_not_current store valid offered.1 row found stamp death
+      rw [absent] at ready
       cases ready
 
 theorem take_retires (store : Store Value) (valid : Valid store)

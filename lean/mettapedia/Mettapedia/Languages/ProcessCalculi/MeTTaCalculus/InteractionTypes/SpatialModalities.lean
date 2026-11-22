@@ -27,7 +27,7 @@ Occurrence identities give both.
   frame that avoids what the commit makes and the regions of its predicate queries, the whole store
   steps into `φ ⋆ frame`. In modal form, `(◇φ) ⋆ ψ ≤ ◇(φ ⋆ ψ)`. For positive commits only the
   freshness side condition remains (`frame_law_of_positive`).
-* **Predicate queries break it** (`Controls.predicate_query_breaks_frame`): the none query of a lock
+* **Predicate queries break it** (`Controls.predicate_query_breaks_frame`): the absence of a lock
   holds on one part and fails on the whole once the frame holds a lock.
 * **Disjoint concurrency with identity pools** (`parallel_law`): two parts, each owned by a process
   whose fresh identities come from its own pool, step independently, and the composite steps
@@ -264,15 +264,15 @@ open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Control
 /-- Stores holding a lock. -/
 def holdsLock (S : Finset ℕ) : Prop := 1 ∈ S
 
-/-- **Predicate queries break the frame law**: the none query of a lock can fire on the token's part,
+/-- **Predicate queries break the frame law**: the absence of a lock can fire on the token's part,
 and the frame holds the lock; the whole store cannot fire it. -/
 theorem predicate_query_breaks_frame :
     sep (possibly label (· = unlessLocked) (fun _ => True)) holdsLock ({0} ∪ {1}) ∧
       ¬ possibly label (· = unlessLocked) (fun _ => True) ({0} ∪ {1}) := by
-  refine ⟨⟨{0}, {1}, by decide, rfl, possibly_iff.mpr ⟨unlessLocked, rfl, none_holds_empty,
+  refine ⟨⟨{0}, {1}, by decide, rfl, possibly_iff.mpr ⟨unlessLocked, rfl, absence_holds_empty,
     trivial⟩, by simp [holdsLock]⟩, fun step => ?_⟩
   obtain ⟨c, rfl, enabled, -⟩ := possibly_iff.mp step
-  exact none_not_framed enabled
+  exact absence_not_framed enabled
 
 /-- The frame holding just the lock. -/
 def justLock (S : Finset ℕ) : Prop := S = {1}

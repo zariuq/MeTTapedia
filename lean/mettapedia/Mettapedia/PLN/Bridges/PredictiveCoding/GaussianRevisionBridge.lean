@@ -1,7 +1,7 @@
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.GaussianFusion
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevision
 import Mettapedia.PLN.TruthValues.PLNWeightTV
-import Mettapedia.PLN.TruthValues.PLNTruthTower
+import Mettapedia.PLN.TruthValues.PLNBinaryCounts
 
 /-!
 # Scalar Gaussian revision bridge

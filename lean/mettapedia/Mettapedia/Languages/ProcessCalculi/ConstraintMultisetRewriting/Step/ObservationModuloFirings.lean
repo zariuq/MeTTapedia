@@ -21,7 +21,7 @@ its own. The congruence factors in two steps:
 
 * **Equivariance** (`ModuloEquivalent.firing`): at equivalent states, along a renaming supported on
   the present occurrences, a firing and its renaming are admitted together and their results are
-  equivalent again, when the firing's made identities are missing from both states and its query
+  equivalent again, when the firing's made identities are absent from both states and its query
   regions read labels through solutions.
 * **Firings and runs that name only escaped identities keep the equivalence**
   (`ModuloEquivalent.named_firing`, `ModuloEquivalent.named_run`), when their query regions read
@@ -119,11 +119,11 @@ theorem holds_rename_comp (A : SubstitutionAction T S) (σ : S) (present : Finse
             exact ⟨_, Finset.mem_map_of_mem π.toEmbedding member, matched⟩
       | none =>
           constructor
-          · intro missing o member matched
-            exact missing _ (Finset.mem_map_of_mem π.toEmbedding member) matched
-          · intro missing o member matched
+          · intro absent o member matched
+            exact absent _ (Finset.mem_map_of_mem π.toEmbedding member) matched
+          · intro absent o member matched
             obtain ⟨a, inside, rfl⟩ := Finset.mem_map.mp member
-            exact missing a inside matched
+            exact absent a inside matched
   | count pattern number =>
       show (Check.matches A σ label (present.map π.toEmbedding) pattern).card = number ↔
         (Check.matches A σ (fun o => label (π o)) present pattern).card = number
@@ -356,7 +356,7 @@ theorem modulo_step {C D : Configuration T O} {π : O ≃ O}
 
 /-- **Equivariance modulo the knowledge**: at equivalent states, along a renaming supported on the
 present occurrences, a firing and its renaming are admitted together and their results are
-equivalent, when the firing's made identities are missing from both states and its query regions
+equivalent, when the firing's made identities are absent from both states and its query regions
 read labels through solutions. -/
 theorem ModuloEquivalent.firing {C D : Configuration T O} (h : ModuloEquivalent A label E C D)
     {f : Firing T S O} (avoids : ∀ r ∈ f.selection.made, r ∉ C.present ∧ r ∉ D.present)

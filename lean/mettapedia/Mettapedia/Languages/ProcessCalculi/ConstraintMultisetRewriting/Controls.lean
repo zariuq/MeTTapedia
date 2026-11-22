@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrde
 
 These controls use the existing first-order term syntax. A selected call
 binds a variable occurring in a surviving frame; equal-valued occurrences
-remain distinct resources. An unresolved none check is neither proved nor
+remain distinct resources. An unresolved absence check is neither proved nor
 refuted merely because its current argument is unbound.
 -/
 
@@ -143,11 +143,11 @@ theorem equal_values_allow_distinct_consumption :
   · simp [twoTakes]
 
 /-- No binding is made by an ask; the unbound argument leaves two possibilities. -/
-theorem open_none_is_not_entailed :
+theorem open_absence_is_not_entailed :
     ¬ A.Entails [] (fun σ => (Check.predicate .none (.const 0)).Holds A σ label {1}) := by
   intro entailed
-  have missing := entailed zero (A.models_nil zero)
-  exact missing 1 (by simp) rfl
+  have absent := entailed zero (A.models_nil zero)
+  exact absent 1 (by simp) rfl
 
 theorem open_presence_is_not_entailed :
     ¬ A.Entails [] (fun σ => ¬(Check.predicate .none (.const 0)).Holds A σ label {1}) := by

@@ -44,7 +44,7 @@ theorem query_ignores_second : ∀ query ∈ observations,
   rcases options with rfl | rfl <;> rfl
 
 /-- The two events impose X = f(Y) and Y = 1, share a persistent occurrence,
-and retain their original equality, none queries and complete-region checks. -/
+and retain their original equality, absence and complete-region checks. -/
 theorem complete_observations_survive_both_orders :
     PredicateQueryAdmission.Valid A rows secondRule observations (firstSelection.result rows firstRule initial) secondSelection ∧
       PredicateQueryAdmission.Valid A rows firstRule observations (secondSelection.result rows secondRule initial) firstSelection ∧

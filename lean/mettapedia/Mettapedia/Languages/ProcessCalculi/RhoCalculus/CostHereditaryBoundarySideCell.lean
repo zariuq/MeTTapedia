@@ -3155,7 +3155,7 @@ theorem boundarySourceVariablePlanStops_sourcePatternLeafAligned_of_closeSmaller
       leftAtRoot.certified.typed.boundary.targetType (.fvar rightName) :=
     ⟨⟨WellSorted.HasType.fvar (by rw [targetTypeEq]; exact rightLookup),
         rfl, rfl, rfl⟩,
-      by intro presentation membership; rfl⟩
+      by intro presentation membership; simp⟩
   let pair := Classical.choice
     (closeSmaller (childOuter := []) leftWellSorted rightWellSorted canonical
       smaller admissible)
@@ -3409,7 +3409,7 @@ theorem sourceVariableBoundaryPlanStops_sourcePatternLeafAligned_of_closeSmaller
     ⟨⟨WellSorted.HasType.fvar
         (by rw [targetTypeEq, ← sourceTypeEq]; exact leftLookup),
         rfl, rfl, rfl⟩,
-      by intro presentation membership; rfl⟩
+      by intro presentation membership; simp⟩
   let pair := Classical.choice
     (closeSmaller (childOuter := []) leftWellSorted rightWellSorted canonical
       smaller admissible)

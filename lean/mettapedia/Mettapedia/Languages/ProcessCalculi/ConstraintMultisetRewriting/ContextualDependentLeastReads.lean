@@ -66,7 +66,7 @@ theorem tower_least_decided_of_uncovered
       run (leastTower.solver larger) problem larger = run (leastTower.solver budget) problem budget ∧
       ((∃ state finished, run (leastTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (leastTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (leastTower.solver larger) problem larger = .refuted absent)) :=
   tower_least_decided_of_reads (fun {_} {problem} permuted nonempty => by
       obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : MixedCoveredHead equation

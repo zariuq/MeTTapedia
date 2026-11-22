@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Publ
 # Dependency-preserving changes in the actual ordered transform step
 
 Occurrence-commit exactness lifts to the ordered step without weakening its
-shape or knowledge obligations. Complete predicate regions cover none queries,
+shape or knowledge obligations. Complete predicate regions cover absence,
 uniqueness and count dependencies as well as kept occurrences. The theorem
 licenses reusing admission in the stated order, not changing source scheduling.
 Its predicate-region profile observes exact occurrence sets. It is stronger
@@ -65,14 +65,14 @@ theorem prepared_after_change (world : PreparedStoreProtocol.World O)
 namespace Controls
 
 def store : Finset Nat := {0, 1}
-def waitingNone : Commit Nat Nat := ⟨{0}, ∅, ∅, [⟨(· == 2), ∅⟩]⟩
+def waitingAbsent : Commit Nat Nat := ⟨{0}, ∅, ∅, [⟨(· == 2), ∅⟩]⟩
 def makesObserved : Commit Nat Nat := ⟨{1}, ∅, {2}, []⟩
 def waitingKeep : Commit Nat Nat := ⟨{0}, {1}, ∅, []⟩
 
-theorem disjoint_takes_can_spoil_none :
-    Enabled id store waitingNone ∧ Enabled id store makesObserved ∧
-      Disjoint waitingNone.taken makesObserved.taken ∧
-      ¬ Enabled id (fire store makesObserved) waitingNone := by decide
+theorem disjoint_takes_can_spoil_absence :
+    Enabled id store waitingAbsent ∧ Enabled id store makesObserved ∧
+      Disjoint waitingAbsent.taken makesObserved.taken ∧
+      ¬ Enabled id (fire store makesObserved) waitingAbsent := by decide
 
 theorem disjoint_takes_can_lose_a_keep :
     Enabled id store waitingKeep ∧ Enabled id store makesObserved ∧

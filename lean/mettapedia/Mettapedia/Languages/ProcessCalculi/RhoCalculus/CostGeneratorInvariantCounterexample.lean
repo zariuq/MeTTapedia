@@ -194,9 +194,10 @@ def rhoCutOrderLeft : ReflectiveWellSorted.OpenTerm
       rhoCutOrderBaseDrop, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
   · intro declaration membership
-    simp [rhoCutOrderLeftPattern, rhoCutOrderParallel,
+    exact scopeSafeAt_of_binderSafeAt _ (by
+      simp [rhoCutOrderLeftPattern, rhoCutOrderParallel,
       rhoCutOrderWrappedDrop, rhoCutOrderRedex, rhoCutOrderBaseQuote,
-      rhoCutOrderBaseDrop, binderSafeAt, binderSafeListAt]
+      rhoCutOrderBaseDrop, binderSafeAt, binderSafeListAt])
 
 def rhoCutOrderRight : ReflectiveWellSorted.OpenTerm
     rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
@@ -207,8 +208,9 @@ def rhoCutOrderRight : ReflectiveWellSorted.OpenTerm
       rhoCutOrderWrappedDrop, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
   · intro declaration membership
-    simp [rhoCutOrderRightPattern, rhoCutOrderParallel,
-      rhoCutOrderWrappedDrop, binderSafeAt, binderSafeListAt]
+    exact scopeSafeAt_of_binderSafeAt _ (by
+      simp [rhoCutOrderRightPattern, rhoCutOrderParallel,
+      rhoCutOrderWrappedDrop, binderSafeAt, binderSafeListAt])
 
 /-- The structural context placing the base Quote/Drop edge beneath a wrapped
 Drop and beside a second wrapped process. -/
@@ -355,8 +357,9 @@ private theorem rhoCutOrderRedex_wellSorted :
       rhoCutOrderBaseDrop, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
   · intro declaration membership
-    simp [rhoCutOrderRedex, rhoCutOrderBaseQuote, rhoCutOrderBaseDrop,
-      binderSafeAt, binderSafeListAt]
+    exact scopeSafeAt_of_binderSafeAt _ (by
+      simp [rhoCutOrderRedex, rhoCutOrderBaseQuote, rhoCutOrderBaseDrop,
+      binderSafeAt, binderSafeListAt])
 
 private theorem rhoCutOrderBoundaryCertificate_exists :
     ∃ certificate,

@@ -1256,6 +1256,37 @@ def GeneratedRecursorContractClosedIotaStep
     ∃ rule ∈ generatedRecursorContractClosedIotaRules contract,
       t = rule.source ∧ u = rule.target
 
+/-- Finite closed computation in the generated recursor slice. -/
+abbrev FamilyRecursorDeclContract.ClosedPath (contract : FamilyRecursorDeclContract) :=
+  Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract)
+
+/-- Closed computation is realized by declaration reduction. -/
+abbrev FamilyRecursorDeclContract.ClosedPathsSimulateDecl
+    (contract : FamilyRecursorDeclContract) (env : DeclEnv) : Prop :=
+  ∀ {source target : ScopedTerm 0},
+    contract.ClosedPath source target → RedStarDecl env source target
+
+/-- Closed computation preserves the declaration type at the same context. -/
+abbrev FamilyRecursorDeclContract.ClosedPathsPreserveTyping
+    (contract : FamilyRecursorDeclContract) (env : DeclEnv) : Prop :=
+  ∀ {source target type : ScopedTerm 0},
+    HasTypeDecl env .nil source type → contract.ClosedPath source target →
+      HasTypeDecl env .nil target type
+
+/-- Forks in the closed slice have a shared reachable result. -/
+abbrev FamilyRecursorDeclContract.ClosedStepConfluent
+    (contract : FamilyRecursorDeclContract) : Prop :=
+  ∀ {source left right : ScopedTerm 0},
+    contract.ClosedPath source left → contract.ClosedPath source right →
+      ∃ shared : ScopedTerm 0, contract.ClosedPath left shared ∧ contract.ClosedPath right shared
+
+/-- Each closed term has a normal form in the generated slice. -/
+abbrev FamilyRecursorDeclContract.ClosedStepNormalizing
+    (contract : FamilyRecursorDeclContract) : Prop :=
+  ∀ source : ScopedTerm 0, ∃ normal : ScopedTerm 0,
+    contract.ClosedPath source normal ∧
+      ¬ ∃ next : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract normal next
+
 def generatedClosedIotaTargetFromRules? :
     List GeneratedClosedIotaRule → ScopedTerm 0 → Option (ScopedTerm 0)
   | [], _ => none
@@ -2721,6 +2752,28 @@ def generatedRecursorContractClosedIotaConvByNormalization?
   else
     none
 
+/-- The normal-form observer validates equality in the declaration environment. -/
+abbrev FamilyRecursorDeclContract.ClosedNormalizationSound
+    (contract : FamilyRecursorDeclContract) (env : DeclEnv) : Prop :=
+  ∀ {left right : ScopedTerm 0},
+    generatedRecursorContractClosedIotaNormalize contract left =
+      generatedRecursorContractClosedIotaNormalize contract right →
+        ConvDecl env left right
+
+/-- A returned normalization witness certifies the stated conversion. -/
+abbrev FamilyRecursorDeclContract.ClosedConversionWitnessSound
+    (contract : FamilyRecursorDeclContract) (env : DeclEnv) : Prop :=
+  ∀ {left right : ScopedTerm 0} {witness : GeneratedRecursorContractClosedIotaConvWitness contract left right},
+    generatedRecursorContractClosedIotaConvByNormalization? contract left right = some witness →
+      ConvDecl env left right
+
+/-- The success observation of conversion still implies the declaration judgment. -/
+abbrev FamilyRecursorDeclContract.ClosedConversionSuccessSound
+    (contract : FamilyRecursorDeclContract) (env : DeclEnv) : Prop :=
+  ∀ {left right : ScopedTerm 0},
+    generatedRecursorContractClosedIotaConvByNormalization? contract left right ≠ none →
+      ConvDecl env left right
+
 theorem generatedRecursorContractClosedIotaConvByNormalization?_sound
     {contract : FamilyRecursorDeclContract} {t u : ScopedTerm 0}
     {w : GeneratedRecursorContractClosedIotaConvWitness contract t u}
@@ -2862,16 +2915,8 @@ theorem generatedRecursorContract_admitted_sound_confluent_and_normalizing
           ∃ A : ScopedTerm 0,
             HasTypeDecl E .nil t A ∧
             HasTypeDecl E .nil u A)) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing := by
   rcases generatedRecursorContract_admitted_sound_and_locally_confluent hAdm with
     ⟨E, hWf, hTyped, _hLC⟩
   exact ⟨⟨E, hWf, hTyped⟩,
@@ -2968,33 +3013,13 @@ abbrev GeneratedRecursorDeclChurchRosserPackage
 
 abbrev GeneratedRecursorClosedSliceChurchRosserPackage
     (E : DeclEnv) (contract : FamilyRecursorDeclContract) : Prop :=
-  (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl E t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl E t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl E t u)
+  contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound E ∧
+    contract.ClosedConversionWitnessSound E ∧
+    contract.ClosedConversionSuccessSound E
 
 abbrev GeneratedRecursorDeclAndSliceChurchRosserPackage
     (E : DeclEnv) (contract : FamilyRecursorDeclContract) : Prop :=
@@ -3839,19 +3864,9 @@ theorem generatedRecursorContract_decl_sound_confluent_and_injectivity_of_realiz
     (hWf : DeclEnvWellFormed E)
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn E contract)
     (hCR : DeclarationSemantics.DeclChurchRosser E) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl E s t →
         ∃ u, RedStarDecl E s u ∧ RedStarDecl E t u) ∧
@@ -3884,19 +3899,9 @@ theorem generatedRecursorContract_decl_sound_confluent_and_injectivity_of_realiz
     {contract : FamilyRecursorDeclContract} {E : DeclEnv}
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn E contract)
     (hDeclPkg : DeclarationSemantics.DeclChurchRosserFrontierPackage E) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl E s t →
         ∃ u, RedStarDecl E s u ∧ RedStarDecl E t u) ∧
@@ -3918,19 +3923,9 @@ theorem generatedRecursorContract_decl_sound_confluent_and_injectivity_of_realiz
     (hNone : ∀ c : DeclName, valueOf? E c = none)
     (hWf : DeclEnvWellFormed E)
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn E contract) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl E s t →
         ∃ u, RedStarDecl E s u ∧ RedStarDecl E t u) ∧
@@ -3952,19 +3947,9 @@ theorem generatedRecursorContract_decl_sound_confluent_and_injectivity_of_realiz
     (hSig : SignatureWellFormed specs)
     (hNone : ∀ s ∈ specs, s.value? = none)
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl (envOfSpecs specs) t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl (envOfSpecs specs) .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl (envOfSpecs specs) .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl (envOfSpecs specs) ∧
+    contract.ClosedPathsPreserveTyping (envOfSpecs specs) ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl (envOfSpecs specs) s t →
         ∃ u,
@@ -3988,19 +3973,9 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_and_injectivity_
     (hAdm : GeneratedRecursorContractAdmitted contract)
     (hClosed : generatedRecursorContractOpenIotaObligations contract = [])
     (hCR : DeclarationSemantics.DeclChurchRosser unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl unitRecDeclEnv s t →
         ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4023,19 +3998,9 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_and_injectivity_
     (hClosed : generatedRecursorContractOpenIotaObligations contract = [])
     (hDeclPkg :
       DeclarationSemantics.DeclChurchRosserFrontierPackage unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl unitRecDeclEnv s t →
         ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4054,19 +4019,9 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_and_injectivity_
     {contract : FamilyRecursorDeclContract}
     (hAdm : GeneratedRecursorContractAdmitted contract)
     (hClosed : generatedRecursorContractOpenIotaObligations contract = []) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl unitRecDeclEnv s t →
         ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4085,19 +4040,9 @@ theorem generatedRecursorContract_fullyClosed_decl_sound_confluent_and_injectivi
     {contract : FamilyRecursorDeclContract}
     (hFull : GeneratedRecursorContractFullyClosed contract)
     (hCR : DeclarationSemantics.DeclChurchRosser unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl unitRecDeclEnv s t →
         ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4115,19 +4060,9 @@ theorem generatedRecursorContract_fullyClosed_decl_sound_confluent_and_injectivi
     (hFull : GeneratedRecursorContractFullyClosed contract)
     (hDeclPkg :
       DeclarationSemantics.DeclChurchRosserFrontierPackage unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl unitRecDeclEnv s t →
         ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4161,19 +4096,9 @@ theorem generatedRecursorContract_fullyClosed_current_gate_and_decl_frontier_of_
         ∃ v : ScopedTerm 0,
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl unitRecDeclEnv s t →
         ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4214,19 +4139,9 @@ theorem generatedRecursorContract_fullyClosed_current_gate_and_decl_frontier_of_
         ∃ v : ScopedTerm 0,
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl unitRecDeclEnv s t →
         ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4262,19 +4177,9 @@ theorem generatedRecursorContract_fullyClosed_current_gate_and_decl_frontier_sea
         ∃ v : ScopedTerm 0,
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
     (∀ {k : Nat} {s t : ScopedTerm k},
       ConvDecl unitRecDeclEnv s t →
         ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4318,19 +4223,9 @@ theorem generatedRecursorContract_admitted_exact_current_gate_frontier_of_church
           ∃ v : ScopedTerm 0,
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
       (∀ {k : Nat} {s t : ScopedTerm k},
         ConvDecl unitRecDeclEnv s t →
           ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4386,19 +4281,9 @@ theorem generatedRecursorContract_admitted_exact_current_gate_frontier_of_decl_p
           ∃ v : ScopedTerm 0,
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
       (∀ {k : Nat} {s t : ScopedTerm k},
         ConvDecl unitRecDeclEnv s t →
           ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4445,19 +4330,9 @@ theorem generatedRecursorContract_admitted_exact_current_gate_frontier_sealed
           ∃ v : ScopedTerm 0,
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
       (∀ {k : Nat} {s t : ScopedTerm k},
         ConvDecl unitRecDeclEnv s t →
           ∃ u, RedStarDecl unitRecDeclEnv s u ∧ RedStarDecl unitRecDeclEnv t u) ∧
@@ -4496,23 +4371,10 @@ theorem generatedRecursorContract_decl_sound_confluent_and_normalizing_of_realiz
       ∀ {k : Nat} {A A' : ScopedTerm k} {B B' : ScopedTerm (k + 1)},
         ConvDecl E (.sigma A B) (.sigma A' B') →
           ConvDecl E A A' ∧ ConvDecl E B B') :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
+    contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing := by
   refine ⟨?_, ?_, generatedRecursorContractClosedIotaStep_confluent contract,
     generatedRecursorContractClosedIotaStep_normalizes contract⟩
   · intro t u hStar
@@ -4533,23 +4395,10 @@ theorem generatedRecursorContract_decl_sound_confluent_and_normalizing_of_realiz
     (hWf : DeclEnvWellFormed E)
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn E contract)
     (hCR : DeclarationSemantics.DeclChurchRosser E) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
+    contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing := by
   refine ⟨?_, ?_, generatedRecursorContractClosedIotaStep_confluent contract,
     generatedRecursorContractClosedIotaStep_normalizes contract⟩
   · intro t u hStar
@@ -4567,23 +4416,10 @@ theorem generatedRecursorContract_decl_sound_confluent_and_normalizing_of_realiz
     (hNone : ∀ c : DeclName, valueOf? E c = none)
     (hWf : DeclEnvWellFormed E)
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn E contract) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
+    contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing := by
   exact generatedRecursorContract_decl_sound_confluent_and_normalizing_of_realization_of_church_rosser
     (contract := contract)
     (E := E)
@@ -4596,23 +4432,10 @@ theorem generatedRecursorContract_decl_sound_confluent_and_normalizing_of_realiz
     (hSig : SignatureWellFormed specs)
     (hNone : ∀ s ∈ specs, s.value? = none)
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl (envOfSpecs specs) t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl (envOfSpecs specs) .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl (envOfSpecs specs) .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
+    contract.ClosedPathsSimulateDecl (envOfSpecs specs) ∧
+    contract.ClosedPathsPreserveTyping (envOfSpecs specs) ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing := by
   exact generatedRecursorContract_decl_sound_confluent_and_normalizing_of_realization_of_church_rosser
     (contract := contract)
     (E := envOfSpecs specs)
@@ -4632,33 +4455,13 @@ theorem generatedRecursorContract_decl_sound_confluent_normalizing_and_conversio
       ∀ {k : Nat} {A A' : ScopedTerm k} {B B' : ScopedTerm (k + 1)},
         ConvDecl E (.sigma A B) (.sigma A' B') →
           ConvDecl E A A' ∧ ConvDecl E B B') :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl E t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl E t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl E t u) := by
+    contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound E ∧
+    contract.ClosedConversionWitnessSound E ∧
+    contract.ClosedConversionSuccessSound E := by
   rcases generatedRecursorContract_decl_sound_confluent_and_normalizing_of_realization
       (contract := contract)
       (E := E)
@@ -4681,33 +4484,13 @@ theorem generatedRecursorContract_decl_sound_confluent_normalizing_and_conversio
     (hWf : DeclEnvWellFormed E)
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn E contract)
     (hCR : DeclarationSemantics.DeclChurchRosser E) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl E t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl E t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl E t u) := by
+    contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound E ∧
+    contract.ClosedConversionWitnessSound E ∧
+    contract.ClosedConversionSuccessSound E := by
   refine ⟨?_, ?_, generatedRecursorContractClosedIotaStep_confluent contract,
     generatedRecursorContractClosedIotaStep_normalizes contract, ?_, ?_, ?_⟩
   · intro t u hStar
@@ -4754,33 +4537,13 @@ theorem generatedRecursorContract_decl_and_slice_sound_confluent_normalizing_and
       (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
         ConvDecl E (.sigma A B) (.sigma A' B') →
           ConvDecl E A A' ∧ ConvDecl E B B')) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl E t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl E .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl E .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl E t u)) := by
+    (contract.ClosedPathsSimulateDecl E ∧
+      contract.ClosedPathsPreserveTyping E ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound E ∧
+      contract.ClosedConversionWitnessSound E ∧
+      contract.ClosedConversionSuccessSound E) := by
   refine ⟨hWf, ?_, ?_⟩
   · exact DeclarationSemantics.decl_sound_confluent_and_injectivity_of_church_rosser
       (E := E)
@@ -4848,33 +4611,13 @@ theorem generatedRecursorContract_fullyClosed_current_gate_and_decl_slice_fronti
       (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
         ConvDecl E (.sigma A B) (.sigma A' B') →
           ConvDecl E A A' ∧ ConvDecl E B B')) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl E t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl E .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl E .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl E t u)) ∧
+    (contract.ClosedPathsSimulateDecl E ∧
+      contract.ClosedPathsPreserveTyping E ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound E ∧
+      contract.ClosedConversionWitnessSound E ∧
+      contract.ClosedConversionSuccessSound E) ∧
     (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
       generatedRecursorPilot contract = some pilot →
       obligation ∈ pilot.obligations →
@@ -4934,33 +4677,13 @@ theorem generatedRecursorContract_admitted_exact_closed_decl_slice_frontier_of_c
       (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
         ConvDecl E (.sigma A B) (.sigma A' B') →
           ConvDecl E A A' ∧ ConvDecl E B B')) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl E t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl E .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl E .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl E t u)) ∧
+    (contract.ClosedPathsSimulateDecl E ∧
+      contract.ClosedPathsPreserveTyping E ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound E ∧
+      contract.ClosedConversionWitnessSound E ∧
+      contract.ClosedConversionSuccessSound E) ∧
     (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
       generatedRecursorPilot contract = some pilot →
       obligation ∈ pilot.obligations →
@@ -5021,33 +4744,13 @@ theorem generatedRecursorContract_admitted_current_boundary_and_decl_slice_front
       (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
         ConvDecl E (.sigma A B) (.sigma A' B') →
           ConvDecl E A A' ∧ ConvDecl E B B')) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl E t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl E .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl E .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl E t u)) := by
+    (contract.ClosedPathsSimulateDecl E ∧
+      contract.ClosedPathsPreserveTyping E ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound E ∧
+      contract.ClosedConversionWitnessSound E ∧
+      contract.ClosedConversionSuccessSound E) := by
   rcases generatedRecursorContract_admitted_current_boundary hAdm with
     ⟨hGate, hBoundary⟩
   rcases generatedRecursorContract_decl_and_slice_sound_confluent_normalizing_and_conversion_of_church_rosser
@@ -5117,33 +4820,13 @@ theorem generatedRecursorContract_admitted_exact_current_boundary_and_decl_slice
         (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
           ConvDecl E (.sigma A B) (.sigma A' B') →
             ConvDecl E A A' ∧ ConvDecl E B B')) ∧
-      ((∀ {t u : ScopedTerm 0},
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-            RedStarDecl E t u) ∧
-        (∀ {t u A : ScopedTerm 0},
-          HasTypeDecl E .nil t A →
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          HasTypeDecl E .nil u A) ∧
-        (∀ {t u₁ u₂ : ScopedTerm 0},
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-          ∃ v : ScopedTerm 0,
-            Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-            Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-        (∀ t : ScopedTerm 0,
-          ∃ u : ScopedTerm 0,
-            Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-            ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-        (∀ {t u : ScopedTerm 0},
-          generatedRecursorContractClosedIotaNormalize contract t =
-            generatedRecursorContractClosedIotaNormalize contract u →
-              ConvDecl E t u) ∧
-        (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-          generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-            ConvDecl E t u) ∧
-        (∀ {t u : ScopedTerm 0},
-          generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-            ConvDecl E t u)) ∧
+      (contract.ClosedPathsSimulateDecl E ∧
+        contract.ClosedPathsPreserveTyping E ∧
+        contract.ClosedStepConfluent ∧
+        contract.ClosedStepNormalizing ∧
+        contract.ClosedNormalizationSound E ∧
+        contract.ClosedConversionWitnessSound E ∧
+        contract.ClosedConversionSuccessSound E) ∧
       (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
         generatedRecursorPilot contract = some pilot →
         obligation ∈ pilot.obligations →
@@ -5173,33 +4856,13 @@ theorem generatedRecursorContract_decl_sound_confluent_normalizing_and_conversio
     (hNone : ∀ c : DeclName, valueOf? E c = none)
     (hWf : DeclEnvWellFormed E)
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn E contract) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl E t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl E .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl E .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl E t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl E t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl E t u) := by
+    contract.ClosedPathsSimulateDecl E ∧
+    contract.ClosedPathsPreserveTyping E ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound E ∧
+    contract.ClosedConversionWitnessSound E ∧
+    contract.ClosedConversionSuccessSound E := by
   exact generatedRecursorContract_decl_sound_confluent_normalizing_and_conversion_of_realization_of_church_rosser
     (contract := contract)
     (E := E)
@@ -5212,33 +4875,13 @@ theorem generatedRecursorContract_decl_sound_confluent_normalizing_and_conversio
     (hSig : SignatureWellFormed specs)
     (hNone : ∀ s ∈ specs, s.value? = none)
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl (envOfSpecs specs) t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl (envOfSpecs specs) .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl (envOfSpecs specs) .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl (envOfSpecs specs) t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl (envOfSpecs specs) t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl (envOfSpecs specs) t u) := by
+    contract.ClosedPathsSimulateDecl (envOfSpecs specs) ∧
+    contract.ClosedPathsPreserveTyping (envOfSpecs specs) ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound (envOfSpecs specs) ∧
+    contract.ClosedConversionWitnessSound (envOfSpecs specs) ∧
+    contract.ClosedConversionSuccessSound (envOfSpecs specs) := by
   exact generatedRecursorContract_decl_sound_confluent_normalizing_and_conversion_of_realization_of_church_rosser
     (contract := contract)
     (E := envOfSpecs specs)
@@ -5279,33 +4922,13 @@ theorem generatedRecursorContract_decl_and_slice_sound_confluent_normalizing_and
       (∀ {A B : ScopedTerm n},
         DeclarationSemantics.defEqByNormalizationDeclOfNoValues? E hNone A B ≠ none →
         ConvDecl E A B)) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl E t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl E .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl E .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl E t u)) := by
+    (contract.ClosedPathsSimulateDecl E ∧
+      contract.ClosedPathsPreserveTyping E ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound E ∧
+      contract.ClosedConversionWitnessSound E ∧
+      contract.ClosedConversionSuccessSound E) := by
   refine ⟨hWf, ?_, ?_⟩
   · exact DeclarationSemantics.decl_sound_confluent_and_conversion_of_no_values
       (E := E)
@@ -5348,33 +4971,13 @@ theorem generatedRecursorContract_decl_and_slice_sound_confluent_normalizing_and
       (∀ {A B : ScopedTerm n},
         hSig.defEqByNormalizationDeclOfAllNone? hNone A B ≠ none →
         ConvDecl (envOfSpecs specs) A B)) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl (envOfSpecs specs) .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl (envOfSpecs specs) .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl (envOfSpecs specs) t u)) := by
+    (contract.ClosedPathsSimulateDecl (envOfSpecs specs) ∧
+      contract.ClosedPathsPreserveTyping (envOfSpecs specs) ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound (envOfSpecs specs) ∧
+      contract.ClosedConversionWitnessSound (envOfSpecs specs) ∧
+      contract.ClosedConversionSuccessSound (envOfSpecs specs)) := by
   exact generatedRecursorContract_decl_and_slice_sound_confluent_normalizing_and_conversion_of_no_values
     (contract := contract)
     (E := envOfSpecs specs)
@@ -5492,33 +5095,13 @@ theorem generatedRecursorContract_fullyClosed_current_gate_and_decl_slice_fronti
       (∀ {A B : ScopedTerm n},
         DeclarationSemantics.defEqByNormalizationDeclOfNoValues? E hNone A B ≠ none →
         ConvDecl E A B)) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl E t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl E .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl E .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl E t u)) ∧
+    (contract.ClosedPathsSimulateDecl E ∧
+      contract.ClosedPathsPreserveTyping E ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound E ∧
+      contract.ClosedConversionWitnessSound E ∧
+      contract.ClosedConversionSuccessSound E) ∧
     (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
       generatedRecursorPilot contract = some pilot →
       obligation ∈ pilot.obligations →
@@ -5611,33 +5194,13 @@ theorem generatedRecursorContract_admitted_exact_closed_decl_slice_frontier_of_n
       (∀ {A B : ScopedTerm n},
         DeclarationSemantics.defEqByNormalizationDeclOfNoValues? E hNone A B ≠ none →
         ConvDecl E A B)) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl E t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl E .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl E .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl E t u)) ∧
+    (contract.ClosedPathsSimulateDecl E ∧
+      contract.ClosedPathsPreserveTyping E ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound E ∧
+      contract.ClosedConversionWitnessSound E ∧
+      contract.ClosedConversionSuccessSound E) ∧
     (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
       generatedRecursorPilot contract = some pilot →
       obligation ∈ pilot.obligations →
@@ -5734,33 +5297,13 @@ theorem generatedRecursorContract_admitted_current_boundary_and_decl_slice_front
       (∀ {A B : ScopedTerm n},
         DeclarationSemantics.defEqByNormalizationDeclOfNoValues? E hNone A B ≠ none →
         ConvDecl E A B)) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl E t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl E .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl E .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl E t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl E t u)) := by
+    (contract.ClosedPathsSimulateDecl E ∧
+      contract.ClosedPathsPreserveTyping E ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound E ∧
+      contract.ClosedConversionWitnessSound E ∧
+      contract.ClosedConversionSuccessSound E) := by
   rcases generatedRecursorContract_admitted_current_boundary hAdm with
     ⟨hGate, hBoundary⟩
   rcases generatedRecursorContract_decl_and_slice_sound_confluent_normalizing_and_conversion_of_no_values
@@ -5874,33 +5417,13 @@ theorem generatedRecursorContract_fullyClosed_current_gate_and_decl_slice_fronti
       (∀ {A B : ScopedTerm n},
         hSig.defEqByNormalizationDeclOfAllNone? hNone A B ≠ none →
         ConvDecl (envOfSpecs specs) A B)) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl (envOfSpecs specs) .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl (envOfSpecs specs) .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl (envOfSpecs specs) t u)) ∧
+    (contract.ClosedPathsSimulateDecl (envOfSpecs specs) ∧
+      contract.ClosedPathsPreserveTyping (envOfSpecs specs) ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound (envOfSpecs specs) ∧
+      contract.ClosedConversionWitnessSound (envOfSpecs specs) ∧
+      contract.ClosedConversionSuccessSound (envOfSpecs specs)) ∧
     (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
       generatedRecursorPilot contract = some pilot →
       obligation ∈ pilot.obligations →
@@ -6000,33 +5523,13 @@ theorem generatedRecursorContract_admitted_exact_closed_decl_slice_frontier_of_a
       (∀ {A B : ScopedTerm n},
         hSig.defEqByNormalizationDeclOfAllNone? hNone A B ≠ none →
         ConvDecl (envOfSpecs specs) A B)) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl (envOfSpecs specs) .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl (envOfSpecs specs) .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl (envOfSpecs specs) t u)) ∧
+    (contract.ClosedPathsSimulateDecl (envOfSpecs specs) ∧
+      contract.ClosedPathsPreserveTyping (envOfSpecs specs) ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound (envOfSpecs specs) ∧
+      contract.ClosedConversionWitnessSound (envOfSpecs specs) ∧
+      contract.ClosedConversionSuccessSound (envOfSpecs specs)) ∧
     (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
       generatedRecursorPilot contract = some pilot →
       obligation ∈ pilot.obligations →
@@ -6130,33 +5633,13 @@ theorem generatedRecursorContract_admitted_current_boundary_and_decl_slice_front
       (∀ {A B : ScopedTerm n},
         hSig.defEqByNormalizationDeclOfAllNone? hNone A B ≠ none →
         ConvDecl (envOfSpecs specs) A B)) ∧
-    ((∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl (envOfSpecs specs) .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl (envOfSpecs specs) .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl (envOfSpecs specs) t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl (envOfSpecs specs) t u)) := by
+    (contract.ClosedPathsSimulateDecl (envOfSpecs specs) ∧
+      contract.ClosedPathsPreserveTyping (envOfSpecs specs) ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound (envOfSpecs specs) ∧
+      contract.ClosedConversionWitnessSound (envOfSpecs specs) ∧
+      contract.ClosedConversionSuccessSound (envOfSpecs specs)) := by
   rcases generatedRecursorContract_admitted_current_boundary hAdm with
     ⟨hGate, hBoundary⟩
   rcases generatedRecursorContract_decl_and_slice_sound_confluent_normalizing_and_conversion_of_all_none_specs
@@ -6245,23 +5728,10 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_and_normalizing_
       ∀ {k : Nat} {A A' : ScopedTerm k} {B B' : ScopedTerm (k + 1)},
         ConvDecl unitRecDeclEnv (.pi A B) (.pi A' B') →
           ConvDecl unitRecDeclEnv A A' ∧ ConvDecl unitRecDeclEnv B B') :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing := by
   refine ⟨?_, ?_, generatedRecursorContractClosedIotaStep_confluent contract,
     generatedRecursorContractClosedIotaStep_normalizes contract⟩
   · intro t u hStar
@@ -6276,36 +5746,14 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_and_normalizing_
     (hAdm : GeneratedRecursorContractAdmitted contract)
     (hClosed : generatedRecursorContractOpenIotaObligations contract = [])
     (hCR : DeclarationSemantics.DeclChurchRosser unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
-  refine ⟨?_, ?_, generatedRecursorContractClosedIotaStep_confluent contract,
-    generatedRecursorContractClosedIotaStep_normalizes contract⟩
-  · intro t u hStar
-    exact generatedRecursorContractClosedIotaStar_realizes_redStarDecl_of_realization
-      (generatedRecursorContract_admitted_realized_in_unit_of_no_open hAdm hClosed) hStar
-  · intro t u A hTy hStar
-    exact DeclarationSemantics.redStarDecl_preserves_type_of_church_rosser
-      (E := unitRecDeclEnv)
-      (hCR := hCR)
-      unitRecDeclEnv_wellFormed
-      hTy
-      (generatedRecursorContractClosedIotaStar_realizes_redStarDecl_of_realization
-        (generatedRecursorContract_admitted_realized_in_unit_of_no_open hAdm hClosed) hStar)
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing :=
+  generatedRecursorContract_decl_sound_confluent_and_normalizing_of_realization_of_church_rosser
+    unitRecDeclEnv_wellFormed
+    (generatedRecursorContract_admitted_realized_in_unit_of_no_open hAdm hClosed)
+    hCR
 
 theorem generatedRecursorContract_admitted_decl_sound_confluent_and_normalizing_of_no_open_of_decl_package
     {contract : FamilyRecursorDeclContract}
@@ -6313,23 +5761,10 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_and_normalizing_
     (hClosed : generatedRecursorContractOpenIotaObligations contract = [])
     (hDeclPkg :
       DeclarationSemantics.DeclChurchRosserFrontierPackage unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing := by
   exact generatedRecursorContract_admitted_decl_sound_confluent_and_normalizing_of_no_open_of_church_rosser
     hAdm
     hClosed
@@ -6339,23 +5774,10 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_and_normalizing_
     {contract : FamilyRecursorDeclContract}
     (hAdm : GeneratedRecursorContractAdmitted contract)
     (hClosed : generatedRecursorContractOpenIotaObligations contract = []) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing := by
   exact generatedRecursorContract_admitted_decl_sound_confluent_and_normalizing_of_no_open_of_church_rosser
     hAdm
     hClosed
@@ -6369,33 +5791,13 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_normalizing_and_
       ∀ {k : Nat} {A A' : ScopedTerm k} {B B' : ScopedTerm (k + 1)},
         ConvDecl unitRecDeclEnv (.pi A B) (.pi A' B') →
           ConvDecl unitRecDeclEnv A A' ∧ ConvDecl unitRecDeclEnv B B') :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv := by
   rcases generatedRecursorContract_admitted_decl_sound_confluent_and_normalizing_of_no_open
       (contract := contract)
       hAdm hClosed piInjective with
@@ -6417,56 +5819,17 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_normalizing_and_
     (hAdm : GeneratedRecursorContractAdmitted contract)
     (hClosed : generatedRecursorContractOpenIotaObligations contract = [])
     (hCR : DeclarationSemantics.DeclChurchRosser unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) := by
-  refine ⟨?_, ?_, generatedRecursorContractClosedIotaStep_confluent contract,
-    generatedRecursorContractClosedIotaStep_normalizes contract, ?_, ?_, ?_⟩
-  · intro t u hStar
-    exact generatedRecursorContractClosedIotaStar_realizes_redStarDecl_of_realization
-      (generatedRecursorContract_admitted_realized_in_unit_of_no_open hAdm hClosed) hStar
-  · intro t u A hTy hStar
-    exact DeclarationSemantics.redStarDecl_preserves_type_of_church_rosser
-      (E := unitRecDeclEnv)
-      (hCR := hCR)
-      unitRecDeclEnv_wellFormed
-      hTy
-      (generatedRecursorContractClosedIotaStar_realizes_redStarDecl_of_realization
-        (generatedRecursorContract_admitted_realized_in_unit_of_no_open hAdm hClosed) hStar)
-  · intro t u hEq
-    exact generatedRecursorContractClosedIotaNormalize_eq_implies_convDecl_of_realization
-      (generatedRecursorContract_admitted_realized_in_unit_of_no_open hAdm hClosed) hEq
-  · intro t u w hSome
-    exact generatedRecursorContractClosedIotaConvByNormalization?_sound_of_realization
-      (generatedRecursorContract_admitted_realized_in_unit_of_no_open hAdm hClosed) hSome
-  · intro t u hSome
-    exact generatedRecursorContractClosedIotaConvDecl_of_realization
-      (generatedRecursorContract_admitted_realized_in_unit_of_no_open hAdm hClosed)
-      ((generatedRecursorContractClosedIotaConvByNormalization?_ne_none_iff).1 hSome)
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv :=
+  generatedRecursorContract_decl_sound_confluent_normalizing_and_conversion_of_realization_of_church_rosser
+    unitRecDeclEnv_wellFormed
+    (generatedRecursorContract_admitted_realized_in_unit_of_no_open hAdm hClosed)
+    hCR
 
 theorem generatedRecursorContract_admitted_decl_sound_confluent_normalizing_and_conversion_of_no_open_of_decl_package
     {contract : FamilyRecursorDeclContract}
@@ -6474,33 +5837,13 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_normalizing_and_
     (hClosed : generatedRecursorContractOpenIotaObligations contract = [])
     (hDeclPkg :
       DeclarationSemantics.DeclChurchRosserFrontierPackage unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv := by
   exact generatedRecursorContract_admitted_decl_sound_confluent_normalizing_and_conversion_of_no_open_of_church_rosser
     hAdm
     hClosed
@@ -6510,33 +5853,13 @@ theorem generatedRecursorContract_admitted_decl_sound_confluent_normalizing_and_
     {contract : FamilyRecursorDeclContract}
     (hAdm : GeneratedRecursorContractAdmitted contract)
     (hClosed : generatedRecursorContractOpenIotaObligations contract = []) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv := by
   exact generatedRecursorContract_admitted_decl_sound_confluent_normalizing_and_conversion_of_no_open_of_church_rosser
     hAdm
     hClosed
@@ -6549,23 +5872,10 @@ theorem generatedRecursorContract_fullyClosed_decl_sound_confluent_and_normalizi
       ∀ {k : Nat} {A A' : ScopedTerm k} {B B' : ScopedTerm (k + 1)},
         ConvDecl unitRecDeclEnv (.pi A B) (.pi A' B') →
           ConvDecl unitRecDeclEnv A A' ∧ ConvDecl unitRecDeclEnv B B') :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing := by
   exact generatedRecursorContract_admitted_decl_sound_confluent_and_normalizing_of_no_open
     hFull.1 hFull.2 piInjective
 
@@ -6576,33 +5886,13 @@ theorem generatedRecursorContract_fullyClosed_decl_sound_confluent_normalizing_a
       ∀ {k : Nat} {A A' : ScopedTerm k} {B B' : ScopedTerm (k + 1)},
         ConvDecl unitRecDeclEnv (.pi A B) (.pi A' B') →
           ConvDecl unitRecDeclEnv A A' ∧ ConvDecl unitRecDeclEnv B B') :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv := by
   exact generatedRecursorContract_admitted_decl_sound_confluent_normalizing_and_conversion_of_no_open
     hFull.1 hFull.2 piInjective
 
@@ -6610,33 +5900,13 @@ theorem generatedRecursorContract_fullyClosed_decl_sound_confluent_normalizing_a
     {contract : FamilyRecursorDeclContract}
     (hFull : GeneratedRecursorContractFullyClosed contract)
     (hCR : DeclarationSemantics.DeclChurchRosser unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv := by
   exact generatedRecursorContract_admitted_decl_sound_confluent_normalizing_and_conversion_of_no_open_of_church_rosser
     hFull.1 hFull.2 hCR
 
@@ -6645,33 +5915,13 @@ theorem generatedRecursorContract_fullyClosed_decl_sound_confluent_normalizing_a
     (hFull : GeneratedRecursorContractFullyClosed contract)
     (hDeclPkg :
       DeclarationSemantics.DeclChurchRosserFrontierPackage unitRecDeclEnv) :
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) := by
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv := by
   exact generatedRecursorContract_fullyClosed_decl_sound_confluent_normalizing_and_conversion_of_church_rosser
     hFull
     (DeclarationSemantics.DeclChurchRosserFrontierPackage.declChurchRosser hDeclPkg)
@@ -6751,33 +6001,13 @@ theorem generatedRecursorContract_admitted_decl_boundary_current_frontier
         ConvDecl unitRecDeclEnv (.pi A B) (.pi A' B') →
           ConvDecl unitRecDeclEnv A A' ∧ ConvDecl unitRecDeclEnv B B') :
     (generatedRecursorContractOpenIotaObligations contract = [] ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u))
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv)
     ∨
     (generatedRecursorContractOpenIotaObligations contract = [natRecSuccIotaObligation] ∧
       ∃ A : ScopedTerm 1,
@@ -6811,33 +6041,13 @@ theorem generatedRecursorContract_admitted_decl_boundary_current_frontier_of_chu
     (hAdm : GeneratedRecursorContractAdmitted contract)
     (hCR : DeclarationSemantics.DeclChurchRosser unitRecDeclEnv) :
     (generatedRecursorContractOpenIotaObligations contract = [] ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u))
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv)
     ∨
     (generatedRecursorContractOpenIotaObligations contract = [natRecSuccIotaObligation] ∧
       ∃ A : ScopedTerm 1,
@@ -6861,33 +6071,13 @@ theorem generatedRecursorContract_admitted_decl_boundary_current_frontier_of_dec
     (hDeclPkg :
       DeclarationSemantics.DeclChurchRosserFrontierPackage unitRecDeclEnv) :
     (generatedRecursorContractOpenIotaObligations contract = [] ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u))
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv)
     ∨
     (generatedRecursorContractOpenIotaObligations contract = [natRecSuccIotaObligation] ∧
       ∃ A : ScopedTerm 1,
@@ -6901,33 +6091,13 @@ theorem generatedRecursorContract_admitted_decl_boundary_current_frontier_sealed
     {contract : FamilyRecursorDeclContract}
     (hAdm : GeneratedRecursorContractAdmitted contract) :
     (generatedRecursorContractOpenIotaObligations contract = [] ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u))
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv)
     ∨
     (generatedRecursorContractOpenIotaObligations contract = [natRecSuccIotaObligation] ∧
       ∃ A : ScopedTerm 1,
@@ -6948,33 +6118,13 @@ theorem generatedRecursorContract_admitted_exact_decl_boundary_current_frontier
       generatedRecursorContractOpenIotaObligations contract = [] ∧
       GeneratedRecursorContractFullyClosed contract ∧
       GeneratedRecursorContractClosedIotaRealizedIn unitRecDeclEnv contract ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
       (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
         generatedRecursorPilot contract = some pilot →
         obligation ∈ pilot.obligations →
@@ -7009,33 +6159,13 @@ theorem generatedRecursorContract_admitted_exact_decl_boundary_current_frontier_
       generatedRecursorContractOpenIotaObligations contract = [] ∧
       GeneratedRecursorContractFullyClosed contract ∧
       GeneratedRecursorContractClosedIotaRealizedIn unitRecDeclEnv contract ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
       (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
         generatedRecursorPilot contract = some pilot →
         obligation ∈ pilot.obligations →
@@ -7072,33 +6202,13 @@ theorem generatedRecursorContract_admitted_exact_decl_boundary_current_frontier_
       generatedRecursorContractOpenIotaObligations contract = [] ∧
       GeneratedRecursorContractFullyClosed contract ∧
       GeneratedRecursorContractClosedIotaRealizedIn unitRecDeclEnv contract ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
       (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
         generatedRecursorPilot contract = some pilot →
         obligation ∈ pilot.obligations →
@@ -7123,33 +6233,13 @@ theorem generatedRecursorContract_admitted_exact_decl_boundary_current_frontier_
       generatedRecursorContractOpenIotaObligations contract = [] ∧
       GeneratedRecursorContractFullyClosed contract ∧
       GeneratedRecursorContractClosedIotaRealizedIn unitRecDeclEnv contract ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
       (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
         generatedRecursorPilot contract = some pilot →
         obligation ∈ pilot.obligations →
@@ -7187,33 +6277,13 @@ theorem generatedRecursorContract_fullyClosed_current_gate_and_conditional_decl_
         ∃ v : ScopedTerm 0,
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
     (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
       generatedRecursorPilot contract = some pilot →
       obligation ∈ pilot.obligations →
@@ -7245,33 +6315,13 @@ theorem generatedRecursorContract_fullyClosed_current_gate_and_conditional_decl_
         ∃ v : ScopedTerm 0,
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
     (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
       generatedRecursorPilot contract = some pilot →
       obligation ∈ pilot.obligations →
@@ -7305,33 +6355,13 @@ theorem generatedRecursorContract_fullyClosed_current_gate_and_conditional_decl_
         ∃ v : ScopedTerm 0,
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
           Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-    (∀ {t u : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        RedStarDecl unitRecDeclEnv t u) ∧
-    (∀ {t u A : ScopedTerm 0},
-      HasTypeDecl unitRecDeclEnv .nil t A →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-      HasTypeDecl unitRecDeclEnv .nil u A) ∧
-    (∀ {t u₁ u₂ : ScopedTerm 0},
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-      Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-      ∃ v : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-    (∀ t : ScopedTerm 0,
-      ∃ u : ScopedTerm 0,
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-        ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaNormalize contract t =
-        generatedRecursorContractClosedIotaNormalize contract u →
-          ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-        ConvDecl unitRecDeclEnv t u) ∧
-    (∀ {t u : ScopedTerm 0},
-      generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-        ConvDecl unitRecDeclEnv t u) ∧
+    contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+    contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+    contract.ClosedStepConfluent ∧
+    contract.ClosedStepNormalizing ∧
+    contract.ClosedNormalizationSound unitRecDeclEnv ∧
+    contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+    contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
     (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
       generatedRecursorPilot contract = some pilot →
       obligation ∈ pilot.obligations →
@@ -7410,33 +6440,13 @@ theorem generatedRecursorContract_admitted_exact_current_gate_conditional_fronti
           ∃ v : ScopedTerm 0,
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
       (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
         generatedRecursorPilot contract = some pilot →
         obligation ∈ pilot.obligations →
@@ -7520,33 +6530,13 @@ theorem generatedRecursorContract_admitted_exact_current_gate_conditional_fronti
           ∃ v : ScopedTerm 0,
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
       (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
         generatedRecursorPilot contract = some pilot →
         obligation ∈ pilot.obligations →
@@ -7596,33 +6586,13 @@ theorem generatedRecursorContract_admitted_exact_current_gate_conditional_fronti
           ∃ v : ScopedTerm 0,
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
       (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
         generatedRecursorPilot contract = some pilot →
         obligation ∈ pilot.obligations →
@@ -7661,33 +6631,13 @@ theorem generatedRecursorContract_admitted_exact_current_gate_conditional_fronti
           ∃ v : ScopedTerm 0,
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
             Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v)) ∧
-      (∀ {t u : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-          RedStarDecl unitRecDeclEnv t u) ∧
-      (∀ {t u A : ScopedTerm 0},
-        HasTypeDecl unitRecDeclEnv .nil t A →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
-        HasTypeDecl unitRecDeclEnv .nil u A) ∧
-      (∀ {t u₁ u₂ : ScopedTerm 0},
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₁ →
-        Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u₂ →
-        ∃ v : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₁ v ∧
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) u₂ v) ∧
-      (∀ t : ScopedTerm 0,
-        ∃ u : ScopedTerm 0,
-          Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u ∧
-          ¬ ∃ v : ScopedTerm 0, GeneratedRecursorContractClosedIotaStep contract u v) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaNormalize contract t =
-          generatedRecursorContractClosedIotaNormalize contract u →
-            ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0} {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
-          ConvDecl unitRecDeclEnv t u) ∧
-      (∀ {t u : ScopedTerm 0},
-        generatedRecursorContractClosedIotaConvByNormalization? contract t u ≠ none →
-          ConvDecl unitRecDeclEnv t u) ∧
+      contract.ClosedPathsSimulateDecl unitRecDeclEnv ∧
+      contract.ClosedPathsPreserveTyping unitRecDeclEnv ∧
+      contract.ClosedStepConfluent ∧
+      contract.ClosedStepNormalizing ∧
+      contract.ClosedNormalizationSound unitRecDeclEnv ∧
+      contract.ClosedConversionWitnessSound unitRecDeclEnv ∧
+      contract.ClosedConversionSuccessSound unitRecDeclEnv ∧
       (∀ {pilot : GeneratedRecursorPilot} {obligation : RecursorIotaObligation},
         generatedRecursorPilot contract = some pilot →
         obligation ∈ pilot.obligations →

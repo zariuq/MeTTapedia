@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Depe
 Adding equations retains the frame, occurrences and typed rows. For an
 already admitted firing, admission after strengthening is equivalent to
 solvability of the enlarged information: its guards already hold on every
-old solution, hence on the remaining solutions. The none query and count queries
+old solution, hence on the remaining solutions. Absence and count queries
 are included; no query-blindness condition is added.
 
 The complete result transports the added equations along the actual helper

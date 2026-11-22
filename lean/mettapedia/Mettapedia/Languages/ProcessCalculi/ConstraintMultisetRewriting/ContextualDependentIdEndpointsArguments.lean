@@ -542,7 +542,7 @@ def argumentSearch {Θ : Context S.R} : (problem : EquationStore (TotalTerm Θ))
 def argumentOf {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} (prepared : Update S.levels problem) :
     Option (PLift (¬ (frames S.levels).Solvable problem)) :=
   match argumentSearch facts roots heads algebra rigid complete prepared.remaining with
-  | some (.refuted missing) => some ⟨fun solvable => missing (prepared.solvable_iff.mp solvable)⟩
+  | some (.refuted absent) => some ⟨fun solvable => absent (prepared.solvable_iff.mp solvable)⟩
   | _ => none
 
 /-! ## The arguments round -/
@@ -573,7 +573,7 @@ def argumentsRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Tot
       certifyNormal headTypingUnique rootComplete fuel problem with
   | .stuck =>
       match argumentsRefuted facts roots heads algebra rigid complete reducer root rootComplete fuel problem with
-      | some missing => .refuted missing.down
+      | some absent => .refuted absent.down
       | none => .stuck
   | other => other
 
@@ -616,7 +616,7 @@ theorem argumentsRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationS
   | stuck =>
       cases argumentsRefuted facts roots heads algebra rigid complete reducer root rootComplete fuel problem <;> rfl
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 include stable in
 /-- **The arguments round is eventually constant on every store.** -/

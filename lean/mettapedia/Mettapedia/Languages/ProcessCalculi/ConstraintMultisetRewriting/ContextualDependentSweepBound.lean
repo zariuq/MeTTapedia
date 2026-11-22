@@ -141,7 +141,7 @@ theorem endingBound_drive (fuel : Nat) : ∀ (rounds : Nat) {Γ : Context settin
             rw [endingBound_cons fuel rounds notEmpty]
             split at decided
             · cases decided
-            · rename_i missing isRefuted
+            · rename_i absent isRefuted
               cases decided
               rw [(towerBoundRound_eq fuel state.remaining).trans isRefuted]
               rfl
@@ -197,7 +197,7 @@ theorem unsolvable_of_endingBound {fuel rounds : Nat} {Γ : Context setting.R} {
     (read : endingBound fuel rounds Γ store = .refuted) : ¬ (frames setting.levels).Solvable store := by
   rw [← endingBound_run] at read
   cases outcome : run (boundTower.solver fuel) store rounds with
-  | refuted missing => exact missing
+  | refuted absent => exact absent
   | solved _ _ => rw [outcome] at read; cases read
   | stuck _ => rw [outcome] at read; cases read
   | cutoff _ => rw [outcome] at read; cases read

@@ -2,9 +2,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Nati
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.NativeClosing
 
 /-!
-# Freshness: missing from the store, or never born
+# Freshness: absent from the store, or never born
 
-Native admission asks that a firing's produced ports not be present from the present store
+Native admission asks that a firing's produced ports be absent from the present store
 (`ContextualConditionalExecution.Admitted.fresh`). The commit protocol asks more: a transaction commits
 only when the identities it makes were never born (`CommitProtocol.Step.commit`), and born identities
 only accumulate. This module proves what each reading gives.
@@ -18,7 +18,7 @@ only accumulate. This module proves what each reading gives.
   identities of its start.
 * **The characterization** (`native_run_protocol_iff`): a native run carried by the transactions is
   realized by a protocol run from an idle, unclaimed protocol state holding the present occurrences
-  **exactly when** it makes only identities never born before. Under missing-only freshness, a run that
+  **exactly when** it makes only identities never born before. Under absent-only freshness, a run that
   takes an identity and later makes it again is admitted natively and realized by no protocol run
   (`not_realized_of_reborn`).
 
@@ -36,10 +36,10 @@ admitted when it is natively admitted and makes no born identity, and its result
 
 ## Which reading
 
-Missing-only freshness keeps every native diamond and the closing leg, but admits runs the runtime
+Absent-only freshness keeps every native diamond and the closing leg, but admits runs the runtime
 cannot commit. Unborn freshness keeps the same diamonds and the same closing leg, with the born
 identities of both orders equal, and every run is realized by the commit protocol. **Unborn freshness
-is the reading faithful to the runtime**: by `native_run_protocol_iff`, missing-only admission agrees
+is the reading faithful to the runtime**: by `native_run_protocol_iff`, absent-only admission agrees
 with the runtime exactly on the runs that never remake an identity.
 -/
 
@@ -135,7 +135,7 @@ theorem native_run_protocol_iff (txn : ℕ → Commit O Unit) {s : NativeState S
   ⟨fun ⟨_, run, _⟩ => freshFrom_of_protocol txn r k carries run,
     fun fresh => native_run_protocol txn r k σ carries fresh store idle unclaimed⟩
 
-/-- **Missing-only freshness is not enough**: a native run that makes an identity born before is
+/-- **Absent-only freshness is not enough**: a native run that makes an identity born before is
 realized by no protocol run. -/
 theorem not_realized_of_reborn (txn : ℕ → Commit O Unit) {s : NativeState S O Γ sort}
     (r : Interface.Step.Run (native (S := S) (O := O) (Γ := Γ) (sort := sort)).toStep s) (k : ℕ)

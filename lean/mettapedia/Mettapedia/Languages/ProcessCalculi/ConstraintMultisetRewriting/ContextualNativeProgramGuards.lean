@@ -49,7 +49,7 @@ noncomputable def producerCheckQueries (body : Body S O Γ sort before after) (o
   | .equal left right => [body.producerEqualityQuery index left right]
   | .predicate .none pattern =>
       [body.nativeCutMatchingQuery index pattern ((body.entryCutAt index).taken.image some) ∅,
-        body.nativeVirtualNoneQuery index pattern]
+        body.nativeVirtualAbsenceQuery index pattern]
   | .predicate .any pattern =>
       let table := body.nativeCountTable index occupied produced [] pattern
         ((body.entryCutAt index).taken.image some)
@@ -101,7 +101,7 @@ theorem producer_check_queries_iff (body : Body S O Γ sort before after)
       | none =>
           change _ ↔ ∀ query ∈ [_, _], _
           rw [all_pair]
-          exact body.native_entry_none_iff index shapes resources consistent occupied produced [] pattern
+          exact body.native_entry_absence_iff index shapes resources consistent occupied produced [] pattern
       | any =>
           change _ ↔ ∀ query ∈ [_, _], _
           rw [all_pair]

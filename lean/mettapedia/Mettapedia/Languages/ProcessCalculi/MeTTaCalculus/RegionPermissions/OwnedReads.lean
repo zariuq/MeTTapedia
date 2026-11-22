@@ -15,12 +15,12 @@ the owner makes no occurrence carrying that facet (it does not hand the facet ou
 ## The owned laws
 
 * **Nobody else can send at the read's names, so a universal read stays true**
-  (`owned_antitone_stable`): none queries, "every row here is like this", over any run of the others.
+  (`owned_antitone_stable`): absence, "every row here is like this", over any run of the others.
 * **Nobody else can receive there, so an existential read stays true** (`owned_monotone_stable`).
 * **Nobody else can write there, so every read stays true** (`owned_exact_stable`).
 
 The hypotheses are needed, for held facets: a process other than the owner that holds `send` at a
-name of the read falsifies its none query with one step (`none_falsified_of_other_send`), and one
+name of the read falsifies its absence with one step (`absence_falsified_of_other_send`), and one
 that holds `receive` there takes the only witness of an existential read
 (`witness_taken_of_other_receive`). For facets that are only carried by occurrences, the bound is
 sufficient but not exact: a carried facet may sit where no other process can reach it.
@@ -28,7 +28,7 @@ sufficient but not exact: a carried facet may sit where no other process can rea
 
 ## The kernel as owner, and the limit of "sole writer"
 
-When only the kernel holds `send` at its rule region, its none check that a head is fresh
+When only the kernel holds `send` at its rule region, its absence check that a head is fresh
 (admission) and its reads over all rules (promotion) stay true across every run of the users
 (`kernel_reads_stable`). They do not stay true across the kernel's *own* other commits: two
 admissions of one head are each enabled at the same store and cannot both run
@@ -237,10 +237,10 @@ section Necessity
 
 variable {label : O → R} {loc : R → N} {carries : R → Rights N}
 
-/-- **Another holder of `send` falsifies a none read in one step.** If a process other than
+/-- **Another holder of `send` falsifies an absence read in one step.** If a process other than
 the owner holds `send` at a name `n` of the read, and an occurrence `o` that carries no facet can
 be made fresh at `n`, its one-step run is a run of the others and leaves `o` at the read's names. -/
-theorem none_falsified_of_other_send {Γ : I → Rights N} {S : Finset O} {owner i : I}
+theorem absence_falsified_of_other_send {Γ : I → Rights N} {S : Finset O} {owner i : I}
     (notOwner : i ≠ owner) {A : N → Bool} {o : O} (fresh : o ∉ S)
     (atA : A (loc (label o)) = true) (held : Γ i (loc (label o)) .send = true)
     (inert : ∀ m f, carries (label o) m f = false) :

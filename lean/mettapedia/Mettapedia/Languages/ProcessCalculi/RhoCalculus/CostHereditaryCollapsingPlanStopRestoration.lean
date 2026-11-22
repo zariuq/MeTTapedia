@@ -343,7 +343,7 @@ theorem CostStaticPlanReached.exists_quoteArgumentPlan
             true := by
         rw [rhoCIGSLT.materializeDeclaredCostConstructor_label, rendered,
           generatedLabel]
-        apply isQuoteConstructor_costStaticReflectivePresentationDecl
+        apply isQuoteConstructor_costStaticReflectivePresentationDecl _ _ _ rfl
         change rhoReflectivePresentation.toReflectivePresentationDecl ∈
           ReflectionExtension.rhoReflectionProfile.presentations
         simp [ReflectionExtension.rhoReflectionProfile]
@@ -385,7 +385,7 @@ theorem CostStaticPlanReached.exists_quoteArgumentPlan
             argumentsScopedZero
         have argumentsReflective :
             ∀ presentation ∈ rhoCIGSLT.costWholeReflectionProfile.presentations,
-              binderSafeListAt presentation.quoteConstructor 0 arguments =
+              scopeSafeListAt presentation.quoteScope presentation.quoteConstructor 0 arguments =
                 true :=
           WellSorted.reflectiveScopeSafeListAt_zero_of_typed_quote
             rhoCIGSLT.costWholeLanguage_validate
@@ -1539,6 +1539,7 @@ theorem CostStaticPlanReached.parentCanonicalFrame_eq_nameFrame_of_quoteCanonica
     rootTypedName.toHasType.selectedQuoteArgument
       rhoCIGSLT.costWholeLanguage_validate
       rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership
+      (CostCanonicalLaws.rho_costWholeReflectionProfile_closed _ declarationMembership)
       (rootTypedName.toHasType.reflectiveSupportSafeAt_empty
         (reached.sourceBound.map
           (mapTypeExpr (color.symbols rhoCIGSLT))))
@@ -2522,7 +2523,7 @@ theorem quotePlanStops_commonRestorationApex_of_argumentCanonical
       (isQuoteConstructor_costStaticReflectivePresentationDecl color _ (by
         change rhoReflectivePresentation.toReflectivePresentationDecl ∈
           ReflectionExtension.rhoReflectionProfile.presentations
-        simp [ReflectionExtension.rhoReflectionProfile]))
+        simp [ReflectionExtension.rhoReflectionProfile]) rfl)
       (rho_currentStaticHead_reflectiveConstructorsAllowed color).drop
       (declC_dropNeQuote color)
       (CostCanonicalLaws.rho_costStatic_drop_isOrdinary color)

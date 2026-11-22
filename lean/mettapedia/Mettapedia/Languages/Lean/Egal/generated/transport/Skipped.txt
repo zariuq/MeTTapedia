@@ -1,0 +1,3 @@
+function cast: erased proofs in the definition or its equations are not reconstructed
+function instDecidableFalse: erased proofs in the definition or its equations are not reconstructed
+function instDecidableTrue: erased proofs in the definition or its equations are not reconstructed

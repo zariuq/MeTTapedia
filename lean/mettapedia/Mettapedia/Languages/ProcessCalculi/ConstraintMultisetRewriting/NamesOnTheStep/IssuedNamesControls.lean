@@ -140,8 +140,8 @@ theorem match_two {p q : Expr} {l : List Occ}
           cases tail'
           exact ⟨_, _, rfl, head, head'⟩
 
-/-- A none check over ground terms is refuted by one present occurrence of its pattern. -/
-theorem none_refuted {C : Conf} {r : RuleInstance Expr} {sel : Selection Occ}
+/-- An absence check over ground terms is refuted by one present occurrence of its pattern. -/
+theorem absent_refuted {C : Conf} {r : RuleInstance Expr} {sel : Selection Occ}
     (valid : sel.Valid ground Prod.fst r C) {p : Expr} (asked : Check.predicate .none p ∈ r.checks)
     {o : Occ} (present : o ∈ C.present) (labelled : o.1 = p) : False := by
   obtain ⟨u, solved⟩ := valid.consistent
@@ -190,7 +190,7 @@ theorem no_checks {r : RuleInstance Expr} (none : r.checks = []) {C : Conf} :
   intro c member
   exact absurd member List.not_mem_nil
 
-theorem none_holds {C : Conf} {p : Expr} (clear : ∀ o ∈ C.present, o.1 ≠ p) :
+theorem absent_holds {C : Conf} {p : Expr} (clear : ∀ o ∈ C.present, o.1 ≠ p) :
     (Check.predicate .none p).Holds ground () Prod.fst C.present :=
   fun o present same => clear o present same.symm
 

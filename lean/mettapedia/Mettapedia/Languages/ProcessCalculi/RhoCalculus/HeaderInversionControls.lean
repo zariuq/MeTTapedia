@@ -30,11 +30,11 @@ def duplicateMessages : List Header :=
 
 private theorem channel_typed :
     NameWellSorted rhoReflectivePresentation (fun _ => none) [] channel :=
-  .quote .unit (by decide)
+  .quote .unit
 
 private theorem forwarding_typed :
     ProcWellSorted rhoReflectivePresentation (fun _ => none) ["Name"] forwardingBody :=
-  .output (.quote .unit (by decide)) (.drop (.bvar rfl))
+  .output (.quote .unit) (.drop (.bvar rfl))
 
 theorem duplicateMessages_typed :
     ∀ header ∈ duplicateMessages, header.Typed (fun _ => none) := by

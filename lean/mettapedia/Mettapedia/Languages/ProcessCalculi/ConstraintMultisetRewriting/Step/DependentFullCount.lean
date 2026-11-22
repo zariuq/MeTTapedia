@@ -19,7 +19,7 @@ a row it leaves apart would raise the count at some solution unless that extensi
 counting check is asked at every endomorphic solution. Its translation, R91's counting query of the
 translated pattern, is asked at every dependent solution. The two asks agree when the dependent
 unifier decides the problem and each extension by an endomorphic principal answer or a refutation,
-the condition R91 uses for none queries (`EndoDecided`):
+the condition R91 uses for absence (`EndoDecided`):
 * the matched rows correspond, because the fibre reflects the equivalence;
 * each extension is refuted on one side exactly when on the other.
 
@@ -296,8 +296,8 @@ theorem checks_entails_iff_count :
           exact checks _ present σ solved
       | predicate quantifier _ => cases guard
       | count _ _ => cases guard
-    · exact (action_entails_none_iff (action M) _ p C.present label).mp (checks _ inside)
-  · rintro ⟨guards, nones, anys, counts⟩ c present
+    · exact (action_entails_absent_iff (action M) _ p C.present label).mp (checks _ inside)
+  · rintro ⟨guards, absences, anys, counts⟩ c present
     cases c with
     | equal left right =>
         intro σ solved
@@ -305,7 +305,7 @@ theorem checks_entails_iff_count :
     | predicate quantifier p =>
         cases quantifier with
         | any => exact anys p present
-        | none => exact (action_entails_none_iff (action M) _ p C.present label).mpr (nones p present)
+        | none => exact (action_entails_absent_iff (action M) _ p C.present label).mpr (absences p present)
     | count p n => exact counts p n present
 
 /-- **First-order admission with every kind of check**, without collect queries. -/
@@ -358,7 +358,7 @@ theorem translate_queries_iff_count :
             n).Holds C.present (fun o => (fibre facts roots heads church names realization).tm (label o)) τ) := by
   have information := translate_information facts roots heads church names realization label C f
   have row := translate_row_eq facts roots heads church names realization label C f
-  have noneAsk : ∀ p : Obs M,
+  have absentAsk : ∀ p : Obs M,
       (frames S.levels).Entails
           (translateFiring facts roots heads church names realization label C f).information
           (fun _ τ => (Query.predicate S.levels O .none ((fibre facts roots heads church names realization).tm p)).Holds
@@ -379,7 +379,7 @@ theorem translate_queries_iff_count :
       ⟨fun asked b τ solved => (Query.predicate_holds_iff _ _ _ _ τ).mp (asked b τ solved),
         fun asked b τ solved => (Query.predicate_holds_iff _ _ _ _ τ).mpr (asked b τ solved)⟩
     rw [pointwise]
-    refine (entails_none_iff (frames S.levels) _ _ C.present _).trans ?_
+    refine (entails_absent_iff (frames S.levels) _ _ C.present _).trans ?_
     rw [information, row]
     simp only [FrameMap.store, List.map_append, List.map_cons, List.map_nil]
     exact Iff.rfl
@@ -411,10 +411,10 @@ theorem translate_queries_iff_count :
       fun asked b τ solved => (Query.predicate_holds_iff _ _ _ _ τ).mpr (asked b τ solved)⟩
   constructor
   · intro asked
-    refine ⟨fun p inside => (noneAsk p).mp (asked _ (List.mem_flatMap.mpr ⟨_, inside, List.mem_singleton_self _⟩)),
+    refine ⟨fun p inside => (absentAsk p).mp (asked _ (List.mem_flatMap.mpr ⟨_, inside, List.mem_singleton_self _⟩)),
       fun p inside => (anyAsk p).mp (asked _ (List.mem_flatMap.mpr ⟨_, inside, List.mem_singleton_self _⟩)),
       fun p n inside => (countAsk p n).mp (asked _ (List.mem_flatMap.mpr ⟨_, inside, List.mem_singleton_self _⟩))⟩
-  · rintro ⟨nones, anys, counts⟩ q member
+  · rintro ⟨absences, anys, counts⟩ q member
     obtain ⟨c, present, query⟩ := List.mem_flatMap.mp member
     cases c with
     | equal _ _ => cases query
@@ -422,7 +422,7 @@ theorem translate_queries_iff_count :
         obtain rfl := List.mem_singleton.mp query
         cases quantifier with
         | any => exact (anyAsk p).mpr (anys p present)
-        | none => exact (noneAsk p).mpr (nones p present)
+        | none => exact (absentAsk p).mpr (absences p present)
     | count p n =>
         obtain rfl := List.mem_singleton.mp query
         exact (countAsk p n).mpr (counts p n present)
@@ -475,13 +475,13 @@ theorem translate_admits_iff_count :
       exact Make.ofRow_wellTyped _
   constructor
   · rintro ⟨shaped, ⟨taken, read, apart, fresh⟩, solvable, guards, asked⟩
-    obtain ⟨missing, anys, count⟩ := queries.mp asked
+    obtain ⟨absent, anys, count⟩ := queries.mp asked
     exact ⟨shapes.mp shaped, ⟨taken, read, apart, by rw [← made]; exact fresh⟩,
-      by rw [← information]; exact solvable, by rw [← information]; exact guards, missing, anys, count⟩
-  · rintro ⟨shaped, ⟨taken, read, apart, fresh⟩, solvable, guards, missing, anys, count⟩
+      by rw [← information]; exact solvable, by rw [← information]; exact guards, absent, anys, count⟩
+  · rintro ⟨shaped, ⟨taken, read, apart, fresh⟩, solvable, guards, absent, anys, count⟩
     exact ⟨shapes.mpr shaped, ⟨taken, read, apart, by rw [made]; exact fresh⟩,
       by rw [information]; exact solvable, by rw [information]; exact guards,
-      queries.mpr ⟨missing, anys, count⟩⟩
+      queries.mpr ⟨absent, anys, count⟩⟩
 
 include algebra complete rigid sortInjective closed operatorInjective in
 /-- **Admission is preserved and reflected by the join, counting checks included.** At a first-order
@@ -497,7 +497,7 @@ theorem admits_translate_iff_count (noQueries : f.queries = [])
       f.selection.made.map label = f.rule.produce ∧
         (step S.levels O).Admits (s := translateState facts roots heads church names realization label C)
           (translateFiring facts roots heads church names realization label C f) := by
-  have nones : (∀ p, Check.predicate .none p ∈ f.rule.checks → ∀ o ∈ C.present,
+  have absences : (∀ p, Check.predicate .none p ∈ f.rule.checks → ∀ o ∈ C.present,
         ¬ (frames S.levels).Solvable ((fibre facts roots heads church names realization).store
           (f.selection.problem label f.rule C ++ [(p, label o)]))) ↔
       ∀ p, Check.predicate .none p ∈ f.rule.checks → ∀ o ∈ C.present,
@@ -517,7 +517,7 @@ theorem admits_translate_iff_count (noQueries : f.queries = [])
       count_transfer facts roots heads algebra complete rigid church names realization sortInjective closed
         @operatorInjective label _ p n C.present decided (decidedExtensions _ inside)
   rw [firstOrder_admits_iff_count label C f noQueries, checks_entails_iff_count label C f,
-    translate_admits_iff_count facts roots heads church names realization label C f, nones, counts]
+    translate_admits_iff_count facts roots heads church names realization label C f, absences, counts]
   rcases decided with ⟨τ, principal⟩ | refuted
   · have anys : (∀ p, Check.predicate .any p ∈ f.rule.checks →
           (frames S.levels).Entails ((fibre facts roots heads church names realization).store

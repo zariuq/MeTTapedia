@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 # The unmatched call is the one place where a hosted program is not monotone
 
 MeTTa returns a call that no equation matches as data. The translation hosts that by the one rule with
-a none check, `unmatchedRule`: every other rule of a translation is positive, its checks being
+an absence check, `unmatchedRule`: every other rule of a translation is positive, its checks being
 equations (there are none) and its collect query empty (`positive_of_ne_unmatched`); the unmatched call's rule
 is not (`unmatched_not_positive`).
 
@@ -15,7 +15,7 @@ is not (`unmatched_not_positive`).
 * `only_positive` (the fragment with `let`, under the clauses the run theorems use) and
   `only_positive_plain` (the first fragment): for such a program and query, **every admitted firing at
   every state that a run of the translated program reaches from the start is a firing of a positive
-  rule**: the hosted runs use no none check.
+  rule**: the hosted runs use no absence check.
 
 **Exactly where the unmatched call is stable.** A live alternative at a call that no equation matches,
 beside other rows that never read as alternatives' rows, has its firing exactly when no other row
@@ -79,7 +79,7 @@ theorem positive_of_ne_unmatched {Ty : Type} {P : SourceLanguage.Program κ Γ s
     · exact ⟨fun c inside => by simp [bindValueRule] at inside, rfl⟩
   · exact ⟨fun c inside => by simp [schema] at inside, rfl⟩
 
-/-- **The unmatched call's rule is not positive**: its check is a none query. -/
+/-- **The unmatched call's rule is not positive**: its check is an absence. -/
 theorem unmatched_not_positive : ¬ RuleSyntax.Scope.Positive (unmatchedRule N) := by
   rintro ⟨checks, _⟩
   obtain ⟨l, l', same⟩ := checks _ (List.mem_singleton_self _)

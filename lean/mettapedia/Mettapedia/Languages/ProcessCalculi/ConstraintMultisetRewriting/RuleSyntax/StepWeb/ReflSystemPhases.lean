@@ -154,14 +154,14 @@ theorem not_nameLaws_of_wellFormed_depth_ne {l₁ l₂ : Pattern} (wf₁ : WellF
   rw [locDepth_psubst_of_wellFormed wf₁ σ, locDepth_psubst_of_wellFormed wf₂ σ] at eqDepth
   exact diff eqDepth
 
-/-! ## Universal none query of rows at a location -/
+/-! ## Universal absence of rows at a location -/
 
-section NoneCheck
+section Absence
 
 variable {O : Type*} [DecidableEq O]
 
-/-- **Universal row-none check refutes any present row at that location**: if a rule checks
-`.predicate .none (atLoc anyY childPat)` and does not mention `"Y"` in its takes, reads, tells, or `childPat`,
+/-- **Universal row-absence check refutes any present row at that location**: if a rule checks
+`.absent (atLoc anyY childPat)` and does not mention `"Y"` in its takes, reads, tells, or `childPat`,
 then at no solution `σ` of an admitted firing's information can a present row read at `childPat`. -/
 theorem check_fails_row_at {label : O → Pattern} {C : Configuration Pattern O}
     {g : Firing O QNE located PUnit.unit}
@@ -224,7 +224,7 @@ theorem check_fails_row_at {label : O → Pattern} {C : Configuration Pattern O}
   exact ((locatedFrame_name.atLoc_iff _ _ _ _).mpr ⟨NameLaws.refl _, child⟩).trans
     (reads.symm.trans stateSide.symm)
 
-end NoneCheck
+end Absence
 
 /-! ## Solution-wise phases of a child location -/
 

@@ -1,0 +1,37 @@
+# The definitions the transported theorems' statements apply (scripts/ExportLeanTransport.lean).
+Option.guard
+List.filterMap
+List.map
+List.filter
+List.length
+List.foldr
+List.range
+List.range'
+List.Nodup
+Multiset.Nodup
+Multiset.range
+Multiset.filter
+Function.comp
+Nat.beq
+Decidable.decide
+# Needed by the transported theorems (needs.txt): what their terms and proofs apply.
+Not
+ite
+cast
+instDecidableTrue
+instDecidableFalse
+instDecidableEqBool
+Nat.decLt
+List.append
+Finset.val
+List.filter.match_1
+List.filterMap.match_1
+Nat.brecOn.go
+List.brecOn.go
+# Families the transported theorems name, visited so that a family whose fields use definitions is read after them (LeanFamilyUses).
+PProd
+LeftCommutative
+Finset
+List.Mem.below
+List.Pairwise.below
+List.Sublist.below

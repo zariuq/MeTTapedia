@@ -89,9 +89,9 @@ theorem advance_progress (fuel : Nat) {state : Update levels original} (nonempty
 
 omit settled in
 theorem advance_refuted (fuel : Nat) {state : Update levels original} (nonempty : state.remaining ≠ [])
-    {missing : ¬ (frames levels).Solvable state.remaining}
-    (computed : family.round fuel state.remaining = .refuted missing) :
-    advance (family.solver fuel) state = .done (.refuted fun solvable => missing (state.solvable_iff.mp solvable)) := by
+    {absent : ¬ (frames levels).Solvable state.remaining}
+    (computed : family.round fuel state.remaining = .refuted absent) :
+    advance (family.solver fuel) state = .done (.refuted fun solvable => absent (state.solvable_iff.mp solvable)) := by
   unfold advance
   split
   · rename_i empty
@@ -128,10 +128,10 @@ theorem eventually (state : Update levels original) (inside : settled.holds stat
   · obtain ⟨threshold, notStuck, same, stable⟩ := settled.settles inside empty
     cases computed : family.round threshold state.remaining with
     | stuck => exact absurd computed notStuck
-    | refuted missing =>
+    | refuted absent =>
         have step : ∀ fuel', threshold ≤ fuel' → ∀ rounds',
             drive (family.solver fuel') (rounds' + 1) state =
-              .refuted fun solvable => missing (state.solvable_iff.mp solvable) := by
+              .refuted fun solvable => absent (state.solvable_iff.mp solvable) := by
           intro fuel' enough' rounds'
           rw [drive_succ, advance_refuted fuel' empty ((same fuel' enough').trans computed)]
         refine ⟨threshold, 1, fun fuel enough rounds more => ?_⟩
@@ -162,7 +162,7 @@ theorem decided (inside : settled.holds original) :
       run (family.solver larger) original larger = run (family.solver budget) original budget ∧
       ((∃ state finished, run (family.solver larger) original larger = .solved state finished ∧
           (frames levels).Principal original state.answer) ∨
-        (∃ missing, run (family.solver larger) original larger = .refuted missing)) := by
+        (∃ absent, run (family.solver larger) original larger = .refuted absent)) := by
   obtain ⟨fuel₀, rounds₀, eventual⟩ := settled.eventually (Update.pending levels original) inside
   refine ⟨max fuel₀ rounds₀, fun larger enough => ?_⟩
   obtain ⟨atLarger, decidedAt⟩ := eventual larger (le_of_max_le_left enough) larger (le_of_max_le_right enough)
@@ -172,7 +172,7 @@ theorem decided (inside : settled.holds original) :
   rw [atLarger]
   cases outcome : drive (family.solver fuel₀) rounds₀ (Update.pending levels original) with
   | solved state finished => exact .inl ⟨state, finished, rfl, state.completed finished⟩
-  | refuted missing => exact .inr ⟨missing, rfl⟩
+  | refuted absent => exact .inr ⟨absent, rfl⟩
   | stuck _ => rw [outcome] at decidedAt; exact False.elim decidedAt
   | cutoff _ => rw [outcome] at decidedAt; exact False.elim decidedAt
 

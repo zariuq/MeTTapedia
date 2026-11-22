@@ -40,7 +40,7 @@ fixes is written with that term instead.
   (`fromRigid_toRule`), so the law holds by formation (`fromRigid_resolved`).
 * **With the law the step is per space.** Every taken, read and made occurrence lies at the name
   its port resolves to (`taken_at_port_space`, `read_at_port_space`, `made_at_port_space`); a
-  none query or count check matches only occurrences at its own space (`check_matches_at_space`);
+  absence or count check matches only occurrences at its own space (`check_matches_at_space`);
   occurrences at other spaces neither leave nor arrive (`frame_survives`, `frame_no_arrival`);
   well-located configurations stay well located (`LocatedStep.wellLocated`); and validity depends
   only on the occurrences at the rule's spaces (`valid_iff_of_agree_on_spaces`).
@@ -452,7 +452,7 @@ def ResolvesTo (store : EquationStore T) (s : T) (n : N) : Prop :=
 def Resolves (store : EquationStore T) (s : T) : Prop := ∃ n, ResolvesTo sts store s n
 
 /-- **The resolved-location law**: the store before the step resolves every space position of
-the rule (take, read and produce ports, none queries and count checks). Superseded by `ReachAdmits`
+the rule (take, read and produce ports, absence and count checks). Superseded by `ReachAdmits`
 (`NamedSpacesReach`). -/
 def Resolved (store : EquationStore T) (r : LocatedRule T) : Prop :=
   ∀ s ∈ r.spaces, Resolves sts store s

@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Occurrenc
 /-!
 # Principal-answer transport retains check arguments and physical worlds
 
-Equality, none queries and exact-count checks depend on their term arguments and
+Equality, absence and exact-count checks depend on their term arguments and
 every occurrence value in the observed world. Once those terms are retained
 in a principal interface, asking a check in every model is equivalent to
 asking it after every residual instantiation of the principal answer.

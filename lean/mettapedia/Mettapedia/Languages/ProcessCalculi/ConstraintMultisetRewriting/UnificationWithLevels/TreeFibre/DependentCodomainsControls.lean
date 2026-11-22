@@ -46,7 +46,7 @@ def dep_fits : FitSolvable (S := setting) depEquation where
   declared := rfl
   universe_u := by decide +kernel
   universe_v := by decide +kernel
-  notMem := by decide +kernel
+  absent := by decide +kernel
   fits := depEquation.2.2.typed
   apart := by decide +kernel
 
@@ -84,7 +84,7 @@ def depY_fits : FitSolvable (S := setting) depYEquation where
   declared := rfl
   universe_u := by decide +kernel
   universe_v := by decide +kernel
-  notMem := by decide +kernel
+  absent := by decide +kernel
   fits := depYEquation.2.2.typed
   apart := by decide +kernel
 
@@ -144,9 +144,9 @@ theorem depHigh_settles : Settles depHighStore :=
 /-- **A principal answer**: `Y` narrowed to `U1`, `X := Π (y : U0). Π (_ : Y). y`. -/
 theorem depHigh_principal : ∃ (Δ : Context setting.R) (answer : Δ ⟶ ctxDepHigh),
     (frames setting.levels).Principal depHighStore answer := by
-  rcases depHigh_settles.principal_or_unsolvable with found | missing
+  rcases depHigh_settles.principal_or_unsolvable with found | absent
   · exact found
-  · exact absurd depHigh_solvable missing
+  · exact absurd depHigh_solvable absent
 
 /-! ## Refutations through the binder -/
 

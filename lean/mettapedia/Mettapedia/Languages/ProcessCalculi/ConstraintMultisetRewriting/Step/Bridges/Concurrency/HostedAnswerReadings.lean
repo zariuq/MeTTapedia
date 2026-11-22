@@ -56,7 +56,7 @@ theorem answerPattern_injective (N : Nodes S Γ star) : Function.Injective (answ
   exact Rigid.include_injective (closedArity S) first second datum
 
 /-- The actual shared native row of a presented hosted state has exactly the existing source
-answer readings. Presence is explicit because `rowReads` alone also reads missing labels. -/
+answer readings. Presence is explicit because `rowReads` alone also reads absent labels. -/
 theorem reading_iff_stateAnswer (N : Nodes S Γ star) (hosted : HostState S)
     (presented : Presented Γ star hosted) (occupied : Finset Nat) (occurrence : Nat)
     (present : occurrence ∈ hosted.present) (value : Term S Γ star) :

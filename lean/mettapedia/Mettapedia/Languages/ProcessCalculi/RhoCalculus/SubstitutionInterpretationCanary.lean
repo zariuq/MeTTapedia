@@ -71,13 +71,13 @@ def declaredContractum : Pattern := .collection .hashBag [.apply "PZero" []] non
 theorem dropReceiverSource_closed :
     RhoClosedTermWellSorted rhoProc dropReceiverSource :=
   (rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.parallel (.cons (.input (.quote .unit (by decide)) (.drop (.bvar rfl)))
-      (.cons (.output (.quote .unit (by decide)) .unit) .nil)), by decide⟩
+    ⟨.parallel (.cons (.input (.quote .unit) (.drop (.bvar rfl)))
+      (.cons (.output (.quote .unit) .unit) .nil)), by decide⟩
 
 theorem syntacticContractum_closed :
     RhoClosedTermWellSorted rhoProc syntacticContractum :=
   (rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.parallel (.cons (.drop (.quote .unit (by decide))) .nil), by decide⟩
+    ⟨.parallel (.cons (.drop (.quote .unit)) .nil), by decide⟩
 
 theorem declaredContractum_closed :
     RhoClosedTermWellSorted rhoProc declaredContractum :=
@@ -377,7 +377,7 @@ theorem received_body_well_sorted :
 
 theorem literal_body_well_sorted :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"] literalDrop :=
-  .drop (.quote .unit (by decide))
+  .drop (.quote .unit)
 
 theorem bodies_quote_safe : binderSafeAt "NQuote" 1 receivedDrop = true ∧
     binderSafeAt "NQuote" 1 literalDrop = true := by decide
@@ -435,7 +435,7 @@ def normalizedChannel : Pattern := .apply "POutput" [quote zero, zero]
 theorem redundant_channel_is_closed_process :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] redundantChannel ∧
       binderSafeAt "NQuote" 0 redundantChannel = true :=
-  ⟨.output (.quote (.drop (.quote .unit (by decide))) (by decide)) .unit, by decide⟩
+  ⟨.output (.quote (.drop (.quote .unit))) .unit, by decide⟩
 
 theorem every_raw_single_substitution_changes_this_process (index : Nat) (replacement : Pattern) :
     semanticSubstProc index replacement redundantChannel = normalizedChannel := rfl
@@ -460,7 +460,7 @@ theorem name_equation_has_two_well_sorted_names :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"] quotedBoundDrop ∧
       NameWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"] (.bvar 0) ∧
       NameEquiv quotedBoundDrop (.bvar 0) :=
-  ⟨.quote (.drop (.bvar rfl)) (by decide), .bvar rfl, .quote_drop _⟩
+  ⟨.quote (.drop (.bvar rfl)), .bvar rfl, .quote_drop _⟩
 
 theorem name_substitution_respects_this_name_equation :
     semanticSubstName 0 (quote zero) quotedBoundDrop = semanticSubstName 0 (quote zero) (.bvar 0) := rfl

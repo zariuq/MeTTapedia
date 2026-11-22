@@ -18,7 +18,7 @@ lemma (`intersection_round_not_stuck`).
 The second store is in the fragment and solvable, and stays stuck: the rule reads the first equation only when no other
 equation mentions `F`. It is the witness, at this budget, of what remains of intersection: the decrease of the normal
 weight under the pruning instantiation at every other occurrence of `F`. The intersection step never refutes, so its
-refutation control is the lack of one: on every store the rule returns a progress or nothing (`Progress`).
+refutation control is the absence of one: on every store the rule returns a progress or nothing (`Progress`).
 -/
 
 set_option autoImplicit false

@@ -1973,18 +1973,18 @@
 (= (gslt:premise:reflective-presentations $requested $declarations)
    (case $declarations
      ((LNil LNil)
-      ((LCons (ReflectivePresentation $name $processSort $nameSort $quote $drop $kind $unit $equation) $rest)
+      ((LCons (ReflectivePresentation $name $processSort $nameSort $quote $drop $kind $unit $equation $scope) $rest)
        (if (== $name $requested)
          (let $filtered (gslt:premise:reflective-presentations $requested $rest)
-           (LCons (ReflectivePresentation $name $processSort $nameSort $quote $drop $kind $unit $equation) $filtered))
+           (LCons (ReflectivePresentation $name $processSort $nameSort $quote $drop $kind $unit $equation $scope) $filtered))
          (gslt:premise:reflective-presentations $requested $rest)))
       ($bad LNil))))
 
 (: gslt:premise:presentation-named (-> Atom Atom %Undefined%))
 (= (gslt:premise:presentation-named $presentations $requested)
    (case (gslt:premise:reflective-presentations $requested $presentations)
-     (((LCons (ReflectivePresentation $name $processSort $nameSort $quote $drop $kind $unit $equation) LNil)
-       (Some (ReflectivePresentation $name $processSort $nameSort $quote $drop $kind $unit $equation)))
+     (((LCons (ReflectivePresentation $name $processSort $nameSort $quote $drop $kind $unit $equation $scope) LNil)
+       (Some (ReflectivePresentation $name $processSort $nameSort $quote $drop $kind $unit $equation $scope)))
       ($unavailable None))))
 
 (: gslt:premise:substitution-presentation (-> Atom Atom %Undefined%))
@@ -2268,95 +2268,251 @@
          (gslt:rule:scope-reflective-normalize $quote $drop $replacement)))
       ($ordinary (gslt:rule:scope-reflective-normalize $quote $drop $replacement)))))
 
-(: gslt:rule:scope-reflective-normalized-mark (-> Atom Atom Atom %Undefined%))
-(= (gslt:rule:scope-reflective-normalized-mark $depth $replacement $name)
+; The binder head of a normalized name: exactly the information of its
+; canonical form that whole-name lookup observes. Parallel composition keeps
+; only its unit, one surviving head, or opacity, so no collection is sorted.
+(: gslt:rule:scope-reflective-binder-head (-> Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-binder-head $quote $drop $parallel-kind $parallel-unit $pattern)
+   (case $pattern
+     (((Var $index) (BinderIndex $index))
+      ((PApp $head $children)
+       (let $heads (gslt:rule:scope-reflective-binder-head-list $quote $drop $parallel-kind $parallel-unit $children)
+         (gslt:rule:scope-reflective-binder-head-apply $quote $drop $parallel-unit $head $heads)))
+      ((PCollection $collection $elements $rest)
+       (if (== $collection $parallel-kind)
+         (case $rest
+           ((RNone
+             (let $heads (gslt:rule:scope-reflective-binder-head-list $quote $drop $parallel-kind $parallel-unit $elements)
+               (gslt:rule:scope-reflective-binder-head-fold $heads)))
+            ($open BinderOpaque)))
+         BinderOpaque))
+      ($other BinderOpaque))))
+
+(: gslt:rule:scope-reflective-binder-head-list (-> Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-binder-head-list $quote $drop $parallel-kind $parallel-unit $patterns)
+   (case $patterns
+     ((LNil LNil)
+      ((LCons $pattern $rest)
+       (let* (($head (gslt:rule:scope-reflective-binder-head $quote $drop $parallel-kind $parallel-unit $pattern))
+              ($tail (gslt:rule:scope-reflective-binder-head-list $quote $drop $parallel-kind $parallel-unit $rest)))
+         (LCons $head $tail))))))
+
+(: gslt:rule:scope-reflective-binder-head-join (-> Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-binder-head-join $left $right)
+   (case $left
+     ((BinderUnit $right)
+      ($present
+       (case $right
+         ((BinderUnit $left)
+          ($other BinderOpaque)))))))
+
+(: gslt:rule:scope-reflective-binder-head-fold (-> Atom %Undefined%))
+(= (gslt:rule:scope-reflective-binder-head-fold $heads)
+   (case $heads
+     ((LNil BinderUnit)
+      ((LCons $head $rest)
+       (let $tail (gslt:rule:scope-reflective-binder-head-fold $rest)
+         (gslt:rule:scope-reflective-binder-head-join $head $tail))))))
+
+; The quote/drop equation, then the observation of a retained constructor.
+(: gslt:rule:scope-reflective-binder-head-apply (-> Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-binder-head-apply $quote $drop $parallel-unit $constructor $heads)
+   (case $heads
+     ((LNil (if (== $constructor $parallel-unit) BinderUnit BinderOpaque))
+      ((LCons (BinderDrop $name) LNil)
+       (if (== $constructor $quote)
+         $name
+         (if (== $constructor $drop) (BinderDrop (BinderDrop $name)) BinderOpaque)))
+      ((LCons $argument LNil)
+       (if (== $constructor $drop) (BinderDrop $argument) BinderOpaque))
+      ($many BinderOpaque))))
+
+; The members of the declared parallel composition: nested occurrences are
+; flattened and the declared unit contributes nothing. Every other term is a
+; single member.
+(: gslt:rule:scope-reflective-leaves (-> Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-leaves $parallel-kind $parallel-unit $pattern)
+   (case $pattern
+     (((PApp $head $children)
+       (case $children
+         ((LNil (if (== $head $parallel-unit) LNil (LCons $pattern LNil)))
+          ($many (LCons $pattern LNil)))))
+      ((PCollection $collection $elements $rest)
+       (if (== $collection $parallel-kind)
+         (case $rest
+           ((RNone (gslt:rule:scope-reflective-leaves-list $parallel-kind $parallel-unit $elements))
+            ($open (LCons $pattern LNil))))
+         (LCons $pattern LNil)))
+      ($other (LCons $pattern LNil)))))
+
+(: gslt:rule:scope-reflective-leaves-list (-> Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-leaves-list $parallel-kind $parallel-unit $patterns)
+   (case $patterns
+     ((LNil LNil)
+      ((LCons $pattern $rest)
+       (let* (($head (gslt:rule:scope-reflective-leaves $parallel-kind $parallel-unit $pattern))
+              ($tail (gslt:rule:scope-reflective-leaves-list $parallel-kind $parallel-unit $rest)))
+         (gslt:rule:scope-reflective-append $head $tail))))))
+
+(: gslt:rule:scope-reflective-append (-> Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-append $left $right)
+   (case $left
+     ((LNil $right)
+      ((LCons $item $rest)
+       (let $tail (gslt:rule:scope-reflective-append $rest $right)
+         (LCons $item $tail))))))
+
+; The drop exposed by a parallel composition with exactly one member.
+(: gslt:rule:scope-reflective-exposed-drop (-> Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-exposed-drop $drop $parallel-kind $parallel-unit $pattern)
+   (let $leaves (gslt:rule:scope-reflective-leaves $parallel-kind $parallel-unit $pattern)
+     (case $leaves
+       (((LCons (PApp $head (LCons $name LNil)) LNil)
+         (if (== $head $drop) (Some $name) None))
+        ($other None)))))
+
+; The quote/drop equation, seen through the declared parallel unit and
+; nesting, at an application whose arguments are already resolved.
+(: gslt:rule:scope-reflective-resolve-finish (-> Atom Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-resolve-finish $quote $drop $parallel-kind $parallel-unit $head $children)
+   (case $children
+     (((LCons $payload LNil)
+       (if (== $head $quote)
+         (let $exposed (gslt:rule:scope-reflective-exposed-drop $drop $parallel-kind $parallel-unit $payload)
+           (case $exposed
+             (((Some $name) $name)
+              ($none (PApp $head $children)))))
+         (PApp $head $children)))
+      ($other (PApp $head $children)))))
+
+; Resolve every quotation whose payload is a drop modulo the declared parallel
+; unit and nesting. Children are resolved first; no drop is executed.
+(: gslt:rule:scope-reflective-resolve (-> Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-resolve $quote $drop $parallel-kind $parallel-unit $pattern)
+   (case $pattern
+     (((Var $index) $pattern)
+      ((FVar $name) $pattern)
+      ((PApp $head $children)
+       (let $values (gslt:rule:scope-reflective-resolve-list $quote $drop $parallel-kind $parallel-unit $children)
+         (gslt:rule:scope-reflective-resolve-finish $quote $drop $parallel-kind $parallel-unit $head $values)))
+      ((PLam $binder $body)
+       (let $value (gslt:rule:scope-reflective-resolve $quote $drop $parallel-kind $parallel-unit $body)
+         (PLam $binder $value)))
+      ((PMultiLam $arity $binders $body)
+       (let $value (gslt:rule:scope-reflective-resolve $quote $drop $parallel-kind $parallel-unit $body)
+         (PMultiLam $arity $binders $value)))
+      ((PSubst $body $replacement)
+       (let* (($value (gslt:rule:scope-reflective-resolve $quote $drop $parallel-kind $parallel-unit $body))
+              ($replacement-value (gslt:rule:scope-reflective-resolve $quote $drop $parallel-kind $parallel-unit $replacement)))
+         (PSubst $value $replacement-value)))
+      ((PCollection $kind $elements $rest)
+       (let $values (gslt:rule:scope-reflective-resolve-list $quote $drop $parallel-kind $parallel-unit $elements)
+         (PCollection $kind $values $rest))))))
+
+(: gslt:rule:scope-reflective-resolve-list (-> Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-resolve-list $quote $drop $parallel-kind $parallel-unit $patterns)
+   (case $patterns
+     ((LNil LNil)
+      ((LCons $pattern $rest)
+       (let* (($head (gslt:rule:scope-reflective-resolve $quote $drop $parallel-kind $parallel-unit $pattern))
+              ($tail (gslt:rule:scope-reflective-resolve-list $quote $drop $parallel-kind $parallel-unit $rest)))
+         (LCons $head $tail))))))
+
+; A drop that received the selected name: a received quotation runs.
+(: gslt:rule:scope-reflective-receive (-> Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-receive $quote $head $name)
    (case $name
-     (((Var $index)
-       (let* (($value (gslt:rule:instantiate-bvar-at $depth $replacement $name))
-              ($matched (== $index $depth)))
-         (ReflectedNameMark $value $matched)))
-      ($literal (ReflectedNameMark $name False)))))
+     (((PApp $inner-head (LCons $process LNil))
+       (if (== $inner-head $quote) $process (PApp $head (LCons $name LNil))))
+      ($ordinary (PApp $head (LCons $name LNil))))))
 
-(: gslt:rule:scope-reflective-name-mark (-> Atom Atom Atom Atom Atom %Undefined%))
-(= (gslt:rule:scope-reflective-name-mark $quote $drop $depth $replacement $name)
-   (let $normalized (gslt:rule:scope-reflective-normalize $quote $drop $name)
-     (gslt:rule:scope-reflective-normalized-mark $depth $replacement $normalized)))
-
-(: gslt:rule:scope-reflective-unmark (-> Atom %Undefined%))
-(= (gslt:rule:scope-reflective-unmark $marked)
-   (case $marked
-     (((ReflectedNameMark $name $matched) $name))))
-
-(: gslt:rule:scope-reflective-drop-finish (-> Atom Atom Atom %Undefined%))
-(= (gslt:rule:scope-reflective-drop-finish $quote $head $marked)
-   (case $marked
-     (((ReflectedNameMark $name $matched)
-       (if $matched
-         (case $name
-           (((PApp $inner-head (LCons $process LNil))
-             (if (== $inner-head $quote) $process (PApp $head (LCons $name LNil))))
-            ($ordinary (PApp $head (LCons $name LNil)))))
-         (PApp $head (LCons $name LNil)))))))
-
-(: gslt:rule:scope-reflective-instantiate-at (-> Atom Atom Atom Atom Atom %Undefined%))
-(= (gslt:rule:scope-reflective-instantiate-at $quote $drop $depth $replacement $pattern)
+; Substitute structurally in a resolved term. At a genuine quotation, `Opaque`
+; keeps it as written and `(Enter $value)` substitutes inside it with `$value` as
+; the selected binder's value. A drop whose whole name is the selected binder
+; receives the replacement; every other drop is substituted through. Ordinary
+; indices are lowered.
+(: gslt:rule:scope-reflective-substitute-at (-> Atom Atom Atom Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $pattern)
    (case $pattern
      (((Var $index) (gslt:rule:instantiate-bvar-at $depth $replacement $pattern))
       ((FVar $name) $pattern)
       ((PApp $head $children)
-       (gslt:rule:scope-reflective-instantiate-apply $quote $drop $depth $replacement $head $children))
+       (gslt:rule:scope-reflective-substitute-apply $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $head $children))
       ((PLam $binder $body)
        (let* (($next (+ $depth 1))
-              ($value (gslt:rule:scope-reflective-instantiate-at $quote $drop $next $replacement $body)))
+              ($value (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $next $replacement $body)))
          (PLam $binder $value)))
       ((PMultiLam $arity $binders $body)
        (let* (($next (+ $depth $arity))
-              ($value (gslt:rule:scope-reflective-instantiate-at $quote $drop $next $replacement $body)))
+              ($value (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $next $replacement $body)))
          (PMultiLam $arity $binders $value)))
       ((PSubst $body $nested-replacement)
        (let* (($next (+ $depth 1))
-              ($value (gslt:rule:scope-reflective-instantiate-at $quote $drop $next $replacement $body))
-              ($replacement-value (gslt:rule:scope-reflective-instantiate-at $quote $drop $depth $replacement $nested-replacement)))
+              ($value (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $next $replacement $body))
+              ($replacement-value (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $nested-replacement)))
          (PSubst $value $replacement-value)))
       ((PCollection $kind $elements $rest)
-       (let $values (gslt:rule:scope-reflective-instantiate-list-at $quote $drop $depth $replacement $elements)
+       (let $values (gslt:rule:scope-reflective-substitute-list-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $elements)
          (PCollection $kind $values $rest))))))
 
-(: gslt:rule:scope-reflective-instantiate-list-at (-> Atom Atom Atom Atom Atom %Undefined%))
-(= (gslt:rule:scope-reflective-instantiate-list-at $quote $drop $depth $replacement $patterns)
+(: gslt:rule:scope-reflective-substitute-list-at (-> Atom Atom Atom Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-substitute-list-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $patterns)
    (case $patterns
      ((LNil LNil)
       ((LCons $pattern $rest)
-       (let* (($head (gslt:rule:scope-reflective-instantiate-at $quote $drop $depth $replacement $pattern))
-              ($tail (gslt:rule:scope-reflective-instantiate-list-at $quote $drop $depth $replacement $rest)))
+       (let* (($head (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $pattern))
+              ($tail (gslt:rule:scope-reflective-substitute-list-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $rest)))
          (LCons $head $tail))))))
 
-(: gslt:rule:scope-reflective-instantiate-apply (-> Atom Atom Atom Atom Atom Atom %Undefined%))
-(= (gslt:rule:scope-reflective-instantiate-apply $quote $drop $depth $replacement $head $children)
+(: gslt:rule:scope-reflective-substitute-apply (-> Atom Atom Atom Atom Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-substitute-apply $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $head $children)
    (case $children
      (((LCons $payload LNil)
-       (gslt:rule:scope-reflective-instantiate-unary $quote $drop $depth $replacement $head $payload))
+       (gslt:rule:scope-reflective-substitute-unary $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $head $payload))
       ($many
-       (let $values (gslt:rule:scope-reflective-instantiate-list-at $quote $drop $depth $replacement $children)
+       (let $values (gslt:rule:scope-reflective-substitute-list-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $children)
          (PApp $head $values))))))
 
-(: gslt:rule:scope-reflective-instantiate-unary (-> Atom Atom Atom Atom Atom Atom %Undefined%))
-(= (gslt:rule:scope-reflective-instantiate-unary $quote $drop $depth $replacement $head $payload)
+(: gslt:rule:scope-reflective-substitute-unary (-> Atom Atom Atom Atom Atom Atom Atom Atom Atom %Undefined%))
+(= (gslt:rule:scope-reflective-substitute-unary $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $head $payload)
    (if (== $head $quote)
-     (let $marked (gslt:rule:scope-reflective-name-mark $quote $drop $depth $replacement (PApp $head (LCons $payload LNil)))
-       (gslt:rule:scope-reflective-unmark $marked))
+     (case $inside
+       ((Opaque (PApp $head (LCons $payload LNil)))
+        ((Enter $value)
+         (let $entered (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $depth $value $payload)
+           (PApp $head (LCons $entered LNil))))))
      (if (== $head $drop)
-       (let $marked (gslt:rule:scope-reflective-name-mark $quote $drop $depth $replacement $payload)
-         (gslt:rule:scope-reflective-drop-finish $quote $head $marked))
-       (let $value (gslt:rule:scope-reflective-instantiate-at $quote $drop $depth $replacement $payload)
+       (let $binder (gslt:rule:scope-reflective-binder-head $quote $drop $parallel-kind $parallel-unit $payload)
+         (case $binder
+           (((BinderIndex $level)
+             (if (== $level $depth)
+               (let $value (gslt:rule:instantiate-bvar-at $depth $replacement (Var $depth))
+                 (gslt:rule:scope-reflective-receive $quote $head $value))
+               (let $value (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $payload)
+                 (PApp $head (LCons $value LNil)))))
+            ($other
+             (let $value (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $payload)
+               (PApp $head (LCons $value LNil)))))))
+       (let $value (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside $depth $replacement $payload)
          (PApp $head (LCons $value LNil))))))
 
+; Normalize the replacement, resolve the body's quotations of drops, then
+; substitute structurally. The declared quote scope decides a genuine quotation:
+; a closed scope keeps it opaque; a reaching scope enters it, with the
+; replacement (apply view), the frozen spelling (freeze view), or the replacement
+; under the context constructor (closure view) as the selected binder's value.
 (: gslt:rule:scope-reflective-binder-operation (-> Atom Atom Atom %Undefined%))
 (= (gslt:rule:scope-reflective-binder-operation $declaration $replacement $body)
    (case $declaration
-     (((ReflectivePresentation $name $process-sort $name-sort $quote $drop $parallel-kind $parallel-unit $quote-drop-equation)
+     (((ReflectivePresentation $name $process-sort $name-sort $quote $drop $parallel-kind $parallel-unit $quote-drop-equation $scope)
        (let* (($normalized (gslt:rule:scope-reflective-replacement $quote $drop $replacement))
-              ($value (gslt:rule:scope-reflective-instantiate-at $quote $drop 0 $normalized $body)))
+              ($resolved (gslt:rule:scope-reflective-resolve $quote $drop $parallel-kind $parallel-unit $body))
+              ($inside (case $scope
+                         ((QuoteClosed Opaque)
+                          ((QuoteReaching QuoteApply) (Enter $normalized))
+                          ((QuoteReaching (QuoteFreeze $spelling)) (Enter $spelling))
+                          ((QuoteReaching (QuoteClosure $context)) (Enter (PApp $context (LCons $normalized LNil)))))))
+              ($value (gslt:rule:scope-reflective-substitute-at $quote $drop $parallel-kind $parallel-unit $inside 0 $normalized $resolved)))
          (Some $value)))
       ($invalid None))))
 

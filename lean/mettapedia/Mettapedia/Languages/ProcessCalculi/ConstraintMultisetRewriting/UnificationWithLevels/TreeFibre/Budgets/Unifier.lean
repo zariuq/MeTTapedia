@@ -25,7 +25,7 @@ made a budgeted decision procedure here, with three outcomes and the laws of `Bu
   A store that does not settle is never read, at any depth (`reader_undecided_of_not_settles`).
 
 **Decisions as answers** (`ofDecided`): the answers of the first two are the decisions themselves, a finished update
-or a refutation; a yes carries a principal answer (`principal_of_equal`), a no the lack of solutions. **A solvable
+or a refutation; a yes carries a principal answer (`principal_of_equal`), a no the absence of solutions. **A solvable
 store without a principal answer is exhausted at every budget, by every decision of stores**
 (`undecided_of_no_principal`): no budget can answer it, so for it exhaustion is the only honest outcome.
 -/
@@ -71,11 +71,11 @@ def ofDecided (attempt : Nat → ∀ {Θ : Context S.R} (problem : EquationStore
   yes a h := by
     cases a with
     | solved update finished => exact (update.completed finished).solvable
-    | refuted missing => simp [decidedSign] at h
+    | refuted absent => simp [decidedSign] at h
   no a h := by
     cases a with
     | solved update finished => simp [decidedSign] at h
-    | refuted missing => exact missing
+    | refuted absent => exact absent
 
 variable (attempt : Nat → ∀ {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)), Option (Decided problem))
 
@@ -92,7 +92,7 @@ theorem principal_of_equal {k : Nat} {Θ : Context S.R} {problem : EquationStore
       rw [found] at yes
       cases a with
       | solved update finished => exact ⟨update.target, update.answer, update.completed finished⟩
-      | refuted missing => simp [Decider.verdictOf, ofDecided, decidedSign] at yes
+      | refuted absent => simp [Decider.verdictOf, ofDecided, decidedSign] at yes
 
 /-- **A solvable store without a principal answer is exhausted at every budget**, by every decision of stores. -/
 theorem undecided_of_no_principal {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
@@ -102,7 +102,7 @@ theorem undecided_of_no_principal {Θ : Context S.R} {problem : EquationStore (T
   (ofDecided attempt).undecided_of_empty (fun d => by
     cases d with
     | solved update finished => exact noPrincipal update.answer (update.completed finished)
-    | refuted missing => exact missing solvable) k
+    | refuted absent => exact absent solvable) k
 
 end Stores
 
@@ -131,7 +131,7 @@ theorem rounds_answered (settled : ContextualDependentDecisiveDriver.Settled fam
   rintro ⟨Θ, problem⟩ inside
   obtain ⟨budget, eventual⟩ := settled.decided inside
   have found : (Decided.ofRun (family.solver budget) budget problem).isSome = true := by
-    rcases (eventual budget le_rfl).2 with ⟨state, finished, ran, _⟩ | ⟨missing, ran⟩ <;>
+    rcases (eventual budget le_rfl).2 with ⟨state, finished, ran, _⟩ | ⟨absent, ran⟩ <;>
       simp [Decided.ofRun, ran]
   obtain ⟨d, hd⟩ := Option.isSome_iff_exists.mp found
   exact (rounds family).answered_iff.mpr ⟨budget, d, (rounds_attempt_eq family found).trans hd⟩
@@ -179,11 +179,11 @@ theorem phases_empty_undecided (fuel : Nat) {problem : EquationStore (TotalTerm 
 
 /-- A store undecided in phases at a positive depth is undecided by the base. -/
 theorem base_none_of_phases {fuel depth : Nat} {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    (missing : phases facts roots heads algebra declared choices reducer base fuel (depth + 1) problem = none) :
+    (absent : phases facts roots heads algebra declared choices reducer base fuel (depth + 1) problem = none) :
     base problem = none := by
   cases found : base problem with
   | none => rfl
-  | some d => simp [phases, found] at missing
+  | some d => simp [phases, found] at absent
 
 end Phases
 

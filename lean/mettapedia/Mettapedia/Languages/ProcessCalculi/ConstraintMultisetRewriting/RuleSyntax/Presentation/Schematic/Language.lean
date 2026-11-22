@@ -272,9 +272,9 @@ theorem matchRelationArgument_fvar_bound {seed : Bindings} {n m : String} {exist
   simp [matchRelationArgument, Bindings.lookup, found]
 
 theorem matchRelationArgument_fvar_free {seed : Bindings} {n : String} (value : Pattern)
-    (missing : seed.find? (·.1 == n) = none) :
+    (absent : seed.find? (·.1 == n) = none) :
     matchRelationArgument seed (.fvar n) value = [[(n, value)]] := by
-  simp [matchRelationArgument, Bindings.lookup, missing]
+  simp [matchRelationArgument, Bindings.lookup, absent]
 
 theorem matchRelationArgument_other (seed : Bindings) {a : Pattern} (value : Pattern) (notName : ∀ n, a ≠ .fvar n) :
     matchRelationArgument seed a value = matchPattern a value := by

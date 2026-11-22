@@ -246,6 +246,29 @@ Qed.
 Definition LeanLevelMax : set -> set -> set := fun a b => a :\/: b.
 Definition LeanLevelIMax : set -> set -> set := fun a b => if b = 0 then 0 else a :\/: b.
 
+(** The maximum and the impredicative maximum of two levels are levels. **)
+Theorem LeanLevelMax_nat : forall a, nat_p a -> forall b, nat_p b -> nat_p (LeanLevelMax a b).
+let a. assume Ha: nat_p a. let b. assume Hb: nat_p b.
+prove nat_p (a :\/: b).
+apply ordinal_In_Or_Subq a b (nat_p_ordinal a Ha) (nat_p_ordinal b Hb).
+- assume H: a :e b.
+  claim L: a :\/: b = b.
+  { rewrite <- Subq_binunion_eq a b. exact nat_trans b Hb a H. }
+  rewrite L. exact Hb.
+- assume H: b c= a.
+  claim L: a :\/: b = a.
+  { rewrite binunion_com a b. rewrite <- Subq_binunion_eq b a. exact H. }
+  rewrite L. exact Ha.
+Qed.
+
+Theorem LeanLevelIMax_nat : forall a, nat_p a -> forall b, nat_p b -> nat_p (LeanLevelIMax a b).
+let a. assume Ha: nat_p a. let b. assume Hb: nat_p b.
+prove nat_p (if b = 0 then 0 else a :\/: b).
+apply xm (b = 0).
+- assume H: b = 0. rewrite If_i_1 (b = 0) 0 (a :\/: b) H. exact nat_0.
+- assume H: b <> 0. rewrite If_i_0 (b = 0) 0 (a :\/: b) H. exact LeanLevelMax_nat a Ha b Hb.
+Qed.
+
 (** A truth value lies in every universe. **)
 Theorem LeanProp_sub_In : forall u, nat_p u -> forall p :e LeanProp, p :e LeanUniv u.
 let u. assume Hu: nat_p u. let p. assume Hp: p :e LeanProp.

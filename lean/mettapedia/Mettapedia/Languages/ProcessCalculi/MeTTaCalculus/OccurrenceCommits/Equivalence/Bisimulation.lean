@@ -50,29 +50,29 @@ condition must hold wherever the challenger's does.
   Contextual equivalence is the same with closed reductions, which carry no condition; so the two
   differ exactly by the comparison of conditions.
 
-## The none query and predicate queries: what a label must report
+## Absence and predicate queries: what a label must report
 
 Predicate queries are not monotone: an occurrence added beside a program can disable its step. Two
 consequences:
 
 * **A label must report the closed regions.** If the answer's condition is not compared with the
-  challenger's, the resulting "bisimilarity" relates a plain step with a none-guarded one and is
+  challenger's, the resulting "bisimilarity" relates a plain step with an absence-guarded one and is
   not preserved by adding the guarded region's label (`Gaps`, `Controls.blind_not_congruence`). The
   condition is a negative application condition on the rest of the environment, as in the borrowed
   contexts with negative conditions of Rangel, König and Ehrig.
-* **A label need not report removals.** A none step woken by a removal is the environment's
+* **A label need not report removals.** An absence step woken by a removal is the environment's
   own step followed by the program's labelled step, whose condition is checked against the
-  environment as it is then (`BorrowedSteps`, `Controls.none_blocked_by_lock`). The congruence
+  environment as it is then (`BorrowedSteps`, `Controls.absence_blocked_by_lock`). The congruence
   proof splits every step of a composite into the least step of one side (`Rule.Step.split`), so a
   removal in the context is a step of the composite like any other.
 
 ## The gap, with predicate queries
 
 Completeness fails once rules have predicate queries (`Gaps`, `Controls.else_gap`): a choice that
-fires one branch when `x` is not present and the other, reading `x`, when it is present, both making `q`,
+fires one branch when `x` is absent and the other, reading `x`, when it is present, both making `q`,
 is contextually equivalent to a plain step to `q`, and not bisimilar to it. To answer the plain
 step's unconditional label, the guarded side must decide the predicate query, and either branch
-alone carries a condition (none queries of `x`) or a borrowing (`x` itself) the challenger did not have.
+alone carries a condition (absence of `x`) or a borrowing (`x` itself) the challenger did not have.
 A complete game must let the answer depend on the environment beyond the label; this is the
 saturated game, which the minimal labels refine but do not replace.
 

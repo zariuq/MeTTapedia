@@ -22,9 +22,9 @@ observation, and the coarsest one every lane shares.
   the occurrence of the `unique` atom equal to it modulo the second theory (alpha-equivalence in
   the runtimes); else nothing. The `unique` source is what makes two alpha-equal copies remove
   nothing. A runtime that removes only identical atoms is the chain without its middle
-  transform (`exactRemove`). The PeTTa lane's removal of every matching atom is `all take`
-  (`SourceQuantifiers.fires_allTake_removeAll`).
-* **`collapse` over a `match` is an `all` source, not an `every`** (`collapse_answers_rel`): it
+  transform (`exactRemove`). The PeTTa lane's removal of every matching atom is `collect take`
+  (`SourceQuantifiers.fires_collectTake_removeAll`).
+* **`collapse` over a `match` is a `collect` source, not an `every`** (`collapse_answers_rel`): it
   answers exactly one value, the packed bag of `match`'s answers, also when nothing matches;
   `match` as `every` answers once per match, so nothing when nothing matches
   (`collapse_card`, `match_every_card`).
@@ -490,25 +490,25 @@ theorem chain_fires_labels {a : T} {c : Commit O T}
     have present : a ∈ labels label S := (hasRow_takeIdentical_iff (V := V)).mp ⟨_, member, linear⟩
     rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_pos present]
     simp [footprintOf_cons, same, Multiset.sub_singleton]
-  · have missing : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
+  · have absent : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
     have enabled := second.enabled
     obtain ⟨x, member, linear, commit⟩ := second
     have one := (hasRow_takeUnique_iff (V := V)).mp ⟨_, member, linear⟩
     obtain ⟨-, rfl⟩ := mem_rows_takeUnique.mp member
-    rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_neg missing, if_pos one]
+    rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_neg absent, if_pos one]
     simp only [footprintOf_cons, footprintOf_nil, footprint_query, footprint_make, add_zero,
       Footprint.takes_add, Footprint.makes_add, ite_true]
     rw [show (fun x => label x) = label from rfl, labels_regionOf]
     congr 1
     exact Multiset.filter_congr fun t _ => by simp [eqRegion]
-  · have missing : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
+  · have absent : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
     have notOne : ((labels label S).filter (E a)).card ≠ 1 := fun one =>
       noSecond ((hasRow_takeUnique_iff (V := V)).mpr one)
     have enabled := third.enabled
     obtain ⟨x, member, linear, commit⟩ := third
     rw [mem_rows_skip] at member
     subst member
-    rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_neg missing, if_neg notOne]
+    rw [labels_fire_of_isCommitOf commit linear enabled, chainRemove, if_neg absent, if_neg notOne]
     simp [footprintOf_cons]
 
 /-- **The removal chain always fires.** -/
@@ -545,12 +545,12 @@ theorem exact_fires_labels {a : T} {c : Commit O T}
     have present : a ∈ labels label S := (hasRow_takeIdentical_iff (V := V)).mp ⟨_, member, linear⟩
     rw [labels_fire_of_isCommitOf commit linear enabled, exactRemove, if_pos present]
     simp [footprintOf_cons, same, Multiset.sub_singleton]
-  · have missing : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
+  · have absent : a ∉ labels label S := fun present => noFirst ((hasRow_takeIdentical_iff (V := V)).mpr present)
     have enabled := third.enabled
     obtain ⟨x, member, linear, commit⟩ := third
     rw [mem_rows_skip] at member
     subst member
-    rw [labels_fire_of_isCommitOf commit linear enabled, exactRemove, if_neg missing]
+    rw [labels_fire_of_isCommitOf commit linear enabled, exactRemove, if_neg absent]
     simp [footprintOf_cons]
 
 end Remove
@@ -568,10 +568,10 @@ def collapseFold (p : P) (template : List P) (pack : Multiset T → T) : Multise
   fun b => pack (b.bind fun t => (↑(m p (fun _ => none) t) : Multiset (Subst V T)).bind (instBag L template))
 
 variable (L m) in
-/-- **`collapse (match p template)` as a transform**: an `all` read of the region of `p`, its folded
+/-- **`collapse (match p template)` as a transform**: a `collect` read of the region of `p`, its folded
 value bound to the collection variable `xs`, which is the template. -/
 def collapseT (p xs : P) (template : List P) (pack : Multiset T → T) : Transform V T P :=
-  ⟨.cons (.all .read p xs (collapseFold L m p template pack)) .done, [xs]⟩
+  ⟨.cons (.collect .read p xs (collapseFold L m p template pack)) .done, [xs]⟩
 
 omit [DecidableEq O] [DecidableEq V] in
 /-- Prime's `match` reads only the region of its pattern. -/
@@ -623,7 +623,7 @@ theorem match_every_card (S : Finset O) (p : P) (template : List P) :
   rw [answers_matchEvery]
 
 /-- **The vacuity separation**: when nothing matches, `match` as `every` answers nothing and
-`collapse` as `all` answers once (the packed empty bag). -/
+`collapse` as `collect` answers once (the packed empty bag). -/
 theorem collapse_vacuous (sound : Matcher.Sound L m) (complete : Matcher.Complete L m)
     (minimal : Matcher.Minimal L m) {xs : P} {v : V} (var : IsVarPattern L xs v) {S : Finset O}
     {p : P} (nothing : ∀ o ∈ S, m p (fun _ => none) (label o) = []) (template : List P)

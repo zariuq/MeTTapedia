@@ -91,7 +91,7 @@ theorem retired_next {index : Index (S := S) (atom := atom) (O := O) (Γ := Γ)}
   cases event with
   | commit before action =>
       have old : Retired before continuation := allowed.1 ▸ retired
-      exact ⟨action.born_mono old.1, action.not_present_stays_not_present allowed.2.1 old.1 old.2⟩
+      exact ⟨action.born_mono old.1, action.absent_stays_absent allowed.2.1 old.1 old.2⟩
   | sleep installation => exact retired
   | idle => exact retired
 

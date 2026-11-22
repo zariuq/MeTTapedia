@@ -113,6 +113,13 @@ theorem semanticSubstName_markerName
     (by simpa [markerName, noBVar, noBVarList] using absent n)]
   exact semanticNormalize_markerName n
 
+theorem markerProcess_wellSorted : ∀ n,
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty []
+      (markerProcess n)
+  | 0 => .unit
+  | n + 1 =>
+      .output (.quote (markerProcess_wellSorted n)) .unit
+
 theorem markerProcess_binderSafe : ∀ n,
     binderSafeAt "NQuote" 0 (markerProcess n) = true
   | 0 => rfl
@@ -120,20 +127,13 @@ theorem markerProcess_binderSafe : ∀ n,
       simp [markerProcess, rhoZero, binderSafeAt, binderSafeListAt,
         markerProcess_binderSafe n]
 
-theorem markerProcess_wellSorted : ∀ n,
-    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty []
-      (markerProcess n)
-  | 0 => .unit
-  | n + 1 =>
-      .output (NameWellSorted.quoteOfSafe (markerProcess_wellSorted n) (markerProcess_binderSafe n)) .unit
-
 /-- Every metabolic name used below inhabits the closed name fiber of the
 authored pure-rho calculus. -/
 theorem markerName_closed (n : Nat) :
     RhoClosedTermWellSorted
       Mettapedia.OSLF.Framework.ConstructorCategory.rhoName (markerName n) := by
   apply (rhoClosedTermWellSorted_name_iff _).mpr
-  exact ⟨NameWellSorted.quoteOfSafe (markerProcess_wellSorted n) (markerProcess_binderSafe n), by
+  exact ⟨.quote (markerProcess_wellSorted n), by
     simp [markerName, binderSafeAt,
       markerProcess_binderSafe n]⟩
 

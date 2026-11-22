@@ -199,11 +199,11 @@ theorem birthFinal_eq :
 
 private theorem parentChannel_typed (bound : List String) :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound parentChannel :=
-  .quote .unit (by decide)
+  .quote .unit
 
 private theorem codeChannel_typed (bound : List String) :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound codeChannel :=
-  .quote (.output (parentChannel_typed bound) .unit) (by decide)
+  .quote (.output (parentChannel_typed bound) .unit)
 
 private theorem parentBody_typed :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty

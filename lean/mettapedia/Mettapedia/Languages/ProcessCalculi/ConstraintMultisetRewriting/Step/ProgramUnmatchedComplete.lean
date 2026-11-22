@@ -9,7 +9,7 @@ contexts. Conversely (`ureference_complete`), every reference run with unmatched
 a machine run, up to a renaming of fresh scopes fixing scope `0`. An unmatched call introduces no
 variable, so the renaming does not change at that step; its negative premise moves from the
 reference scope to the machine's, because a unifier at one fresh scope gives one at the other
-(`none_moves`).
+(`absence_moves`).
 -/
 
 set_option autoImplicit false
@@ -21,7 +21,7 @@ open ProgramRows ProgramTranslation ProgramEquationsOpen ProgramEquations
 open _root_.Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProgramEquations.Versions
 
 /-- **The negative premise moves with the renaming.** -/
-theorem none_moves {eqs : List NEquation} {m mb : ℕ} {w : Tm} {π' : Equiv.Perm ℕ} (at_m : π' m = mb)
+theorem absence_moves {eqs : List NEquation} {m mb : ℕ} {w : Tm} {π' : Equiv.Perm ℕ} (at_m : π' m = mb)
     (none : ∀ e ∈ eqs, ∀ δ : Subst rows, ¬ Unifies δ [(e.lhs.at m, w)]) :
     ∀ e ∈ eqs, ∀ δ : Subst rows, ¬ Unifies δ [(e.lhs.at mb, (sren π').applyTerm w)] := by
   intro e member δ unifies
@@ -76,7 +76,7 @@ theorem ucstep_simulated {defs : Defs} {Wa Wa' : Multiset Tm} {na na' : ℕ}
               thread (encE (E.fill (.call (.val w)))) ::ₘ ver u ::ₘ F := Multiset.mem_cons_self _ _
           have wSame : (sren (moved π m (nb + k))).applyTerm w = (sren π).applyTerm w :=
             sren_congr fun v hv => (R.agree fresh le' threadIn (call_vars hv)).1
-          have noneB := none_moves (moved_at π m (nb + k)) none
+          have noneB := absence_moves (moved_at π m (nb + k)) none
           rw [wSame] at noneB
           rw [show Wb.erase s = .version u ::ₘ (Wb.erase s).erase (.version u) from
             (Multiset.cons_erase s₂In).symm] at run
@@ -159,7 +159,7 @@ theorem ureference_complete (defs : Defs) (l : List SRow) (clean : ∀ s ∈ l, 
   obtain ⟨Wb', nb', π', path, R'⟩ := ureference_simulated run R
   exact ⟨Wb', nb', π', path, R'.rel, R'.fixes⟩
 
-#print axioms none_moves
+#print axioms absence_moves
 #print axioms ucstep_simulated
 #print axioms ureference_simulated
 #print axioms ureference_complete

@@ -179,21 +179,21 @@ variable {A : SubstitutionAction T S} {label : O → T} {E : Finset O}
 /-- **A firing and its alternative under a fresh name are privately equivalent exactly when neither
 name has escaped.** -/
 theorem fresh_alternative_equivalent_iff (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (missing : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.selection.made) :
+    (absent : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.selection.made) :
     PrivatelyEquivalent A label E (f.result label C) ((f.rename (Equiv.swap r r')).result label C) ↔
       r ∉ E ∧ r' ∉ E := by
   constructor
   · intro h
-    refine ⟨fun seen => fresh_alternative_separated valid made missing same new seen h,
+    refine ⟨fun seen => fresh_alternative_separated valid made absent same new seen h,
       fun seen' => ?_⟩
     have there : r' ∈ ((f.rename (Equiv.swap r r')).result label C).present := by
-      rw [fresh_alternative_result valid made missing same]
+      rw [fresh_alternative_result valid made absent same]
       exact Finset.mem_map.mpr ⟨r, result_present_iff.mpr (Or.inr made), by simp⟩
     rcases result_present_iff.mp ((h.escaped_iff seen').mpr there) with ⟨present, -⟩ | inMade
-    · exact missing present
+    · exact absent present
     · exact new inMade
   · rintro ⟨unseen, unseen'⟩
-    exact fresh_alternative_equivalent valid made missing same unseen unseen'
+    exact fresh_alternative_equivalent valid made absent same unseen unseen'
 
 end Alternatives
 

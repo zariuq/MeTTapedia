@@ -33,7 +33,7 @@ every property of the equality pattern of finitely many drop-free terms agrees b
 **Codes, the specification and the interpreter** (`Interpreter`): the code of a rule (`ruleCode`) is a
 closed row listing the quotations of its takes, reads, made rows, tell sides, check terms, check kinds
 and collect patterns. Every drop-free rule of the rule syntax has one: takes, reads, tells, equation
-guards, none queries and count queries, made rows, collect query. The stored-rule program `Stored F` gates every
+guards, absence and count queries, made rows, collect query. The stored-rule program `Stored F` gates every
 rule of `F` by a read of its own code: a rule fires only while its code is present. The interpreter `U`
 has one rule per shape (`interp`), independent of any object program: a shape fixes the numbers of
 takes, reads, made rows, tells and collect patterns and the list of check kinds with their count
@@ -77,7 +77,7 @@ copy (`canonCode_rename`), and the interpreter runs a fixed program from its can
 
 **Existence and controls** (`Examples`, `Queries`): a two-rule program with a take, a read, a tell that
 binds the store's unknown, guards and made rows, run for two steps through `U` (`interpreter_run`); a
-none query and a count query through `U`, each with its refusal; a guard that fails, no firing
+absence query and a count query through `U`, each with its refusal; a guard that fails, no firing
 without codes, and a wrong shape refused.
 
 **Rules at run time** (`RunTime`): the coding is injective (`ruleCode_injective`); an installer makes a

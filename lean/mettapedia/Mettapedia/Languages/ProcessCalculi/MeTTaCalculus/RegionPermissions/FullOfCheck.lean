@@ -1,15 +1,15 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.RegionPermissions.KernelCommit
 
 /-!
-# The `full-of` check: a step rechecks every space a none query scanned
+# The `full-of` check: a step rechecks every space an absence scanned
 
-A transform of the Prime draft can require that something is not present: `(absent (read $l (msg $x)))`
+A transform of the Prime draft can require that something is absent: `(absent (read $l (msg $x)))`
 holds when no message is in the space `$l`. The kernel decides it in two phases. Its **walk** scans
 spaces for patterns and computes the answer; later, when the transform fires, its **step** checks
 that the answer still holds and makes its changes at one instant. Code may run in between, and
 other processes may write to the spaces meanwhile.
 
-The draft records, for every space a none query scanned, an entry `(LOC REV PATTERN)`: the location
+The draft records, for every space an absence scanned, an entry `(LOC REV PATTERN)`: the location
 it scanned through, the space's revision when the scan began, and the pattern. The step carries
 them as `(full-of ((LOC REV PATTERN) …))`, and the kernel checks each entry again when the step
 happens (`ia_check_full_of`): the location still names its space through a handle with the
@@ -25,14 +25,14 @@ happens (`ia_check_full_of`): the location still names its space through a handl
   `peek`, `observe` (`resolve`). A space handle with fewer rights names the same space: a channel's
   `peek` handle may look at one message but may not ask whether the channel is empty, which needs
   `observe`.
-* A **walk** (`Walk`) is the none check as the kernel runs it: scan a location for a pattern,
+* A **walk** (`Walk`) is the absence check as the kernel runs it: scan a location for a pattern,
   go on with the occurrences found there, and so on, until it stops with an answer. The scans may
   happen at different moments (`Walk.run`: the `i`-th scan reads the view `views i`), and each
   records its `(LOC REV PATTERN)` entry.
-* The **atomic semantics** of the none query (`Walk.eval`) runs the same walk with every scan at one
-  view: the none query evaluated at the moment of the step.
+* The **atomic semantics** of the absence (`Walk.eval`) runs the same walk with every scan at one
+  view: the absence evaluated at the moment of the step.
 * A **predicate query** (`PredicateQuery`) asks which occurrences of a space match a pattern and
-  holds while exactly those are there; "nothing of `&plain` matches `$x`" is the query a none query
+  holds while exactly those are there; "nothing of `&plain` matches `$x`" is the query an absence
   makes, and one arriving message spoils it.
 * The **revision contract** (`KernelCommit.Tracks`): a space whose revision did not move holds the
   same occurrences in the same positions.
@@ -46,12 +46,12 @@ same verdict; the walk below only reads.
 * `run_atomic_of_fullOfOk` (headline): if a step passes the `full-of` check and the runtime keeps
   the revision contract, the walk gave exactly the answer and the entries that a walk run entirely
   at the moment of the step gives. So the step refines the atomic semantics:
-  `step_answer_eq_atomic` says the step's answer is the none query evaluated at the moment of the step.
+  `step_answer_eq_atomic` says the step's answer is the absence evaluated at the moment of the step.
 * `observe_of_fullOfOk` and `formed_of_fullOfOk`: such a step holds `observe` on every space it
   scanned, so the queries it makes are formed under the rights of the handles it holds.
-* `none_holds_at_step`: for `(absent (read LOC PATTERN))`, a step that fires holds, at the
+* `absence_holds_at_step`: for `(absent (read LOC PATTERN))`, a step that fires holds, at the
   moment it happens, the specification's predicate query: no occurrence of the space matches.
-* `stepOk_formed`: with the none query carried as `full-of` entries instead of `KernelCommit`'s
+* `stepOk_formed`: with the absence carried as `full-of` entries instead of `KernelCommit`'s
   `noRows` entry, the whole step (`KernelCommit.check` of its other entries, and the `full-of`
   check) is formed under the rights of the handles it names, the property that
   `KernelCommit.Controls.absence_of_sources_not_formed` shows failing for the `noRows` entry.
@@ -62,9 +62,9 @@ On the spaces of `KernelCommit.Controls` (a channel with no `observe`, a plain s
 right), the walk of `(absent (read &plain $x))` finds the plain space empty at revision `0`:
 
 * **stale revision refused**: a message arrives, the revision moves to `1`, and the step is refused;
-  the none query evaluated at that moment is false (`stale_refused`);
+  the absence evaluated at that moment is false (`stale_refused`);
 * **without the recheck, a stale answer is accepted**: a check of the rights alone passes the same
-  step, so the step would fire on a none query that no longer holds (`stale_none_needs_recheck`);
+  step, so the step would fire on an absence that no longer holds (`stale_absence_needs_recheck`);
 * **missing `observe` refused**: scanning through the channel's holder or its `peek` handle is
   refused (`missing_observe_refused`); `KernelCommit`'s check, which asks for `observe` only at the
   transform's own location, accepts the second (`bypass_closed`);
@@ -73,7 +73,7 @@ right), the walk of `(absent (read &plain $x))` finds the plain space empty at r
 * **positive**: a write to a space the walk did not scan leaves the step passing, with the answer
   of the moment of the step (`unscanned_write_passes`, `headline_instance`);
 * **whole-space revisions**: a moved revision refuses the step even when the write was undone and
-  the none query still holds (`undone_write_refused`); the check is safe, not exact.
+  the absence still holds (`undone_write_refused`); the check is safe, not exact.
 -/
 
 set_option autoImplicit false
@@ -84,7 +84,7 @@ open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits
 open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.InteractionTypes
 open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.RegionPermissions.KernelCommit
 
-/-- **A none check as the kernel's walk runs it**: scan a location for a pattern and go on
+/-- **An absence check as the kernel's walk runs it**: scan a location for a pattern and go on
 with the occurrences found there, in position order; or stop with an answer. A conjunction scans
 again for each occurrence found, with patterns made from it. -/
 inductive Walk (Lc Pt O Ans : Type) where
@@ -212,7 +212,7 @@ theorem run_const_eval (v : View Sp O) :
           exact run_const_eval v _ (i + 1)
 
 /-- **The step refines the atomic semantics.** A step that passes the `full-of` check gives the
-answer of the none query evaluated at the moment of the step. -/
+answer of the absence evaluated at the moment of the step. -/
 theorem step_answer_eq_atomic {views : ℕ → View Sp O} {v : View Sp O}
     (tracks : ∀ i, Tracks (views i) v) {w : Walk Lc Pt O Ans} {i : ℕ} {a : Ans}
     {parts : List (Lc × ℕ × Pt)} (ran : Walk.run label L resolve views i w = some (a, parts))
@@ -273,11 +273,11 @@ theorem holds_of_found_nil {v : View Sp O} (cons : v.Consistent label L) {s : Sp
   rw [none_found] at this
   cases this
 
-/-- **A none query that fires holds when the step happens.** If the walk of `(absent (read l p))`
+/-- **An absence that fires holds when the step happens.** If the walk of `(absent (read l p))`
 answered that nothing is there, the step passes the `full-of` check, and the runtime keeps the
 revision contract, then at the moment of the step nothing of the space matches `p`: the
 specification's predicate query holds at the step's store. -/
-theorem none_holds_at_step {views : ℕ → View Sp O} {v : View Sp O}
+theorem absence_holds_at_step {views : ℕ → View Sp O} {v : View Sp O}
     (cons : v.Consistent label L) (tracks : ∀ i, Tracks (views i) v) {l : Lc} {p : Pt} {i : ℕ}
     {parts : List (Lc × ℕ × Pt)}
     (ran : Walk.run label L resolve views i (absentRead l p) = some (true, parts))
@@ -296,27 +296,27 @@ variable {Sp O R Lc A Pt : Type} [DecidableEq Sp] [DecidableEq O] [DecidableEq A
 variable (label : O → R) (L : Labels Sp R A Pt) (resolve : Lc → Option (Sp × (Facet → Bool)))
 
 /-- **The step check with `full-of` entries**: `KernelCommit`'s check of the step's other entries,
-its seen spaces and its makes, and the `full-of` check of the spaces its none checks scanned. -/
+its seen spaces and its makes, and the `full-of` check of the spaces its absences scanned. -/
 def stepOk (v : View Sp O) (seen : List (Lc × ℕ)) (fp : List (Entry Lc A Pt)) (makes : List (Lc × A))
     (parts : List (Lc × ℕ × Pt)) : Bool :=
   check label L resolve v seen fp makes && fullOfOk resolve v parts
 
 /-- **The whole step is formed under the held rights.** Suppose a step passes `stepOk` at the view
-`v₁`, carries its none checks as `full-of` entries (no `noRows` entry), and names only handles in
+`v₁`, carries its absences as `full-of` entries (no `noRows` entry), and names only handles in
 `H`. Then the step the entries denote, with the queries of its `full-of` entries added, is formed
 under the rights those handles give. -/
 theorem stepOk_formed {v₀ v₁ : View Sp O}
     (cons₀ : v₀.Consistent label L) {seen : List (Lc × ℕ)} {fp : List (Entry Lc A Pt)}
     {makes : List (Lc × A)} {parts : List (Lc × ℕ × Pt)}
     (ok : stepOk label L resolve v₁ seen fp makes parts = true)
-    (noNoRowsEntries : ∀ l xs, Entry.noRows l xs ∉ fp) {H : List Lc}
+    (noAbsentSources : ∀ l xs, Entry.noRows l xs ∉ fp) {H : List Lc}
     (named : ∀ e ∈ fp, e.loc ∈ H) (namedMakes : ∀ m ∈ makes, m.1 ∈ H)
     (namedParts : ∀ x ∈ parts, x.1 ∈ H) {c : Commit O R}
     (denotes : Sources.IsCommitOf label v₁.store (decode label L resolve v₀ fp makes) c) :
     FormedUnder label L.spaceOf (heldRights resolve H)
       { c with queries := c.queries ++ partQueries label L resolve v₁ parts } := by
   obtain ⟨checked, fullOf⟩ := Bool.and_eq_true_iff.mp ok
-  have old := formedUnder_of_check cons₀ checked noNoRowsEntries named namedMakes denotes
+  have old := formedUnder_of_check cons₀ checked noAbsentSources named namedMakes denotes
   have new := formed_of_fullOfOk (label := label) (L := L) fullOf namedParts
   refine ⟨old.taken, old.kept, old.made, fun q inQueries r matched => ?_⟩
   rcases List.mem_append.mp inQueries with inOld | inNew
@@ -357,17 +357,17 @@ theorem tracks_arrived : Tracks before arrived := by
   cases s <;> simp [plainView]
 
 /-- **A stale revision is refused**: after the message arrived, the step is refused, and the
-none queries evaluated at that moment is false. -/
+absence evaluated at that moment is false. -/
 theorem stale_refused :
     fullOfOk resolve arrived scanned = false ∧
       Walk.eval lab labels resolve arrived absentPlain = some false := by
   decide
 
-/-- **Without the recheck, a stale the none query is accepted.** The walk found the plain space empty;
-then a message arrived, under the revision contract. The none query at the moment of the step is
-false. The check of rights alone passes the step, so it would fire on a none query that no longer
+/-- **Without the recheck, a stale absence is accepted.** The walk found the plain space empty;
+then a message arrived, under the revision contract. The absence at the moment of the step is
+false. The check of rights alone passes the step, so it would fire on an absence that no longer
 holds; the `full-of` check refuses it. -/
-theorem stale_none_needs_recheck :
+theorem stale_absence_needs_recheck :
     Walk.run lab labels resolve (fun _ => before) 0 absentPlain = some (true, scanned) ∧
       Tracks before arrived ∧
       Walk.eval lab labels resolve arrived absentPlain = some false ∧
@@ -386,9 +386,9 @@ theorem missing_observe_refused :
       fullOfOk resolve noMessage (entryAt .plain) = true := by
   decide
 
-/-- **The bypass is closed.** `KernelCommit`'s check accepts the none query of a read source on the
+/-- **The bypass is closed.** `KernelCommit`'s check accepts the absence of a read source on the
 channel through its `peek` handle, since it asks for `observe` only at the transform's own location
-(`KernelCommit.Controls.absence_of_sources_not_formed`); the walk of the same none query records the
+(`KernelCommit.Controls.absence_of_sources_not_formed`); the walk of the same absence records the
 channel's entry, and the `full-of` check refuses it. -/
 theorem bypass_closed :
     check lab labels resolve noMessage [(.plain, 0), (.chanPeek, 0)] absenceOfSource [] = true ∧
@@ -401,7 +401,7 @@ theorem bypass_closed :
 abbrev untracked : View Space ℕ := plainView {3} 0 [3]
 
 /-- **The revision contract is needed.** A runtime that writes the plain space without moving its
-revision passes the check, and the step fires on a none query that no longer holds. -/
+revision passes the check, and the step fires on an absence that no longer holds. -/
 theorem revision_contract_needed :
     ¬ Tracks before untracked ∧ fullOfOk resolve untracked scanned = true ∧
       Walk.eval lab labels resolve untracked absentPlain = some false := by
@@ -421,7 +421,7 @@ theorem unscanned_write_passes :
   cases s <;> simp [plainView]
 
 /-- **Whole-space revisions**: a write to the plain space undone before the step leaves it empty,
-and the none query true, but its revision moved, so the step is refused. -/
+and the absence true, but its revision moved, so the step is refused. -/
 theorem undone_write_refused :
     fullOfOk resolve (plainView ∅ 2 []) scanned = false ∧
       Walk.eval lab labels resolve (plainView ∅ 2 []) absentPlain = some true := by

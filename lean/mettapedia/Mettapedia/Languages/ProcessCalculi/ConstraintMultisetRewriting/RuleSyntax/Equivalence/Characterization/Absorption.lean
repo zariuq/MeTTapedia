@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 
 `static_of_congruent` and `congruent_iff_static` assume programs that leave a constant unused
 (`Bounded`). This module shows the assumption cannot be dropped, even for positive programs (equation
-guards only, no none query or count query, no collect query).
+guards only, no absence or count query, no collect query).
 
 **Beside any program containing every positive rule, one row `5` and two rows `5` are congruent**
 (`absorbing_congruent`; `positive_rules_absorb` for the program of every positive rule, which is a

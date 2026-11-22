@@ -58,8 +58,7 @@ def Represents (s : State) (P : RhoProcess) : Prop := ∃ value, RepresentsBy s 
 
 /-- A closed value read back is a closed process of the source. -/
 def rowProcess (v : G [] .pr) (closed : Closed v) : RhoProcess :=
-  ⟨read v, (rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨(read_sorted v 0 rfl : SortedAt 0 .pr (read v)).closed closed, closed⟩⟩
+  ⟨read v, (rhoClosedTermWellSorted_process_iff _).mpr ⟨read_sorted v 0 rfl, closed⟩⟩
 
 /-- The canonical form of a closed value is a closed canonical process. -/
 theorem canonical_row (v : G [] .pr) (closed : Closed v) :

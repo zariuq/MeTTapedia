@@ -473,16 +473,16 @@ theorem glued_solution {t u : Pattern} {bs : Bindings} (solves : psubst bs.looku
 
 /-! ## The COMM firing of the step -/
 
-/-- A present identity is not a missing one. -/
-theorem ne_of_present {o made : O} {present : Finset O} (inside : o ∈ present) (missing : made ∉ present) :
-    o ≠ made := fun same => missing (same ▸ inside)
+/-- A present identity is not an absent one. -/
+theorem ne_of_present {o made : O} {present : Finset O} (inside : o ∈ present) (absent : made ∉ present) :
+    o ≠ made := fun same => absent (same ▸ inside)
 
 section Step
 
 variable [DecidableEq O]
 
 /-- **The base layer's labels at which `comm_adequacy` is read**: the made identities carry the unopened
-made rows, and every other identity keeps its label. The step of a program reads no label of a missing
+made rows, and every other identity keeps its label. The step of a program reads no label of an absent
 identity. -/
 def unopenedLabels (label : O → Pattern) (t u P Q : Pattern) (made₁ made₂ : O) : O → Pattern :=
   fun o => if o = made₂ then dotted (pvars t ++ pvars u) Q
@@ -707,9 +707,9 @@ theorem comm_one_transition (label : O → Pattern) (t u channel P Q : Pattern) 
     ⟨_, admitted, rfl⟩, ?_, fun o other₁ other₂ => ?_, ⟨σ, solvedσ⟩, reads⟩
   · show fire C.present ((commSelection first second made₁ made₂).commit (T := Unit)) = _
     simp [fire, Selection.commit, commSelection]
-  · have missing : o ∉ (commFiring t u channel P Q ρ first second made₁ made₂).selection.made := by
+  · have absent : o ∉ (commFiring t u channel P Q ρ first second made₁ made₂).selection.made := by
       simp [commFiring, commSelection, other₁, other₂]
-    exact (Firing.result_label_other (X := X) (s := embed label C) _ missing).trans (psubst_none (label o))
+    exact (Firing.result_label_other (X := X) (s := embed label C) _ absent).trans (psubst_none (label o))
 
 /-! ## Through `firstOrder_eq` -/
 

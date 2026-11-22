@@ -29,9 +29,9 @@ Two attenuated handles are written as rules over fresh space names, with no righ
 * **Read-before-take.** A primitive read must precede the owner's take of the row it reads
   (`peek_impossible_after_owner_take`); the asker's acting step can follow it
   (`ask_acts_after_owner_take`).
-* **The none query.** A primitive none check refuses to act once a matching row is present
+* **Absence.** A primitive absence check refuses to act once a matching row is present
   (`guarded_act_refused_when_present`); the asker's acting step, relying on the server's earlier
-  answer, acts in that configuration (`ask_none_acts_when_present`).
+  answer, acts in that configuration (`ask_absence_acts_when_present`).
 * **Copies.** Two asks served from one row leave two reply occurrences at the asker's space while
   the owner holds one row (`two_asks_two_copies`); a read leaves no copy.
 * **Atomicity.** The forwarder is a second firing. An observer that orders itself after the
@@ -227,7 +227,7 @@ theorem solves_place_iff (σ : S) (m : N) (X q : T) :
 /-- **The forwarder is faithful to the primitive send at `n`.** Both runs execute; they end with
 the same occurrences up to the forwarded identity, with nothing left at `m`; the program's store
 refines the primitive's; and under every solution of the program's store every check (equality,
-none queries, count, at any space) agrees between the two final configurations. The hypothesis
+absence, count, at any space) agrees between the two final configurations. The hypothesis
 `free` says the forwarder's variable may take the posted payload. -/
 theorem forwarder_faithful {label : O → T} {m n : N} {q X : T} {o o1 o2 : O}
     (labelO : label o = sts.atSpace (sts.name n) q)
@@ -722,7 +722,7 @@ theorem ask_acts_after_owner_take :
   · simp [servedThenTaken, served, asked, Selection.result, fire, Selection.commit, takeRow,
       serveSel, makeOne, rowWorld]
 
-/-! ### The none query -/
+/-! ### Absence -/
 
 /-- Labels: 0 a row `p` the owner makes at 7; 1 the ask; 2 the reply; 3 the asker's output. -/
 def absLabel : Nat → Tm
@@ -738,15 +738,15 @@ def emptyWorld : Configuration Tm Nat := ⟨[], ∅⟩
 def guardedAct : LocatedRule Tm :=
   ⟨[], [], [], [.predicate .none (.nm 7) (.sym "p")], [(.nm 4, .sym "done")]⟩
 
-/-- The server answers a none ask from a snapshot. -/
-def serveNone : LocatedRule Tm :=
+/-- The server answers an absence ask from a snapshot. -/
+def serveAbsent : LocatedRule Tm :=
   ⟨[(.nm 3, .sym "ask")], [], [], [.predicate .none (.nm 7) (.sym "p")], [(.nm 3, .sym "reply")]⟩
 
 def ownerMake : LocatedRule Tm := sendRule (.nm 7) (.sym "p")
 
 def pPresent : Configuration Tm Nat := (makeOne 0).result absLabel (ownerMake.toRule spaces) emptyWorld
 
-/-- **The primitive none check refuses to act once `p` is present.** -/
+/-- **The primitive absence check refuses to act once `p` is present.** -/
 theorem guarded_act_refused_when_present (selection : Selection Nat) :
     ¬ selection.Valid action absLabel (guardedAct.toRule spaces) pPresent := by
   intro valid
@@ -759,14 +759,14 @@ theorem guarded_act_refused_when_present (selection : Selection Nat) :
 
 def askedAbs : Configuration Tm Nat := (makeOne 1).result absLabel (askRow.toRule spaces) emptyWorld
 def servedAbs : Configuration Tm Nat :=
-  (moveOne 1 2).result absLabel (serveNone.toRule spaces) askedAbs
+  (moveOne 1 2).result absLabel (serveAbsent.toRule spaces) askedAbs
 def madeAfterServe : Configuration Tm Nat :=
   (makeOne 0).result absLabel (ownerMake.toRule spaces) servedAbs
 
 /-- **The asker acts on the server's earlier answer while `p` is present.** -/
-theorem ask_none_acts_when_present :
+theorem ask_absence_acts_when_present :
     (makeOne 1).Valid action absLabel (askRow.toRule spaces) emptyWorld ∧
-      (moveOne 1 2).Valid action absLabel (serveNone.toRule spaces) askedAbs ∧
+      (moveOne 1 2).Valid action absLabel (serveAbsent.toRule spaces) askedAbs ∧
       (makeOne 0).Valid action absLabel (ownerMake.toRule spaces) servedAbs ∧
       (moveOne 2 3).Valid action absLabel (collectRow.toRule spaces) madeAfterServe ∧
       0 ∈ madeAfterServe.present := by
@@ -777,11 +777,11 @@ theorem ask_none_acts_when_present :
         by simp [Selection.commit]⟩, ⟨Tm.var, ?_⟩, ?_⟩
     · simp [Selection.commit, moveOne, askedAbs, Selection.result, fire, makeOne, emptyWorld]
     · simp [Selection.commit, moveOne, askedAbs, Selection.result, fire, makeOne, emptyWorld]
-    · simp [SubstitutionAction.Solves, Selection.problem, Selection.equations, serveNone,
+    · simp [SubstitutionAction.Solves, Selection.problem, Selection.equations, serveAbsent,
         askRow, sendRule, LocatedRule.toRule, moveOne, makeOne, askedAbs, Selection.result,
         emptyWorld, place, spaces, absLabel, Tm.subst]
     · intro check member σ _
-      simp only [serveNone, LocatedRule.toRule, LocatedCheck.toCheck, List.map_cons,
+      simp only [serveAbsent, LocatedRule.toRule, LocatedCheck.toCheck, List.map_cons,
         List.map_nil, List.mem_singleton] at member
       subst member
       intro o present
@@ -790,7 +790,7 @@ theorem ask_none_acts_when_present :
       simp [spaces, absLabel, Tm.subst]
   · refine (send_valid_iff (show absLabel 0 = spaces.atSpace (.nm 7) (.sym "p") from rfl) servedAbs).mpr ⟨⟨Tm.var, ?_⟩, ?_⟩
     · simp [SubstitutionAction.Solves, servedAbs, askedAbs, Selection.result, Selection.problem,
-        Selection.equations, serveNone, askRow, sendRule, LocatedRule.toRule, moveOne, makeOne,
+        Selection.equations, serveAbsent, askRow, sendRule, LocatedRule.toRule, moveOne, makeOne,
         emptyWorld, place, spaces, absLabel, Tm.subst]
     · simp [servedAbs, askedAbs, Selection.result, fire, Selection.commit, moveOne, makeOne,
         emptyWorld]
@@ -803,7 +803,7 @@ theorem ask_none_acts_when_present :
     · simp [Selection.commit, moveOne, madeAfterServe, servedAbs, askedAbs, Selection.result,
         fire, makeOne, emptyWorld]
     · simp [SubstitutionAction.Solves, Selection.problem, Selection.equations, madeAfterServe,
-        servedAbs, askedAbs, Selection.result, collectRow, collectRule, ownerMake, serveNone,
+        servedAbs, askedAbs, Selection.result, collectRow, collectRule, ownerMake, serveAbsent,
         askRow, sendRule, LocatedRule.toRule, moveOne, makeOne, emptyWorld, place, spaces,
         absLabel, Tm.subst]
   · simp [madeAfterServe, Selection.result, fire, Selection.commit, makeOne]

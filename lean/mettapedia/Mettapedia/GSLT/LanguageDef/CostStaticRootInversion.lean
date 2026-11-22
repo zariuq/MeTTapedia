@@ -305,9 +305,8 @@ theorem CIGSLT.exists_static_role_of_isQuoteConstructor_of_decode
     (quoted : ReflectiveContextSupport.isQuoteConstructor
       source.costWholeReflectionProfile wireName = true) :
     ∃ color, source.declaredCostConstructorRole constructor = .static color := by
-  simp only [ReflectiveContextSupport.isQuoteConstructor,
-    List.any_eq_true] at quoted
-  obtain ⟨targetDeclaration, targetMembership, targetQuote⟩ := quoted
+  obtain ⟨targetDeclaration, targetMembership, -, targetQuoteEq⟩ :=
+    ReflectiveContextSupport.isQuoteConstructor_eq_true_iff.mp quoted
   have targetStaticMembership : targetDeclaration ∈
       source.costStaticReflectivePresentations := by
     simpa only [source.costWholeReflectionProfile_presentations] using
@@ -329,10 +328,6 @@ theorem CIGSLT.exists_static_role_of_isQuoteConstructor_of_decode
           sourceDeclaration.quoteConstructor := by
     simp [costStaticReflectivePresentationDecl_eq_map,
       mapReflectivePresentation]
-  have targetQuoteEq :
-      (costStaticReflectivePresentationDecl source color sourceDeclaration
-        ).quoteConstructor = wireName :=
-    beq_iff_eq.mp targetQuote
   have staticDecoded : decodeDeclaredCostStaticConstructor source color
       wireName = some sourceDeclaration.quoteConstructor := by
     rw [← targetQuoteEq, quoteEq]

@@ -146,7 +146,7 @@ theorem generalRound_keepsPermuted (fuel : Nat)
       rw [computed] at fired
       cases fired
       exact base problem _ _ held computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
   | stuck =>
@@ -177,7 +177,7 @@ theorem olderRound_keepsPermuted (fuel : Nat)
       cases fired
       exact generalRound_keepsPermuted facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete fuel base problem _ _ held computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
   | stuck =>
@@ -208,7 +208,7 @@ theorem inPlaceRound_keepsPermuted (fuel : Nat)
       cases fired
       exact olderRound_keepsPermuted facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete fuel base problem _ _ held computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
   | stuck =>
@@ -240,7 +240,7 @@ theorem anywhereRound_keeps (fuel : Nat)
       cases fired
       exact inPlaceRound_keepsPermuted facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete fuel base problem _ _ held computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
   | stuck =>
@@ -283,8 +283,8 @@ theorem anywhere_decided_of_cumulative
       ((∃ state finished, run ((anywhereFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((anywhereFamily facts roots heads algebra rigid complete declared choices reducer root
-            normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run ((anywhereFamily facts roots heads algebra rigid complete declared choices reducer root
+            normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger = .refuted absent)) :=
   (anywhereSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete stable (fun problem => PermutedNormal problem)
     (fun held nonempty => by

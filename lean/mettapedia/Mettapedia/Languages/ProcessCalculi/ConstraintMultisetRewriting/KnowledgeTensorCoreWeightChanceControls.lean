@@ -6,13 +6,13 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Knowledge
 
 Surroundings are sets of facts of a finite type, each fact an occurrence with that number.
 
-* **The none query.** The run of `unlessNine` (no `9`, makes `7`) at the occurrence `5` is a
-  none-only run along the surroundings, with forbidden set `{7, 9}`
-  (`unless_nine_none_along`): the label it forbids and the identity it makes. It survives with
+* **Absence.** The run of `unlessNine` (no `9`, makes `7`) at the occurrence `5` is an
+  absence-only run along the surroundings, with forbidden set `{7, 9}`
+  (`unless_nine_absence_along`): the label it forbids and the identity it makes. It survives with
   chance `(1 - p 7) (1 - p 9)` (`unless_nine_survival`).
-* **An admitted count is graded like none queries.** `counts 1`, admitted at the occurrence `0`, is
+* **An admitted count is graded like absence.** `counts 1`, admitted at the occurrence `0`, is
   placed beside a surrounding exactly when the surrounding adds no occurrence labelled `5`
-  (`counts_one_none_along`): its local count is already exact, and a surrounding only adds.
+  (`counts_one_absence_along`): its local count is already exact, and a surrounding only adds.
 * **A candidate count is graded by counting.** `counts 2` is not admitted at `0`
   (`counts_two_not_admitted`), and as a candidate it is placed exactly when the surrounding adds
   one occurrence (`counts_two_candidate`), with the chance of the coefficient of `X`
@@ -31,7 +31,7 @@ open FirstOrderNativeRuns
 open KnowledgeTensorFirstOrderControls (plain one unlessNine makeSeven)
 open _root_.Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.Controls
 
-/-! ## The none query -/
+/-! ## Absence -/
 
 /-- The surrounding of the facts `S`: the occurrences with their numbers. -/
 def surroundingOf (S : Finset (Fin 10)) : Configuration Nat Nat := ⟨[], S.map Fin.valEmbedding⟩
@@ -85,21 +85,21 @@ theorem unless_nine_graded (S : Finset (Fin 10)) :
     · intro query member
       cases member
 
-/-- **The run of `unlessNine` is none-only along the surroundings**, with forbidden set
+/-- **The run of `unlessNine` is absence-only along the surroundings**, with forbidden set
 `{7, 9}`: the label it forbids and the identity it makes. -/
-theorem unless_nine_none_along :
-    NoneAlong (contextualRunInterpretation plain id) surroundingOf (fun _ => PUnit.unit)
+theorem unless_nine_absence_along :
+    AbsenceAlong (contextualRunInterpretation plain id) surroundingOf (fun _ => PUnit.unit)
       unlessNineRun {7, 9} := by
   have shape : ({7, 9} : Finset (Fin 10)) = {7, 9} ∪ ∅ := (Finset.union_empty _).symm
   rw [shape]
-  exact NoneAlong.cons unless_nine_graded (NoneAlong.nil _)
+  exact AbsenceAlong.cons unless_nine_graded (AbsenceAlong.nil _)
 
 /-- **Its survival chance** is `(1 - p 7) (1 - p 9)`. -/
 theorem unless_nine_survival (p : Fin 10 → ℝ) :
     measure p (fun S => (contextualRunInterpretation plain id).Checks (left := one)
       (right := surroundingOf S) PUnit.unit unlessNineRun) = (1 - p 7) * (1 - p 9) := by
-  rw [NoneAlong.survival (contextualRunInterpretation plain id) surroundingOf p
-    unless_nine_none_along, Finset.prod_pair (by decide)]
+  rw [AbsenceAlong.survival (contextualRunInterpretation plain id) surroundingOf p
+    unless_nine_absence_along, Finset.prod_pair (by decide)]
 
 /-! ## Counting: admitted counts and candidate counts -/
 
@@ -168,14 +168,14 @@ theorem disjoint_univ_iff {S : Finset (Fin 4)} : Disjoint S Finset.univ ↔ S.ca
 def countsOneRun : (firstOrder plain five).toStep.Run zero :=
   .cons (counts 1) counts_one_admitted (.nil _)
 
-/-- **An admitted count is graded like none queries**: `counts 1` at the occurrence `0` survives a
+/-- **An admitted count is graded like absence**: `counts 1` at the occurrence `0` survives a
 surrounding exactly when it adds no fact, every fact being labelled `5`. -/
-theorem counts_one_none_along :
-    NoneAlong (contextualRunInterpretation plain five) aroundZero (fun _ => PUnit.unit)
+theorem counts_one_absence_along :
+    AbsenceAlong (contextualRunInterpretation plain five) aroundZero (fun _ => PUnit.unit)
       countsOneRun Finset.univ := by
   have shape : (Finset.univ : Finset (Fin 4)) = Finset.univ ∪ ∅ := (Finset.union_empty _).symm
   rw [shape]
-  refine NoneAlong.cons (fun S => (counts_graded 1 S).trans ?_) (NoneAlong.nil _)
+  refine AbsenceAlong.cons (fun S => (counts_graded 1 S).trans ?_) (AbsenceAlong.nil _)
   rw [disjoint_univ_iff]
   constructor <;> intro size <;> omega
 

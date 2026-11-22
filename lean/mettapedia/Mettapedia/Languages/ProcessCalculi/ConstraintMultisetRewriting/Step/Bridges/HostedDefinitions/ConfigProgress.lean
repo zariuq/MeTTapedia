@@ -118,7 +118,7 @@ theorem initial_normalizes (grounded : ∀ rule ∈ rows, GroundRead.Grounding r
   apply BranchProgress.call_normalizes rows D supply grounded call normalizing
   constructor
   · exact ⟨Empty, ProgramBinders.ground MSig, ProgramBinders.close (fam (BinderCore.keys rows)),
-      fun _ missing => False.elim (List.not_mem_nil missing)⟩
+      fun _ absent => False.elim (List.not_mem_nil absent)⟩
   · intro X target assignment _
     exact Rigid.instantiate_include assignment call
 

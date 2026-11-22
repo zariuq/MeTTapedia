@@ -124,7 +124,7 @@ Lean.Syntax.node	dependency	constructor	not-needed		no read definition, equation
 Lean.SyntaxNodeKind	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
 Lean.mkAtom	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
 List	dependency	inductive	interpretation	Lean_List	family
-List.MergeSort.Internal.splitInTwo	dependency	definition	refused	Lean_List_MergeSort_Internal_splitInTwo	erased proofs in the definition or its equations are not reconstructed
+List.MergeSort.Internal.splitInTwo	dependency	definition	refused	Lean_List_MergeSort_Internal_splitInTwo	applies _private.Init.Data.List.Sort.Basic.0.List.MergeSort.Internal.splitInTwo._proof_3, which is not read
 List._sizeOf_1	generated-helper	definition	not-needed		Lean's size measure for termination; not part of the development's meaning
 List._sizeOf_inst	generated-helper	definition	unfolded		instance: Lean unfolds it where it is used, and the reading reads the result
 List.append	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
@@ -251,7 +251,7 @@ Nat.zero	dependency	constructor	interpretation	Lean_Nat_zero_node	constructor
 NatPow	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
 NatPow.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
 NatPow.pow	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
-Not	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Not	dependency	definition	interpretation	Lean_Not	function read from its equation theorems; Lean's equations proved
 OfNat	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
 OfNat.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
 OfNat.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
@@ -334,7 +334,7 @@ _private.Init.Data.List.Sort.Basic.0.List.merge._unary._proof_1	dependency	theor
 _private.Init.Data.List.Sort.Basic.0.List.merge._unary._proof_2	dependency	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
 _private.Init.Data.List.Sort.Basic.0.List.merge._unary._proof_3	dependency	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
 _private.Init.Data.List.Sort.Basic.0.List.merge.match_1	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
-_private.Init.Data.List.Sort.Basic.0.List.mergeSort._unary._proof_1	dependency	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+_private.Init.Data.List.Sort.Basic.0.List.mergeSort._unary._proof_1	dependency	theorem	target-reconstruction	Lean_List_mergeSort__unary__proof_1_proof	statement read from Lean, proved in Egal; cited where Lean's proof term cites it
 _private.Init.Data.List.Sort.Basic.0.List.mergeSort._unary._proof_2	dependency	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
 _private.Init.Data.List.Sort.Basic.0.List.mergeSort._unary._proof_3	dependency	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
 _private.Init.Data.List.Sort.Basic.0.List.mergeSort._unary._proof_4	dependency	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
@@ -391,6 +391,7 @@ Eq.casesOn	reading	definition	interpretation	Lean_Eq_rec	case analysis read as t
 Exists.casesOn	reading	definition	interpretation	Lean_Exists_rec	case analysis read as the recursor with the minors as methods
 False.casesOn	reading	definition	interpretation	Lean_False_b_rec	case analysis read as the recursor with the minors as methods
 Iff.casesOn	reading	definition	interpretation	Lean_Iff_rec	case analysis read as the recursor with the minors as methods
+Iff.symm	reading	theorem	target-reconstruction	Lean_Iff_symm_proof	statement read from Lean, proved in Egal; cited where Lean's proof term cites it
 List.MergeSort.Internal.splitInTwo.eq_1	reading	theorem	refused	Lean_List_MergeSort_Internal_splitInTwo_eq_1	equation theorem not proved from the reading
 List.Perm	reading	inductive	interpretation	Lean_List_Perm	family
 List.Perm.cons	reading	constructor	interpretation	Lean_List_Perm_cons_node	constructor
@@ -470,6 +471,7 @@ Nat.decidable_dvd.eq_1	reading	theorem	interpretation	Lean_Nat_decidable_dvd_eq_
 Nat.div.eq_1	reading	theorem	interpretation	Lean_Nat_div_eq_1	Lean's equation theorem, proved from the reading
 Nat.div.go.eq_1	reading	theorem	interpretation	Lean_Nat_div_go_eq_1	Lean's equation theorem, proved from the reading
 Nat.div.go.eq_absent	reading	theorem	interpretation	Lean_Nat_div_go_eq_absent	Lean's equation theorem, proved from the reading
+Nat.dvd_iff_mod_eq_zero	reading	theorem	target-reconstruction	Lean_Nat_dvd_iff_mod_eq_zero_proof	statement read from Lean, proved in Egal; cited where Lean's proof term cites it
 Nat.minFac.eq_1	reading	theorem	interpretation	Lean_Nat_minFac_eq_1	Lean's equation theorem, proved from the reading
 Nat.minFacAux.eq_1	reading	theorem	interpretation	Lean_Nat_minFacAux_eq_1	Lean's equation theorem, proved from the reading
 Nat.mod.eq_1	reading	theorem	interpretation	Lean_Nat_mod_eq_1	Lean's equation theorem, proved from the reading
@@ -486,6 +488,7 @@ Nat.primeFactorsList.eq_2	reading	theorem	interpretation	Lean_Nat_primeFactorsLi
 Nat.primeFactorsList.eq_3	reading	theorem	interpretation	Lean_Nat_primeFactorsList_eq_3	Lean's equation theorem, proved from the reading
 Nat.sub.eq_1	reading	theorem	interpretation	Lean_Nat_sub_eq_1	Lean's equation theorem, proved from the reading
 Nat.sub.eq_2	reading	theorem	interpretation	Lean_Nat_sub_eq_2	Lean's equation theorem, proved from the reading
+Not.eq_1	reading	theorem	interpretation	Lean_Not_eq_1	Lean's equation theorem, proved from the reading
 One	reading	inductive	interpretation	Lean_One	family
 One.mk	reading	constructor	interpretation	Lean_One_mk_node	constructor
 Option	reading	inductive	interpretation	Lean_Option	family
@@ -504,6 +507,7 @@ Sum.inl	reading	constructor	interpretation	Lean_Sum_inl_node	constructor
 Sum.inr	reading	constructor	interpretation	Lean_Sum_inr_node	constructor
 Zero	reading	inductive	interpretation	Lean_Zero	family
 Zero.mk	reading	constructor	interpretation	Lean_Zero_mk_node	constructor
+_private.Init.Data.List.Sort.Basic.0.List.mergeSort._proof_1	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
 decidable_of_decidable_of_iff.eq_1	reading	theorem	interpretation	Lean_decidable_of_decidable_of_iff_eq_1	Lean's equation theorem, proved from the reading
 dite.eq_1	reading	theorem	interpretation	Lean_dite_eq_1	Lean's equation theorem, proved from the reading
 instDecidableEqBool.eq_1	reading	theorem	interpretation	Lean_instDecidableEqBool_eq_1	Lean's equation theorem, proved from the reading

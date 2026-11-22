@@ -91,7 +91,7 @@ theorem no_peek_forbids_selected_read {rights : Rights N} {label : O → N × T}
   rw [denied] at allowed
   cases allowed
 
-theorem no_observe_forbids_none {rights : Rights N} {label : O → N × T} {picked : Selection O}
+theorem no_observe_forbids_absence {rights : Rights N} {label : O → N × T} {picked : Selection O}
     {rule : RuleInstance (N × T)} (formed : Formed rights label picked rule)
     (pattern : N × T) (selected : Check.predicate .none pattern ∈ rule.checks) (denied : rights pattern.1 .observe = false) : False := by
   have allowed := formed.observations (.predicate .none pattern) selected

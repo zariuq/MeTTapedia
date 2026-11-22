@@ -16,7 +16,7 @@ whole point is that a neighbour can switch it off has no compositional rho encod
 * **exact counts** (`ExactlyOne`): Prime's `unique`, "close the auction when there is exactly one
   bid" (`exactlyOne_sells`, `exactlyOne_blocked`, `rho_cannot_encode_exactlyOne`);
 * **absence** itself, negation as failure and inhibitor arcs: the existing
-  `ConsensusNumbers.rho_cannot_encode_none`.
+  `ConsensusNumbers.rho_cannot_encode_absence`.
 
 Each source here is a set of steps over bags (`OccurrenceCommits.Equivalence.Rule`); the barb is
 a weak barb (some run shows the atom); an encoding is compositional when it sends a union of bags

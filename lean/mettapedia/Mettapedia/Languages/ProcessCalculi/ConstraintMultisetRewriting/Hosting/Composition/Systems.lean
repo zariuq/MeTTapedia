@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Hosting.R
 
 A source program is hosted by a **system** (`HostedSystem`): the rules of its translation, and one
 row per equation, `eqn(lhs)` at private names (`equationRows`). The rule for a call that no equation
-matches reads those rows by a none check, so the rows are part of the hosted program as much as
+matches reads those rows by an absence check, so the rows are part of the hosted program as much as
 the rules are. The start of a query (`HostedSystem.start`) is the rows, numbered `0, …, k - 1`, and the
 query's alternative at `k`; it is the folder's `start` (`start_hosted`).
 

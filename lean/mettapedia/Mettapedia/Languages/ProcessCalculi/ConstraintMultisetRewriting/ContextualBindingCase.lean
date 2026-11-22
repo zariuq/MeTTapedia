@@ -27,7 +27,7 @@ structure Case {Γ : Ctx S} {sort : S.Srt}
     (left right : Term (signature S source) Γ sort) where
   chosen : V
   body : Term (signature S source) (source chosen).1 (source chosen).2
-  notInBody : chosen ∉ support body
+  absent : chosen ∉ support body
   selected : chosen ∈ support left ++ support right
   body_covered : ∀ identity ∈ support body, identity ∈ support left ++ support right
   pattern_body : ContextualPatternFragment.Pattern S source left →
@@ -51,8 +51,8 @@ def tryLeft [DecidableEq S.Srt] : {Γ : Ctx S} → {sort : S.Srt} →
             exact match recovered : strengthenT inverse target with
             | none => none
             | some body => by
-                by_cases notInBody : chosen ∉ support body
-                · refine some ⟨chosen, body, notInBody, ?_, ?_, ?_, ?_, ?_⟩
+                by_cases absent : chosen ∉ support body
+                · refine some ⟨chosen, body, absent, ?_, ?_, ?_, ?_, ?_⟩
                   · exact List.mem_append_left _ List.mem_cons_self
                   · intro identity named
                     have restored := (strengthenT_eq_some_iff inverse target body).mp recovered
@@ -71,7 +71,7 @@ def tryLeft [DecidableEq S.Srt] : {Γ : Ctx S} → {sort : S.Srt} →
                     apply ContextualBindingReduction.principal (S := S) (declaration := source) chosen rho inverse target
                       (ContextualBinding.answer (S := S) (declaration := source) chosen body)
                     simp only [ContextualPatternBinding.solve?, recovered]
-                    simp [ContextualBinding.solve?, notInBody]
+                    simp [ContextualBinding.solve?, absent]
                 · exact none
           · exact none
   | _, _, _, _ => none
@@ -80,7 +80,7 @@ def Case.swap {Γ : Ctx S} {sort : S.Srt} {left right : Term (signature S source
     (binding : Case right left) : Case left right where
   chosen := binding.chosen
   body := binding.body
-  notInBody := binding.notInBody
+  absent := binding.absent
   selected := by simpa only [List.mem_append, or_comm] using binding.selected
   body_covered := fun identity named => by
     simpa only [List.mem_append, or_comm] using binding.body_covered identity named

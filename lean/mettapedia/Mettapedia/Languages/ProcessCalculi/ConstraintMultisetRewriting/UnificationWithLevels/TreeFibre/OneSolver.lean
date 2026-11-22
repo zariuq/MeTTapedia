@@ -288,9 +288,9 @@ theorem one_decided {Θ : Context S.R} {original : EquationStore (TotalTerm Θ)}
               run (oneSolver choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared
                   strengthening join joinSound glb spec) original larger = .solved state finished ∧
                 (frames S.levels).Principal original state.answer) ∨
-          (∃ missing,
+          (∃ absent,
             run (oneSolver choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared
-              strengthening join joinSound glb spec) original larger = .refuted missing)) :=
+              strengthening join joinSound glb spec) original larger = .refuted absent)) :=
   (oneFragment choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared strengthening
     join joinSound glb spec glbTotal joinTotal).decided inside
 
@@ -338,9 +338,9 @@ theorem one_decided_of_piece {Θ : Context S.R} {original : EquationStore (Total
               run (oneSolver choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared
                   strengthening join joinSound glb spec) original larger = .solved state finished ∧
                 (frames S.levels).Principal original state.answer) ∨
-          (∃ missing,
+          (∃ absent,
             run (oneSolver choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared
-              strengthening join joinSound glb spec) original larger = .refuted missing)) :=
+              strengthening join joinSound glb spec) original larger = .refuted absent)) :=
   one_decided choices facts roots heads algebra rigid complete normalizes inh headTypingUnique declared strengthening
     join joinSound glb spec glbTotal joinTotal (inOne_of_piece choices k inside)
 

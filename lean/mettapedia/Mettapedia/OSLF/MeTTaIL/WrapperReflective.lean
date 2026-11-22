@@ -838,6 +838,189 @@ private theorem substituteResolved_wrapper (compatible : BinderWrapperCompatible
           exact .refl
       · simpa only [substituteResolved, substituteResolvedList_eq_map] using mapped
 
+variable (laws declaration) in
+/-- Two binder actions related by forward chains, both at every index and at
+what a drop of the eliminated binder receives from them. -/
+def ActionForward (action action' : Nat → Nat → Pattern) : Prop :=
+  (∀ level index, QWForward laws declaration (action level index) (action' level index)) ∧
+    ∀ level constructor, QWForward laws declaration (receive declaration constructor (action level level))
+      (receive declaration constructor (action' level level))
+
+/-- A drop receiving a unary term receives forward-related results from forward-related arguments. -/
+theorem receive_unary_qwForward (constructor label : String) {value value' : Pattern}
+    (forward : QWForward laws declaration value value') :
+    QWForward laws declaration (receive declaration constructor (.apply label [value]))
+      (receive declaration constructor (.apply label [value'])) := by
+  unfold receive
+  by_cases quoted : label = declaration.quoteConstructor
+  · simp only [quoted, if_true]
+    exact forward
+  · simp only [quoted, if_false]
+    exact qwForward_apply _ (.cons (qwForward_apply _ (.cons forward .nil)) .nil)
+
+/-- Ordinary binder elimination by forward-related quoted replacements gives forward-related actions. -/
+theorem instantiation_actionForward {process process' : Pattern}
+    (forwardProcess : QWForward laws declaration process process') :
+    ActionForward laws declaration
+      (fun level index => Substitution.instantiateBVarAt level
+        (.apply declaration.quoteConstructor [process]) (.bvar index))
+      (fun level index => Substitution.instantiateBVarAt level
+        (.apply declaration.quoteConstructor [process']) (.bvar index)) := by
+  have lifted : ∀ depth (inner : Pattern), Substitution.instantiateBVarAt depth
+      (.apply declaration.quoteConstructor [inner]) (.bvar depth) =
+      .apply declaration.quoteConstructor [Substitution.liftBVars 0 depth inner] := by
+    intro depth inner
+    simp [Substitution.instantiateBVarAt, Substitution.liftBVars, Substitution.liftBVarsList_eq_map]
+  refine ⟨fun depth index => ?_, fun depth constructor => ?_⟩
+  · dsimp only
+    unfold Substitution.instantiateBVarAt
+    split
+    · exact .refl
+    · split
+      · exact QWForward.liftBVars (qwForward_apply _ (.cons forwardProcess .nil)) 0 depth
+      · exact .refl
+  · dsimp only
+    rw [lifted, lifted]
+    exact receive_unary_qwForward constructor _ (QWForward.liftBVars forwardProcess 0 _)
+
+/-- Every view turns forward-related outside actions into forward-related inside actions. -/
+theorem inside_actionForward (view : QuoteView) {outside outside' : Nat → Nat → Pattern}
+    (forward : ActionForward laws declaration outside outside') :
+    ActionForward laws declaration (view.inside outside) (view.inside outside') := by
+  rcases view with _ | frozen | context
+  · exact forward
+  · refine ⟨fun level index => ?_, fun level constructor => ?_⟩
+    · by_cases same : index = level
+      · simp only [QuoteView.inside, same, if_true]
+        exact .refl
+      · simp only [QuoteView.inside, same, if_false]
+        exact forward.1 level index
+    · simp only [QuoteView.inside, if_true]
+      exact .refl
+  · refine ⟨fun level index => ?_, fun level constructor => ?_⟩
+    · by_cases same : index = level
+      · simp only [QuoteView.inside, same, if_true]
+        exact qwForward_apply _ (.cons (forward.1 level level) .nil)
+      · simp only [QuoteView.inside, same, if_false]
+        exact forward.1 level index
+    · simp only [QuoteView.inside, if_true]
+      exact receive_unary_qwForward constructor context (forward.1 level level)
+
+/-- Substitution that enters quotations maps removal of wrappers in the body and
+forward-related actions to a forward chain. -/
+theorem substituteViewed_wrapper (compatible : BinderWrapperCompatible laws declaration)
+    {inside inside' : Nat → Nat → Pattern} (insideForward : ActionForward laws declaration inside inside') :
+    ∀ (body : Pattern) {atIndex atIndex' : Nat → Nat → Pattern},
+      ActionForward laws declaration atIndex atIndex' → ∀ depth : Nat,
+        QWForward laws declaration (substituteViewed declaration inside atIndex depth body)
+          (substituteViewed declaration inside' atIndex' depth (wrapperNormal laws body)) := by
+  intro body
+  induction body using Pattern.inductionOn with
+  | hbvar index =>
+    intro _ _ forward depth; rw [wrapperNormal_bvar]; exact forward.1 depth index
+  | hfvar name => intro _ _ _ _; rw [wrapperNormal_fvar]; exact .refl
+  | hlambda binder body ih =>
+    intro _ _ forward depth; rw [wrapperNormal_lambda]; simp only [substituteViewed]
+    exact qwForward_lambda _ (ih forward _)
+  | hmultiLambda arity binders body ih =>
+    intro _ _ forward depth; rw [wrapperNormal_multiLambda]; simp only [substituteViewed]
+    exact qwForward_multiLambda _ _ (ih forward _)
+  | hsubst body value ihBody ihValue =>
+    intro _ _ forward depth; rw [wrapperNormal_subst]; simp only [substituteViewed]
+    exact qwForward_subst (ihBody forward _) (ihValue forward _)
+  | happly label arguments ih =>
+    intro atIndex atIndex' forward depth
+    rw [wrapperNormal_apply]
+    match arguments, ih with
+    | [], _ => exact .refl
+    | first :: second :: more, ih =>
+      simp only [List.map_cons, substituteViewed, substituteViewedList_eq_map]
+      apply qwForward_apply
+      refine .cons (ih first (by simp) forward depth) (.cons (ih second (by simp) forward depth) ?_)
+      rw [List.map_map]
+      apply List.forall₂_map_left_iff.mpr
+      apply List.forall₂_map_right_iff.mpr
+      exact List.forall₂_same.mpr fun item member => ih item (by simp [member]) forward depth
+    | [payload], ih =>
+      simp only [List.map_cons, List.map_nil, substituteViewed]
+      have decision : matchesBinder declaration depth payload =
+          matchesBinder declaration depth (wrapperNormal laws payload) := by
+        simp only [matchesBinder,
+          WrapperForward.binderHead_eq compatible (to_wrapperNormal payload)]
+      by_cases quoted : label = declaration.quoteConstructor
+      · simp only [quoted, if_true]
+        exact qwForward_apply _ (.cons (ih payload (by simp) insideForward depth) .nil)
+      · by_cases dropped : label = declaration.dropConstructor
+        · have notQuote : ¬ declaration.dropConstructor = declaration.quoteConstructor :=
+            fun same => quoted (dropped.trans same)
+          subst dropped
+          by_cases hit : matchesBinder declaration depth payload = true
+          · have hit' : matchesBinder declaration depth (wrapperNormal laws payload) = true := decision ▸ hit
+            simp only [notQuote, if_false, if_true, hit, hit']
+            exact forward.2 depth _
+          · have hit' : ¬ matchesBinder declaration depth (wrapperNormal laws payload) = true := decision ▸ hit
+            simp only [notQuote, if_false, if_true, hit, hit', Bool.false_eq_true]
+            exact qwForward_apply _ (.cons (ih payload (by simp) forward depth) .nil)
+        · simp only [quoted, dropped, if_false]
+          exact qwForward_apply _ (.cons (ih payload (by simp) forward depth) .nil)
+  | hcollection kind elements rest ih =>
+    intro atIndex atIndex' forward depth
+    have mapped : QWForward laws declaration
+        (.collection kind (elements.map (substituteViewed declaration inside atIndex depth)) rest)
+        (.collection kind ((elements.map (wrapperNormal laws)).map
+          (substituteViewed declaration inside' atIndex' depth)) rest) := by
+      apply qwForward_collection
+      rw [List.map_map]
+      apply List.forall₂_map_left_iff.mpr
+      apply List.forall₂_map_right_iff.mpr
+      exact List.forall₂_same.mpr fun item member => ih item member forward depth
+    simp only [substituteViewed, substituteViewedList_eq_map]
+    cases found : lawFor laws kind with
+    | none =>
+      rw [wrapperNormal_plain found]
+      simpa only [substituteViewed, substituteViewedList_eq_map] using mapped
+    | some law =>
+      rw [wrapperNormal_law found]
+      unfold wrapFinish
+      split
+      · rename_i item same
+        obtain ⟨element, rfl, rfl⟩ : ∃ element, elements = [element] ∧ item = wrapperNormal laws element := by
+          match elements, same with
+          | [element], same => exact ⟨element, rfl, by simpa using same.symm⟩
+        simp only [List.map_cons, List.map_nil] at mapped ⊢
+        exact (ReflTransGen.single (.inr (.singleton found))).trans (ih element (by simp) forward depth)
+      · rename_i same
+        have empty : elements = [] := by simpa using same
+        subst empty
+        split
+        · rename_i label unit
+          simp only [List.map_nil, substituteViewed]
+          exact .single (.inr (.empty found unit))
+        · simp only [List.map_nil, substituteViewed, substituteViewedList]
+          exact .refl
+      · simpa only [substituteViewed, substituteViewedList_eq_map] using mapped
+
+open ReflectiveInstantiation in
+/-- **The binder elimination a presentation declares maps the wrapper normal form of its body and a
+forward chain of its quoted replacement to a forward chain**, under every quote scope: a closed scope
+keeps quoted code opaque, and every view enters it with forward-related actions. -/
+theorem instantiateDeclared_wrapper (compatible : BinderWrapperCompatible laws declaration)
+    {process process' : Pattern} (forwardProcess : QWForward laws declaration process process')
+    (body : Pattern) (depth : Nat) :
+    QWForward laws declaration (instantiateDeclared declaration depth (.apply declaration.quoteConstructor [process]) body)
+      (instantiateDeclared declaration depth (.apply declaration.quoteConstructor [process'])
+        (wrapperNormal laws body)) := by
+  unfold instantiateDeclared
+  rcases scope : declaration.quoteScope with _ | view
+  · simp only [substituteScoped]
+    rw [resolveQuotes_wrapperNormal compatible]
+    exact substituteResolved_wrapper compatible forwardProcess _ depth
+  · simp only [substituteScoped]
+    rw [resolveQuotes_wrapperNormal compatible]
+    exact substituteViewed_wrapper compatible
+      (inside_actionForward view (instantiation_actionForward forwardProcess)) _
+      (instantiation_actionForward forwardProcess) depth
+
 open ReflectiveInstantiation in
 /-- **Reflective binder elimination maps the wrapper normal form of its body and a forward chain of its
 quoted replacement to a forward chain**, when the original result is inScope. -/
@@ -851,22 +1034,18 @@ theorem instantiate_wrapper (compatible : BinderWrapperCompatible laws declarati
   rw [resolveQuotes_wrapperNormal compatible]
   exact substituteResolved_wrapper compatible forwardProcess _ depth
 
-/-- **The reflective binder operation of a closed quote scope maps the wrapper normal form of its body
-and a forward chain of its quoted replacement to a forward chain**, when the original result is closed. -/
+/-- **The reflective binder operation maps the wrapper normal form of its body and a forward chain of
+its quoted replacement to a forward chain**, under every quote scope. -/
 theorem reflectiveOperation_wrapper (distinct : declaration.dropConstructor ≠ declaration.quoteConstructor)
-    (closedScope : declaration.quoteScope = .closed)
     (compatible : BinderWrapperCompatible laws declaration)
-    {payload payload' : Pattern} (forwardPayload : QWForward laws declaration payload payload') (body : Pattern)
-    (inScope : (ScopedRuleInstantiation.reflectiveOperation declaration (.apply declaration.quoteConstructor [payload])
-      body).isWellScopedAt 0 = true) :
+    {payload payload' : Pattern} (forwardPayload : QWForward laws declaration payload payload') (body : Pattern) :
     QWForward laws declaration
       (ScopedRuleInstantiation.reflectiveOperation declaration (.apply declaration.quoteConstructor [payload]) body)
       (ScopedRuleInstantiation.reflectiveOperation declaration (.apply declaration.quoteConstructor [payload'])
         (wrapperNormal laws body)) := by
-  unfold ScopedRuleInstantiation.reflectiveOperation at inScope ⊢
-  simp only [normalizeReflectiveReplacement, beq_self_eq_true, if_true,
-    ReflectiveInstantiation.instantiateDeclared_of_closed closedScope] at inScope ⊢
-  exact instantiate_wrapper compatible (normal_qwForward_of_qwForward distinct forwardPayload) body 0 inScope
+  unfold ScopedRuleInstantiation.reflectiveOperation
+  simp only [normalizeReflectiveReplacement, beq_self_eq_true, if_true]
+  exact instantiateDeclared_wrapper compatible (normal_qwForward_of_qwForward distinct forwardPayload) body 0
 
 /-! ## Typing along forward chains -/
 

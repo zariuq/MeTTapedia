@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 # Schematic-row observations through the shared region-query interface
 
 At a model, a region selects physical row occurrences whose datum can read the
-instantiated pattern. The none query, count and exact collect query are observations of that
+instantiated pattern. Absence, count and exact collect query are observations of that
 one region, using `PredicateQueryAdmission.RegionQuery`. No equivalence on rows
 is imposed to represent overlapping membership regions.
 
@@ -42,7 +42,7 @@ def asks (knowledge : EquationStore (Tm a)) (label : O → Row Tm a) (present : 
     (query : (b : Obj) → RegionQuery (Row Tm a) (Hom a b) O) : Prop :=
   X.Entails knowledge fun b σ => (query b).Holds σ label present
 
-theorem none_iff (pattern : Tm a) {b : Obj} (σ : Hom a b)
+theorem absence_iff (pattern : Tm a) {b : Obj} (σ : Hom a b)
     (label : O → Row Tm a) (present : Finset O) :
     (RegionQuery.predicate .none (membership X pattern)).Holds σ label present ↔
       ∀ o ∈ present, ¬ Row.ReadsAt X σ (X.act σ pattern) (label o) := by
@@ -79,7 +79,7 @@ theorem shared_collect_iff (pattern : Tm a) (seen : Finset O) {b : Obj} (σ : Ho
       matchesAt X σ label present pattern = seen := by
   rw [RegionQuery.exact_holds_iff, shared_region_eq]
 
-#print axioms none_iff
+#print axioms absence_iff
 #print axioms shared_region_eq
 #print axioms shared_count_iff
 #print axioms shared_predicate_iff

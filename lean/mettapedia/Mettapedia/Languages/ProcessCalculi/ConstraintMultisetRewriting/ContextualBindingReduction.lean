@@ -34,7 +34,7 @@ theorem principal (identity : V) {Γ : Ctx S} (rho : Ren S (declaration identity
     (computed : ContextualPatternBinding.solve? identity rho inverse target = some answer) :
     ContextualFrameUnifier.Principal
       [(rename (S := signature S declaration) rho (generator declaration identity), target)] answer := by
-  obtain ⟨body, recovered, missing, rfl⟩ :=
+  obtain ⟨body, recovered, absent, rfl⟩ :=
     (ContextualPatternBinding.solve_success_iff identity rho inverse target answer).mp computed
   rw [← recovered]
   constructor
@@ -45,7 +45,7 @@ theorem principal (identity : V) {Γ : Ctx S} (rho : Ren S (declaration identity
       (rename (S := signature S declaration) rho (generator declaration identity)) =
       instantiate (ContextualBinding.answer identity body) (rename (S := signature S declaration) rho body)
     rw [ContextualFamily.instantiate_rename, ContextualFamily.instantiate_rename, instantiate_generator,
-      ContextualBinding.answer_same, ContextualBinding.instantiate_answer_of_notMem_support identity body body missing]
+      ContextualBinding.answer_same, ContextualBinding.instantiate_answer_of_absent identity body body absent]
   · intro Next next candidate solved
     have same := solved _ (List.mem_singleton_self _)
     change instantiate candidate (rename (S := signature S declaration) rho (generator declaration identity)) =

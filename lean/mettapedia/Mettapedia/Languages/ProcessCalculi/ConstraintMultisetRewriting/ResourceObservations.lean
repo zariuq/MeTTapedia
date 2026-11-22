@@ -111,13 +111,13 @@ theorem preserves_make {footprint : Finset O} {identity : O} (included : identit
   · simp only [create, present, mem_project, false_and, if_false, Option.map_some]
     exact congrArg some (project_insert footprint world included)
 
-theorem preserves_vacant {footprint : Finset O} {identity : O} (included : identity ∈ footprint) :
+theorem preserves_absence {footprint : Finset O} {identity : O} (included : identity ∈ footprint) :
     Preserves footprint (vacant identity) := by
   intro world
   by_cases present : identity ∈ world <;> simp [vacant, present, included]
 
-theorem preserves_vacantOn {footprint region : Finset O} (included : region ⊆ footprint) :
-    Preserves footprint (vacantOn region) := by
+theorem preserves_absentOn {footprint region : Finset O} (included : region ⊆ footprint) :
+    Preserves footprint (absentOn region) := by
   intro world
   have disjoint : Disjoint region (project footprint world) ↔ Disjoint region world := by
     constructor
@@ -129,7 +129,7 @@ theorem preserves_vacantOn {footprint region : Finset O} (included : region ⊆ 
       apply Finset.disjoint_left.mpr
       intro identity member present
       exact Finset.disjoint_left.mp apart member (mem_project.mp present).1
-  by_cases missing : Disjoint region world <;> simp [vacantOn, disjoint, missing]
+  by_cases absent : Disjoint region world <;> simp [absentOn, disjoint, absent]
 
 theorem preserves_runList (footprint : Finset O) (operation : O → Op O) (identities : List O)
     (supported : ∀ identity ∈ identities, Preserves footprint (operation identity)) :

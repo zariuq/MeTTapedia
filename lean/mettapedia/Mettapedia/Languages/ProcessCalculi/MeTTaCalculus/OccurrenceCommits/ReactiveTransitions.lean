@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Waves
 
 /-!
-# Reactive firing, waking contexts, and none queries
+# Reactive firing, waking contexts, and absence
 
 A snapshot `transform` fires against the store it finds or fails. A reactive `for` (an `await`
 statement, a conditional critical region, Linda's blocking `in`, STM's `retry`) **parks** until
@@ -23,28 +23,28 @@ A guard is a predicate on stores. Arrivals only add occurrences.
   exactly when the arrival supplies `(taken ∪ kept) \ store`, what it needs and the store lacks;
   extra arrivals are framed (`fire_union_frame`). This is the minimal label a borrowed-context step
   of such a commit would carry.
-* **The none query is downward closed** (`none_downward_closed`). A parked none guard is never
-  woken by an arrival (`none_not_woken_by_arrival`); it is woken by a removal
-  (`none_woken_by_removal`). `Controls.wait_for_unlock` waits for the lock to be taken: no
+* **Absence is downward closed** (`absence_downward_closed`). A parked absence guard is never
+  woken by an arrival (`absence_not_woken_by_arrival`); it is woken by a removal
+  (`absence_woken_by_removal`). `Controls.wait_for_unlock` waits for the lock to be taken: no
   additive context wakes it.
 * **A predicate query of a non-empty region is neither** (`Controls.predicate_query_two_sided`):
   an arrival and a removal can each falsify it. It waits on any change of its region: an epoch.
 
-So a runtime parks positive guards on **arrivals into the regions they use**, none guards on
+So a runtime parks positive guards on **arrivals into the regions they use**, absence guards on
 **removals from the regions they forbid**, and predicate queries on **any change of the regions
 they query**: the per-region epoch (`CommitProtocol` proves that such an index misses no wakeup).
 
-## The none query: stable only inside an owned scope, and the reason for strata
+## Absence: stable only inside an owned scope, and the reason for strata
 
 * **Stability** (`holds_fireList_of_no_write`): a predicate query stays valid across any run of
   commits none of which writes into its region. A region that only its owner writes is such a
-  scope, and there a none read is stable for as long as the owner does not write into it.
-  One maker inside the region falsifies it (`Controls.none_falsified_by_maker`).
-* **Strata** (`exists_executable_perm_of_stratified`): a commit with a none read must run
+  scope, and there an absence read is stable for as long as the owner does not write into it.
+  One maker inside the region falsifies it (`Controls.absence_falsified_by_maker`).
+* **Strata** (`exists_executable_perm_of_stratified`): a commit with an absence read must run
   before every commit that makes inside its region. A *stratification*, a rank that every
   such edge increases, is exactly a ranking of the precedence relation of a wave whose only spoils
-  are none query spoils, so the strata order executes the wave. A cycle through the none query has no
-  stratification and no executable order (`Waves.Controls.none_race_no_order`). Positive
+  are absence spoils, so the strata order executes the wave. A cycle through absence has no
+  stratification and no executable order (`Waves.Controls.absence_race_no_order`). Positive
   commits need no strata: they are stable under every arrival (`Enabled.frame_of_positive`).
 -/
 
@@ -152,20 +152,20 @@ theorem enabled_upward_of_positive (positive : c.Positive) {small large : Finset
 
 end Positive
 
-/-! ## The none query -/
+/-! ## Absence -/
 
-section NoneRead
+section Absence
 
 variable {label : O → R}
 
-/-- A none read: the region holds nothing. -/
-def NoneHolds (label : O → R) (region : R → Bool) (store : Finset O) : Prop :=
+/-- An absence read: the region holds nothing. -/
+def AbsenceHolds (label : O → R) (region : R → Bool) (store : Finset O) : Prop :=
   (⟨region, ∅⟩ : PredicateQuery O R).Holds label store
 
 omit [DecidableEq O] in
-theorem noneHolds_iff {region : R → Bool} {store : Finset O} :
-    NoneHolds label region store ↔ ∀ o ∈ store, region (label o) = false := by
-  unfold NoneHolds PredicateQuery.Holds
+theorem absenceHolds_iff {region : R → Bool} {store : Finset O} :
+    AbsenceHolds label region store ↔ ∀ o ∈ store, region (label o) = false := by
+  unfold AbsenceHolds PredicateQuery.Holds
   constructor
   · intro empty o member
     by_contra inRegion
@@ -181,23 +181,23 @@ theorem noneHolds_iff {region : R → Bool} {store : Finset O} :
     exact absurd inRegion (by decide)
 
 omit [DecidableEq O] in
-/-- **The none query is downward closed.** -/
-theorem none_downward_closed (region : R → Bool) :
-    DownwardClosed (NoneHolds label region) := by
+/-- **Absence is downward closed.** -/
+theorem absence_downward_closed (region : R → Bool) :
+    DownwardClosed (AbsenceHolds label region) := by
   intro small large sub holds
-  rw [noneHolds_iff] at holds ⊢
+  rw [absenceHolds_iff] at holds ⊢
   exact fun o member => holds o (sub member)
 
-/-- **A parked none guard is never woken by an arrival.** -/
-theorem none_not_woken_by_arrival {region : R → Bool} {parked : Finset O}
-    (fails : ¬ NoneHolds label region parked) (arrival : Finset O) :
-    ¬ NoneHolds label region (parked ∪ arrival) :=
-  not_woken_by_arrival_of_downwardClosed (none_downward_closed region) fails arrival
+/-- **A parked absence guard is never woken by an arrival.** -/
+theorem absence_not_woken_by_arrival {region : R → Bool} {parked : Finset O}
+    (fails : ¬ AbsenceHolds label region parked) (arrival : Finset O) :
+    ¬ AbsenceHolds label region (parked ∪ arrival) :=
+  not_woken_by_arrival_of_downwardClosed (absence_downward_closed region) fails arrival
 
-/-- **A parked none guard is woken by removing its region.** -/
-theorem none_woken_by_removal (region : R → Bool) (parked : Finset O) :
-    NoneHolds label region (parked \ regionOf label parked region) := by
-  rw [noneHolds_iff]
+/-- **A parked absence guard is woken by removing its region.** -/
+theorem absence_woken_by_removal (region : R → Bool) (parked : Finset O) :
+    AbsenceHolds label region (parked \ regionOf label parked region) := by
+  rw [absenceHolds_iff]
   intro o member
   obtain ⟨inParked, notRegion⟩ := Finset.mem_sdiff.mp member
   by_contra inRegion
@@ -244,13 +244,13 @@ theorem holds_fireList_of_no_write {read : PredicateQuery O R} {store : Finset O
       exact ih (fun d member => noWrite d (List.mem_cons_of_mem _ member))
         (PredicateQuery.holds_fire_of_no_write (noWrite e List.mem_cons_self) holds)
 
-end NoneRead
+end Absence
 
 /-! ## Strata -/
 
 /-- A commit's only spoils within a wave come from writes into the regions of its predicate
 queries: no commit of the wave takes what another keeps. -/
-def NoneOnlyConflicts (W : List (Commit O R)) : Prop :=
+def AbsenceOnlyConflicts (W : List (Commit O R)) : Prop :=
   ∀ e ∈ W, ∀ d ∈ W, Disjoint e.taken d.kept
 
 /-- **Strata execute a wave.** If no commit of a clash-free wave takes what another keeps, a rank
@@ -258,14 +258,14 @@ that increases from every commit to every commit writing into the regions of its
 queries is a stratification; running the wave in strata order is executable. -/
 theorem exists_executable_perm_of_stratified {label : O → R} {store : Finset O}
     {W : List (Commit O R)} (enabled : ∀ c ∈ W, Enabled label store c)
-    (noClash : W.Pairwise (fun e d => ¬ Clash e d)) (noneOnly : NoneOnlyConflicts W)
+    (noClash : W.Pairwise (fun e d => ¬ Clash e d)) (absenceOnly : AbsenceOnlyConflicts W)
     {stratum : Commit O R → ℕ}
     (stratified : ∀ c ∈ W, ∀ p ∈ W, c ≠ p → WritesInto label p c → stratum c < stratum p) :
     ∃ l, l.Perm W ∧ Executable label store l := by
   refine exists_executable_perm_of_ranked enabled noClash (rank := stratum) ?_
   rintro e d ⟨inE, inD, different, spoils⟩
   rcases spoils with kept | writes
-  · exact absurd (noneOnly d inD e inE) kept
+  · exact absurd (absenceOnly d inD e inE) kept
   · exact stratified e inE d inD different writes
 
 /-! ## Controls -/
@@ -277,10 +277,10 @@ open Atom
 /-- **Waiting for an unlock.** "Add an output unless locked", parked at a store with the lock, is
 not woken by any arrival; it is woken once the lock is taken. -/
 theorem wait_for_unlock :
-    (∀ arrival : Finset ℕ, ¬ NoneHolds label isLock ({1} ∪ arrival)) ∧
-      NoneHolds label isLock (fire {1} lockTaker) := by
-  refine ⟨fun arrival => none_not_woken_by_arrival (by unfold NoneHolds; decide) arrival, ?_⟩
-  unfold NoneHolds
+    (∀ arrival : Finset ℕ, ¬ AbsenceHolds label isLock ({1} ∪ arrival)) ∧
+      AbsenceHolds label isLock (fire {1} lockTaker) := by
+  refine ⟨fun arrival => absence_not_woken_by_arrival (by unfold AbsenceHolds; decide) arrival, ?_⟩
+  unfold AbsenceHolds
   decide
 
 /-- **A predicate query of a non-empty region is two-sided.** With occurrences `20` and `21` both
@@ -299,12 +299,12 @@ theorem reader_minimal_wake :
       (reader.taken ∪ reader.kept) \ (∅ : Finset ℕ) = {0} :=
   ⟨(minimal_wake (show reader.Positive from rfl) (by decide) (by decide) (by decide)).1, by decide⟩
 
-/-- **A none read is falsified by one maker inside its region**, and kept by a run that writes
+/-- **An absence read is falsified by one maker inside its region**, and kept by a run that writes
 only outside it. -/
-theorem none_falsified_by_maker :
-    ¬ NoneHolds label isLock (fireList {0} [lockMaker]) ∧
-      NoneHolds label isLock (fireList {0} [reader, taker]) := by
-  refine ⟨by unfold NoneHolds; decide, ?_⟩
+theorem absence_falsified_by_maker :
+    ¬ AbsenceHolds label isLock (fireList {0} [lockMaker]) ∧
+      AbsenceHolds label isLock (fireList {0} [reader, taker]) := by
+  refine ⟨by unfold AbsenceHolds; decide, ?_⟩
   exact holds_fireList_of_no_write
     (by
       intro e member o written
@@ -334,7 +334,7 @@ theorem uniqueness_woken_by_arrival :
     decide
   exact ⟨by decide, by decide, notUp, fun adequate => notUp ((arrivalAdequate_iff _).mp adequate)⟩
 
-/-! ### Downward closure, none-only conflicts -/
+/-! ### Downward closure, absence-only conflicts -/
 
 /-- **Negative control**: the presence guard "occurrence `0` is present" holds at `{0}` and fails
 at the smaller `∅`: it is upward closed, not downward closed. -/
@@ -345,13 +345,13 @@ theorem presence_not_downwardClosed : ¬ DownwardClosed fun S : Finset ℕ => 0 
 
 /-- **Positive control**: a taker of the token and a keeper of the lock: there is a take and a keep,
 on different occurrences, so no commit of the wave takes what another keeps. -/
-theorem takeKeepApart_noneOnly :
-    NoneOnlyConflicts [taker, (Commit.keepOne 1 : Commit ℕ Atom)] := by
-  unfold NoneOnlyConflicts; decide
+theorem takeKeepApart_absenceOnly :
+    AbsenceOnlyConflicts [taker, (Commit.keepOne 1 : Commit ℕ Atom)] := by
+  unfold AbsenceOnlyConflicts; decide
 
 /-- **Negative control**: the taker takes the token the reader keeps. -/
-theorem taker_reader_not_noneOnly : ¬ NoneOnlyConflicts [taker, reader] := by
-  unfold NoneOnlyConflicts; decide
+theorem taker_reader_not_absenceOnly : ¬ AbsenceOnlyConflicts [taker, reader] := by
+  unfold AbsenceOnlyConflicts; decide
 
 end Controls
 

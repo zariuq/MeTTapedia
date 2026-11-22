@@ -4,7 +4,7 @@ import Mathlib.Combinatorics.SetFamily.FourFunctions
 /-!
 # Harris's inequality for every grade that shrinks
 
-`harris_none` computes the correlation of none grades exactly. Here the inequality is
+`harris_absence` computes the correlation of absence grades exactly. Here the inequality is
 proved for **every** pair of down-closed grades, by the Fortuin–Kasteleyn–Ginibre inequality
 (`fkg`, from the four functions theorem) on the order dual of the lattice of surroundings.
 
@@ -129,8 +129,8 @@ theorem harris_down_closed (p : α → ℝ) (probability : ∀ a, 0 ≤ p a ∧ 
   exact key
 
 omit [Fintype α] [DecidableEq α] in
-/-- None grades shrink, so `harris_down_closed` contains `harris_none`. -/
-theorem none_shrinks (F : Finset α) : ∀ S T : Finset α, S ⊆ T → Disjoint T F → Disjoint S F :=
+/-- Absence grades shrink, so `harris_down_closed` contains `harris_absence`. -/
+theorem absence_shrinks (F : Finset α) : ∀ S T : Finset α, S ⊆ T → Disjoint T F → Disjoint S F :=
   fun _ _ smaller apart => disjoint_of_subset_left smaller apart
 
 /-- **Control: a counting grade does not shrink.** -/

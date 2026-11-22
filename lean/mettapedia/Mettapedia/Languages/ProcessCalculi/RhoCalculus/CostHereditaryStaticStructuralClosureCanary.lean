@@ -353,9 +353,10 @@ private def rhoForeignBoundaryQuoteTerm :
   refine ⟨rhoForeignBoundaryQuotePattern,
     ⟨⟨typed, rfl, rfl, typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [rhoForeignBoundaryQuotePattern, rhoBreadthLeftProcess,
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [rhoForeignBoundaryQuotePattern, rhoBreadthLeftProcess,
     rhoCutOrderWrappedDrop, rhoCutOrderBaseQuote, rhoCutOrderBaseDrop,
-    binderSafeAt, binderSafeListAt]
+    binderSafeAt, binderSafeListAt])
 
 noncomputable def rhoForeignBoundaryQuoteNode :
     CostStaticRegionNode rhoCIGSLT .wrapped rhoCutOrderFree :=

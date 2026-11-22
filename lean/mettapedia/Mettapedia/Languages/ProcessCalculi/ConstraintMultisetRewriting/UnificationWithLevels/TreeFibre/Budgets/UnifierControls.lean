@@ -70,7 +70,7 @@ theorem eq_none_of_isSome_false {α : Type} {o : Option α} (h : o.isSome = fals
 
 theorem none_of_kind {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     {found : Option (Decided problem)} (undecided : decidedKind found = 0) : found = none := by
-  rcases found with _ | ⟨update, finished⟩ | missing
+  rcases found with _ | ⟨update, finished⟩ | absent
   · rfl
   · simp [decidedKind] at undecided
   · simp [decidedKind] at undecided
@@ -83,10 +83,10 @@ theorem solvable_of_kind {Θ : Context setting.R} {problem : EquationStore (Tota
 theorem unsolvable_of_kind {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     {found : Option (Decided problem)} (refuted : decidedKind found = 2) :
     ¬ (frames setting.levels).Solvable problem := by
-  rcases found with _ | ⟨update, finished⟩ | missing
+  rcases found with _ | ⟨update, finished⟩ | absent
   · simp [decidedKind] at refuted
   · simp [decidedKind] at refuted
-  · exact missing
+  · exact absent
 
 /-- A refutation at budget `0` is a no at budget `0`. -/
 theorem different_at_zero
@@ -96,16 +96,16 @@ theorem different_at_zero
     (ofDecided attempt).procedure.verdict 0 ⟨Θ, problem⟩ = .different := by
   show (ofDecided attempt).verdictOf ((ofDecided attempt).attempt 0 ⟨Θ, problem⟩) = .different
   generalize (ofDecided attempt).attempt 0 ⟨Θ, problem⟩ = found at refuted ⊢
-  rcases found with _ | ⟨update, finished⟩ | missing
+  rcases found with _ | ⟨update, finished⟩ | absent
   · simp [decidedKind] at refuted
   · simp [decidedKind] at refuted
   · simp [Decider.verdictOf, ofDecided, decidedSign]
 
 /-- **The cross store does not settle**: it is solvable and has no principal answer. -/
 theorem cross_not_settles : ¬ Settles crossStore := by
-  rintro (⟨update, finished⟩ | missing)
+  rintro (⟨update, finished⟩ | absent)
   · exact cross_no_principal update.answer (update.completed finished)
-  · exact missing cross_identity
+  · exact absent cross_identity
 
 /-! ## Inside one round -/
 
@@ -150,9 +150,9 @@ theorem inPlace_decided_by16 {Θ : Context setting.R} {problem : EquationStore (
       (inPlaceRounds.procedure.verdict 16 ⟨Θ, problem⟩ = .equal ↔ (frames setting.levels).Solvable problem) := by
   obtain ⟨d, hd⟩ := Option.isSome_iff_exists.mp found
   have decided : inPlaceRounds.procedure.verdict 16 ⟨Θ, problem⟩ ≠ .undecided := fun undecided => by
-    have missing := (inPlaceRounds.verdict_undecided_iff.mp undecided) 16 le_rfl
-    rw [← inPlace_is_attempt16, hd] at missing
-    cases missing
+    have absent := (inPlaceRounds.verdict_undecided_iff.mp undecided) 16 le_rfl
+    rw [← inPlace_is_attempt16, hd] at absent
+    cases absent
   exact ⟨decided, inPlaceRounds.procedure.exact_of_decided decided⟩
 
 /-- **Law 4 on a settled class, not vacuous**: the in-place family settles on the solving-in-place witness, so the

@@ -112,18 +112,18 @@ theorem drive_conservative (first second : {Γ : Context rules} → (problem : E
             rw [drive_succ, drive_succ, secondNext, firstNext]
             rw [drive_succ, firstNext] at decided
             exact drive_conservative first second agrees rounds (state.then update) decided
-        | refuted missing =>
+        | refuted absent =>
             have moved := agrees state.remaining (by rw [computed]; exact fun impossible => by cases impossible)
-            have secondComputed : second state.remaining = .refuted missing := moved.trans computed
+            have secondComputed : second state.remaining = .refuted absent := moved.trans computed
             have firstRefuted : advance ⟨rank, first⟩ state =
-                .done (.refuted fun solvable => missing (state.solvable_iff.mp solvable)) := by
+                .done (.refuted fun solvable => absent (state.solvable_iff.mp solvable)) := by
               unfold advance
               split
               · rename_i nil
                 exact absurd nil empty
               · simp only [computed]
             have secondRefuted : advance ⟨rank, second⟩ state =
-                .done (.refuted fun solvable => missing (state.solvable_iff.mp solvable)) := by
+                .done (.refuted fun solvable => absent (state.solvable_iff.mp solvable)) := by
               unfold advance
               split
               · rename_i nil
@@ -169,7 +169,7 @@ theorem argumentsRound_eq_of_any (fuel : Nat) {Θ : Context S.R} {problem : Equa
         certifyNormal headTypingUnique rootComplete fuel problem with
     | stuck => exact absurd computed moving
     | progress update smaller => rfl
-    | refuted missing => rfl
+    | refuted absent => rfl
   have headsSame : headsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem =
       anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
@@ -180,7 +180,7 @@ theorem argumentsRound_eq_of_any (fuel : Nat) {Θ : Context S.R} {problem : Equa
         certifyNormal headTypingUnique rootComplete fuel problem with
     | stuck => exact absurd computed moving
     | progress update smaller => rfl
-    | refuted missing => rfl
+    | refuted absent => rfl
   have pairs : pairsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem =
       anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
@@ -191,7 +191,7 @@ theorem argumentsRound_eq_of_any (fuel : Nat) {Θ : Context S.R} {problem : Equa
         certifyNormal headTypingUnique rootComplete fuel problem with
     | stuck => exact absurd computed moving
     | progress update smaller => rfl
-    | refuted missing => rfl
+    | refuted absent => rfl
   have endpoints : endpointsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem =
       anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
@@ -202,7 +202,7 @@ theorem argumentsRound_eq_of_any (fuel : Nat) {Θ : Context S.R} {problem : Equa
         certifyNormal headTypingUnique rootComplete fuel problem with
     | stuck => exact absurd computed moving
     | progress update smaller => rfl
-    | refuted missing => rfl
+    | refuted absent => rfl
   have projections : projectionsRound facts roots heads algebra rigid complete declared choices reducer root
       normalizes certifyNormal headTypingUnique rootComplete fuel problem =
       anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
@@ -213,14 +213,14 @@ theorem argumentsRound_eq_of_any (fuel : Nat) {Θ : Context S.R} {problem : Equa
         certifyNormal headTypingUnique rootComplete fuel problem with
     | stuck => exact absurd computed moving
     | progress update smaller => rfl
-    | refuted missing => rfl
+    | refuted absent => rfl
   unfold argumentsRound
   rw [projections]
   cases computed : anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that R97's family decides, the last family decides with the same outcome.** -/
 theorem arguments_run_of_any (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -268,13 +268,13 @@ theorem argumentsRound_not_stuck_of_endpoints (fuel : Nat) {Θ : Context S.R} {p
         certifyNormal headTypingUnique rootComplete fuel problem with
     | stuck => exact absurd computed moving
     | progress update smaller => exact fun impossible => by cases impossible
-    | refuted missing => exact fun impossible => by cases impossible
+    | refuted absent => exact fun impossible => by cases impossible
   unfold argumentsRound
   cases computed : projectionsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed projections
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **Projection-spine row.** When the decomposition of projection spines finds an equation of the prepared store
 with homogeneous twins, the last round is not stuck. -/
@@ -294,13 +294,13 @@ theorem argumentsRound_not_stuck_of_projections (fuel : Nat) {Θ : Context S.R} 
         simp only [computed]
         exact fun impossible => by cases impossible
     | progress update smaller => exact fun impossible => by cases impossible
-    | refuted missing => exact fun impossible => by cases impossible
+    | refuted absent => exact fun impossible => by cases impossible
   unfold argumentsRound
   cases computed : projectionsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed projections
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **Spine-argument row.** When the spine-argument occurs check reads the prepared store with homogeneous twins,
 the last round is not stuck. -/
@@ -312,11 +312,11 @@ theorem argumentsRound_not_stuck_of_arguments (fuel : Nat) {Θ : Context S.R} {p
   cases projectionsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck =>
-      obtain ⟨missing, computed⟩ := Option.isSome_iff_exists.mp read
+      obtain ⟨absent, computed⟩ := Option.isSome_iff_exists.mp read
       simp only [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-! ## Closure of the stratified fragment under making twins homogeneous -/
 

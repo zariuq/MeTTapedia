@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.Syntax.RhoScopedNativeNone
+import Mettapedia.OSLF.Syntax.RhoScopedNativeAbsence
 import Mettapedia.TypeTheory.PresheafEventCertificates
 
 /-!

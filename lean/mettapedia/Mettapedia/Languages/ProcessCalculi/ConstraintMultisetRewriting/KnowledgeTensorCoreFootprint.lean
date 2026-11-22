@@ -12,7 +12,7 @@ firing reads: the lent zone of the logical reading is the overlap of a placement
   the isomorphism of the transport.
 * `footprint_inter_rest`: the footprint and the rest share exactly the read occurrences.
 * `valid_footprint`: a firing without predicate queries whose checks hold of every smaller store
-  (equality and none checks) is admitted at its footprint.
+  (equality and absence checks) is admitted at its footprint.
 * `event_is_framed_leaf`: such an admitted firing is the placed candidate of its own leaf run at
   its footprint, beside the rest. So every native run of such firings is a cut of framed leaves.
 * `a_count_is_no_leaf_at_its_footprint`: a counting check admitted at a configuration can be
@@ -42,7 +42,7 @@ def footprint (C : Configuration T O) (f : Firing T S O) : Configuration T O :=
 def rest (C : Configuration T O) (f : Firing T S O) : Configuration T O :=
   ⟨[], C.present \ f.selection.taken.toFinset⟩
 
-/-- The checks of a rule hold of every smaller store: each is an equality or a none check. -/
+/-- The checks of a rule hold of every smaller store: each is an equality or an absence check. -/
 def Shrinks (rule : RuleInstance T) : Prop :=
   ∀ check ∈ rule.checks, (∃ one two, check = Check.equal one two) ∨ ∃ pattern, check = Check.predicate .none pattern
 
@@ -139,8 +139,8 @@ theorem event_is_framed_leaf (A : SubstitutionAction T S) (label : O → T) {C :
 /-! ## Controls -/
 
 open KnowledgeTensorFirstOrderControls (plain unlessNine) in
-/-- Positive control: a none check holds of every smaller store. -/
-theorem none_shrinks : Shrinks unlessNine := by
+/-- Positive control: an absence check holds of every smaller store. -/
+theorem absence_shrinks : Shrinks unlessNine := by
   intro check member
   have which : check = Check.predicate .none 9 := List.mem_singleton.mp member
   exact Or.inr ⟨9, which⟩

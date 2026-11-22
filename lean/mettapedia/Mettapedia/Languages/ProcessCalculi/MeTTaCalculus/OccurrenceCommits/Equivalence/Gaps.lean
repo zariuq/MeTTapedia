@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Equiv
 
 Three controls, each with its positive half proved.
 
-* **The predicate-query gap** (`else_gap`). `e` fires one of two branches: when `x` is not present it
+* **The predicate-query gap** (`else_gap`). `e` fires one of two branches: when `x` is absent it
   makes `q`; when `x` is present it reads `x` and makes `q`. This is `(else (transform (read x) q)
   q)`: fire the first branch if it can fire now, otherwise the second. Beside every environment it
   makes `q`, exactly as the plain step `p → q` does, so `{e}` and `{p}` are contextually equivalent.
@@ -19,7 +19,7 @@ Three controls, each with its positive half proved.
   equivalent and bisimilar in the semi-saturated game, but not in the literal game of matching
   labels.
 * **Conditions on labels are necessary** (`blind_not_congruence`). Drop the comparison of
-  conditions from the game: the plain step and the none-guarded step become "bisimilar", and
+  conditions from the game: the plain step and the absence-guarded step become "bisimilar", and
   adding `x` beside both separates them, so the condition-blind relation is not a congruence and
   not sound for contextual equivalence.
 
@@ -161,14 +161,14 @@ def isX : ElseAtom → Bool
 /-- `p → q`. -/
 def plain : Rule ElseAtom := ⟨{p}, 0, {q}, fun _ => false⟩
 
-/-- `e → q` when `x` is not present. -/
-def elseNone : Rule ElseAtom := ⟨{e}, 0, {q}, isX⟩
+/-- `e → q` when `x` is absent. -/
+def elseAbsent : Rule ElseAtom := ⟨{e}, 0, {q}, isX⟩
 
 /-- `e → q` reading `x`. -/
 def elseRead : Rule ElseAtom := ⟨{e}, {x}, {q}, fun _ => false⟩
 
 /-- The rules of the `else` control. -/
-def elseRules : Rule ElseAtom → Prop := fun ρ => ρ = plain ∨ ρ = elseNone ∨ ρ = elseRead
+def elseRules : Rule ElseAtom → Prop := fun ρ => ρ = plain ∨ ρ = elseAbsent ∨ ρ = elseRead
 
 /-- One barb: `q` is visible. -/
 def showsQ : Unit → ElseAtom → Prop := fun _ y => y = q
@@ -203,25 +203,25 @@ theorem else_fwd (Z X' : Multiset ElseAtom) (reduces : Reduces elseRules (p ::�
         rw [← Multiset.singleton_add]
         exact add_le_add (le_refl _) (Multiset.singleton_le.mpr hx)
       simpa [elseRead, Rule.redex] using this
-    · refine ⟨elseNone.result (e ::ₘ Z), ⟨elseNone, Or.inr (Or.inl rfl), ⟨?_, ?_⟩, rfl⟩,
-        Or.inl (else_result Z elseNone rfl rfl).symm⟩
-      · simp [elseNone, Rule.redex]
-      · simpa [elseNone, Rule.redex, Multiset.sub_singleton, Multiset.erase_cons_head] using
+    · refine ⟨elseAbsent.result (e ::ₘ Z), ⟨elseAbsent, Or.inr (Or.inl rfl), ⟨?_, ?_⟩, rfl⟩,
+        Or.inl (else_result Z elseAbsent rfl rfl).symm⟩
+      · simp [elseAbsent, Rule.redex]
+      · simpa [elseAbsent, Rule.redex, Multiset.sub_singleton, Multiset.erase_cons_head] using
           avoids_isX_of_not_mem hx
-  · -- a copy of `e` in the rest fired its none branch; so does the swapped copy.
-    have eZ : e ∈ Z := by simpa [elseNone, Rule.redex] using sub
-    have frame : (p ::ₘ Z) - elseNone.redex = p ::ₘ Z.erase e := by
-      simp [elseNone, Rule.redex, Multiset.sub_singleton, Multiset.erase_cons_tail Z (by decide : p ≠ e)]
+  · -- a copy of `e` in the rest fired its absence branch; so does the swapped copy.
+    have eZ : e ∈ Z := by simpa [elseAbsent, Rule.redex] using sub
+    have frame : (p ::ₘ Z) - elseAbsent.redex = p ::ₘ Z.erase e := by
+      simp [elseAbsent, Rule.redex, Multiset.sub_singleton, Multiset.erase_cons_tail Z (by decide : p ≠ e)]
     rw [frame] at avoids
     have hx : x ∉ Z := fun hx => by
       have := not_mem_of_avoids_isX avoids
       exact this (Multiset.mem_cons_of_mem ((Multiset.mem_erase_of_ne (by decide)).mpr hx))
-    refine ⟨elseNone.result (e ::ₘ Z), ⟨elseNone, Or.inr (Or.inl rfl),
-      ⟨by simp [elseNone, Rule.redex], ?_⟩, rfl⟩, Or.inr (Or.inl ⟨Z.erase e + {q}, ?_, ?_⟩)⟩
-    · simpa [elseNone, Rule.redex, Multiset.sub_singleton, Multiset.erase_cons_head] using
+    refine ⟨elseAbsent.result (e ::ₘ Z), ⟨elseAbsent, Or.inr (Or.inl rfl),
+      ⟨by simp [elseAbsent, Rule.redex], ?_⟩, rfl⟩, Or.inr (Or.inl ⟨Z.erase e + {q}, ?_, ?_⟩)⟩
+    · simpa [elseAbsent, Rule.redex, Multiset.sub_singleton, Multiset.erase_cons_head] using
         avoids_isX_of_not_mem hx
-    · simp [elseNone, Rule.result, Multiset.sub_singleton, Multiset.erase_cons_tail Z (by decide : p ≠ e)]
-    · rw [else_result Z elseNone rfl rfl, ← Multiset.cons_add, Multiset.cons_erase eZ]
+    · simp [elseAbsent, Rule.result, Multiset.sub_singleton, Multiset.erase_cons_tail Z (by decide : p ≠ e)]
+    · rw [else_result Z elseAbsent rfl rfl, ← Multiset.cons_add, Multiset.cons_erase eZ]
   · -- a copy of `e` in the rest fired its reading branch; so does the swapped copy.
     have sub' : ({e} + {x} : Multiset ElseAtom) ≤ p ::ₘ Z := by simpa [elseRead, Rule.redex] using sub
     have eZ : e ∈ Z := by
@@ -256,10 +256,10 @@ theorem else_bwd (Z Y' : Multiset ElseAtom) (reduces : Reduces elseRules (e ::�
       fun _ _ => rfl⟩, rfl⟩, Or.inr (Or.inl ⟨Z.erase p + {q}, ?_, ?_⟩)⟩
     · rw [plain_result, ← Multiset.cons_add, Multiset.cons_erase pZ]
     · simp [plain, Rule.result, Multiset.sub_singleton, Multiset.erase_cons_tail Z (by decide : e ≠ p)]
-  · -- `e` fired its none branch: `p` fires to the same bag.
+  · -- `e` fired its absence branch: `p` fires to the same bag.
     refine ⟨plain.result (p ::ₘ Z), ⟨plain, Or.inl rfl, ⟨by simp [plain, Rule.redex],
       fun _ _ => rfl⟩, rfl⟩, Or.inl ?_⟩
-    rw [plain_result, else_result Z elseNone rfl rfl]
+    rw [plain_result, else_result Z elseAbsent rfl rfl]
   · -- `e` fired its reading branch: `p` fires to the same bag.
     refine ⟨plain.result (p ::ₘ Z), ⟨plain, Or.inl rfl, ⟨by simp [plain, Rule.redex],
       fun _ _ => rfl⟩, rfl⟩, Or.inl ?_⟩
@@ -387,8 +387,8 @@ section Blind
 
 open ElseAtom
 
-/-- The plain step and the none branch alone. -/
-def guardRules : Rule ElseAtom → Prop := fun ρ => ρ = plain ∨ ρ = elseNone
+/-- The plain step and the absence branch alone. -/
+def guardRules : Rule ElseAtom → Prop := fun ρ => ρ = plain ∨ ρ = elseAbsent
 
 /-- No barbs. -/
 def noBarbs : Empty → ElseAtom → Prop := Empty.elim
@@ -397,13 +397,13 @@ theorem guard_label_free {M M' J : Multiset ElseAtom} {F : ElseAtom → Bool}
     (step : BStep guardRules M ⟨J, F⟩ M') : x ∉ J := by
   obtain ⟨ρ, hρ | hρ, hJ, -, -, -⟩ := step <;> subst hρ <;> simp only at hJ <;> rw [hJ] <;>
     intro member <;> have := Multiset.mem_of_le (Multiset.sub_le_self _ _) member <;>
-    simp [plain, elseNone, Rule.redex] at this
+    simp [plain, elseAbsent, Rule.redex] at this
 
 theorem guard_result_free {M M' J : Multiset ElseAtom} {F : ElseAtom → Bool}
     (step : BStep guardRules M ⟨J, F⟩ M') (hM : x ∉ M) : x ∉ M' := by
   have hJ := guard_label_free step
   obtain ⟨ρ, hρ | hρ, -, -, -, rfl⟩ := step <;> subst hρ <;> intro member <;>
-    simp only [Rule.result, plain, elseNone, Multiset.mem_add, Multiset.mem_singleton] at member <;>
+    simp only [Rule.result, plain, elseAbsent, Multiset.mem_add, Multiset.mem_singleton] at member <;>
     rcases member with member | member
   all_goals first
     | (have := Multiset.mem_of_le (Multiset.sub_le_self _ _) member
@@ -492,7 +492,7 @@ theorem blindRel_isBlind : IsBlindBisimulation guardRules (fun _ => True) noBarb
         · exact hWJ h
 
 /-- **Conditions on labels are necessary.** In the condition-blind game the plain step and the
-none-guarded step are related; beside `x` they are not, and they are not contextually
+absence-guarded step are related; beside `x` they are not, and they are not contextually
 equivalent. So the condition-blind relation is neither a congruence nor sound. -/
 theorem blind_not_congruence :
     BlindBisimilar guardRules (fun _ => True) noBarbs {p} {e} ∧

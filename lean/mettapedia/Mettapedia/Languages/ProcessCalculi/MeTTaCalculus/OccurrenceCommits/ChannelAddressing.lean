@@ -38,12 +38,12 @@ What changes is the class of processes that can exist beside a program, and with
   run every list of scoped commits alike, and reach stores that agree on the held names.
 * **The ν-garbage law** (`garbage_unobservable`): occurrences at a name nobody holds are
   unobservable: adding them changes no scoped process's run.
-* **Stable predicate queries inside a scope** (`scope_read_stable`): a none query, or any other
+* **Stable predicate queries inside a scope** (`scope_read_stable`): an absence, or any other
   predicate query, at a name that only its owner holds stays valid across any run of the other
   processes' scoped commits: the scope closes the query's world. If the name is shared (extruded),
-  one send by the other process falsifies it (`Controls.extruded_none_falsified`).
+  one send by the other process falsifies it (`Controls.extruded_absence_falsified`).
 * **A pattern-addressed region has none of these** (`Controls.wildcard_breaks_noninterference`):
-  a none read over every name tells apart two stores that agree on the reader's names.
+  an absence read over every name tells apart two stores that agree on the reader's names.
 
 So a channel is not a second kind of region: it is a space region together with restricted
 rights (no access to an unheld name, no enumeration of names). What must be native is the name
@@ -83,9 +83,9 @@ theorem restrict_eq_regionOf (held : N → Bool) (store : Finset O) :
     restrict label loc held store = regionOf label store (fun r => held (loc r)) := rfl
 
 omit [DecidableEq O] in
-/-- Nothing at the held names is the none read of their region (`NoneHolds`). -/
+/-- Nothing at the held names is the absence read of their region (`AbsenceHolds`). -/
 theorem restrict_eq_empty_iff (held : N → Bool) (store : Finset O) :
-    restrict label loc held store = ∅ ↔ NoneHolds label (fun r => held (loc r)) store :=
+    restrict label loc held store = ∅ ↔ AbsenceHolds label (fun r => held (loc r)) store :=
   Iff.rfl
 
 omit [DecidableEq O] in
@@ -403,13 +403,13 @@ def anywhere : ℕ × Atom → Bool := fun r => r.2 == out
 def holdsZero : ℕ → Bool := fun n => n == 0
 
 /-- **A pattern-addressed region breaks non-interference.** The stores `∅` and `{51}` agree on
-name `0`, the reader's only name. The scoped none read at name `0` holds at both; the none query
+name `0`, the reader's only name. The scoped absence read at name `0` holds at both; the absence
 read over every name holds at the first and fails at the second. -/
 theorem wildcard_breaks_noninterference :
     restrict chanLabel Prod.fst holdsZero ∅ = restrict chanLabel Prod.fst holdsZero {51} ∧
-      NoneHolds chanLabel atZero ∅ ∧ NoneHolds chanLabel atZero {51} ∧
-      NoneHolds chanLabel anywhere ∅ ∧ ¬ NoneHolds chanLabel anywhere {51} := by
-  refine ⟨by decide, ?_, ?_, ?_, ?_⟩ <;> unfold NoneHolds <;> decide
+      AbsenceHolds chanLabel atZero ∅ ∧ AbsenceHolds chanLabel atZero {51} ∧
+      AbsenceHolds chanLabel anywhere ∅ ∧ ¬ AbsenceHolds chanLabel anywhere {51} := by
+  refine ⟨by decide, ?_, ?_, ?_, ?_⟩ <;> unfold AbsenceHolds <;> decide
 
 /-- Send a message on name `0`. -/
 def sendZero : Commit ℕ (ℕ × Atom) := ⟨∅, ∅, {50}, []⟩
@@ -418,14 +418,14 @@ def sendZero : Commit ℕ (ℕ × Atom) := ⟨∅, ∅, {50}, []⟩
 def sendOne : Commit ℕ (ℕ × Atom) := ⟨∅, ∅, {51}, []⟩
 
 /-- **Predicate queries are stable in scope, and fall when the name is shared.** A process
-holding only name `1` cannot falsify the none read at name `0`; a process that also holds
+holding only name `1` cannot falsify the absence read at name `0`; a process that also holds
 name `0` falsifies it with one send. -/
-theorem extruded_none_falsified :
-    NoneHolds chanLabel atZero (fireList ∅ [sendOne]) ∧
+theorem extruded_absence_falsified :
+    AbsenceHolds chanLabel atZero (fireList ∅ [sendOne]) ∧
       Scoped chanLabel Prod.fst (fun n => n == 1) sendOne ∧
       Scoped chanLabel Prod.fst holdsZero sendZero ∧
-      ¬ NoneHolds chanLabel atZero (fireList ∅ [sendZero]) := by
-  refine ⟨?_, ?_, ?_, by unfold NoneHolds; decide⟩
+      ¬ AbsenceHolds chanLabel atZero (fireList ∅ [sendZero]) := by
+  refine ⟨?_, ?_, ?_, by unfold AbsenceHolds; decide⟩
   · exact scope_read_stable (label := chanLabel) (loc := Prod.fst) (others := fun n => n == 1)
       (fun e member => by
         simp only [List.mem_singleton] at member

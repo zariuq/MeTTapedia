@@ -63,8 +63,8 @@ theorem readsAt_iff_realizes (row : RowClosure signature) (source : Subst signat
   constructor
   · rintro ⟨locals, known, captures, output⟩
     refine ⟨locals, ?_, known, ?_⟩
-    · intro pair missing
-      simp [SymmetricMatches.Presentation.uses, presentation] at missing
+    · intro pair absent
+      simp [SymmetricMatches.Presentation.uses, presentation] at absent
     · change value :: row.args.map source.applyTerm =
         (row.schema.value :: row.schema.params).map locals.applyTerm
       rw [List.map_cons]

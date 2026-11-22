@@ -99,7 +99,7 @@ theorem ViewKeeps.found {Θ : Context S.R} {problem : EquationStore (TotalTerm �
           have same : moved = update := Option.some.inj (Option.some.inj offered)
           subst same
           exact keeps moved smaller rfl
-      | refuted missing => cases offered
+      | refuted absent => cases offered
 
 theorem ViewKeeps.foundFiring {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
     {found : Option (Found problem)} (keeps : FoundKeeps holds found) :
@@ -113,7 +113,7 @@ theorem ViewKeeps.foundFiring {Θ : Context S.R} {problem : EquationStore (Total
           have same : moved = update := Option.some.inj (Option.some.inj offered)
           subst same
           exact keeps moved smaller rfl
-      | refuted missing => cases offered
+      | refuted absent => cases offered
 
 /-- **A committed rule on the prepared store, or else the rest.** -/
 theorem ViewKeeps.identity {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} {prepared : Update S.levels problem}

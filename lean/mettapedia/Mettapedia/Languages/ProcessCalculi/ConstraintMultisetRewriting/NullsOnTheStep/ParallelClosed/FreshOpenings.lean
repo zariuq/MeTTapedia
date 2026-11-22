@@ -13,7 +13,7 @@ reaches success by a run whose made identities are new to `D` (`StepAvoiding`); 
 `beside D C` reaches no success.
 
 **The line** (`switchesOff_shares`): for a program of positive rules (equation checks only, no
-none queries, no count, no collect query) and a barb invariant under renaming, a neighbour switches reachable
+absence, no count, no collect query) and a barb invariant under renaming, a neighbour switches reachable
 success off only through an unknown that the system's start mentions and that the neighbour mentions,
 in its knowledge or in the labels of its rows. It is the contrapositive of
 `Scope.success_persists_from_start` (privacy at the start suffices: the run's own fresh unknowns are
@@ -35,8 +35,8 @@ Controls:
   no positive program off (`repeated_knowledge_runs`), while it shares and constrains the system's
   unknown (`shared_constrained_never_switches`); a positive program that succeeds there alone succeeds
   beside it (`knowsSix_succeeds_beside`);
-* **positivity is needed**: a none check is refused beside a ground row that shares nothing
-  (`Scope.CompositionControls.none_refused_beside_ground`).
+* **positivity is needed**: an absence check is refused beside a ground row that shares nothing
+  (`Scope.CompositionControls.absence_refused_beside_ground`).
 -/
 
 set_option autoImplicit false

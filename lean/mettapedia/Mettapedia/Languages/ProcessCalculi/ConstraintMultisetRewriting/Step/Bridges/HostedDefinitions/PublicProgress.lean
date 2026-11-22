@@ -48,7 +48,7 @@ theorem source_normalizes (grounded : ∀ rule ∈ rows helpers authored, Ground
       constructor
       · exact ⟨Empty, ProgramBinders.ground MSig,
           ProgramBinders.close (fam (keys helpers authored)),
-          fun _ missing => False.elim (List.not_mem_nil missing)⟩
+          fun _ absent => False.elim (List.not_mem_nil absent)⟩
       · intro X target assignment _
         exact Rigid.instantiate_include assignment call
 

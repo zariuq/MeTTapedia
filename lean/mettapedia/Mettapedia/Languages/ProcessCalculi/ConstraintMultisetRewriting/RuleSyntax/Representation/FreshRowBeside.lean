@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 `Representation.wholeStore_not_presented` shows that `WholeStore a b` (rewrite the store `{a}` to `{b}`, and no
 other store) is the rewriting of no set of positive rules, because it is not frame-closed. This module shows
 that no program of `RuleSyntax.step` at the one first-order frame over rows with unknowns presents it, whatever
-its rules: unknowns, reads, tells, equation guards, none checks, count checks and collect patterns alike, of
+its rules: unknowns, reads, tells, equation guards, absence checks, count checks and collect patterns alike, of
 any size. A check is read at every solution of the firing's information, and a solution that sends a pattern
 to a constant that neither the program nor the state mentions can be followed by the replacement of that
 constant by the row `a`; so no check sees a row whose constant nothing names.
@@ -21,8 +21,8 @@ constant by the row `a`; so no check sees a row whose constant nothing names.
   its opened checks and of its collect patterns.
 * `wholeStore_not_presented_any`: so no program presents `WholeStore a b`.
 
-Control: a none check does refuse beside a row the program mentions
-(`Machines.NoneReading.rewrites_but_refused`). The none query sees only rows the program can name.
+Control: an absence check does refuse beside a row the program mentions
+(`Machines.AbsenceReading.rewrites_but_refused`). Absence sees only rows the program can name.
 -/
 
 set_option autoImplicit false

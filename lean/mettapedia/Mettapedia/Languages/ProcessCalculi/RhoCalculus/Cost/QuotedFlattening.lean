@@ -50,7 +50,8 @@ def nestedUnitTerm :
     ⟨⟨nestedUnitPattern_typed, rfl, rfl,
       nestedUnitPattern_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [nestedUnitPattern, binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [nestedUnitPattern, binderSafeAt, binderSafeListAt])
 
 /-- The retained second-layer compiler accepts the same nested wrapper. -/
 def nestedUnitElaboration :
@@ -107,8 +108,9 @@ def nestedFundingLeftTerm :
     ⟨⟨nestedFunding_left_typed, rfl, rfl,
       nestedFunding_left_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [nestedFundingPattern, unitStack, mapPattern, mapPatternList,
-    binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [nestedFundingPattern, unitStack, mapPattern, mapPatternList,
+    binderSafeAt, binderSafeListAt])
 
 def nestedFundingRightTerm :
     ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
@@ -117,8 +119,9 @@ def nestedFundingRightTerm :
     ⟨⟨nestedFunding_right_typed, rfl, rfl,
       nestedFunding_right_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [nestedFundingPattern, unitStack, mapPattern, mapPatternList,
-    binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [nestedFundingPattern, unitStack, mapPattern, mapPatternList,
+    binderSafeAt, binderSafeListAt])
 
 /-- Both accounts are nonempty on each side; exchanging their one/two-cell
 boundary changes the admitted retained term. -/
@@ -254,7 +257,8 @@ def flattenedFundingTerm : source.CanonicalCarrier := by
     ⟨⟨flattenedFunding_typed, rfl, rfl,
       flattenedFunding_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [unitStack, binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [unitStack, binderSafeAt, binderSafeListAt])
 
 /-- An actual reachable canonical key for the flattened target. The source
 objects of the collision remain retained Cost2 elaborations, and are not

@@ -5,10 +5,10 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 # Where the step exceeds COMM: conditions on the whole space
 
 Consensus numbers do not separate the step from rho's COMM: both are infinite (`StepSpace`,
-`Rho`), and rho runs every deterministic object, the step-space with its none checks included,
+`Rho`), and rho runs every deterministic object, the step-space with its absence checks included,
 by keeping the object's history in one message. What rho cannot do is run a space **one part at
 a time**: a COMM that can fire still fires when more processes are put beside it (the PAR rule of
-the calculus), while a none check does not.
+the calculus), while an absence check does not.
 
 ## The observer
 
@@ -25,18 +25,18 @@ weakest operational requirements an encoding can meet; nothing about the shape o
 can show the barb while `P` beside `Q` cannot, then no encoding whose image of `P` beside `Q` is
 `enc P ∥ u` for some `u` (for example `enc P ∥ enc Q`) is complete and sound.
 
-The step language has such a pair (`none_fires`, `none_blocked`): the step
-`take trigger, make done, provided no blocker` (`noneExample`) fires at `{trigger}` and never
+The step language has such a pair (`absence_fires`, `absence_blocked`): the step
+`take trigger, make done, provided no blocker` (`absenceExample`) fires at `{trigger}` and never
 at `{trigger, blocker}`, where the blocker stays forever.
 
-* **Positive rules over bags** (`positive_rules_cannot_encode_none`): no encoding into steps
+* **Positive rules over bags** (`positive_rules_cannot_encode_absence`): no encoding into steps
   without conditions on the whole space (take, keep and make: COMM over a bag) whose image of a
   union contains the image of each part is complete and sound for an upward-closed test.
-* **The rho calculus** (`rho_cannot_encode_none`): no encoding into the rho calculus that sends
+* **The rho calculus** (`rho_cannot_encode_absence`): no encoding into the rho calculus that sends
   union to parallel composition is complete and sound for the output barb on a name (read through
   nested parallel compositions, `HasOutput`).
-* One step at a time this is `Rule.step_unconditional_iff`: the none step's label is honoured
-  in some larger environment and not in all (`none_step_conditional`).
+* One step at a time this is `Rule.step_unconditional_iff`: the absence step's label is honoured
+  in some larger environment and not in all (`absence_step_conditional`).
 
 ## The hypotheses are needed
 
@@ -91,7 +91,7 @@ theorem no_parallel_encoding {Src Tgt : Type*} {srcStep : Src → Src → Prop} 
   rw [hu]
   exact ⟨_, reflTransGen_par parClosed u run, barbClosed _ _ barb⟩
 
-/-! ## The step language has a none step a neighbour blocks -/
+/-! ## The step language has an absence step a neighbour blocks -/
 
 /-- Atoms of the source example. -/
 inductive Src where
@@ -99,48 +99,48 @@ inductive Src where
   deriving DecidableEq
 
 /-- `take trigger, make done, provided no blocker`. -/
-def noneExample : Rule Src := ⟨{.trigger}, 0, {.done}, fun a => decide (a = .blocker)⟩
+def absenceExample : Rule Src := ⟨{.trigger}, 0, {.done}, fun a => decide (a = .blocker)⟩
 
-/-- The source: bags of atoms with the none step. -/
-def srcStep : Multiset Src → Multiset Src → Prop := Reduces (· = noneExample)
+/-- The source: bags of atoms with the absence step. -/
+def srcStep : Multiset Src → Multiset Src → Prop := Reduces (· = absenceExample)
 
 /-- The source barb: `done` is present. -/
 def hasDone (M : Multiset Src) : Prop := Src.done ∈ M
 
-/-- **The none step fires alone.** -/
-theorem none_fires : WeakBarb srcStep hasDone {.trigger} := by
-  refine ⟨{.done}, .single ⟨noneExample, rfl, ⟨?_, ?_⟩, ?_⟩, by simp [hasDone]⟩
-  · simp [Rule.redex, noneExample]
-  · simp [Rule.redex, noneExample]
-  · simp [Rule.result, noneExample]
+/-- **The absence step fires alone.** -/
+theorem absence_fires : WeakBarb srcStep hasDone {.trigger} := by
+  refine ⟨{.done}, .single ⟨absenceExample, rfl, ⟨?_, ?_⟩, ?_⟩, by simp [hasDone]⟩
+  · simp [Rule.redex, absenceExample]
+  · simp [Rule.redex, absenceExample]
+  · simp [Rule.result, absenceExample]
 
 /-- **Beside a blocker it never fires.** -/
-theorem none_blocked : ¬ WeakBarb srcStep hasDone ({.trigger} + {.blocker}) := by
+theorem absence_blocked : ¬ WeakBarb srcStep hasDone ({.trigger} + {.blocker}) := by
   have stuck : ∀ M', ¬ srcStep ({.trigger} + {.blocker}) M' := by
     rintro M' ⟨ρ, rfl, ⟨-, avoids⟩, -⟩
-    have := avoids .blocker (by simp [Rule.redex, noneExample])
-    simp [noneExample] at this
+    have := avoids .blocker (by simp [Rule.redex, absenceExample])
+    simp [absenceExample] at this
   rintro ⟨M', run, barb⟩
   rcases Relation.ReflTransGen.cases_head run with rfl | ⟨M'', step, -⟩
   · simp [hasDone] at barb
   · exact stuck _ step
 
-/-- The none step is not positive. -/
-theorem noneExample_not_positive : ¬ noneExample.Positive := fun h => by
+/-- The absence step is not positive. -/
+theorem absenceExample_not_positive : ¬ absenceExample.Positive := fun h => by
   have := h .blocker
-  simp [noneExample] at this
+  simp [absenceExample] at this
 
-/-- **One step at a time** (`Rule.step_unconditional_iff`): the none step at `{trigger}`
+/-- **One step at a time** (`Rule.step_unconditional_iff`): the absence step at `{trigger}`
 borrows nothing, and some environment beside it still disables it. -/
-theorem none_step_conditional :
-    ¬ ∀ E : Multiset Src, noneExample.Enabled ({.trigger} + 0 + E) := by
-  have step : noneExample.Step {.trigger} ⟨0, noneExample.closed⟩ {.done} := by
+theorem absence_step_conditional :
+    ¬ ∀ E : Multiset Src, absenceExample.Enabled ({.trigger} + 0 + E) := by
+  have step : absenceExample.Step {.trigger} ⟨0, absenceExample.closed⟩ {.done} := by
     refine ⟨?_, rfl, ?_, ?_⟩
-    · simp [Rule.redex, noneExample]
-    · simp [Rule.redex, noneExample]
-    · simp [Rule.result, noneExample]
+    · simp [Rule.redex, absenceExample]
+    · simp [Rule.redex, absenceExample]
+    · simp [Rule.result, absenceExample]
   rw [Rule.step_unconditional_iff step]
-  exact noneExample_not_positive
+  exact absenceExample_not_positive
 
 /-! ## Into positive rules over bags -/
 
@@ -157,9 +157,9 @@ theorem positive_reduces_frame {R : Type*} [DecidableEq R] {Γ : Rule R → Prop
   simp only [Rule.result, Multiset.count_add, Multiset.count_sub]
   omega
 
-/-- **No encoding into positive rules over bags expresses none queries**, when the image of a union
+/-- **No encoding into positive rules over bags expresses absence**, when the image of a union
 contains the image of each part and the test is upward closed. -/
-theorem positive_rules_cannot_encode_none {R : Type*} [DecidableEq R] {Γ : Rule R → Prop}
+theorem positive_rules_cannot_encode_absence {R : Type*} [DecidableEq R] {Γ : Rule R → Prop}
     (positive : ∀ ρ, Γ ρ → ρ.Positive) (test : Multiset R → Prop)
     (upward : ∀ M N, M ≤ N → test M → test N) (enc : Multiset Src → Multiset R)
     (contains : enc {.trigger} ≤ enc ({.trigger} + {.blocker}))
@@ -168,7 +168,7 @@ theorem positive_rules_cannot_encode_none {R : Type*} [DecidableEq R] {Γ : Rule
   no_parallel_encoding (tgtPar := (· + ·))
     (fun _ _ u step => positive_reduces_frame positive step u)
     (fun t u barb => upward _ _ (Multiset.le_add_right t u) barb)
-    none_fires none_blocked enc
+    absence_fires absence_blocked enc
     ⟨_, (add_tsub_cancel_of_le contains).symm⟩ complete sound
 
 /-! ## Into the rho calculus -/
@@ -186,8 +186,8 @@ inductive HasOutput (n : Pattern) : Pattern → Prop
       p ∈ ps → HasOutput n p → HasOutput n (.collection .hashBag ps g)
 
 /-- **No encoding into the rho calculus that sends union to parallel composition expresses
-none queries**, for the output barb on any name. -/
-theorem rho_cannot_encode_none (n : Pattern) (enc : Multiset Src → Pattern)
+absence**, for the output barb on any name. -/
+theorem rho_cannot_encode_absence (n : Pattern) (enc : Multiset Src → Pattern)
     (compositional : enc ({.trigger} + {.blocker}) = rhoPar (enc {.trigger}) (enc {.blocker}))
     (complete : ∀ S, WeakBarb srcStep hasDone S →
       WeakBarb (fun P Q => Nonempty (P ⇝ Q)) (HasOutput n) (enc S))
@@ -196,7 +196,7 @@ theorem rho_cannot_encode_none (n : Pattern) (enc : Multiset Src → Pattern)
   no_parallel_encoding (tgtPar := rhoPar)
     (fun _ _ u ⟨step⟩ => ⟨Reduces.par (rest := [u]) step⟩)
     (fun t u barb => HasOutput.inBag (by simp) barb)
-    none_fires none_blocked enc ⟨_, compositional⟩ complete sound
+    absence_fires absence_blocked enc ⟨_, compositional⟩ complete sound
 
 /-! ## Peek and take-and-re-send reduce alike -/
 
@@ -240,7 +240,7 @@ theorem whole_configuration_encoding :
       rw [only _ _ run] at barb
       by_contra h
       simp [wholeEncoding, h, hasDone] at barb
-  · simp only [wholeEncoding, if_neg none_blocked, if_pos none_fires]
+  · simp only [wholeEncoding, if_neg absence_blocked, if_pos absence_fires]
     intro h
     have := congrArg (Multiset.card) h
     simp at this

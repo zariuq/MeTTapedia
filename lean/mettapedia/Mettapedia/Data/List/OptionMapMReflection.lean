@@ -8,6 +8,12 @@ namespace Mettapedia.Data.List
 
 universe u v
 
+theorem option_mapM_cons_of_some {α : Type u} {β : Type v} (emit : α → Option β)
+    {input : α} {output : β} {inputs : List α} {outputs : List β}
+    (head : emit input = some output) (tail : inputs.mapM emit = some outputs) :
+    (input :: inputs).mapM emit = some (output :: outputs) := by
+  simp only [List.mapM_cons, head, tail, Option.bind_eq_bind, Option.bind_some, Option.pure_def]
+
 theorem option_mapM_of_forall₂ {α : Type u} {β : Type v} (emit : α → Option β)
     {inputs : List α} {outputs : List β}
     (graph : List.Forall₂ (fun input output => emit input = some output) inputs outputs) :

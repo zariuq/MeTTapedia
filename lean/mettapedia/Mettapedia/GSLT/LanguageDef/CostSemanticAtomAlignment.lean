@@ -2448,7 +2448,8 @@ def sourceReificationSupportedOpenAssignment
     cases environment.lookupAtom? name <;> rfl
   reflectiveScopeSafe := by
     intro name type lookup presentation membership
-    cases environment.lookupAtom? name <;> rfl
+    cases environment.lookupAtom? name <;>
+      exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_fvar _ _ _ _
 
 /-- The supported source-namespace assignment computes exactly the direct
 common-cospan reifier at every reflective binder depth.

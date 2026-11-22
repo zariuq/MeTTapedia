@@ -53,7 +53,7 @@ second entails the first exactly when absence of support guarantees refutation,
 that is, when the presupposition is secured.  When it fails, all four corners are
 rejected together, which is the presupposition reading of the negative tetralemma.
 The present-absence reading agrees with native negation in a presheaf topos only
-under a reflection condition (`GSLT.Topos.PresheafEventNone.noneEnabled_iff_present`),
+under a reflection condition (`GSLT.Topos.PresheafEventAbsence.absent_iff_present`),
 which is the condition Dharmakīrti places on inference from non-perception: the
 absent thing must be one that would have been perceived.
 

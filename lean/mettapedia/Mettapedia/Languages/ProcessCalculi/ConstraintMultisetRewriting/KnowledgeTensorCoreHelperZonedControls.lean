@@ -53,9 +53,9 @@ theorem no_run_where_the_occurrence_is_present :
       have parts := List.cons.inj word
       have same : ruleOf g = ruleOf crowded := eq_of_heq (Sigma.mk.inj parts.1).2
       have made : g.made = 3 := congrArg (fun rule => rule.made) same
-      have missing : g.made ∉ occupied.present := ((Helpers.admits_iff g).mp allowed).2.1
-      rw [made] at missing
-      exact missing (by decide)
+      have absent : g.made ∉ occupied.present := ((Helpers.admits_iff g).mp allowed).2.1
+      rw [made] at absent
+      exact absent (by decide)
 
 /-- **Where its occurrence is present, the use has no graded proof.** -/
 theorem no_zoned_proof_where_the_occurrence_is_present :

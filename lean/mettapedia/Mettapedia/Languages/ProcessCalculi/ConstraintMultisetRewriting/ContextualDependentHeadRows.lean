@@ -262,7 +262,7 @@ theorem tower_base_decided_of_rows
       run (baseTower.solver larger) problem larger = run (baseTower.solver budget) problem budget ∧
       ((∃ state finished, run (baseTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (baseTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (baseTower.solver larger) problem larger = .refuted absent)) :=
   tower_base_decided_of_uncovered
     (fun permuted nonempty threshold constant equation member normal head sides _ uncovered => by
       obtain ⟨left, right, foundLeft, foundRight⟩ := classification_views equation normal head.1

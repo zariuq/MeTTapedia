@@ -41,7 +41,7 @@ variable {Head L : Type} [UniverseLevel.LevelOrder L] {S : Setting Head L}
 def refutedRound {rank : {Γ : Context S.R} → EquationStore (TotalTerm Γ) → Nat × Nat} {Θ : Context S.R}
     {problem : EquationStore (TotalTerm Θ)} :
     Option (PLift (¬ (frames S.levels).Solvable problem)) → Round S.levels rank problem
-  | some missing => .refuted missing.down
+  | some absent => .refuted absent.down
   | none => .stuck
 
 /-- The η-long store has the solutions of the store. -/
@@ -72,8 +72,8 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
 /-- The skeleton clash rule on the η-long store of an update of the store, read back as a refutation of the store. -/
 def refutedOf {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} (twins : Update S.levels problem) :
     Option (PLift (¬ (frames S.levels).Solvable problem)) :=
-  (skeletonSearch facts rigid complete (expandStore facts twins.remaining)).map fun missing =>
-    ⟨fun solvable => missing.down (expand_solvable facts (twins.solvable_iff.mp solvable))⟩
+  (skeletonSearch facts rigid complete (expandStore facts twins.remaining)).map fun absent =>
+    ⟨fun solvable => absent.down (expand_solvable facts (twins.solvable_iff.mp solvable))⟩
 
 /-- **The skeleton clash rule on the η-long prepared store.** -/
 def flexRefuted (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) :
@@ -108,7 +108,7 @@ theorem skeletonRound_eq_of_eta (fuel : Nat) {Θ : Context S.R} {problem : Equat
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the η-long prepared family decides, the skeleton family decides with the same outcome.** -/
 theorem skeleton_run_of_eta (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -133,7 +133,7 @@ theorem skeletonRound_not_stuck_of_refuted (fuel : Nat) {Θ : Context S.R} {prob
     skeletonRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
       headTypingUnique rootComplete strengthening fuel problem ≠ .stuck := by
   unfold skeletonRound
-  obtain ⟨missing, computed⟩ := Option.isSome_iff_exists.mp read
+  obtain ⟨absent, computed⟩ := Option.isSome_iff_exists.mp read
   cases etaRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
       headTypingUnique rootComplete strengthening fuel problem with
   | stuck =>
@@ -142,7 +142,7 @@ theorem skeletonRound_not_stuck_of_refuted (fuel : Nat) {Θ : Context S.R} {prob
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **The skeleton family's readers**: a reader of the η-long prepared family, or the skeleton clash rule. -/
 def SkeletonReads (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Prop :=
@@ -230,7 +230,7 @@ theorem skeletonRound_closure (fuel : Nat) :
       | none =>
           rw [refuted] at fired
           cases fired
-      | some missing =>
+      | some absent =>
           rw [refuted] at fired
           cases fired
   | progress first firstSmaller =>
@@ -238,7 +238,7 @@ theorem skeletonRound_closure (fuel : Nat) :
       cases fired
       exact etaRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening sn directed fuel _ _ _ permuted computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
 
@@ -264,9 +264,9 @@ theorem skeleton_decided_of_firing
       ((∃ state finished, run ((skeletonFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((skeletonFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((skeletonFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (skeletonSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -318,7 +318,7 @@ theorem tower_skeleton_decided_of_firing
       run (skeletonTower.solver larger) problem larger = run (skeletonTower.solver budget) problem budget ∧
       ((∃ state finished, run (skeletonTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (skeletonTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (skeletonTower.solver larger) problem larger = .refuted absent)) :=
   skeleton_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
@@ -341,7 +341,7 @@ theorem tower_skeleton_decided_of_skeletonReads
       run (skeletonTower.solver larger) problem larger = run (skeletonTower.solver budget) problem budget ∧
       ((∃ state finished, run (skeletonTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (skeletonTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (skeletonTower.solver larger) problem larger = .refuted absent)) :=
   tower_skeleton_decided_of_firing (fun permuted nonempty => by
       obtain ⟨bound, eventually⟩ := reads permuted nonempty
       exact ⟨bound, fun larger enough => skeletonRound_not_stuck_of_skeletonReads (S := setting) TowerModel.facts

@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Knowledge
 /-!
 # Control: separated runs whose survivals are correlated
 
-Two runs that check the none query of the same label `9`, on disjoint configurations:
+Two runs that check the absence of the same label `9`, on disjoint configurations:
 
 * `unlessNineRun` at the occurrence `5`, which makes the occurrence `7`;
 * `eightRun` at the occurrence `6`, which makes the occurrence `8`.
@@ -14,7 +14,7 @@ them: they need no coordination. Yet both forbid the fact `9`, so in a common ra
 where `9` has positive probability and no fact is certain, their survivals are **strictly
 positively correlated** (`separated_yet_correlated`).
 
-Probabilistic independence of survivals is therefore not the none query of a need for coordination.
+Probabilistic independence of survivals is therefore not the absence of a need for coordination.
 The probabilistic face of separation is another independence: what one run writes is independent
 of the other's survival (`write_read_eq_iff`).
 -/
@@ -100,12 +100,12 @@ theorem eight_graded (S : Finset (Fin 10)) :
     · intro query member
       cases member
 
-theorem eight_none_along :
-    NoneAlong (contextualRunInterpretation plain id) surroundingOf (fun _ => PUnit.unit)
+theorem eight_absence_along :
+    AbsenceAlong (contextualRunInterpretation plain id) surroundingOf (fun _ => PUnit.unit)
       eightRun {8, 9} := by
   have shape : ({8, 9} : Finset (Fin 10)) = {8, 9} ∪ ∅ := (Finset.union_empty _).symm
   rw [shape]
-  exact NoneAlong.cons eight_graded (NoneAlong.nil _)
+  exact AbsenceAlong.cons eight_graded (AbsenceAlong.nil _)
 
 /-! ## Separated -/
 
@@ -155,11 +155,11 @@ def survivesSix (S : Finset (Fin 10)) : Prop :=
     PUnit.unit eightRun
 
 theorem survivesFive_iff (S : Finset (Fin 10)) : survivesFive S ↔ Disjoint S {7, 9} :=
-  NoneAlong.checks_iff (contextualRunInterpretation plain id) surroundingOf
-    unless_nine_none_along S
+  AbsenceAlong.checks_iff (contextualRunInterpretation plain id) surroundingOf
+    unless_nine_absence_along S
 
 theorem survivesSix_iff (S : Finset (Fin 10)) : survivesSix S ↔ Disjoint S {8, 9} :=
-  NoneAlong.checks_iff (contextualRunInterpretation plain id) surroundingOf eight_none_along S
+  AbsenceAlong.checks_iff (contextualRunInterpretation plain id) surroundingOf eight_absence_along S
 
 /-- **Separated, yet strictly correlated.** -/
 theorem separated_yet_correlated (p : Fin 10 → ℝ) (probability : ∀ a, 0 ≤ p a ∧ p a ≤ 1)
@@ -173,8 +173,8 @@ theorem separated_yet_correlated (p : Fin 10 → ℝ) (probability : ∀ a, 0 �
     measure_congr p (G := fun S => survivesFive S ∧ survivesSix S)
       (H := fun S => Disjoint S {7, 9} ∧ Disjoint S {8, 9})
       (fun S => and_congr (survivesFive_iff S) (survivesSix_iff S))]
-  refine lt_of_le_of_ne (harris_none p probability _ _) fun same => ?_
-  have zero := (harris_none_eq_iff_of_uncertain p probability uncertain _ _).mp same 9
+  refine lt_of_le_of_ne (harris_absence p probability _ _) fun same => ?_
+  have zero := (harris_absence_eq_iff_of_uncertain p probability uncertain _ _).mp same 9
     (by decide)
   linarith
 

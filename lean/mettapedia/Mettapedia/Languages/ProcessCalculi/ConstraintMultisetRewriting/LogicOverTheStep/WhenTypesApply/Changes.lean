@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LogicOverTheStep.Distinctions.ParityBoundary
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.NoneNotCompositional
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.AbsenceNotCompositional
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.ExactTransitions
 
 /-!
@@ -30,8 +30,8 @@ equations are known (`presence`, `presence_joinPreserving`).
   true (`JoinMonotone`) and whose order growth realizes (`RealizesOrder`); a join-preserving lens is
   one (`realizes_of_joinPreserving`).
 * **Controls**, each a type of a lens on the ground step that does not survive one growth:
-  - none queries: "no `U` is present" (`noU_isConcept`, `noU_not_stable`), decided at the store at
-    hand by a finite search (`noU_decidable`, `noU_decided`);
+  - absence: "no `U` is present" (`absentU_isConcept`, `absentU_not_stable`), decided at the store at
+    hand by a finite search (`absentU_decidable`, `absentU_decided`);
   - an exact count: "exactly one `T`", a type of the bag lens (`exactlyOneT_isConcept`,
     `exactlyOneT_not_stable`);
   - "these are all its equations": every known equation about `A T` is `A T = T`
@@ -302,24 +302,24 @@ theorem presentT_isConcept : IsConcept (Apart presence) presentT :=
 /-- A store holding one `U`. -/
 def withU : Conf := ⟨[], {(factU, 0)}⟩
 
-/-- **The none query**: no `U` is present. -/
-def noU : Set Conf := {C | ¬ presence (.inl factU) C}
+/-- **Absence**: no `U` is present. -/
+def absentU : Set Conf := {C | ¬ presence (.inl factU) C}
 
-theorem noU_isConcept : IsConcept (Apart presence) noU :=
+theorem absentU_isConcept : IsConcept (Apart presence) absentU :=
   (isConcept_iff_saturated _).mpr fun _ outside _ same inside =>
     outside ((Iff.of_eq (same (.inl factU))).mpr inside)
 
-/-- **The none query is decided at the store at hand**: a finite search of its present occurrences. -/
-instance noU_decidable : DecidablePred (· ∈ noU) := fun C =>
+/-- **Absence is decided at the store at hand**: a finite search of its present occurrences. -/
+instance absentU_decidable : DecidablePred (· ∈ absentU) := fun C =>
   inferInstanceAs (Decidable (¬ ∃ o ∈ C.present, o.1 = factU))
 
-theorem noU_decided : emptyStore ∈ noU ∧ withU ∉ noU := by
+theorem absentU_decided : emptyStore ∈ absentU ∧ withU ∉ absentU := by
   constructor <;> decide
 
-/-- **Control: the none query does not survive growth.** -/
-theorem noU_not_stable : ¬ StableUnderGrowth union noU := by
+/-- **Control: absence does not survive growth.** -/
+theorem absentU_not_stable : ¬ StableUnderGrowth union absentU := by
   intro stable
-  have empty : emptyStore ∈ noU := by
+  have empty : emptyStore ∈ absentU := by
     rintro ⟨o, member, _⟩
     simp [emptyStore] at member
   exact stable emptyStore empty withU
@@ -477,9 +477,9 @@ end Substitution
 #print axioms realizes_of_joinPreserving
 #print axioms stable_iff_positive
 #print axioms step_stable_iff_positive
-#print axioms noU_decided
+#print axioms absentU_decided
 #print axioms presentT_stable
-#print axioms noU_not_stable
+#print axioms absentU_not_stable
 #print axioms exactlyOneT_isConcept
 #print axioms exactlyOneT_not_stable
 #print axioms onlyEquations_not_stable

@@ -54,7 +54,8 @@ private theorem rightWellSorted :
       rightPattern := by
   refine ⟨checkOpenPatternWellSorted_sound (by decide), ?_⟩
   intro reflected _membership
-  simp [rightPattern, binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [rightPattern, binderSafeAt, binderSafeListAt])
 
 private theorem rightBoundaryCertificate_exists :
     ∃ certificate,

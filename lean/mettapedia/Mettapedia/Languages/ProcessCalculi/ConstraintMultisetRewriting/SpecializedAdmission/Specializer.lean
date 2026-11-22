@@ -18,7 +18,7 @@ each bound local, as a WAM compiler's mode analysis does:
 * `cb E n t` builds the value of a term whose locals are bound (`loadConst`, `loadFresh`,
   `mkApp`);
 * a tell builds its determined side and matches the other side against it;
-* a guard whose pattern is determined is decided on its value (`eqReg`, `countEq`); a none query
+* a guard whose pattern is determined is decided on its value (`eqReg`, `countEq`); an absence
   (or a count of `0`) whose pattern has guard-only locals refuses when some present label
   matches the pattern (`scanNone`); a count of a nonzero number whose pattern has guard-only
   locals fails at every state (a solution can give those locals a value no label contains), and
@@ -117,7 +117,7 @@ def compileTells : Env → Nat → List (Tm × Tm) → List Instr × Env × Nat
       let rest := compileTells a.2.1 a.2.2 es
       (a.1 ++ rest.1, rest.2.1, rest.2.2)
 
-/-- A none query or a count of guard `i`. -/
+/-- An absence or a count of guard `i`. -/
 def countGuard (E : Env) (n i : Nat) (q : Tm) (k : Nat) : List Instr × Nat :=
   if determinedB E q then
     let x := cb E n q

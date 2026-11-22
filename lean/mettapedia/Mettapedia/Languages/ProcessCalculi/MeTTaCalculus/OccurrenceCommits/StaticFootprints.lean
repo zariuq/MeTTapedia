@@ -135,7 +135,7 @@ def Source.static (R : RegionKeys T P K) : Source V T P → StaticFootprint K
   | .take p => ⟨R.keys p, [], [], []⟩
   | .absent p => ⟨[], [], R.keys p, []⟩
   | .unique access p => ⟨if access = .take then R.keys p else [], [], R.keys p, []⟩
-  | .all access p _ _ => ⟨if access = .take then R.keys p else [], [], R.keys p, []⟩
+  | .collect access p _ _ => ⟨if access = .take then R.keys p else [], [], R.keys p, []⟩
   | .letBind _ _ => ⟨[], [], [], []⟩
 
 /-- The keys of a source's region, when it has one. -/
@@ -144,7 +144,7 @@ def Source.regionKeys (R : RegionKeys T P K) : Source V T P → List K
   | .take p => R.keys p
   | .absent p => R.keys p
   | .unique _ p => R.keys p
-  | .all _ p _ _ => R.keys p
+  | .collect _ p _ _ => R.keys p
   | .letBind _ _ => []
 
 /-- The keys of all the regions of a source list: what an `every` queries. -/
@@ -278,8 +278,8 @@ theorem within_stepRows (sound : Matcher.Sound L m) (keysSound : R.Sound L) {S :
       exact within_full sound keysSound _ _ fun consumed t covered => by
         simp only [decide_eq_true_eq] at consumed
         simpa [Source.static, consumed] using covered
-  | all access p coll fold =>
-      obtain ⟨τ, -, rfl⟩ := mem_stepRows_all.mp member
+  | collect access p coll fold =>
+      obtain ⟨τ, -, rfl⟩ := mem_stepRows_collect.mp member
       exact within_full sound keysSound _ _ fun consumed t covered => by
         simp only [decide_eq_true_eq] at consumed
         simpa [Source.static, consumed] using covered
@@ -498,7 +498,7 @@ def SourceList.takeFree : SourceList V T P → Bool
   | .done => true
   | .cons (.take _) _ => false
   | .cons (.unique .take _) _ => false
-  | .cons (.all .take _ _ _) _ => false
+  | .cons (.collect .take _ _ _) _ => false
   | .cons _ rest => rest.takeFree
   | .absent _ rest => rest.takeFree
   | .every rest => rest.takeFree
@@ -539,7 +539,7 @@ theorem queries_eq_zero_of_noQueries :
           simp [queries_eq_zero_of_noQueries (src := rest) shape inRest]
       | absent p => exact absurd shape Bool.false_ne_true
       | unique access p => exact absurd shape Bool.false_ne_true
-      | all access p coll fold => exact absurd shape Bool.false_ne_true
+      | collect access p coll fold => exact absurd shape Bool.false_ne_true
   | .absent _ _, σ, x, shape, _ => absurd shape Bool.false_ne_true
   | .every rest, σ, x, shape, _ => absurd shape Bool.false_ne_true
 
@@ -573,11 +573,11 @@ theorem takes_eq_zero_of_noTakes :
           | read =>
               obtain ⟨-, o, -, τ, -, rfl⟩ := mem_stepRows_unique.mp inStep
               simp [takes_eq_zero_of_noTakes (src := rest) shape inRest]
-      | all access p coll fold =>
+      | collect access p coll fold =>
           cases access with
           | take => exact absurd shape Bool.false_ne_true
           | read =>
-              obtain ⟨τ, -, rfl⟩ := mem_stepRows_all.mp inStep
+              obtain ⟨τ, -, rfl⟩ := mem_stepRows_collect.mp inStep
               simp [takes_eq_zero_of_noTakes (src := rest) shape inRest]
   | .absent query rest, σ, x, shape, member => by
       obtain ⟨_, y, inRest, rfl⟩ := mem_rows_absent.mp member
@@ -621,8 +621,8 @@ theorem keeps_eq_zero_of_noKeeps :
       | unique access p =>
           obtain ⟨-, o, -, τ, -, rfl⟩ := mem_stepRows_unique.mp inStep
           simp [keeps_eq_zero_of_noKeeps (src := rest) shape inRest]
-      | all access p coll fold =>
-          obtain ⟨τ, -, rfl⟩ := mem_stepRows_all.mp inStep
+      | collect access p coll fold =>
+          obtain ⟨τ, -, rfl⟩ := mem_stepRows_collect.mp inStep
           simp [keeps_eq_zero_of_noKeeps (src := rest) shape inRest]
   | .absent query rest, σ, x, shape, member => by
       obtain ⟨_, y, inRest, rfl⟩ := mem_rows_absent.mp member

@@ -45,8 +45,8 @@ frame knowing `X = 2` are each fine and cannot meet (`SeparationControls.knowled
   solution of the framed cut. It is the frame analogue of `query_after_iff`. Whatever the queries
   observe, a frame outside their regions keeps the admission (`valid_tensor_of_outside`). For
   fixed queries: exactly when the frame changes no query region (`fixed_frame_iff`).
-* **Regions are a homomorphism of the separation algebra** (`regionOf_tensor`): the none query is
-  multiplicative (`none_tensor_iff`) and counts are additive (`count_tensor`).
+* **Regions are a homomorphism of the separation algebra** (`regionOf_tensor`): absence is
+  multiplicative (`absent_tensor_iff`) and counts are additive (`count_tensor`).
 * **The anti-frame** (`valid_restrict`): removing occurrences outside a firing's takes, reads and
   sightings never refuses it, when the removed part tells nothing and every guard of the firing
   survives removing rows (`AntitoneGuards`: equations and `none` queries, not counts or `any`
@@ -386,8 +386,8 @@ theorem regionOf_tensor (region : T → Bool) (C E : Configuration T O) :
   ext o
   simp only [mem_regionOf, tensor, Finset.mem_union, or_and_right]
 
-/-- **The none query is multiplicative.** -/
-theorem none_tensor_iff (region : T → Bool) (C E : Configuration T O) :
+/-- **Absence is multiplicative.** -/
+theorem absent_tensor_iff (region : T → Bool) (C E : Configuration T O) :
     regionOf label (tensor C E).present region = ∅ ↔
       regionOf label C.present region = ∅ ∧ regionOf label E.present region = ∅ := by
   rw [regionOf_tensor, Finset.union_eq_empty]
@@ -576,7 +576,7 @@ open SeparationRuns
 #print axioms query_frame_iff
 #print axioms valid_tensor_of_outside
 #print axioms regionOf_tensor
-#print axioms none_tensor_iff
+#print axioms absent_tensor_iff
 #print axioms count_tensor
 #print axioms fixed_frame_iff
 #print axioms valid_restrict

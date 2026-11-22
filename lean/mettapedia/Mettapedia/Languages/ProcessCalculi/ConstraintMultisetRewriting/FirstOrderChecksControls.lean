@@ -4,8 +4,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Controls
 /-!
 # Executable guard controls for open bindings and duplicate occurrences
 
-The checks distinguish certain equality from mere unifiability. Open none query
-and counts remain unaccepted; a genuine incompatibility establishes none queries.
+The checks distinguish certain equality from mere unifiability. Open absence
+and counts remain unaccepted; a genuine incompatibility establishes absence.
 An ordinary consumption retains its binding equation and leaves the second
 equal-valued occurrence. An inconsistent store never licenses a firing check.
 -/
@@ -37,10 +37,10 @@ theorem an_open_count_is_not_generalized_from_one_answer :
     acceptsCertainCheck (signature := signature) [] label {1, 4} (.count (.const 0) 0) = false ∧
       acceptsCertainCheck (signature := signature) [] label {1, 4} (.count (.const 0) 2) = false := by cbv
 
-theorem open_none_remains_unaccepted :
+theorem open_absence_remains_unaccepted :
     acceptsCertainCheck (signature := signature) [] label {1, 4} (.predicate .none (.const 0)) = false := by cbv
 
-theorem genuine_incompatibility_establishes_none_and_zero_count :
+theorem genuine_incompatibility_establishes_absence_and_zero_count :
     acceptsCertainCheck (signature := signature) boundOne label {1, 4} (.predicate .none (.const 0)) = true ∧
       acceptsCertainCheck (signature := signature) boundOne label {1, 4} (.count (.const 0) 0) = true := by cbv
 
@@ -67,7 +67,7 @@ theorem after_consumption_the_remaining_occurrence_and_binding_are_retained :
     after.present = {4} ∧ after.equations = [(Term.const (σ := signature) 0, .var 0)] := by
   with_unfolding_all decide
 
-theorem consuming_one_of_two_does_not_establish_none :
+theorem consuming_one_of_two_does_not_establish_absence :
     acceptsCertainCheck (signature := signature) after.equations label after.present (.predicate .none (.const 0)) = false ∧
       acceptsCertainCheck (signature := signature) after.equations label after.present (.count (.const 0) 1) = true ∧
         acceptsCertainCheck (signature := signature) after.equations label after.present (.count (.const 0) 0) = false := by cbv
@@ -75,7 +75,7 @@ theorem consuming_one_of_two_does_not_establish_none :
 def singletonBefore : Configuration (Term signature) Nat := ⟨[], {1}⟩
 def singletonAfter := selection.result label consume singletonBefore
 
-theorem consuming_the_only_occurrence_does_establish_none :
+theorem consuming_the_only_occurrence_does_establish_absence :
     acceptsCertainCheck (signature := signature) singletonAfter.equations label singletonAfter.present (.predicate .none (.const 0)) = true ∧
       acceptsCertainCheck (signature := signature) singletonAfter.equations label singletonAfter.present (.count (.const 0) 1) = false := by cbv
 
@@ -91,9 +91,9 @@ theorem the_computed_count_is_a_universal_judgment :
       (fun assignment => (Check.count (.const 0) 1).Holds (FirstOrder.action signature)
         assignment label after.present) :=
   (accepts_iff after.equations label after.present (.count (.const 0) 1)).mp
-    consuming_one_of_two_does_not_establish_none.2.1 |>.2
+    consuming_one_of_two_does_not_establish_absence.2.1 |>.2
 
-namespace OpenNone
+namespace OpenAbsence
 
 open ConstraintMultisetRewriting.Controls (f one)
 
@@ -151,13 +151,13 @@ theorem either_binding_step_is_available (value : Nat) :
 theorem the_unbound_guard_does_not_admit_the_step :
     ¬ askSelection.Valid (FirstOrder.action signature) rows askRule initial := by
   intro admitted
-  have missing := admitted.checks (.predicate .none query) (by simp [askRule]) zero (by
+  have absent := admitted.checks (.predicate .none query) (by simp [askRule]) zero (by
     intro equation member
     have only : equation = (Term.const (σ := signature) 10, .const 10) := by
       simpa [Selection.problem, Selection.equations, askSelection, askRule, initial, rows] using member
     subst equation
     rfl)
-  exact missing 0 (by decide) rfl
+  exact absent 0 (by decide) rfl
 
 theorem binding_to_one_enables_the_step :
     askSelection.Valid (FirstOrder.action signature) rows askRule (afterBind 1) := by
@@ -188,12 +188,12 @@ theorem binding_to_one_enables_the_step :
 theorem binding_to_zero_refuses_the_step :
     ¬ askSelection.Valid (FirstOrder.action signature) rows askRule (afterBind 0) := by
   intro admitted
-  have missing := admitted.checks (.predicate .none query) (by simp [askRule]) zero (by
+  have absent := admitted.checks (.predicate .none query) (by simp [askRule]) zero (by
     intro equation member
     simp [afterBind, Selection.result, Selection.problem, Selection.equations,
       askSelection, askRule, bindSelection, bindRule, initial, rows] at member
     rcases member with rfl | rfl | rfl <;> rfl)
-  exact missing 0 (by decide) rfl
+  exact absent 0 (by decide) rfl
 
 theorem a_later_equation_enables_an_actual_interaction :
     Step (FirstOrder.action signature) rows (bindRule 1) initial (afterBind 1) ∧
@@ -204,6 +204,6 @@ theorem a_later_equation_enables_an_actual_interaction :
     ⟨askSelection, binding_to_one_enables_the_step, rfl⟩,
     the_unbound_guard_does_not_admit_the_step⟩
 
-end OpenNone
+end OpenAbsence
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrderChecks.Controls

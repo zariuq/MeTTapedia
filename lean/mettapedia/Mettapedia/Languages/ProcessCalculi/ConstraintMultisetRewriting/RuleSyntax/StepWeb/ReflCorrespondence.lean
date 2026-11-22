@@ -380,7 +380,7 @@ theorem close_reading (label : O → Pattern) (C : Configuration Pattern O) (x p
   exact ⟨chan, proc, acc⟩
 
 /-- The raw close needs one solution matching the chosen reflection.
-Its none check is then verified for all solutions of the augmented
+Its absence check is then verified for all solutions of the augmented
 information: the taken token determines the checked child's location.
 Nothing here identifies the occurrence that originally opened the child. -/
 theorem closeRoot_admitted_at_solution [DecidableEq O] (label : O → Pattern) (C : Configuration Pattern O)
@@ -541,7 +541,7 @@ theorem closeRoot_owned_readback [DecidableEq O] (policy : ReflLocatedStep.Owner
     (ReflLocatedStep.Ownership.close_root_plan_iff s owner token made).mp admitted.2.1
   refine ⟨ticket, marked, owns, home, packed, nested, ?_, ?_⟩
   · intro σ body loc
-    apply (ReflLocatedStep.Ownership.region_row_none_iff formed ticket.key σ body loc).mp
+    apply (ReflLocatedStep.Ownership.region_row_absence_iff formed ticket.key σ body loc).mp
     rw [packed]
     simp
   · have raw : after.raw = res label C (closeRootAt ρ owner token made) :=

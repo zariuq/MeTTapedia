@@ -33,7 +33,7 @@ Each condition is needed (`Controls`):
 * **a take** (`Controls.taking_branches`): two branches take one token; run in branch order, the
   answers depend on which is listed first, so the mixed semantics is not a bag semantics at all,
   while the search gives both; and when removal does not require presence, as with a removal that
-  answers success on a missing atom, both branches write their receipt for the one token
+  answers success on an absent atom, both branches write their receipt for the one token
   (`Controls.loose_mix_double_spend`);
 * **a predicate query** (`Controls.querying_branches`): "add unless present" beside a maker: the
   query's branch answers or not depending on the listing order;

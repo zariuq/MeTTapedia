@@ -26,7 +26,7 @@ states the step keeps, `fixed_after`), `bagStep` and the step of the program are
 
 ## Outside these fragments, the failure
 
-* **The none query** (`none_breaks_forward`): with the rules of `Synchronous` (module `SynchronousUpdate`), a bag step reaches a
+* **Absence** (`absence_breaks_forward`): with the rules of `Absence.Synchronous` (module `SynchronousUpdate`), a bag step reaches a
   state that no run of the step of the program reaches. The forward law fails; the rules are not positive.
 * **Shared unknowns** (`knowledge_breaks_forward`): with the rules of `Knowledge`, at a state whose rows
   are labelled by unknowns, `bagStep` has a step and the step of the program has none, so the bag's
@@ -159,9 +159,9 @@ section Failures
 
 open Examples (Tm X E)
 
-/-- **With none queries, the forward law fails**: a bag step (guards at each member's own information)
+/-- **With absence, the forward law fails**: a bag step (guards at each member's own information)
 reaches a state that no run of the step of the program reaches. -/
-theorem none_breaks_forward :
+theorem absence_breaks_forward :
     ∃ s s', OwnSucc Controls.action ℕ Synchronous.program s s' ∧
       ¬ Relation.ReflTransGen (Succ (step X ℕ E Synchronous.program).toStep) s s' :=
   ⟨Synchronous.empty, _, ⟨Synchronous.both, List.cons_ne_nil _ _, Synchronous.both_admitted, rfl⟩,
@@ -190,7 +190,7 @@ end Failures
 #print axioms fixed_after
 #print axioms fixed_along
 #print axioms jointCorrespondence
-#print axioms none_breaks_forward
+#print axioms absence_breaks_forward
 #print axioms knowledge_breaks_forward
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings

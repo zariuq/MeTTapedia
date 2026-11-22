@@ -5,10 +5,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTh
 
 The separating pair of `StepSource` has the empty store as one part, so homomorphism there forces
 the image of the empty store to act as a unit beside the image of the store holding `U`. A second
-none-guarded program separates on a pair of non-empty stores: it replaces `spawn` by a rule that
+absence-guarded program separates on a pair of non-empty stores: it replaces `spawn` by a rule that
 needs a trigger. The statements below are about that program, not about `spawn` and `tick`.
 
-The program `program'`: `fire` (take the trigger `V`, make `T` where `U` is not present) and `tick` (read
+The program `program'`: `fire` (take the trigger `V`, make `T` where `U` is absent) and `tick` (read
 `U`, make `W`). `source'` composes only **composable pairs of non-empty stores**
 (`NonEmptyComposable`).
 
@@ -32,7 +32,7 @@ open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheS
 /-- The trigger row `V`. -/
 def trigger : Expr := .sym 16
 
-/-- `fire`: take `V`, make `T` where `U` is not present. -/
+/-- `fire`: take `V`, make `T` where `U` is absent. -/
 def fireRule : RuleInstance Expr := rule [trigger] [] [factT] [.predicate .none factU]
 
 /-- **The program with a trigger**: `fire` and `tick`. -/
@@ -70,7 +70,7 @@ theorem trigger_succeeds : source'.Succeeds triggerStore := by
     intro c member
     simp only [fireRule, rule, List.mem_singleton] at member
     subst member
-    exact none_holds (by decide)
+    exact absent_holds (by decide)
   refine ⟨_, .single ⟨fireAt, Or.inl rfl, admitted, rfl⟩, (factT, 0), ?_, rfl⟩
   change (factT, 0) ∈ fire triggerStore.present (fireAt.selection.commit (T := Expr))
   rw [mem_fire]

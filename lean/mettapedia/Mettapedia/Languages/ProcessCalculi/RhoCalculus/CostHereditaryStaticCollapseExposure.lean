@@ -498,7 +498,7 @@ noncomputable def stoppedCollapseSourceVariableOfCloseSmaller
     refine ⟨⟨WellSorted.HasType.fvar ?_, rfl, rfl, rfl⟩, ?_⟩
     · simpa only [boundaryType] using nameLookup
     · intro declaration _declarationMembership
-      rfl
+      simp
   have boundaryMember : state.certified.typed ∈
       leftView.node.plan.boundaryTable.entries :=
     entryEmbedding.subset (by simp)

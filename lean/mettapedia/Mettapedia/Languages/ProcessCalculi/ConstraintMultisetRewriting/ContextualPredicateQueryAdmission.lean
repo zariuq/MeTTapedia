@@ -14,7 +14,7 @@ An entry guard formula is witnessed by a complete query at a present control
 occurrence. Its region tests that formula pointwise, not source admission or
 a whole evaluator. Such a marker query alone does not validate the captured
 data dependencies under interference. Data-region queries must retain those
-dependencies; the marker is not a dynamic none queries or count observation.
+dependencies; the marker is not a dynamic absence or count observation.
 This semantic construction supplies no total decision
 procedure for arbitrary contextual matching. The compiler must still supply
 the control context and embed its full binding problem in the actual firing.
@@ -97,11 +97,11 @@ theorem matching_empty_iff {Local : Type} (locals : Local → MetaArity S) {Γ :
       ((matchingQuery locals pattern (∅ : Finset O)).region candidate) = ∅ at observed
     rw [observed] at member
     exact Finset.notMem_empty occurrence member
-  · intro missing
+  · intro absent
     apply Finset.eq_empty_iff_forall_notMem.mpr
     intro occurrence member
     obtain ⟨present, matched⟩ := mem_regionOf.mp member
-    exact missing occurrence present (of_decide_eq_true matched)
+    exact absent occurrence present (of_decide_eq_true matched)
 
 theorem matching_ask_empty_iff {Local : Type} (locals : Local → MetaArity S) {Γ : Ctx S} {sort : S.Srt}
     (problem : ContextualResidual.Problem declaration) (pattern : Term (signature S declaration) Γ sort)

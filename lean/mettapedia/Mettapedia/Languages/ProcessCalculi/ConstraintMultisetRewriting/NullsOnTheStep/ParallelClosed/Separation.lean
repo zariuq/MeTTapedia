@@ -4,9 +4,9 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTh
 /-!
 # The separation, instantiated, and the translations that show it is not vacuous
 
-Source: the step under the none-guarded program (`source`, from `StepSource`), whose parallel
+Source: the step under the absence-guarded program (`source`, from `StepSource`), whose parallel
 composition is the union of configurations on composable pairs. It is switchable
-(`source_switchable`). The none query is one source of switchability: over first-order terms a program with
+(`source_switchable`). Absence is one source of switchability: over first-order terms a program with
 no check at all is switchable through a tell on an unknown the neighbour's knowledge constrains, and
 the same separations hold for it (`PositiveTell`).
 
@@ -42,7 +42,7 @@ Each translation below satisfies every hypothesis of `no_uniformTranslation` but
   success by its definition, a case on success, and is not homomorphic on parallel composition. It
   is not built from the configuration's rows, so it is a control for homomorphism, not an
   interpreter of the step. A presentation whose rule tests the rows of the whole store is
-  `RuleSyntax.Presentation.wholeStore` (`whole_presents_none`); the translation of the source
+  `RuleSyntax.Presentation.wholeStore` (`whole_presents_absence`); the translation of the source
   into it built from the rows preserves and reflects reachable success and is not homomorphic on
   parallel composition (`Interpreter.interpret_succeeds_iff`, `Interpreter.interpret_not_homomorphic`).
 * **The target property is needed** (`Controls.identity_into_source`): the identity is a uniform
@@ -54,9 +54,9 @@ Each translation below satisfies every hypothesis of `no_uniformTranslation` but
 
 `Composition.FrameClosed` and `Composition.ParClosed` are `ClosedBeside` at the union of
 multisets and at the parallel composition of terms (`frameClosed_iff`, `parClosed_iff`), and the
-reduction of every rho rule set is closed beside (`rho_closedBeside`). `no_reaction_is_noneStep` and
+reduction of every rho rule set is closed beside (`rho_closedBeside`). `no_reaction_is_absence` and
 `rho_step_not_join_sensitive` are re-derived from `not_iff_of_switchedOff`
-(`no_reaction_is_noneStep_instance`, `rho_step_not_join_sensitive_instance`); `parClosed_not_noneReduces`
+(`no_reaction_is_absence_instance`, `rho_step_not_join_sensitive_instance`); `parClosed_not_absence`
 is the same argument at `parClosed_iff`.
 -/
 
@@ -73,7 +73,7 @@ open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Equival
 
 /-! ## Into every presentation with a parallel context rule -/
 
-/-- **No uniform translation of the step with a none-guarded program into any presentation with
+/-- **No uniform translation of the step with an absence-guarded program into any presentation with
 a parallel context rule**, read modulo its equations, for every success term `ω`. -/
 theorem no_uniformTranslation_presentation {base : BasePremiseEvaluator} {language : LanguageDef}
     {kind : CollType} (has : HasParallelContextRule kind language) (ω : Pattern) :
@@ -122,7 +122,7 @@ theorem rhoCalculus_persistent (c : Process context) :
     exact ⟨join rest u, RhoScopedParallelPathReadout.join_assoc c rest u⟩
   respects := ParallelCalculus.respects_of_eq fun _ _ same => same
 
-/-- **No uniform translation of the step with a none-guarded program into the reduction of any
+/-- **No uniform translation of the step with an absence-guarded program into the reduction of any
 rho rule set**, for every success component `c`. -/
 theorem no_uniformTranslation_rho (c : Process context) :
     IsEmpty (UniformTranslation source (rhoCalculus rules admitted context c)) :=
@@ -158,7 +158,7 @@ theorem bagCalculus_persistent {Γ : Rule Expr → Prop} (positive : ∀ ρ, Γ 
   persists := fun _ _ present => Multiset.mem_add.mpr (Or.inl present)
   respects := ParallelCalculus.respects_of_eq fun _ _ same => same
 
-/-- **No uniform translation of the step with a none-guarded program into positive bag
+/-- **No uniform translation of the step with an absence-guarded program into positive bag
 rules.** -/
 theorem no_uniformTranslation_bag {Γ : Rule Expr → Prop} (positive : ∀ ρ, Γ ρ → ρ.Positive) :
     IsEmpty (UniformTranslation source (bagCalculus Γ)) :=
@@ -180,14 +180,14 @@ theorem frameClosed_iff (R : Multiset A → Multiset A → Prop) :
 theorem parClosed_iff (R : Term A → Term A → Prop) :
     Composition.ParClosed R ↔ ClosedBeside R Term.join := Iff.rfl
 
-/-- **`no_reaction_is_noneStep`, as an instance**: the none step is switched off beside `c`. -/
-theorem noneStep_switchedOff (c a : A) :
-    SwitchedOffBeside (Composition.NoneStep c a) (· + ·) :=
+/-- **`no_reaction_is_absence`, as an instance**: the absence step is switched off beside `c`. -/
+theorem absentStep_switchedOff (c a : A) :
+    SwitchedOffBeside (Composition.AbsentStep c a) (· + ·) :=
   ⟨0, {a}, {c}, ⟨Multiset.notMem_zero c, (Multiset.zero_add _).symm⟩, fun step => step.1 (by simp)⟩
 
-theorem no_reaction_is_noneStep_instance (c a : A) (react : Reaction A) :
-    ¬ ∀ before after, StoreStep react before after ↔ Composition.NoneStep c a before after :=
-  not_iff_of_switchedOff (Composition.storeStep_frameClosed react) (noneStep_switchedOff c a)
+theorem no_reaction_is_absence_instance (c a : A) (react : Reaction A) :
+    ¬ ∀ before after, StoreStep react before after ↔ Composition.AbsentStep c a before after :=
+  not_iff_of_switchedOff (Composition.storeStep_frameClosed react) (absentStep_switchedOff c a)
 
 end Existing
 
@@ -342,7 +342,7 @@ end Controls
 #print axioms rho_step_not_join_sensitive_instance
 #print axioms bagCalculus_persistent
 #print axioms no_uniformTranslation_bag
-#print axioms no_reaction_is_noneStep_instance
+#print axioms no_reaction_is_absence_instance
 #print axioms Controls.rows_unionOf
 #print axioms Controls.rows_into_maker
 #print axioms Controls.rows_into_inert

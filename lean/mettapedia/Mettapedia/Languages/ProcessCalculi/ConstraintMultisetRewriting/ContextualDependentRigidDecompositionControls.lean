@@ -65,9 +65,9 @@ theorem same_committed : (run rigidOnly sameStore 2).readout = .commit := by dec
 
 theorem same_not_refuted (rounds : Nat) : (run rigidOnly sameStore rounds).readout ≠ .refuted := by
   intro refuted
-  have missing := drive_refuted rigidOnly rounds _ refuted
+  have absent := drive_refuted rigidOnly rounds _ refuted
   obtain ⟨state, finished, solved⟩ := ContextualDependentWorklist.Controls.solved_of_commit same_committed
-  exact missing ⟨_, state.answer, (drive_solved_principal rigidOnly solved).1⟩
+  exact absent ⟨_, state.answer, (drive_solved_principal rigidOnly solved).1⟩
 
 end ContextualDependentRigidDecomposition.Controls
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

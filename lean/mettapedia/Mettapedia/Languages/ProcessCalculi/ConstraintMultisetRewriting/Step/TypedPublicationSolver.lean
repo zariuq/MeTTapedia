@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Unificati
 The actual dependent worklist returns solved, refuted, stuck and budget
 outcomes. Only a solved residual earns a principal application. Stuck and
 budget outcomes retain their certified update, including all residual
-solutions. They are not interpreted as missing answers or admitted firings.
+solutions. They are not interpreted as absent answers or admitted firings.
 -/
 
 set_option autoImplicit false
@@ -47,7 +47,7 @@ inductive Suspension where
 inductive Resolution (schema : Schema levels O state.frame) (pick : Pick schema) : Type where
   | ready (target : Context rules) (answer : target ⟶ schema.helpers.frame)
       (principal : (frames levels).Principal (schema.compile pick).information answer)
-  | refuted (missing : ¬ (frames levels).Solvable (schema.compile pick).information)
+  | refuted (absent : ¬ (frames levels).Solvable (schema.compile pick).information)
   | suspended (reason : Suspension) (update : Update levels (schema.compile pick).information)
 
 namespace Schema
@@ -58,7 +58,7 @@ variable (schema : Schema levels O state.frame) (pick : Pick schema)
 def resolveOutcome : ContextualDependentWorklist.Outcome levels (schema.compile pick).information →
     Resolution schema pick
   | .solved update finished => .ready update.target update.answer (update.completed finished)
-  | .refuted missing => .refuted missing
+  | .refuted absent => .refuted absent
   | .stuck update => .suspended .stuck update
   | .cutoff update => .suspended .budget update
 
@@ -76,11 +76,11 @@ theorem cutoff_preserves_update (update : Update levels (schema.compile pick).in
 theorem stuck_preserves_update (update : Update levels (schema.compile pick).information) :
     schema.resolveOutcome pick (.stuck update) = .suspended .stuck update := rfl
 
-theorem refuted_excludes_source (missing : ¬ (frames levels).Solvable (schema.compile pick).information) :
+theorem refuted_excludes_source (absent : ¬ (frames levels).Solvable (schema.compile pick).information) :
     ¬ schema.Admits pick := by
   intro admitted
   obtain ⟨target, baseMap, args, models⟩ := admitted.2.2.1
-  exact missing ⟨target, schema.helpers.instantiate baseMap args,
+  exact absent ⟨target, schema.helpers.instantiate baseMap args,
     (schema.erase.compile_information_iff pick baseMap args).mpr models⟩
 
 /-- Every pending update keeps exactly the original solution family up to
@@ -115,9 +115,9 @@ theorem suspended_has_no_application (reason : Suspension)
     (Resolution.suspended reason update).application? = none := rfl
 
 /-- A solver's refutation cannot be silently turned into a source transition. -/
-theorem refutation_excludes_source (missing : ¬ (frames levels).Solvable (schema.compile pick).information) :
-    (Resolution.refuted missing).application? = none ∧ ¬ schema.Admits pick :=
-  ⟨rfl, schema.refuted_excludes_source pick missing⟩
+theorem refutation_excludes_source (absent : ¬ (frames levels).Solvable (schema.compile pick).information) :
+    (Resolution.refuted absent).application? = none ∧ ¬ schema.Admits pick :=
+  ⟨rfl, schema.refuted_excludes_source pick absent⟩
 
 end Resolution
 

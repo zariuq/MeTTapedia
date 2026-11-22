@@ -9,7 +9,7 @@
 ; each example, "example LABEL as-expected" or "example LABEL UNEXPECTED",
 ; and (examples:expected) lines are expected, all as expected.  Read after
 ; compute.metta.
-(= (examples:expected) 19)
+(= (examples:expected) 24)
 
 (= (examples:named $source) (Tm.named (lean:id $source)))
 (= (examples:le $a $b) (Tm.app (Tm.app (examples:named "Lean_Nat_le_Prop") $a) $b))
@@ -34,6 +34,16 @@
 (= (examples:proved $ctx $goal) (not (== (typ:prove (lean:equality) $ctx () $goal) None)))
 (= (examples:line $label $wanted $got)
    (println! (format-args "example {} {}" ($label (if (== $wanted $got) as-expected UNEXPECTED)))))
+(= (examples:at-sort $level) (Tm.app (examples:named "LeanSort") $level))
+(= (examples:infers $t $T)
+   (case (typ:infer (lean:equality) (mg:empty-context) () $t) (((Typed $type $thm) (== $type $T)) ($other False))))
+; The context  u, nat_p u, X, X :e LeanSort u  (u is the variable 1, X the variable 0).
+(= (examples:sort-context)
+   (let* (($th (lean:theory))
+          ($c1 (mg:term-binder $th (mg:empty-context) (Tp.base 0)))
+          ($c2 (mg:proof-binder $th $c1 (Tm.app (examples:named "nat_p") (Tm.db 0))))
+          ($c3 (mg:term-binder $th $c2 (Tp.base 0))))
+     (mg:proof-binder $th $c3 (typ:member (Tm.db 0) (examples:at-sort (Tm.db 1))))))
 (= (examples:set-aside $name) (not (== (collapse (match &self (RuleSetAside $name) yes)) ())))
 
 ; decide (Nat.Prime n), as the reader writes test 27 for n = 97.
@@ -108,7 +118,26 @@
           ($n (examples:line false-order-between-numerals False
                 (examples:proved (mg:empty-context) (examples:holds (examples:le (examples:num 3) (examples:num 2))))))
           ($o (examples:line order-between-numerals-under-a-binder True
-                (examples:proved (examples:context $nat $nat) (examples:holds (examples:le (examples:num 1) (examples:num 2)))))))
+                (examples:proved (examples:context $nat $nat) (examples:holds (examples:le (examples:num 1) (examples:num 2))))))
+          ; a product of propositions is inferred to be one, in those words; a
+          ; product of numbers is not
+          ($p (examples:line impredicative-product-inferred True
+                (examples:infers (examples:pi $nat (Tm.lam (Tp.base 0) (examples:le $x0 $x0))) $prop)))
+          ($q (examples:line product-of-numbers-not-inferred-a-proposition False
+                (examples:infers (examples:pi $nat (Tm.lam (Tp.base 0) $nat)) $prop)))
+          ; X in Sort u: X -> X is in Sort (imax u u), X -> Prop is in
+          ; Sort (max 1 u); X -> Prop is not shown to be in Sort u
+          ($r (examples:line product-at-imax True
+                (examples:proved (examples:sort-context)
+                  (typ:member (examples:pi $x0 (Tm.lam (Tp.base 0) $x))
+                              (examples:at-sort (Tm.app (Tm.app (examples:named "LeanLevelIMax") $x) $x))))))
+          ($s (examples:line predicates-at-max True
+                (examples:proved (examples:sort-context)
+                  (typ:member (examples:pi $x0 (Tm.lam (Tp.base 0) $prop))
+                              (examples:at-sort (Tm.app (Tm.app (examples:named "binunion") (wire:literal 1)) $x))))))
+          ($t (examples:line predicates-not-at-domain False
+                (examples:proved (examples:sort-context)
+                  (typ:member (examples:pi $x0 (Tm.lam (Tp.base 0) $prop)) (examples:at-sort $x))))))
      done))
 ; "3 is prime" is settled by the prover running Lean's decision procedure
 ; (a goal that the run itself asks for again is not started twice); "4 is

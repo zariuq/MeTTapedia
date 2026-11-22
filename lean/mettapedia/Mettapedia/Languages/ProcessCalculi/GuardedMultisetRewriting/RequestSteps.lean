@@ -101,7 +101,7 @@ theorem requestRule_preserves {L : TermLayer V T P}
     exact localSound assignment selected result checked matched validSelected produced
 
 /-- A data-only request guard is unaffected by an unrelated store frame.
-This property is specific to these rules, not to arbitrary none checks. -/
+This property is specific to these rules, not to arbitrary absence checks. -/
 theorem requestRule_frame {L : TermLayer V T P}
     {request conclusion : P} {premises : List P} {guard : Subst V T → Bool}
     {before after : Multiset T}

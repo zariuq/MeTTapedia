@@ -402,7 +402,7 @@ theorem suspended_of_not_decided {Γ : Context setting.R} {original : EquationSt
     {outcome : Outcome setting.levels original} (undecided : ¬ outcome.Decided) : outcome.readout = .suspended := by
   cases outcome with
   | solved state finished => exact absurd trivial undecided
-  | refuted missing => exact absurd trivial undecided
+  | refuted absent => exact absurd trivial undecided
   | stuck state => rfl
   | cutoff state => rfl
 

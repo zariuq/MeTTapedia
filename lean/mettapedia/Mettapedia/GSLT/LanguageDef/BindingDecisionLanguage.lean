@@ -2,7 +2,7 @@ import Mettapedia.GSLT.LanguageDef.IRPass
 import Mettapedia.GSLT.LanguageDef.PatternPlanBindingDecisionCompilation
 import Mettapedia.GSLT.LanguageDef.TotalGSLT
 import Mettapedia.GSLT.Core.ConservativeExtension
-import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
+import Mettapedia.GSLT.LanguageDef.RewriteValidationBatch
 
 /-!
 # The binding-decision language
@@ -369,254 +369,38 @@ def language : LanguageDef :=
 private theorem labels_nodup : (language.terms.map (·.label)).Nodup := by
   decide
 
-private theorem succeed_validate : LanguageDef.validateRewrite language succeedRewrite = [] :=
-  RewriteValidationCertificate.validateRewrite_eq_nil_of_check labels_nodup (by
-    simp +decide [RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      RewriteValidationCertificate.constructorSignatures,
-      RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-      checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite,
-      joinMergeRewrite, finishRewrite, runPattern, retPattern, donePattern, succeedPattern,
-      capturePattern, checkBoundPattern, checkConstructorPattern, joinPattern,
-      nilBindingsPattern, bindPattern, joinRightPattern, joinMergePattern, knilPattern,
-      kconsPattern, metavariable, projectRelation, boundRelation, constructorRelation,
-      mergeRelation, pathType, indexType, nameType, subjectType, decisionType, bindingsType,
-      frameType, kontType, stateType, rootConstructor, childConstructor, zeroConstructor,
-      succConstructor, succeedConstructor, captureConstructor, checkBoundConstructor,
-      checkConstructorConstructor, joinConstructor, nilBindingsConstructor, bindConstructor,
-      joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-      runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
-      LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      
-      Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-      Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain])
-
-private theorem capture_validate : LanguageDef.validateRewrite language captureRewrite = [] :=
-  RewriteValidationCertificate.validateRewrite_eq_nil_of_check labels_nodup (by
-    simp +decide [RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      RewriteValidationCertificate.constructorSignatures,
-      RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-      checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite,
-      joinMergeRewrite, finishRewrite, runPattern, retPattern, donePattern, succeedPattern,
-      capturePattern, checkBoundPattern, checkConstructorPattern, joinPattern,
-      nilBindingsPattern, bindPattern, joinRightPattern, joinMergePattern, knilPattern,
-      kconsPattern, metavariable, projectRelation, boundRelation, constructorRelation,
-      mergeRelation, pathType, indexType, nameType, subjectType, decisionType, bindingsType,
-      frameType, kontType, stateType, rootConstructor, childConstructor, zeroConstructor,
-      succConstructor, succeedConstructor, captureConstructor, checkBoundConstructor,
-      checkConstructorConstructor, joinConstructor, nilBindingsConstructor, bindConstructor,
-      joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-      runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
-      LanguageDef.premisePatterns, LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      LanguageDef.premiseFvarNames, LanguageDef.premiseProducedFvarNames,
-      LanguageDef.premiseForAllParams, Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-      Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain])
-
-private theorem checkBound_validate : LanguageDef.validateRewrite language checkBoundRewrite = [] :=
-  RewriteValidationCertificate.validateRewrite_eq_nil_of_check labels_nodup (by
-    simp +decide [RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      RewriteValidationCertificate.constructorSignatures,
-      RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-      checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite,
-      joinMergeRewrite, finishRewrite, runPattern, retPattern, donePattern, succeedPattern,
-      capturePattern, checkBoundPattern, checkConstructorPattern, joinPattern,
-      nilBindingsPattern, bindPattern, joinRightPattern, joinMergePattern, knilPattern,
-      kconsPattern, metavariable, projectRelation, boundRelation, constructorRelation,
-      mergeRelation, pathType, indexType, nameType, subjectType, decisionType, bindingsType,
-      frameType, kontType, stateType, rootConstructor, childConstructor, zeroConstructor,
-      succConstructor, succeedConstructor, captureConstructor, checkBoundConstructor,
-      checkConstructorConstructor, joinConstructor, nilBindingsConstructor, bindConstructor,
-      joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-      runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
-      LanguageDef.premisePatterns, LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      LanguageDef.premiseFvarNames, LanguageDef.premiseProducedFvarNames,
-      LanguageDef.premiseForAllParams, Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-      Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain])
-
-private theorem checkConstructor_validate : LanguageDef.validateRewrite language checkConstructorRewrite = [] :=
-  RewriteValidationCertificate.validateRewrite_eq_nil_of_check labels_nodup (by
-    simp +decide [RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      RewriteValidationCertificate.constructorSignatures,
-      RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-      checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite,
-      joinMergeRewrite, finishRewrite, runPattern, retPattern, donePattern, succeedPattern,
-      capturePattern, checkBoundPattern, checkConstructorPattern, joinPattern,
-      nilBindingsPattern, bindPattern, joinRightPattern, joinMergePattern, knilPattern,
-      kconsPattern, metavariable, projectRelation, boundRelation, constructorRelation,
-      mergeRelation, pathType, indexType, nameType, subjectType, decisionType, bindingsType,
-      frameType, kontType, stateType, rootConstructor, childConstructor, zeroConstructor,
-      succConstructor, succeedConstructor, captureConstructor, checkBoundConstructor,
-      checkConstructorConstructor, joinConstructor, nilBindingsConstructor, bindConstructor,
-      joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-      runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
-      LanguageDef.premisePatterns, LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      LanguageDef.premiseFvarNames, LanguageDef.premiseProducedFvarNames,
-      LanguageDef.premiseForAllParams, Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-      Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain])
-
-private theorem join_validate : LanguageDef.validateRewrite language joinRewrite = [] :=
-  RewriteValidationCertificate.validateRewrite_eq_nil_of_check labels_nodup (by
-    simp +decide [RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      RewriteValidationCertificate.constructorSignatures,
-      RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-      checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite,
-      joinMergeRewrite, finishRewrite, runPattern, retPattern, donePattern, succeedPattern,
-      capturePattern, checkBoundPattern, checkConstructorPattern, joinPattern,
-      nilBindingsPattern, bindPattern, joinRightPattern, joinMergePattern, knilPattern,
-      kconsPattern, metavariable, projectRelation, boundRelation, constructorRelation,
-      mergeRelation, pathType, indexType, nameType, subjectType, decisionType, bindingsType,
-      frameType, kontType, stateType, rootConstructor, childConstructor, zeroConstructor,
-      succConstructor, succeedConstructor, captureConstructor, checkBoundConstructor,
-      checkConstructorConstructor, joinConstructor, nilBindingsConstructor, bindConstructor,
-      joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-      runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
-      LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      
-      Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-      Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain])
-
-private theorem joinRight_validate : LanguageDef.validateRewrite language joinRightRewrite = [] :=
-  RewriteValidationCertificate.validateRewrite_eq_nil_of_check labels_nodup (by
-    simp +decide [RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      RewriteValidationCertificate.constructorSignatures,
-      RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-      checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite,
-      joinMergeRewrite, finishRewrite, runPattern, retPattern, donePattern, succeedPattern,
-      capturePattern, checkBoundPattern, checkConstructorPattern, joinPattern,
-      nilBindingsPattern, bindPattern, joinRightPattern, joinMergePattern, knilPattern,
-      kconsPattern, metavariable, projectRelation, boundRelation, constructorRelation,
-      mergeRelation, pathType, indexType, nameType, subjectType, decisionType, bindingsType,
-      frameType, kontType, stateType, rootConstructor, childConstructor, zeroConstructor,
-      succConstructor, succeedConstructor, captureConstructor, checkBoundConstructor,
-      checkConstructorConstructor, joinConstructor, nilBindingsConstructor, bindConstructor,
-      joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-      runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
-      LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      
-      Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-      Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain])
-
-private theorem joinMerge_validate : LanguageDef.validateRewrite language joinMergeRewrite = [] :=
-  RewriteValidationCertificate.validateRewrite_eq_nil_of_check labels_nodup (by
-    simp +decide [RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      RewriteValidationCertificate.constructorSignatures,
-      RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-      checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite,
-      joinMergeRewrite, finishRewrite, runPattern, retPattern, donePattern, succeedPattern,
-      capturePattern, checkBoundPattern, checkConstructorPattern, joinPattern,
-      nilBindingsPattern, bindPattern, joinRightPattern, joinMergePattern, knilPattern,
-      kconsPattern, metavariable, projectRelation, boundRelation, constructorRelation,
-      mergeRelation, pathType, indexType, nameType, subjectType, decisionType, bindingsType,
-      frameType, kontType, stateType, rootConstructor, childConstructor, zeroConstructor,
-      succConstructor, succeedConstructor, captureConstructor, checkBoundConstructor,
-      checkConstructorConstructor, joinConstructor, nilBindingsConstructor, bindConstructor,
-      joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-      runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
-      LanguageDef.premisePatterns, LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      LanguageDef.premiseFvarNames, LanguageDef.premiseProducedFvarNames,
-      LanguageDef.premiseForAllParams, Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-      Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain])
-
-private theorem finish_validate : LanguageDef.validateRewrite language finishRewrite = [] :=
-  RewriteValidationCertificate.validateRewrite_eq_nil_of_check labels_nodup (by
-    simp +decide [RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      RewriteValidationCertificate.constructorSignatures,
-      RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-      checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite,
-      joinMergeRewrite, finishRewrite, runPattern, retPattern, donePattern, succeedPattern,
-      capturePattern, checkBoundPattern, checkConstructorPattern, joinPattern,
-      nilBindingsPattern, bindPattern, joinRightPattern, joinMergePattern, knilPattern,
-      kconsPattern, metavariable, projectRelation, boundRelation, constructorRelation,
-      mergeRelation, pathType, indexType, nameType, subjectType, decisionType, bindingsType,
-      frameType, kontType, stateType, rootConstructor, childConstructor, zeroConstructor,
-      succConstructor, succeedConstructor, captureConstructor, checkBoundConstructor,
-      checkConstructorConstructor, joinConstructor, nilBindingsConstructor, bindConstructor,
-      joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-      runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
-      LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      
-      Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-      Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain])
+private theorem rewrite_checks :
+    language.rewrites.all (RewriteValidationCertificate.check language) = true := by
+  simp +decide [
+    RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
+    RewriteValidationCertificate.patternDeclaredCheck,
+    RewriteValidationCertificate.premisesDeclaredCheck,
+    RewriteValidationCertificate.allPatternsScopedCheck,
+    RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
+    RewriteValidationCertificate.bindersAvoidConstructorsCheck,
+    RewriteValidationCertificate.contextAvoidsConstructorsCheck,
+    RewriteValidationCertificate.rightBoundCheck,
+    RewriteValidationCertificate.constructorSignatures,
+    RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
+    checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite, joinMergeRewrite,
+    finishRewrite, runPattern, retPattern, donePattern, succeedPattern, capturePattern,
+    checkBoundPattern, checkConstructorPattern, joinPattern, nilBindingsPattern, bindPattern,
+    joinRightPattern, joinMergePattern, knilPattern, kconsPattern, metavariable, projectRelation,
+    boundRelation, constructorRelation, mergeRelation, pathType, indexType, nameType, subjectType,
+    decisionType, bindingsType, frameType, kontType, stateType, rootConstructor, childConstructor,
+    zeroConstructor, succConstructor, succeedConstructor, captureConstructor,
+    checkBoundConstructor, checkConstructorConstructor, joinConstructor, nilBindingsConstructor,
+    bindConstructor, joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
+    runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
+    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames, Pattern.constructorRefs,
+    Pattern.constructorRefsList, Pattern.isWellScoped, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt, Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain,
+    LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
+    LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams]
 
 private theorem rewrites_validate :
-    ∀ rewrite ∈ language.rewrites, LanguageDef.validateRewrite language rewrite = [] := by
-  intro rewrite rewriteMember
-  change rewrite ∈
-    [succeedRewrite, captureRewrite, checkBoundRewrite, checkConstructorRewrite, joinRewrite,
-      joinRightRewrite, joinMergeRewrite, finishRewrite] at rewriteMember
-  simp only [List.mem_cons, List.mem_nil_iff, or_false] at rewriteMember
-  rcases rewriteMember with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  · exact succeed_validate
-  · exact capture_validate
-  · exact checkBound_validate
-  · exact checkConstructor_validate
-  · exact join_validate
-  · exact joinRight_validate
-  · exact joinMerge_validate
-  · exact finish_validate
+    ∀ rewrite ∈ language.rewrites, language.validateRewrite rewrite = [] :=
+  RewriteValidationCertificate.validateRewrite_eq_nil_of_all labels_nodup rewrite_checks
 
 /-- The authored definition passes the ordinary structural validator. -/
 theorem language_validate : language.validate = [] := by

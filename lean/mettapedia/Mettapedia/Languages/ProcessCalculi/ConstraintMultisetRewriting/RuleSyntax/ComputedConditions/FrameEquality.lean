@@ -24,7 +24,7 @@ equality, with instantiation as the function; the dependent frames of `Step` con
   different firings exactly where a call term meets a pattern or a stored row.
 
 So the frame-equality reading has the firings of the table read when the call term occurs in no take,
-read, none queries, count or collect pattern and in no stored row (then matching sees no computation), and
+read, absence, count or collect pattern and in no stored row (then matching sees no computation), and
 the arguments are determined (then the tell is the value tell); with an undetermined argument the
 equality leaves the call term as a solution of the tell (a value that is not a value of the function),
 where the evaluation waits and the table read enumerates. The first two facts are proved here; the

@@ -4,7 +4,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNInferenceCalculus
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNInferenceRules
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNLinkCalculusSoundness
-import Mettapedia.PLN.TruthValues.PLNTruthTower
+import Mettapedia.PLN.TruthValues.PLNBinaryCounts
 import Mettapedia.Languages.MeTTa.OSLFCore.Atom
 import Mettapedia.Languages.MeTTa.OSLFCore.Atomspace
 import Mettapedia.Languages.MeTTa.OSLFCore.MinimalOps

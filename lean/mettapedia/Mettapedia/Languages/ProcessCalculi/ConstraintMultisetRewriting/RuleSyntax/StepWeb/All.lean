@@ -151,7 +151,7 @@ modules. The tree calls the serializable ones rounds (`AnnotatedRuns.Round`, and
 * `RoundEveryOrder`: the runtime's reading (`RuntimeRound`: every order runs to one result) agrees, on the
   bag store and the set store, for positive rules; every order of such a bag gives one trace.
 * `RoundPetriSteps`: every Petri-net step of the base layer (`Race.StepMoves`) is a base round.
-* `RoundControls`: none queries and count checks separate the three notions; joint freshness is needed;
+* `RoundControls`: absence and count checks separate the three notions; joint freshness is needed;
   ground states are not.
 
 ## The hosted named source and the native concurrent rounds
@@ -180,7 +180,7 @@ without merging identities.
   - without joint solvability, no order runs (`no_order_hosted`).
 * `HostedNativeControls`:
   - the program with one equation written twice: its call is admitted and run on both sides;
-  - refused firings and a none guard refuse on both sides;
+  - refused firings and an absence guard refuse on both sides;
   - the two origins compete for one call row, so they are not compatible in the packet image;
   - the first-order collapse merges two choice unknowns that the adapter keeps apart;
   - the old ledger admits no extension.

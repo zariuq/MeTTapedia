@@ -46,19 +46,19 @@ theorem shared_count_without_blindness :
     subst occurrence
     exact Finset.mem_singleton_self _
 
-theorem matching_growth_breaks_none_and_count :
+theorem matching_growth_breaks_absence_and_count :
     selected ∅ = ∅ ∧ selected (∅ ∪ {0}) ≠ ∅ ∧
       (selected (∅ ∪ {0})).card ≠ (selected ∅).card := by
   simp
 
-noncomputable def noneGuard : SpatialGuard (fun _ _ : Unit => Unit) Nat () :=
+noncomputable def absentGuard : SpatialGuard (fun _ _ : Unit => Unit) Nat () :=
   fun _ _ store => selected store = ∅
 
-theorem none_not_monotone : ¬SpatialGuard.Monotone noneGuard := by
+theorem absence_not_monotone : ¬SpatialGuard.Monotone absentGuard := by
   intro monotone
   have broken := monotone () () (show (∅ : Finset Nat) ⊆ {0} from Finset.empty_subset _)
-    (by simp [noneGuard])
-  simp [noneGuard] at broken
+    (by simp [absentGuard])
+  simp [absentGuard] at broken
 
 noncomputable def countOne : SpatialGuard (fun _ _ : Unit => Unit) Nat () :=
   fun b σ store => (matchedOccurrences rigid (a := ()) (b := b) σ (fun _ => 0) 0 store).card = 1

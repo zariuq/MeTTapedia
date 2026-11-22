@@ -44,7 +44,7 @@ theorem move_store (moved : Move D P supply world before nextWorld children) :
   | letBind | remove | new | memo =>
       rw [Multiset.mem_singleton.mp member]
       exact ⟨_, rfl⟩
-  | ret | unmatched | run | letStart | add | removeMissing | checkStart | admitted | refused |
+  | ret | unmatched | run | letStart | add | removeAbsent | checkStart | admitted | refused |
       delay | forcePending | forceDone =>
       rw [Multiset.mem_singleton.mp member]
       exact ⟨[], (List.append_nil _).symm⟩

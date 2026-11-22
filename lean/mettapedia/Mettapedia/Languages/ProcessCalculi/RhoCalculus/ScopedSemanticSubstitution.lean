@@ -1,7 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.ScopedDerivedPresentationSyntax
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalTyping
-import Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
 
 /-!
 # Scope and sort preservation for semantic COMM substitution
@@ -33,16 +32,6 @@ private theorem drop_wellSorted_inv
 
 /-! ## Semantic normalization -/
 
-/-- A quotation whose code is closed at the quote boundary is a rho name in every
-sort context. -/
-private theorem quote_of_binderSafe {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted rhoReflectivePresentation free bound process)
-    (safe : binderSafeAt "NQuote" 0 process = true) :
-    NameWellSorted rhoReflectivePresentation free bound (.apply "NQuote" [process]) := by
-  have closed : ProcWellSorted rhoReflectivePresentation free [] process := by
-    simpa using procWellSorted_restrictToBinderPrefix (depth := 0) (tail := bound) typed safe
-  exact NameWellSorted.quoteOfClosed (by decide) closed
-
 mutual
   /-- Semantic name normalization preserves both the derived name sort and
   quote-aware scope safety. -/
@@ -63,8 +52,8 @@ mutual
         exact ⟨by simpa [semanticNormalizeName] using
             (NameWellSorted.fvar lookup),
           by simpa [semanticNormalizeName] using safe⟩
-    | quote processTyped _ =>
-        rename_i process _
+    | quote processTyped =>
+        rename_i process
         change
           NameWellSorted rhoReflectivePresentation free bound
               (semanticNormalizeName (.apply "NQuote" [process])) ∧
@@ -92,7 +81,7 @@ mutual
           have normalized :=
             semanticNormalizeProc_preserves bound processTyped 0 processSafe
           rw [semanticNormalizeName.eq_4 process notDrop]
-          exact ⟨quote_of_binderSafe normalized.1 normalized.2,
+          exact ⟨NameWellSorted.quote normalized.1,
             by simpa [binderSafeAt] using normalized.2⟩
 
   /-- Process form of semantic-normalization preservation. -/
@@ -255,8 +244,8 @@ theorem semanticSubstName_preserves
     simp only [semanticSubstName, semanticSubstNameMark, Canonical.canonicalize, reduceCtorEq,
       if_false, semanticNormalizeName]
     exact ⟨.fvar lookup, by simp [binderSafeAt]⟩
-  | quote processTyped _ =>
-    rename_i process _
+  | quote processTyped =>
+    rename_i process
     have localScope : binderSafeAt "NQuote" 0 process = true := by
       simpa [binderSafeAt, rhoReflectivePresentation] using safe
     have closed : ProcWellSorted rhoReflectivePresentation free [] process := by
@@ -273,7 +262,7 @@ theorem semanticSubstName_preserves
       rw [if_neg (show Canonical.canonicalize (.apply rhoReflectivePresentation.quoteConstructor [process]) ≠
         .bvar index from miss)]
     rw [remains]
-    have normalized := semanticNormalizeName_preserves [] (NameWellSorted.quoteOfClosed (by decide) closed) 0 sealed
+    have normalized := semanticNormalizeName_preserves [] (NameWellSorted.quote closed) 0 sealed
     exact ⟨normalized.1.weakenBoundRight _, binderSafeAt_mono "NQuote" normalized.2 (Nat.zero_le index)⟩
 
 mutual
@@ -361,8 +350,8 @@ mutual
                 by
                   simp [semanticSubstProc, markedEq, binderSafeAt,
                     binderSafeListAt, rhoReflectivePresentation]⟩
-        | quote quotedTyped _ =>
-            rename_i quotedProcess _
+        | quote quotedTyped =>
+            rename_i quotedProcess
             have quotedSafe :
                 binderSafeAt "NQuote" 0 quotedProcess = true := by
               simpa [binderSafeAt, rhoReflectivePresentation] using
@@ -373,7 +362,7 @@ mutual
                     simpa [semanticSubstProc, markedEq,
                       rhoReflectivePresentation] using
                       (ProcWellSorted.drop
-                        (quote_of_binderSafe quotedTyped quotedSafe)),
+                        (NameWellSorted.quote quotedTyped)),
                   by
                     simpa [semanticSubstProc, markedEq, binderSafeAt,
                       binderSafeListAt, rhoReflectivePresentation] using
@@ -503,7 +492,7 @@ theorem semanticCommSubst_preserves
     .apply "NQuote" [semanticNormalizeProc payload]
   have replacementTyped :
       NameWellSorted rhoReflectivePresentation free [] replacement := by
-    exact NameWellSorted.quoteOfClosed (by decide) payloadNormalized.1
+    exact NameWellSorted.quote payloadNormalized.1
   have replacementSafe : binderSafeAt "NQuote" 0 replacement = true := by
     simpa [replacement, binderSafeAt] using payloadNormalized.2
   have bodyTyped' :

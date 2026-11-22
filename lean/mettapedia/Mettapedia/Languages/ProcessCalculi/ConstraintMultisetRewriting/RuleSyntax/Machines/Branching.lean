@@ -24,7 +24,7 @@ The nineteen schemas of the machine, and six rules over new rows (`candRow`, `sp
 
 Every rule only takes rows and makes rows (`multiRule`, `rowRule`: no read, tell or check), and the program is
 range-restricted and positive (`branch_fragment`). The leftover candidates are removed by counting them, so no
-none check is needed.
+absence check is needed.
 
 ## The correspondence
 

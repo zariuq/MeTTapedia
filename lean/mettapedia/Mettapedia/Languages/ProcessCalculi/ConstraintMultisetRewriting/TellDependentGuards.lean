@@ -104,8 +104,8 @@ theorem pre_tell_guard_is_unresolved :
     Check.Unresolved A (inputProblem selection label rule before) label before.present (.predicate .none x) := by
   constructor
   · intro certain
-    have missing := certain ConstraintMultisetRewriting.Controls.zero (A.models_nil _)
-    exact missing 0 (by simp [before]) rfl
+    have absent := certain ConstraintMultisetRewriting.Controls.zero (A.models_nil _)
+    exact absent 0 (by simp [before]) rfl
   · intro refuted
     apply refuted ConstraintMultisetRewriting.Controls.one (A.models_nil _)
     intro occurrence present same

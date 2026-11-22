@@ -38,7 +38,7 @@ def identityOnly : Solver setting.levels :=
 /-- **The identity solver refutes `λ a b. Id T a b ≐ λ a b. Id T b a`.** -/
 theorem id_identity_refuted : (run identityOnly idStore 2).readout = .refuted := by decide +kernel
 
-/-- The refutation is certified: it carries the lack of solutions. -/
+/-- The refutation is certified: it carries the absence of solutions. -/
 theorem id_identity_unsolvable : ¬ (frames setting.levels).Solvable idStore :=
   drive_refuted identityOnly 2 _ id_identity_refuted
 
@@ -78,7 +78,7 @@ theorem id_identity_decided :
       run (identityTower.solver larger) idStore larger = run (identityTower.solver budget) idStore budget ∧
       ((∃ state finished, run (identityTower.solver larger) idStore larger = .solved state finished ∧
           (frames setting.levels).Principal idStore state.answer) ∨
-        (∃ missing, run (identityTower.solver larger) idStore larger = .refuted missing)) := by
+        (∃ absent, run (identityTower.solver larger) idStore larger = .refuted absent)) := by
   exact (identitySettled (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
     ContextualDependentInversion.Controls.reducer ContextualDependentPiSpine.Controls.rigid TowerModel.complete

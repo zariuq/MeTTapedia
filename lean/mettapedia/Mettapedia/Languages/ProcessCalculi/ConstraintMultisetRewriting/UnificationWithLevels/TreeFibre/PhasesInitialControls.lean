@@ -55,7 +55,7 @@ theorem initial_of_cover {Θ : Context setting.R} {problem : EquationStore (Tota
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
     ContextualDependentInversion.Controls.reducer coverBase coverBase_epi fuel depth problem
   generalize found : coverPhases fuel depth problem = decision at solved epi
-  rcases decision with _ | ⟨update, finished⟩ | missing
+  rcases decision with _ | ⟨update, finished⟩ | absent
   · simp [Controls.decidedKind] at solved
   · exact ⟨update.target, update.answer, Decided.initial_of_epi (finished := finished) (epi _ found)⟩
   · simp [Controls.decidedKind] at solved

@@ -270,10 +270,11 @@
    (let $key (eq:name $E)
      (not (== (collapse (match (typ:evidence) (TypProving $key $ctx $q) proving)) ()))))
 ; A goal that failed is not tried again while nothing new can be known: the
-; failures are kept for an epoch, and a new epoch begins at each step of a
-; computation and after each evaluation made for a type (those are what add
-; origins and change the term a rule is applied to), where a failure was
-; kept in the epoch that ends.  Without this a goal with several routes
+; failures are kept for an epoch, and a new epoch begins after each step that
+; a computation makes and after each evaluation made for a type the first
+; time (those are what add origins and change the term a rule is applied
+; to; an attempt that makes no step, or an answer met again, adds nothing),
+; where a failure was kept in the epoch that ends.  Without this a goal with several routes
 ; fails once for every route of every goal above it.  A failure is looked up
 ; with the current epoch, so the rows of earlier epochs are left as they are:
 ; removing a row costs the size of the goal in it, and a long computation
@@ -297,6 +298,15 @@
                 ($m (+ $n 1))
                 ($done (add-atom (typ:evidence) (TypEpoch $m))))
            $m))))
+; An evaluation made for a type tells something new the first time; met again it is the
+; answer kept, and the failures kept since still hold.
+(= (typ:learned $E $ctx $how $T $answer)
+   (if (== $answer Same) same
+       (let* (($key (eq:name $E))
+              ($seen (collapse (match (typ:evidence-for $ctx) (TypLearned $key $ctx $how $T) seen))))
+         (if (== $seen ())
+             (let $noted (add-atom (typ:evidence-for $ctx) (TypLearned $key $ctx $how $T)) (typ:new-epoch))
+             same))))
 (= (typ:on-path $q $path)
    (if (== $path ()) False (if (== (car-atom $path) $q) True (typ:on-path $q (cdr-atom $path)))))
 ; Under binders the variables are new, so the goals above are other goals.
@@ -510,7 +520,7 @@
      (case $answer
        ((Same None)
         ((Conv $value $equation)
-         (let* (($epoch (typ:new-epoch))
+         (let* (($epoch (typ:learned $E $ctx strong $T $answer))
                 ($proved (typ:prove $E $ctx $path (typ:member $t $value))))
            (if (== $proved None) None (typ:from-value $E $ctx $t $T $answer $proved))))))))
 ;   For "R a .. holds" where the goal speaks of no variable and a lemma says
@@ -678,7 +688,8 @@
 (= (typ:retype-by-values $E $ctx $t $T1 $T $thm)
    (let* (($a1 (conv:run $E $ctx (lean:evaluator) $T1))
           ($a2 (conv:run $E $ctx (lean:evaluator) $T))
-          ($epoch (if (== $a1 Same) (if (== $a2 Same) same (typ:new-epoch)) (typ:new-epoch))))
+          ($epoch1 (typ:learned $E $ctx needed $T1 $a1))
+          ($epoch2 (typ:learned $E $ctx needed $T $a2)))
      (if (== (conv:result $T1 $a1) (conv:result $T $a2))
          (typ:from-value $E $ctx $t $T $a2 (typ:to-value $E $ctx $t $T1 $a1 $thm))
          (typ:retype-inside $E $ctx $t $T1 $T $thm))))
@@ -836,8 +847,12 @@
           ($other (typ:infer-variable $E $ctx $t (cdr-atom $hyps) (+ $index 1)))))))
 (= (typ:infer-head $E $ctx $path $names $t)
    (if (== $names ()) None
-       (let $found (typ:infer-lemma $E $ctx $path (car-atom $names) $t)
+       (let $found (if (typ:checks-only (car-atom $names)) None (typ:infer-lemma $E $ctx $path (car-atom $names) $t))
          (if (== $found None) (typ:infer-head $E $ctx $path (cdr-atom $names) $t) $found))))
+; An inferred type is read by the rules that follow (a proposition's is LeanProp), so it
+; is given in normal form.  A lemma whose type is a level still to be computed
+; (Sort (imax u v)) proves a goal so stated, and is no rule of inference (TypChecksOnly).
+(= (typ:checks-only $co_name) (not (== (collapse (match &self (TypChecksOnly $co_name) yes)) ())))
 (= (typ:infer-lemma $E $ctx $path $name $t)
    (let* (($known (mg:known-in (eq:theory $E) $ctx $name))
           ($statement (mg:proposition $known))

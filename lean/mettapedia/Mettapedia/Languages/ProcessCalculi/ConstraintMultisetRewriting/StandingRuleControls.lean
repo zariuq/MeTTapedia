@@ -2,10 +2,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.StandingR
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.EquationWakeupControls
 
 /-!
-# An installed none rule wakes on equations and survives its firing
+# An installed absence rule wakes on equations and survives its firing
 
 The rule is a physical occurrence beside f(x). Telling x = 1 changes no
-physical row, but makes the none query of f(0) certain. A physical-only wake
+physical row, but makes the absence of f(0) certain. A physical-only wake
 index misses this enabling. The reference index wakes it, and its actual
 candidate firing keeps the installation while producing its answer.
 -/

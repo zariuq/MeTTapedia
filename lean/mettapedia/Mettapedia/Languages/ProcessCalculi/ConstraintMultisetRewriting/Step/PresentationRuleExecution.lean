@@ -129,8 +129,8 @@ theorem refused_rule_not_admitted : ¬ (step label).Admits (s := before) (refuse
   intro permitted
   have accepted := (admits_iff label refusedRule selection before).mp permitted
   obtain ⟨substitution, solved⟩ := accepted.consistent
-  have missing := accepted.checks (.predicate .none (label 0)) (List.mem_singleton_self _) substitution solved
-  exact missing 0 (by simp [before]) rfl
+  have absent := accepted.checks (.predicate .none (label 0)) (List.mem_singleton_self _) substitution solved
+  exact absent 0 (by simp [before]) rfl
 
 theorem no_encoded_guard_bypass (target : State) :
     ¬ Executes label (rulePattern refusedRule) (selectionPattern selection)

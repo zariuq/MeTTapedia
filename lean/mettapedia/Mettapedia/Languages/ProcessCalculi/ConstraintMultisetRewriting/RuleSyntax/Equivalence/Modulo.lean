@@ -23,7 +23,7 @@ equal at every solution of the knowledge, and the same support.
   knowledge (`modulo_step`); every context preserves the relation (`modulo_apply`); may- and
   must-barbs cannot tell such states apart (`mayBarb_modulo`, `mustBarb_modulo`).
 * **Law 2** (`modulo_congruent`, `modulo_congruent_mayBarb`): such states are congruent with every
-  program. Instances: labels of missing identities are unobservable (`offPresent_congruent`); a row may
+  program. Instances: labels of absent identities are unobservable (`offPresent_congruent`); a row may
   be replaced by any label the knowledge equates with it, and the knowledge by any store with the same
   solutions, as long as the support stays.
 * The support hypothesis is needed: at one frame, the empty knowledge and the knowledge `y = y` have
@@ -232,7 +232,7 @@ theorem supports_result {P : Program Tm} {s : State Tm O} {f : Firing O E P s.fr
     enabled.taken_subset (by simpa [Selection.commit] using member)
   have readPresent : ∀ o ∈ f.selection.read, o ∈ s.present := fun o member =>
     enabled.kept_subset (by simpa [Selection.commit] using member)
-  have madeNotPresent : ∀ o ∈ f.selection.made, o ∉ s.present := fun o member present =>
+  have madeAbsent : ∀ o ∈ f.selection.made, o ∉ s.present := fun o member present =>
     Finset.disjoint_left.mp enabled.fresh (by simpa [Selection.commit] using member) present
   have weaken : ∀ (t : Tm s.frame), X.E (X.act φ (X.act (E.weaken f.ext) t))
       (X.act ψ (X.act (E.weaken f.ext) t)) ↔
@@ -262,7 +262,7 @@ theorem supports_result {P : Program Tm} {s : State Tm O} {f : Firing O E P s.fr
             (Or.inr (Or.inl ((mem_matching f).mpr ⟨p, o, paired, rfl⟩)))))
         · have survives : o ∈ fire s.present (f.selection.commit (T := Unit)) :=
             mem_fire.mpr (Or.inl ⟨present, by simpa [Selection.commit] using taken⟩)
-          have notMade : o ∉ f.selection.made := fun made => madeNotPresent o made present
+          have notMade : o ∉ f.selection.made := fun made => madeAbsent o made present
           have label : (f.result X s).label o = f.row X s o :=
             Firing.result_label_other f notMade
           exact supports _ (Or.inr (Or.inr ⟨o, survives, label⟩))
@@ -717,7 +717,7 @@ theorem modulo_congruent_mayBarb (P : Program Tm) {s t : State Tm O} (modulo : M
     Congruent X O E (MayBarb X) ⟨P, s⟩ ⟨P, t⟩ :=
   modulo_congruent (fun related p => mayBarb_modulo related p) P modulo
 
-/-- **Labels of missing identities are unobservable.** -/
+/-- **Labels of absent identities are unobservable.** -/
 theorem offPresent_congruent (invariant : ∀ {s t : State Tm O}, Modulo X s t → ∀ β, obs β s → obs β t)
     (P : Program Tm) (s : State Tm O) (ℓ : O → Tm s.frame) (agree : ∀ o ∈ s.present, ℓ o = s.label o) :
     Congruent X O E obs ⟨P, s⟩ ⟨P, ⟨s.frame, s.knowledge, s.present, ℓ⟩⟩ := by

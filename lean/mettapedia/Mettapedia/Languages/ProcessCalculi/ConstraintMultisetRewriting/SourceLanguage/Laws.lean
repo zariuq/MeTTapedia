@@ -419,7 +419,7 @@ theorem move_transfer {D : Discipline S Γ star} {P P' : Program κ Γ star D.Ty
   | add K sp t k fs ps h addressed => exact .add _ _ _ _ _ _ _ h addressed
   | remove K sp t k fs ps h addressed r rest split fits =>
       exact .remove _ _ _ _ _ _ _ h addressed r rest split fits
-  | removeMissing K sp t k fs ps h addressed none => exact .removeMissing _ _ _ _ _ _ _ h addressed none
+  | removeAbsent K sp t k fs ps h addressed none => exact .removeAbsent _ _ _ _ _ _ _ h addressed none
   | new => exact .new _ _ _ _ _ _ _
   | checkStart => exact .checkStart _ _ _ _ _ _
   | admitted K v T fs ps all => exact .admitted _ _ _ _ _ _ all
@@ -502,7 +502,7 @@ theorem move_perm {D : Discipline S Γ star} {P P' : Program κ Γ star D.Ty} {s
   | add K sp t k fs ps h addressed => exact .add _ _ _ _ _ _ _ h addressed
   | remove K sp t k fs ps h addressed r rest split fits =>
       exact .remove _ _ _ _ _ _ _ h addressed r rest split fits
-  | removeMissing K sp t k fs ps h addressed none => exact .removeMissing _ _ _ _ _ _ _ h addressed none
+  | removeAbsent K sp t k fs ps h addressed none => exact .removeAbsent _ _ _ _ _ _ _ h addressed none
   | new => exact .new _ _ _ _ _ _ _
   | checkStart => exact .checkStart _ _ _ _ _ _
   | admitted K v T fs ps all => exact .admitted _ _ _ _ _ _ all

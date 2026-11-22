@@ -5,10 +5,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NamedSpac
 
 An actor holds some terms `K` fully and some names `W` write-only, after KLAIM's `out` right,
 Rholang's `bundle+` and the output side of Pierce–Sangiorgi channel types. A write-only name
-permits produce ports at its space and nothing else: no take, no read, no none query or count check.
+permits produce ports at its space and nothing else: no take, no read, no absence or count check.
 
 * **Typing** (`WriteHolds`): the rule's take and read ports, tells and read-side spaces (take,
-  read, none queries, count) are terms of `K`; each produce port is a full port, with its space and
+  read, absence, count) are terms of `K`; each produce port is a full port, with its space and
   placed term in `K`, or writes a payload of `K` at a written name of `W`.
 * **Admission** (`WriteAdmits`, `WriteStep`): reach-relative selection with the reach of `K` alone.
   The read side resolves into that reach (`WriteAdmits.read_space_reached`); produce ports land in
@@ -59,7 +59,7 @@ section ReadSide
 
 variable {T : Type uT} {S : Type uS} {N : Type uN} {A : SubstitutionAction T S}
 
-/-- The read side of a rule: the spaces of its take and read ports and of its none query and count
+/-- The read side of a rule: the spaces of its take and read ports and of its absence and count
 checks. -/
 def LocatedRule.readSpaces (r : LocatedRule T) : List T :=
   r.take.map Prod.fst ++ r.read.map Prod.fst ++ r.checks.filterMap LocatedCheck.space?
@@ -91,7 +91,7 @@ structure WriteHolds (r : LocatedRule T) (K : Set T) (W : Set N) : Prop where
   produce : ∀ port ∈ r.produce,
     (port.1 ∈ K ∧ place sts port ∈ K) ∨ ∃ w ∈ W, port.1 = sts.name w ∧ port.2 ∈ K
 
-/-- The read side of the rule is written: every take, read, none queries and count space is a name. -/
+/-- The read side of the rule is written: every take, read, absence and count space is a name. -/
 def ReadSideWritten (r : LocatedRule T) : Prop := ∀ s ∈ r.readSpaces, ∃ n, s = sts.name n
 
 /-- **The untyped full holder** of the same names: `K`, each write-only name, and each placement
@@ -233,7 +233,7 @@ theorem write_only_confinement (admits : WriteAdmits ns K W space payload r C se
     · exact Or.inr (by simpa [Selection.commit] using madeMember)
 
 /-- **Atomic delivery.** One step of the holder makes every produced occurrence together: each is
-missing before the step and present after it, at the full space or the write-only name its port
+absent before the step and present after it, at the full space or the write-only name its port
 names. No configuration lies between. -/
 theorem WriteStep.makes_together {D : Configuration T O}
     (step : WriteStep ns K W space payload r C D) :
@@ -564,7 +564,7 @@ theorem settle_admits :
     · exact ⟨5, resolvesTo_name _ 5⟩
 
 /-- **Positive control: atomic delivery.** In one firing the payer takes its invoice, settles at
-its own space and publishes the receipt in the payee's ledger: both occurrences are not present before
+its own space and publishes the receipt in the payee's ledger: both occurrences are absent before
 the step and present after it. -/
 theorem payer_settles_atomically :
     WriteStep names payer ledger paySpace payPayload settle payWorld settledWorld ∧

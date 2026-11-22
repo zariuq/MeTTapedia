@@ -19,7 +19,7 @@ places where the theory limits them, each proved on the tree's own objects.
 
 * **Acceptance tests** (`AcceptanceTests`): four laws a stronger theorem might state, each refuted on
   the tree's objects with the weaker law that holds: a solvable store with no principal answer;
-  none queries against framing; pairwise compatibility without a joint wave; solvable without being
+  absence against framing; pairwise compatibility without a joint wave; solvable without being
   inhabited, also on the dependent full step.
 * **Refinement** (`Refinement`): a made row is typed in the frame, before solving; a firing whose made
   row is typed at every solution of its own information is refused.

@@ -58,7 +58,7 @@ theorem row_map_identity {Γ : Ctx S} {sort : S.Srt} (row : Row locals captures 
     ContextualResidual.mapProblem, instantiateObservation_identity, List.map_id']
 
 /-- Reindexing the entire conditional ask retains its row-local equations,
-including for none queries and count checks at the original physical world. -/
+including for absence and count checks at the original physical world. -/
 theorem ask_reindex_iff (forward : V → W) (backward : W → V)
     (forwardPreserves : ∀ name, middle (forward name) = source name)
     (backwardPreserves : ∀ name, source (backward name) = middle name)

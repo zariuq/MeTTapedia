@@ -139,6 +139,11 @@ structure FEquation where
 /-- Reading refuses with a reason. -/
 abbrev FReadM := ExceptT String MetaM
 
+/-- A family's `below` (`List.below`), the structure `brecOn` hands its functional: read as
+itself, not unfolded, so that a reading gives it once for the family. -/
+def isBelowRecursor (env : Environment) (c : Name) : Bool :=
+  isAuxRecursor env c && (match c with | .str _ "below" => true | _ => false)
+
 /-- Read a term in a context naming its variables. -/
 partial def readTerm (names : Names) (e : Expr) : FReadM FTerm := do
   let e := (← instantiateMVars e).consumeMData
@@ -169,7 +174,7 @@ partial def readTerm (names : Names) (e : Expr) : FReadM FTerm := do
   -- (A proposition's form was decided above.)
   if let some c := e.getAppFn.constName? then
     if let some (.defnInfo _) := (← getEnv).find? c then
-      if (← Meta.isType e) && !(← Meta.isProp e) then
+      if (← Meta.isType e) && !(← Meta.isProp e) && !isBelowRecursor (← getEnv) c then
         let e' ← whnfD e
         if e' != e && !e'.getAppFn.isProj then return ← readTerm names e'
   if e.isConstOf ``Nat.zero then return .app ``Nat.zero []
@@ -204,6 +209,11 @@ partial def readTerm (names : Names) (e : Expr) : FReadM FTerm := do
     if (← whnfD (← inferType e)).isForall then
       let expanded ← etaExpand e
       if expanded != e then return ← readTerm names expanded
+    -- A family's constructor index (`List.ctorIdx`), which Lean generates with the family:
+    -- the case analysis it abbreviates, so that its evidence is the family's.
+    if (isCtorIdxCore? (← getEnv) c).isSome then
+      let value ← instantiateValueLevelParams (← getConstInfo c) levels
+      return ← readTerm names (value.beta e.getAppArgs)
     if let some info ← getProjectionFnInfo? c then
       if let some e' ← unfoldProjInst? e then
         if e'.getAppFn.constName? != some c then return ← readTerm names e'
@@ -306,7 +316,7 @@ partial def readStatement (names : Names) (e : Expr) (projections : Bool := fals
   | _ =>
     if let some c := e.getAppFn.constName? then
       if let some (.defnInfo _) := (← getEnv).find? c then
-        unless (← isReducible c) || (projections && (← getEnv).isProjectionFn c) do
+        unless ((← isReducible c) && !isBelowRecursor (← getEnv) c) || (projections && (← getEnv).isProjectionFn c) do
           return .app c (← e.getAppArgs.toList.mapM (readTerm names))
     if e.isAppOfArity ``And 2 then
       return .app ``And [← readStatement names (e.getArg! 0) projections,

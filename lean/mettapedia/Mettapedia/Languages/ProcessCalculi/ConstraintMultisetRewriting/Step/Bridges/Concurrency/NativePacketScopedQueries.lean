@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 
 The store is a bag of physical occurrences, the commit is a bag of matches,
 each guard is asked after that member's own tells, the program is fixed,
-and knowledge is one store. Query code records none queries, cardinality or an
+and knowledge is one store. Query code records absence, cardinality or an
 exact occurrence set. Its patterns are actual opened observation packets.
 The decoder consumes their target frame and contextual term, and the row's
 actual schema and capture assignment. Malformed scope lengths explicitly
@@ -488,8 +488,8 @@ theorem realized_indices {s : NativeState S O Γ sort} (members : List (LiveFiri
       refine ⟨⟨data.1,?_⟩,?_⟩
       · intro other outside
         have different : other ≠ index := fun equal => outside (List.mem_cons.mpr (Or.inl equal))
-        have missing : other ∉ rest := fun inside => outside (List.mem_cons_of_mem _ inside)
-        simpa only [Function.update_of_ne different] using data.2 other missing
+        have absent : other ∉ rest := fun inside => outside (List.mem_cons_of_mem _ inside)
+        simpa only [Function.update_of_ne different] using data.2 other absent
       · intro term inside
         have atUse : joint (NativePacketStep.useObject s (NativePacketRounds.useTag index)) =
             wanted (NativePacketStep.useObject s (NativePacketRounds.useTag index)) := by

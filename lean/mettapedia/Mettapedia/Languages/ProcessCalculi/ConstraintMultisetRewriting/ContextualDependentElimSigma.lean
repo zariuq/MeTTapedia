@@ -311,7 +311,7 @@ theorem elimSigmaRound_eq_of_mixed (fuel : Nat) {Θ : Context S.R} {problem : Eq
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the mixed family decides, this family decides with the same outcome.** -/
 theorem elimSigma_run_of_mixed (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -345,7 +345,7 @@ theorem elimSigmaRound_not_stuck_of_expanded (fuel : Nat) {Θ : Context S.R} {pr
       exact liftCollapsed_not_stuck facts roots heads algebra rigid complete _
         (elimSigmaUpdate_rank facts roots heads algebra rigid complete reducer root rootComplete fuel problem) moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **The family's readers**: a reader of the mixed family, on the store or on its η-long prepared store η-expanded
 at Σ bases. -/
@@ -488,7 +488,7 @@ theorem elimSigmaRound_closure (fuel : Nat) :
       cases fired
       exact mixedRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening sn directed fuel _ _ _ permuted computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
 
@@ -512,9 +512,9 @@ theorem elimSigma_decided_of_firing
       ((∃ state finished, run ((elimSigmaFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((elimSigmaFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((elimSigmaFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (elimSigmaSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -569,7 +569,7 @@ theorem tower_elimSigma_decided_of_firing
       run (elimSigmaTower.solver larger) problem larger = run (elimSigmaTower.solver budget) problem budget ∧
       ((∃ state finished, run (elimSigmaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (elimSigmaTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (elimSigmaTower.solver larger) problem larger = .refuted absent)) :=
   elimSigma_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices

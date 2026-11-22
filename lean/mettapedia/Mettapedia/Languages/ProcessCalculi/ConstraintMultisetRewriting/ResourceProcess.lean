@@ -179,7 +179,7 @@ theorem executable_permutation_of_operator (action : SubstitutionAction T S) (la
   rw [← sameWorld]
   exact orderResource
 
-/-- At each identity, at least one selection is not present, or both selections
+/-- At each identity, at least one selection is absent, or both selections
 only read it. This is a sufficient commutation condition. -/
 def SharedReadsOnly (first second : Selection O) : Prop :=
   ∀ occurrence,

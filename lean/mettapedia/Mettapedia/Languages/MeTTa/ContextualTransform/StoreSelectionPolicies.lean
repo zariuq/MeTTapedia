@@ -4,7 +4,7 @@ import Mettapedia.Languages.MeTTa.ContextualTransform.StoreOperations
 # First-occurrence removal and complete negative observations
 
 First selection is a source ordering obligation. Once that occurrence has
-been selected, the target publishes its take. The none query is different: it depends
+been selected, the target publishes its take. Absence is different: it depends
 on the complete selected region, so a newly added matching occurrence changes
 admission even when it overlaps no positive take.
 -/
@@ -46,14 +46,14 @@ theorem take_admits_exact (knowledge : EquationStore (Tm a)) (rows : List O) (ch
 theorem contraction_at_occurrence (before after : List O) (chosen : O)
     (unique : (before ++ chosen :: after).Nodup) :
     OrderedStore.publish (before ++ chosen :: after) ⟨[chosen], [], []⟩ = before ++ after := by
-  have missing := (List.nodup_cons.mp (List.nodup_middle.mp unique)).1
+  have absent := (List.nodup_cons.mp (List.nodup_middle.mp unique)).1
   have unchanged : OrderedStore.survivors (before ++ after) [chosen] = before ++ after := by
     apply List.filter_eq_self.mpr
     intro occurrence member
     simp only [List.mem_singleton, decide_eq_true_eq]
     intro same
     subst occurrence
-    exact missing member
+    exact absent member
   calc
     OrderedStore.publish (before ++ chosen :: after) ⟨[chosen], [], []⟩ =
         OrderedStore.survivors (before ++ after) [chosen] := by
@@ -76,44 +76,44 @@ theorem remove_one_correspondence (select : Tm a → Bool)
   simp only [List.map_append, List.map_cons]
   exact StoreEffects.removeOne_at_first select _ _ _ noEarlier matched
 
-def noneRequest (select : Tm a → Bool) : OrderedStore.Publication (Tm a) O :=
+def absentRequest (select : Tm a → Bool) : OrderedStore.Publication (Tm a) O :=
   ⟨⟨[], [], []⟩, [⟨select, ∅⟩]⟩
 
-theorem none_observation_exact (select : Tm a → Bool) (rows : List O) :
+theorem absence_observation_exact (select : Tm a → Bool) (rows : List O) :
     (PredicateQuery.mk select (∅ : Finset O)).Holds label rows.toFinset ↔
       (rows.map label).any select = false := by
   simp [PredicateQuery.Holds, regionOf, Finset.filter_eq_empty_iff, List.any_eq_false]
 
-theorem none_admits_exact (select : Tm a → Bool)
+theorem absence_admits_exact (select : Tm a → Bool)
     (knowledge : EquationStore (Tm a)) (rows : List O) :
-    (OrderedStore.step X a label).Admits (s := (knowledge, rows)) (noneRequest (a := a) select) ↔
+    (OrderedStore.step X a label).Admits (s := (knowledge, rows)) (absentRequest (a := a) select) ↔
       rows.Nodup ∧ X.Solvable knowledge ∧ (rows.map label).any select = false := by
   constructor
   · rintro ⟨shape, enabled, consistent⟩
-    refine ⟨shape.1, consistent, (none_observation_exact a label select rows).mp ?_⟩
-    exact enabled.queries_hold _ (by simp [noneRequest, OrderedStore.Publication.commit])
-  · rintro ⟨unique, consistent, missing⟩
+    refine ⟨shape.1, consistent, (absence_observation_exact a label select rows).mp ?_⟩
+    exact enabled.queries_hold _ (by simp [absentRequest, OrderedStore.Publication.commit])
+  · rintro ⟨unique, consistent, absent⟩
     refine ⟨⟨unique, List.nodup_nil, List.nodup_nil⟩, ?_, consistent⟩
-    refine ⟨by simp [noneRequest, OrderedStore.Publication.commit, Selection.commit],
-      by simp [noneRequest, OrderedStore.Publication.commit, Selection.commit],
-      by simp [noneRequest, OrderedStore.Publication.commit, Selection.commit],
-      by simp [noneRequest, OrderedStore.Publication.commit, Selection.commit], ?_⟩
+    refine ⟨by simp [absentRequest, OrderedStore.Publication.commit, Selection.commit],
+      by simp [absentRequest, OrderedStore.Publication.commit, Selection.commit],
+      by simp [absentRequest, OrderedStore.Publication.commit, Selection.commit],
+      by simp [absentRequest, OrderedStore.Publication.commit, Selection.commit], ?_⟩
     intro query member
     have same : query = ⟨select, ∅⟩ := by
-      simpa [noneRequest, OrderedStore.Publication.commit] using member
+      simpa [absentRequest, OrderedStore.Publication.commit] using member
     subst query
-    exact (none_observation_exact a label select rows).mpr missing
+    exact (absence_observation_exact a label select rows).mpr absent
 
-/-- A later matching addition invalidates a none observation without
+/-- A later matching addition invalidates an absence observation without
 needing to consume any of its positive footprint. -/
-theorem matching_addition_rejects_none (select : Tm a → Bool)
+theorem matching_addition_rejects_absence (select : Tm a → Bool)
     (knowledge : EquationStore (Tm a)) (rows : List O) (added : O)
     (matched : select (label added) = true) :
     ¬(OrderedStore.step X a label).Admits (s := (knowledge, rows ++ [added]))
-      (noneRequest (a := a) select) := by
+      (absentRequest (a := a) select) := by
   intro admitted
-  have missing := ((none_admits_exact X a label select knowledge _).mp admitted).2.2
-  simp [matched] at missing
+  have absent := ((absence_admits_exact X a label select knowledge _).mp admitted).2.2
+  simp [matched] at absent
 
 theorem uniqueness_observation_exact (select : Tm a → Bool) (rows : List O) :
     (readRequest (a := a) label select rows).selection.read.length = 1 ↔

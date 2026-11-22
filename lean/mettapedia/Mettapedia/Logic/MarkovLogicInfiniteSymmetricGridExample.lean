@@ -1,6 +1,8 @@
+import Mettapedia.Analysis.ENNRealGeometric
 import Mettapedia.Logic.MarkovLogicInfiniteGridExample
 import Mettapedia.Logic.MarkovLogicInfiniteExistence
 import Mathlib.Order.Hom.PowersetCard
+import Mathlib.Order.SuccPred.Relation
 import Mathlib.Combinatorics.SimpleGraph.Acyclic
 
 /-!
@@ -2386,34 +2388,29 @@ theorem finset_eq_pair_of_card_eq_two_of_mem
       (GridClauseId.vertical i (j + 1)) := by
   refine ⟨(i, j + 1), ?_, ?_⟩ <;> simp [gridClauseDualEndpoints]
 
+/-- A retained sequence of consecutive edges supplies an extensional reachability
+proof along the chosen index interval. -/
+private theorem gridClauseStarReachableAlong
+    {clauses : Finset GridClauseId} (edge : ℕ → GridClauseId)
+    {lo hi : ℕ} (ordered : lo ≤ hi)
+    (present : ∀ k, lo ≤ k → k ≤ hi → edge k ∈ clauses)
+    (adjacent : ∀ k, gridClauseStarAdjacent (edge k) (edge (k + 1))) :
+    Relation.ReflTransGen (gridClauseStarAdjacentIn clauses) (edge lo) (edge hi) := by
+  apply Relation.ReflTransGen.lift edge (fun _ _ step => step)
+  refine reflTransGen_of_succ_of_le _ ?_ ordered
+  intro k member
+  exact ⟨present k member.1 member.2.le,
+    present (k + 1) (member.1.trans (Nat.le_succ k)) (Nat.succ_le_of_lt member.2),
+    adjacent k⟩
+
 theorem reflTransGen_gridClauseStarAdjacentIn_horizontal_interval
     {s : Finset GridClauseId} (i lo hi : ℕ)
     (hlohi : lo ≤ hi)
     (hmem : ∀ t, lo ≤ t → t ≤ hi → GridClauseId.horizontal i t ∈ s) :
     Relation.ReflTransGen (gridClauseStarAdjacentIn s)
       (GridClauseId.horizontal i lo) (GridClauseId.horizontal i hi) := by
-  revert lo
-  induction hi with
-  | zero =>
-      intro lo hlohi hmem
-      have hEq : lo = 0 := by omega
-      subst hEq
-      exact Relation.ReflTransGen.refl
-  | succ hi ih =>
-      intro lo hlohi hmem
-      by_cases hEq : lo = hi + 1
-      · subst hEq
-        exact Relation.ReflTransGen.refl
-      · have hlohi' : lo ≤ hi := by omega
-        have ihreach :
-            Relation.ReflTransGen (gridClauseStarAdjacentIn s)
-              (GridClauseId.horizontal i lo) (GridClauseId.horizontal i hi) :=
-          ih lo hlohi' (fun t htlo hthi => hmem t htlo (by omega))
-        exact Relation.ReflTransGen.tail ihreach
-          ⟨hmem hi hlohi' (by omega),
-            hmem (hi + 1) (by omega) le_rfl,
-            gridClauseStarAdjacent_of_dualAdjacent
-              (gridClauseDualAdjacent_horizontal_succ i hi)⟩
+  exact gridClauseStarReachableAlong (fun k => GridClauseId.horizontal i k) hlohi hmem
+    (fun k => gridClauseStarAdjacent_of_dualAdjacent (gridClauseDualAdjacent_horizontal_succ i k))
 
 theorem reflTransGen_gridClauseStarAdjacentIn_vertical_interval
     {s : Finset GridClauseId} (j lo hi : ℕ)
@@ -2421,28 +2418,8 @@ theorem reflTransGen_gridClauseStarAdjacentIn_vertical_interval
     (hmem : ∀ t, lo ≤ t → t ≤ hi → GridClauseId.vertical t j ∈ s) :
     Relation.ReflTransGen (gridClauseStarAdjacentIn s)
       (GridClauseId.vertical lo j) (GridClauseId.vertical hi j) := by
-  revert lo
-  induction hi with
-  | zero =>
-      intro lo hlohi hmem
-      have hEq : lo = 0 := by omega
-      subst hEq
-      exact Relation.ReflTransGen.refl
-  | succ hi ih =>
-      intro lo hlohi hmem
-      by_cases hEq : lo = hi + 1
-      · subst hEq
-        exact Relation.ReflTransGen.refl
-      · have hlohi' : lo ≤ hi := by omega
-        have ihreach :
-            Relation.ReflTransGen (gridClauseStarAdjacentIn s)
-              (GridClauseId.vertical lo j) (GridClauseId.vertical hi j) :=
-          ih lo hlohi' (fun t htlo hthi => hmem t htlo (by omega))
-        exact Relation.ReflTransGen.tail ihreach
-          ⟨hmem hi hlohi' (by omega),
-            hmem (hi + 1) (by omega) le_rfl,
-            gridClauseStarAdjacent_of_dualAdjacent
-              (gridClauseDualAdjacent_vertical_succ hi j)⟩
+  exact gridClauseStarReachableAlong (fun k => GridClauseId.vertical k j) hlohi hmem
+    (fun k => gridClauseStarAdjacent_of_dualAdjacent (gridClauseDualAdjacent_vertical_succ k j))
 
 theorem gridBaseClauseCutsRegion_gridAdjacentClauseId_iff
     {inside : Region GridNode} {a b : GridNode}
@@ -3507,90 +3484,45 @@ theorem mem_gridStageBoundaryRegion_iff
       a ∈ gridExhaustion.region n ∧ (a.1 = n ∨ a.2 = n) := by
   simp [gridStageBoundaryRegion]
 
+private theorem gridExhaustion_mem_iff {n i j : ℕ} :
+    (i, j) ∈ gridExhaustion.region n ↔ i ≤ n ∧ j ≤ n := by
+  simp [gridExhaustion]
+
+/-- Pointwise containment and adjacency along a ray entail reachability in the region. -/
+private theorem gridAdjacentInRegion_reachable_along
+    {region : Region GridNode} (point : ℕ → GridNode) {lo hi : ℕ}
+    (ordered : lo ≤ hi)
+    (present : ∀ k, lo ≤ k → k ≤ hi → point k ∈ region)
+    (adjacent : ∀ k, gridAdjacent (point k) (point (k + 1))) :
+    Relation.ReflTransGen (gridAdjacentInRegion region) (point lo) (point hi) := by
+  apply Relation.ReflTransGen.lift point (fun _ _ step => step)
+  refine reflTransGen_of_succ_of_le _ ?_ ordered
+  intro k member
+  exact ⟨present k member.1 member.2.le,
+    present (k + 1) (member.1.trans (Nat.le_succ k)) (Nat.succ_le_of_lt member.2),
+    adjacent k⟩
+
 theorem gridStageBoundaryRegion_reachable_to_corner
     {n : ℕ} {a : GridNode}
     (ha : a ∈ gridStageBoundaryRegion n) :
     Relation.ReflTransGen
       (gridAdjacentInRegion (gridStageBoundaryRegion n)) a (n, n) := by
   rcases a with ⟨i, j⟩
-  rcases mem_gridStageBoundaryRegion_iff.1 ha with ⟨haStage, hside⟩
-  rcases Finset.mem_product.1 haStage with ⟨hiRange, hjRange⟩
-  have hiLe : i ≤ n :=
-    Nat.le_of_lt_succ (Finset.mem_range.mp hiRange)
-  have hjLe : j ≤ n :=
-    Nat.le_of_lt_succ (Finset.mem_range.mp hjRange)
-  let R := gridAdjacentInRegion (gridStageBoundaryRegion n)
-  have hright :
-      ∀ d j, n - j = d → j ≤ n →
-        Relation.ReflTransGen R (n, j) (n, n) := by
-    intro d
-    induction d with
-    | zero =>
-        intro j hdj hj
-        have hjEq : j = n := by omega
-        subst hjEq
-        exact Relation.ReflTransGen.refl
-    | succ d ih =>
-        intro j hdj hj
-        have hjLt : j < n := by omega
-        have hj1 : j + 1 ≤ n := Nat.succ_le_of_lt hjLt
-        have hstep : R (n, j) (n, j + 1) := by
-          dsimp [R, gridAdjacentInRegion]
-          refine ⟨?_, ?_, gridAdjacent_vertical_forward n j⟩
-          · rw [mem_gridStageBoundaryRegion_iff]
-            constructor
-            · exact Finset.mem_product.mpr
-                ⟨Finset.mem_range.mpr (Nat.lt_succ_self n),
-                 Finset.mem_range.mpr (lt_of_le_of_lt hj (Nat.lt_succ_self n))⟩
-            · exact Or.inl rfl
-          · rw [mem_gridStageBoundaryRegion_iff]
-            constructor
-            · exact Finset.mem_product.mpr
-                ⟨Finset.mem_range.mpr (Nat.lt_succ_self n),
-                 Finset.mem_range.mpr
-                  (lt_of_le_of_lt hj1 (Nat.lt_succ_self n))⟩
-            · exact Or.inl rfl
-        exact Relation.ReflTransGen.head hstep
-          (ih (j + 1) (by omega) hj1)
-  have htop :
-      ∀ d i, n - i = d → i ≤ n →
-        Relation.ReflTransGen R (i, n) (n, n) := by
-    intro d
-    induction d with
-    | zero =>
-        intro i hdi hi
-        have hiEq : i = n := by omega
-        subst hiEq
-        exact Relation.ReflTransGen.refl
-    | succ d ih =>
-        intro i hdi hi
-        have hiLt : i < n := by omega
-        have hi1 : i + 1 ≤ n := Nat.succ_le_of_lt hiLt
-        have hstep : R (i, n) (i + 1, n) := by
-          dsimp [R, gridAdjacentInRegion]
-          refine ⟨?_, ?_, gridAdjacent_horizontal_forward i n⟩
-          · rw [mem_gridStageBoundaryRegion_iff]
-            constructor
-            · exact Finset.mem_product.mpr
-                ⟨Finset.mem_range.mpr (lt_of_le_of_lt hi (Nat.lt_succ_self n)),
-                 Finset.mem_range.mpr (Nat.lt_succ_self n)⟩
-            · exact Or.inr rfl
-          · rw [mem_gridStageBoundaryRegion_iff]
-            constructor
-            · exact Finset.mem_product.mpr
-                ⟨Finset.mem_range.mpr
-                  (lt_of_le_of_lt hi1 (Nat.lt_succ_self n)),
-                 Finset.mem_range.mpr (Nat.lt_succ_self n)⟩
-            · exact Or.inr rfl
-        exact Relation.ReflTransGen.head hstep
-          (ih (i + 1) (by omega) hi1)
-  rcases hside with hiEq | hjEq
-  · have hiEq' : i = n := by simpa using hiEq
+  obtain ⟨inStage, side⟩ := mem_gridStageBoundaryRegion_iff.mp ha
+  obtain ⟨hi, hj⟩ := gridExhaustion_mem_iff.mp inStage
+  rcases side with rightSide | topSide
+  · change i = n at rightSide
     subst i
-    exact hright (n - j) j rfl hjLe
-  · have hjEq' : j = n := by simpa using hjEq
+    exact gridAdjacentInRegion_reachable_along (fun k => (n, k)) hj
+      (fun _ _ last => mem_gridStageBoundaryRegion_iff.mpr
+        ⟨gridExhaustion_mem_iff.mpr ⟨le_rfl, last⟩, Or.inl rfl⟩)
+      (gridAdjacent_vertical_forward n)
+  · change j = n at topSide
     subst j
-    exact htop (n - i) i rfl hiLe
+    exact gridAdjacentInRegion_reachable_along (fun k => (k, n)) hi
+      (fun _ _ last => mem_gridStageBoundaryRegion_iff.mpr
+        ⟨gridExhaustion_mem_iff.mpr ⟨last, le_rfl⟩, Or.inr rfl⟩)
+      (fun k => gridAdjacent_horizontal_forward k n)
 
 theorem gridStageBoundaryRegion_gridAdjacentInRegion_connected
     {n : ℕ} {a b : GridNode}
@@ -6808,256 +6740,43 @@ theorem patchedFalseOriginConnectedHull_mem_originConnectedHullContainingSubregi
   exact Finset.mem_image.mpr
     ⟨inside, hinside, rfl⟩
 
+/-- An outside ray meeting the stage boundary gives a path within the outside region. -/
+private theorem mem_boundaryConnectedOutsideSubregion_of_ray
+    {n lo : ℕ} {inside : Region GridNode} (point : ℕ → GridNode)
+    (loBound : lo ≤ n) (endpoint : point n ∈ gridStageBoundaryRegion n)
+    (inStage : ∀ k, k ≤ n → point k ∈ gridExhaustion.region n)
+    (adjacent : ∀ k, gridAdjacent (point k) (point (k + 1)))
+    (outside : ∀ k, lo ≤ k → k ≤ n → point k ∉ inside) :
+    point lo ∈ boundaryConnectedOutsideSubregion n inside := by
+  have exterior (k : ℕ) (first : lo ≤ k) (last : k ≤ n) :
+      point k ∈ outsideRegionInStage n inside :=
+    mem_outsideRegionInStage_iff.mpr ⟨inStage k last, outside k first last⟩
+  have reachable := gridAdjacentInRegion_reachable_along point loBound exterior adjacent
+  exact mem_boundaryConnectedOutsideSubregion_iff.mpr
+    ⟨exterior lo le_rfl loBound, point n, endpoint, exterior n loBound le_rfl,
+      reflTransGen_gridAdjacentInRegion_symm reachable⟩
+
 theorem mem_boundaryConnectedOutsideSubregion_of_outside_row_to_boundary
     {n i j : ℕ} {inside : Region GridNode}
     (hi : i ≤ n) (hj : j ≤ n)
     (hout : ∀ k, i ≤ k → k ≤ n → (k, j) ∉ inside) :
     (i, j) ∈ boundaryConnectedOutsideSubregion n inside := by
-  have hiStage : (i, j) ∈ gridExhaustion.region n := by
-    exact Finset.mem_product.mpr
-      ⟨Finset.mem_range.mpr (lt_of_le_of_lt hi (Nat.lt_succ_self n)),
-       Finset.mem_range.mpr (lt_of_le_of_lt hj (Nat.lt_succ_self n))⟩
-  have hiOutside : (i, j) ∈ outsideRegionInStage n inside := by
-    rw [mem_outsideRegionInStage_iff]
-    exact ⟨hiStage, hout i le_rfl hi⟩
-  have hreachAux :
-      ∀ d i, n - i = d → i ≤ n →
-        (∀ k, i ≤ k → k ≤ n → (k, j) ∉ inside) →
-          Relation.ReflTransGen
-            (gridAdjacentInRegion (outsideRegionInStage n inside))
-            (n, j) (i, j) := by
-    intro d
-    induction d with
-    | zero =>
-        intro i hdi hi hout
-        have hiEq : i = n := by omega
-        subst hiEq
-        exact Relation.ReflTransGen.refl
-    | succ d ih =>
-        intro i hdi hi hout
-        have hiLt : i < n := by omega
-        have hi1 : i + 1 ≤ n := Nat.succ_le_of_lt hiLt
-        have hdi' : n - (i + 1) = d := by omega
-        have hreach1 :=
-          ih (i + 1) hdi' hi1 (fun k hk1 hk2 => hout k (by omega) hk2)
-        have hRightStage : (i + 1, j) ∈ gridExhaustion.region n := by
-          exact Finset.mem_product.mpr
-            ⟨Finset.mem_range.mpr (lt_of_le_of_lt hi1 (Nat.lt_succ_self n)),
-             Finset.mem_range.mpr (lt_of_le_of_lt hj (Nat.lt_succ_self n))⟩
-        have hRightOutside : (i + 1, j) ∈ outsideRegionInStage n inside := by
-          rw [mem_outsideRegionInStage_iff]
-          exact ⟨hRightStage, hout (i + 1) (Nat.le_succ i) hi1⟩
-        have hLeftStage : (i, j) ∈ gridExhaustion.region n := by
-          exact Finset.mem_product.mpr
-            ⟨Finset.mem_range.mpr (lt_of_le_of_lt hi (Nat.lt_succ_self n)),
-             Finset.mem_range.mpr (lt_of_le_of_lt hj (Nat.lt_succ_self n))⟩
-        have hLeftOutside : (i, j) ∈ outsideRegionInStage n inside := by
-          rw [mem_outsideRegionInStage_iff]
-          exact ⟨hLeftStage, hout i le_rfl hi⟩
-        exact Relation.ReflTransGen.tail hreach1
-          ⟨hRightOutside, hLeftOutside, gridAdjacent_horizontal_backward i j⟩
-  have hreach :
-      Relation.ReflTransGen
-        (gridAdjacentInRegion (outsideRegionInStage n inside))
-        (n, j) (i, j) := by
-    exact hreachAux (n - i) i rfl hi hout
-  have hBoundary : (n, j) ∈ gridStageBoundaryRegion n := by
-    rw [mem_gridStageBoundaryRegion_iff]
-    constructor
-    · exact Finset.mem_product.mpr
-        ⟨Finset.mem_range.mpr (Nat.lt_succ_self n),
-         Finset.mem_range.mpr (lt_of_le_of_lt hj (Nat.lt_succ_self n))⟩
-    · exact Or.inl rfl
-  have hBoundaryOutside : (n, j) ∈ outsideRegionInStage n inside := by
-    rw [mem_outsideRegionInStage_iff]
-    constructor
-    · exact (mem_gridStageBoundaryRegion_iff.1 hBoundary).1
-    · exact hout n hi le_rfl
-  rw [mem_boundaryConnectedOutsideSubregion_iff]
-  exact ⟨hiOutside, ⟨(n, j), hBoundary, hBoundaryOutside, hreach⟩⟩
+  have stage (k : ℕ) (hk : k ≤ n) : (k, j) ∈ gridExhaustion.region n :=
+    gridExhaustion_mem_iff.mpr ⟨hk, hj⟩
+  exact mem_boundaryConnectedOutsideSubregion_of_ray (fun k => (k, j)) hi
+    (mem_gridStageBoundaryRegion_iff.mpr ⟨stage n le_rfl, Or.inl rfl⟩)
+    stage (fun k => gridAdjacent_horizontal_forward k j) hout
 
 theorem mem_boundaryConnectedOutsideSubregion_of_outside_col_to_boundary
     {n i j : ℕ} {inside : Region GridNode}
     (hi : i ≤ n) (hj : j ≤ n)
     (hout : ∀ k, j ≤ k → k ≤ n → (i, k) ∉ inside) :
     (i, j) ∈ boundaryConnectedOutsideSubregion n inside := by
-  have hjStage : (i, j) ∈ gridExhaustion.region n := by
-    exact Finset.mem_product.mpr
-      ⟨Finset.mem_range.mpr (lt_of_le_of_lt hi (Nat.lt_succ_self n)),
-       Finset.mem_range.mpr (lt_of_le_of_lt hj (Nat.lt_succ_self n))⟩
-  have hjOutside : (i, j) ∈ outsideRegionInStage n inside := by
-    rw [mem_outsideRegionInStage_iff]
-    exact ⟨hjStage, hout j le_rfl hj⟩
-  have hreachAux :
-      ∀ d j, n - j = d → j ≤ n →
-        (∀ k, j ≤ k → k ≤ n → (i, k) ∉ inside) →
-          Relation.ReflTransGen
-            (gridAdjacentInRegion (outsideRegionInStage n inside))
-            (i, n) (i, j) := by
-    intro d
-    induction d with
-    | zero =>
-        intro j hdj hj hout
-        have hjEq : j = n := by omega
-        subst hjEq
-        exact Relation.ReflTransGen.refl
-    | succ d ih =>
-        intro j hdj hj hout
-        have hjLt : j < n := by omega
-        have hj1 : j + 1 ≤ n := Nat.succ_le_of_lt hjLt
-        have hdj' : n - (j + 1) = d := by omega
-        have hreach1 :=
-          ih (j + 1) hdj' hj1 (fun k hk1 hk2 => hout k (by omega) hk2)
-        have hUpStage : (i, j + 1) ∈ gridExhaustion.region n := by
-          exact Finset.mem_product.mpr
-            ⟨Finset.mem_range.mpr (lt_of_le_of_lt hi (Nat.lt_succ_self n)),
-             Finset.mem_range.mpr (lt_of_le_of_lt hj1 (Nat.lt_succ_self n))⟩
-        have hUpOutside : (i, j + 1) ∈ outsideRegionInStage n inside := by
-          rw [mem_outsideRegionInStage_iff]
-          exact ⟨hUpStage, hout (j + 1) (Nat.le_succ j) hj1⟩
-        have hDownStage : (i, j) ∈ gridExhaustion.region n := by
-          exact Finset.mem_product.mpr
-            ⟨Finset.mem_range.mpr (lt_of_le_of_lt hi (Nat.lt_succ_self n)),
-             Finset.mem_range.mpr (lt_of_le_of_lt hj (Nat.lt_succ_self n))⟩
-        have hDownOutside : (i, j) ∈ outsideRegionInStage n inside := by
-          rw [mem_outsideRegionInStage_iff]
-          exact ⟨hDownStage, hout j le_rfl hj⟩
-        exact Relation.ReflTransGen.tail hreach1
-          ⟨hUpOutside, hDownOutside, gridAdjacent_vertical_backward i j⟩
-  have hreach :
-      Relation.ReflTransGen
-        (gridAdjacentInRegion (outsideRegionInStage n inside))
-        (i, n) (i, j) := by
-    exact hreachAux (n - j) j rfl hj hout
-  have hBoundary : (i, n) ∈ gridStageBoundaryRegion n := by
-    rw [mem_gridStageBoundaryRegion_iff]
-    constructor
-    · exact Finset.mem_product.mpr
-        ⟨Finset.mem_range.mpr (lt_of_le_of_lt hi (Nat.lt_succ_self n)),
-         Finset.mem_range.mpr (Nat.lt_succ_self n)⟩
-    · exact Or.inr rfl
-  have hBoundaryOutside : (i, n) ∈ outsideRegionInStage n inside := by
-    rw [mem_outsideRegionInStage_iff]
-    constructor
-    · exact (mem_gridStageBoundaryRegion_iff.1 hBoundary).1
-    · exact hout n hj le_rfl
-  rw [mem_boundaryConnectedOutsideSubregion_iff]
-  exact ⟨hjOutside, ⟨(i, n), hBoundary, hBoundaryOutside, hreach⟩⟩
-
-theorem originContainingSubregion_exists_outerHorizontalCut
-    {n : ℕ} {inside : Region GridNode}
-    (hinside : inside ∈ originContainingSubregions n) :
-    ∃ i j,
-      GridClauseId.horizontal i j ∈ originContainingSubregionOuterCutBaseClauses n inside := by
-  rcases (mem_originContainingSubregions_iff.1 hinside) with ⟨hInsideΛ, hOrigin⟩
-  have hne : inside.Nonempty := ⟨gridOrigin, hOrigin⟩
-  obtain ⟨p, hpIn, hpMax⟩ := Finset.exists_max_image inside Prod.fst hne
-  refine ⟨p.1, p.2, ?_⟩
-  unfold originContainingSubregionOuterCutBaseClauses
-  rw [Finset.mem_filter]
-  constructor
-  · apply gridRegionSupport_complete
-    refine ⟨p, ?_, hInsideΛ hpIn⟩
-    simp [gridClause]
-  · refine Or.inl ⟨hpIn, ?_⟩
-    by_cases hpTop : p.1 = n
-    · left
-      intro hmem
-      have : p.1 + 1 < n + 1 := (Finset.mem_product.1 hmem).1 |> Finset.mem_range.mp
-      omega
-    · right
-      have hpStage := hInsideΛ hpIn
-      have hp1Le : p.1 ≤ n := by
-        exact Nat.le_of_lt_succ ((Finset.mem_product.1 hpStage).1 |> Finset.mem_range.mp)
-      have hpLt : p.1 < n := Nat.lt_of_le_of_ne hp1Le hpTop
-      have hp2Le : p.2 ≤ n := by
-        exact Nat.le_of_lt_succ ((Finset.mem_product.1 hpStage).2 |> Finset.mem_range.mp)
-      refine mem_boundaryConnectedOutsideSubregion_of_outside_row_to_boundary
-        (i := p.1 + 1) (j := p.2) (by omega) hp2Le ?_
-      intro k hk1 hk2 hkIn
-      have hkLe : k ≤ p.1 := hpMax (k, p.2) hkIn
-      omega
-
-theorem originContainingSubregion_exists_outerVerticalCut
-    {n : ℕ} {inside : Region GridNode}
-    (hinside : inside ∈ originContainingSubregions n) :
-    ∃ i j,
-      GridClauseId.vertical i j ∈ originContainingSubregionOuterCutBaseClauses n inside := by
-  rcases (mem_originContainingSubregions_iff.1 hinside) with ⟨hInsideΛ, hOrigin⟩
-  have hne : inside.Nonempty := ⟨gridOrigin, hOrigin⟩
-  obtain ⟨p, hpIn, hpMax⟩ := Finset.exists_max_image inside Prod.snd hne
-  refine ⟨p.1, p.2, ?_⟩
-  unfold originContainingSubregionOuterCutBaseClauses
-  rw [Finset.mem_filter]
-  constructor
-  · apply gridRegionSupport_complete
-    refine ⟨p, ?_, hInsideΛ hpIn⟩
-    simp [gridClause]
-  · refine Or.inl ⟨hpIn, ?_⟩
-    by_cases hpTop : p.2 = n
-    · left
-      intro hmem
-      have : p.2 + 1 < n + 1 := (Finset.mem_product.1 hmem).2 |> Finset.mem_range.mp
-      omega
-    · right
-      have hpStage := hInsideΛ hpIn
-      have hp2Le : p.2 ≤ n := by
-        exact Nat.le_of_lt_succ ((Finset.mem_product.1 hpStage).2 |> Finset.mem_range.mp)
-      have hpLt : p.2 < n := Nat.lt_of_le_of_ne hp2Le hpTop
-      have hp1Le : p.1 ≤ n := by
-        exact Nat.le_of_lt_succ ((Finset.mem_product.1 hpStage).1 |> Finset.mem_range.mp)
-      refine mem_boundaryConnectedOutsideSubregion_of_outside_col_to_boundary
-        (i := p.1) (j := p.2 + 1) hp1Le (by omega) ?_
-      intro k hk1 hk2 hkIn
-      have hkLe : k ≤ p.2 := hpMax (p.1, k) hkIn
-      omega
-
-theorem originContainingSubregion_exists_outerHorizontalCut_on_row
-    {n j : ℕ} {inside : Region GridNode}
-    (hinside : inside ∈ originContainingSubregions n)
-    (hrow : ∃ i, (i, j) ∈ inside) :
-    ∃ i,
-      GridClauseId.horizontal i j ∈ originContainingSubregionOuterCutBaseClauses n inside := by
-  rcases (mem_originContainingSubregions_iff.1 hinside) with ⟨hInsideΛ, hOrigin⟩
-  let row : Finset GridNode := inside.filter (fun a => a.2 = j)
-  have hrowNe : row.Nonempty := by
-    rcases hrow with ⟨i, hi⟩
-    exact ⟨(i, j), by simp [row, hi]⟩
-  obtain ⟨p, hpRow, hpMax⟩ := Finset.exists_max_image row Prod.fst hrowNe
-  have hpIn : p ∈ inside := (Finset.mem_filter.1 hpRow).1
-  have hpRowEq : p.2 = j := (Finset.mem_filter.1 hpRow).2
-  refine ⟨p.1, ?_⟩
-  unfold originContainingSubregionOuterCutBaseClauses
-  rw [Finset.mem_filter]
-  constructor
-  · apply gridRegionSupport_complete
-    refine ⟨p, ?_, hInsideΛ hpIn⟩
-    rcases p with ⟨x, y⟩
-    simp at hpRowEq
-    subst hpRowEq
-    simp [gridClause]
-  · rcases p with ⟨x, y⟩
-    simp at hpRowEq
-    subst hpRowEq
-    refine Or.inl ⟨hpIn, ?_⟩
-    by_cases hpTop : x = n
-    · left
-      intro hmem
-      have : x + 1 < n + 1 := (Finset.mem_product.1 hmem).1 |> Finset.mem_range.mp
-      omega
-    · right
-      have hpStage := hInsideΛ hpIn
-      have hp1Le : x ≤ n := by
-        exact Nat.le_of_lt_succ ((Finset.mem_product.1 hpStage).1 |> Finset.mem_range.mp)
-      have hp2Le : y ≤ n := by
-        exact Nat.le_of_lt_succ ((Finset.mem_product.1 hpStage).2 |> Finset.mem_range.mp)
-      refine mem_boundaryConnectedOutsideSubregion_of_outside_row_to_boundary
-        (i := x + 1) (j := y) (by omega) hp2Le ?_
-      intro k hk1 hk2 hkIn
-      have hkRow : (k, y) ∈ row := by
-        simp [row, hkIn]
-      have hkLe : k ≤ x := hpMax (k, y) hkRow
-      omega
+  have stage (k : ℕ) (hk : k ≤ n) : (i, k) ∈ gridExhaustion.region n :=
+    gridExhaustion_mem_iff.mpr ⟨hi, hk⟩
+  exact mem_boundaryConnectedOutsideSubregion_of_ray (fun k => (i, k)) hj
+    (mem_gridStageBoundaryRegion_iff.mpr ⟨stage n le_rfl, Or.inr rfl⟩)
+    stage (fun k => gridAdjacent_vertical_forward i k) hout
 
 theorem originContainingSubregion_exists_outerHorizontalCut_on_row_max
     {n j : ℕ} {inside : Region GridNode}
@@ -7108,52 +6827,14 @@ theorem originContainingSubregion_exists_outerHorizontalCut_on_row_max
     have hkLe : k ≤ x := hpMax (k, j) hkRow
     omega
 
-theorem originContainingSubregion_exists_outerVerticalCut_on_col
-    {n i : ℕ} {inside : Region GridNode}
+theorem originContainingSubregion_exists_outerHorizontalCut_on_row
+    {n j : ℕ} {inside : Region GridNode}
     (hinside : inside ∈ originContainingSubregions n)
-    (hcol : ∃ j, (i, j) ∈ inside) :
-    ∃ j,
-      GridClauseId.vertical i j ∈ originContainingSubregionOuterCutBaseClauses n inside := by
-  rcases (mem_originContainingSubregions_iff.1 hinside) with ⟨hInsideΛ, hOrigin⟩
-  let col : Finset GridNode := inside.filter (fun a => a.1 = i)
-  have hcolNe : col.Nonempty := by
-    rcases hcol with ⟨j, hj⟩
-    exact ⟨(i, j), by simp [col, hj]⟩
-  obtain ⟨p, hpCol, hpMax⟩ := Finset.exists_max_image col Prod.snd hcolNe
-  have hpIn : p ∈ inside := (Finset.mem_filter.1 hpCol).1
-  have hpColEq : p.1 = i := (Finset.mem_filter.1 hpCol).2
-  refine ⟨p.2, ?_⟩
-  unfold originContainingSubregionOuterCutBaseClauses
-  rw [Finset.mem_filter]
-  constructor
-  · apply gridRegionSupport_complete
-    refine ⟨p, ?_, hInsideΛ hpIn⟩
-    rcases p with ⟨x, y⟩
-    simp at hpColEq
-    subst hpColEq
-    simp [gridClause]
-  · rcases p with ⟨x, y⟩
-    simp at hpColEq
-    subst hpColEq
-    refine Or.inl ⟨hpIn, ?_⟩
-    by_cases hpTop : y = n
-    · left
-      intro hmem
-      have : y + 1 < n + 1 := (Finset.mem_product.1 hmem).2 |> Finset.mem_range.mp
-      omega
-    · right
-      have hpStage := hInsideΛ hpIn
-      have hp2Le : y ≤ n := by
-        exact Nat.le_of_lt_succ ((Finset.mem_product.1 hpStage).2 |> Finset.mem_range.mp)
-      have hp1Le : x ≤ n := by
-        exact Nat.le_of_lt_succ ((Finset.mem_product.1 hpStage).1 |> Finset.mem_range.mp)
-      refine mem_boundaryConnectedOutsideSubregion_of_outside_col_to_boundary
-        (i := x) (j := y + 1) hp1Le (by omega) ?_
-      intro k hk1 hk2 hkIn
-      have hkCol : (x, k) ∈ col := by
-        simp [col, hkIn]
-      have hkLe : k ≤ y := hpMax (x, k) hkCol
-      omega
+    (hrow : ∃ i, (i, j) ∈ inside) :
+    ∃ i,
+      GridClauseId.horizontal i j ∈ originContainingSubregionOuterCutBaseClauses n inside := by
+  obtain ⟨coordinate, cut, _, _⟩ := originContainingSubregion_exists_outerHorizontalCut_on_row_max hinside hrow
+  exact ⟨coordinate, cut⟩
 
 theorem originContainingSubregion_exists_outerVerticalCut_on_col_max
     {n i : ℕ} {inside : Region GridNode}
@@ -7203,6 +6884,33 @@ theorem originContainingSubregion_exists_outerVerticalCut_on_col_max
       simp [col, hikIn]
     have hkLe : k ≤ y := hpMax (i, k) hkCol
     omega
+
+theorem originContainingSubregion_exists_outerVerticalCut_on_col
+    {n i : ℕ} {inside : Region GridNode}
+    (hinside : inside ∈ originContainingSubregions n)
+    (hcol : ∃ j, (i, j) ∈ inside) :
+    ∃ j,
+      GridClauseId.vertical i j ∈ originContainingSubregionOuterCutBaseClauses n inside := by
+  obtain ⟨coordinate, cut, _, _⟩ := originContainingSubregion_exists_outerVerticalCut_on_col_max hinside hcol
+  exact ⟨coordinate, cut⟩
+
+theorem originContainingSubregion_exists_outerHorizontalCut
+    {n : ℕ} {inside : Region GridNode}
+    (hinside : inside ∈ originContainingSubregions n) :
+    ∃ i j,
+      GridClauseId.horizontal i j ∈ originContainingSubregionOuterCutBaseClauses n inside := by
+  have origin := (mem_originContainingSubregions_iff.1 hinside).2
+  obtain ⟨coordinate, cut⟩ := originContainingSubregion_exists_outerHorizontalCut_on_row hinside ⟨0, origin⟩
+  exact ⟨coordinate, 0, cut⟩
+
+theorem originContainingSubregion_exists_outerVerticalCut
+    {n : ℕ} {inside : Region GridNode}
+    (hinside : inside ∈ originContainingSubregions n) :
+    ∃ i j,
+      GridClauseId.vertical i j ∈ originContainingSubregionOuterCutBaseClauses n inside := by
+  have origin := (mem_originContainingSubregions_iff.1 hinside).2
+  obtain ⟨coordinate, cut⟩ := originContainingSubregion_exists_outerVerticalCut_on_col hinside ⟨0, origin⟩
+  exact ⟨0, coordinate, cut⟩
 
 theorem mem_boundaryConnectedOutsideSubregion_of_mem_stage_of_not_mem_stage
     {m n : ℕ} {inside : Region GridNode} {a : GridNode}
@@ -9525,6 +9233,34 @@ theorem exists_mem_inside_same_col_ge_of_mem_boundaryConnectedHullRegion
     exact hNo ⟨k, hk1, hkIn⟩
   exact (mem_boundaryConnectedHullRegion_iff.1 haHull).2 haExt
 
+/-- The segment from a hull point to the first inside point stays in the hull. -/
+private theorem boundaryConnectedHullRegion_segment_along
+    {n lo : ℕ} {inside : Region GridNode} (point : ℕ → GridNode)
+    (inStage : inside ⊆ gridExhaustion.region n)
+    (start : point lo ∈ boundaryConnectedHullRegion n inside)
+    (hits : ∃ i, lo ≤ i ∧ point i ∈ inside)
+    (monotoneStage : ∀ {i j}, i ≤ j → point j ∈ gridExhaustion.region n →
+      point i ∈ gridExhaustion.region n)
+    (adjacent : ∀ k, gridAdjacent (point k) (point (k + 1))) :
+    ∃ i, lo ≤ i ∧ point i ∈ inside ∧
+      ∀ k, lo ≤ k → k ≤ i → point k ∈ boundaryConnectedHullRegion n inside := by
+  let first := Nat.find hits
+  obtain ⟨startsBefore, insideFirst⟩ := Nat.find_spec hits
+  refine ⟨first, startsBefore, insideFirst, fun k lower => ?_⟩
+  refine Nat.le_induction (fun _ => start) ?_ k lower
+  intro i lower ih upper
+  have prev : point i ∈ boundaryConnectedHullRegion n inside :=
+    ih ((Nat.le_succ i).trans upper)
+  have fresh : point i ∉ inside := by
+    intro member
+    exact (Nat.not_succ_le_self i) (upper.trans (Nat.find_min' hits ⟨lower, member⟩))
+  have stage := monotoneStage upper (inStage insideFirst)
+  by_contra outside
+  have exterior := ((not_mem_boundaryConnectedHullRegion_iff.mp outside).resolve_left
+    (fun offStage => offStage stage))
+  exact fresh (mem_inside_of_mem_boundaryConnectedHullRegion_of_adj_boundaryConnectedOutside
+    prev exterior (adjacent i))
+
 theorem mem_boundaryConnectedHullRegion_row_segment_to_inside
     {n : ℕ} {inside : Region GridNode}
     (hInside : inside ⊆ gridExhaustion.region n)
@@ -9532,52 +9268,12 @@ theorem mem_boundaryConnectedHullRegion_row_segment_to_inside
     (haHull : a ∈ boundaryConnectedHullRegion n inside) :
     ∃ i, a.1 ≤ i ∧ (i, a.2) ∈ inside ∧
       ∀ k, a.1 ≤ k → k ≤ i → (k, a.2) ∈ boundaryConnectedHullRegion n inside := by
-  rcases exists_mem_inside_same_row_ge_of_mem_boundaryConnectedHullRegion haHull with
-    ⟨i0, hi0ge, hi0In⟩
-  let P : ℕ → Prop := fun i => a.1 ≤ i ∧ (i, a.2) ∈ inside
-  have hP : ∃ i, P i := ⟨i0, hi0ge, hi0In⟩
-  let i := Nat.find hP
-  have hai : a.1 ≤ i := (Nat.find_spec hP).1
-  have hiIn : (i, a.2) ∈ inside := (Nat.find_spec hP).2
-  refine ⟨i, hai, hiIn, ?_⟩
-  intro k hk1 hk2
-  obtain ⟨t, rfl⟩ := Nat.exists_eq_add_of_le hk1
-  have hwalk :
-      ∀ t, a.1 + t ≤ i →
-        (a.1 + t, a.2) ∈ boundaryConnectedHullRegion n inside := by
-    intro t
-    induction t with
-    | zero =>
-        intro _
-        simpa using haHull
-    | succ t ih =>
-        intro hle
-        have hprevLe : a.1 + t ≤ i := by omega
-        have hprevHull : (a.1 + t, a.2) ∈ boundaryConnectedHullRegion n inside := ih hprevLe
-        have hprevNotIn : (a.1 + t, a.2) ∉ inside := by
-          intro hIn
-          have hfindLe : i ≤ a.1 + t := Nat.find_min' hP ⟨by omega, hIn⟩
-          omega
-        have hiStage : (i, a.2) ∈ gridExhaustion.region n := hInside hiIn
-        rcases Finset.mem_product.1 hiStage with ⟨hiRange, hjRange⟩
-        have hnextStage : (a.1 + t + 1, a.2) ∈ gridExhaustion.region n := by
-          refine Finset.mem_product.mpr ?_
-          constructor
-          · exact Finset.mem_range.mpr (by
-              have hiLt : i < n + 1 := Finset.mem_range.mp hiRange
-              omega)
-          · exact Finset.mem_range.mpr (Finset.mem_range.mp hjRange)
-        by_cases hnextHull : (a.1 + t + 1, a.2) ∈ boundaryConnectedHullRegion n inside
-        · exact hnextHull
-        · have hnextExt : (a.1 + t + 1, a.2) ∈ boundaryConnectedOutsideSubregion n inside := by
-            rcases not_mem_boundaryConnectedHullRegion_iff.1 hnextHull with hNotStage | hExt
-            · exact False.elim (hNotStage hnextStage)
-            · exact hExt
-          have hprevIn : (a.1 + t, a.2) ∈ inside :=
-            mem_inside_of_mem_boundaryConnectedHullRegion_of_adj_boundaryConnectedOutside
-              hprevHull hnextExt (gridAdjacent_horizontal_forward (a.1 + t) a.2)
-          exact False.elim (hprevNotIn hprevIn)
-  simpa using hwalk t hk2
+  refine boundaryConnectedHullRegion_segment_along (fun k => (k, a.2)) hInside haHull
+    (exists_mem_inside_same_row_ge_of_mem_boundaryConnectedHullRegion haHull) ?_
+    (fun k => gridAdjacent_horizontal_forward k a.2)
+  intro i j le inStage
+  obtain ⟨hj, fixed⟩ := gridExhaustion_mem_iff.mp inStage
+  exact gridExhaustion_mem_iff.mpr ⟨le.trans hj, fixed⟩
 
 theorem mem_boundaryConnectedHullRegion_col_segment_to_inside
     {n : ℕ} {inside : Region GridNode}
@@ -9586,52 +9282,12 @@ theorem mem_boundaryConnectedHullRegion_col_segment_to_inside
     (haHull : a ∈ boundaryConnectedHullRegion n inside) :
     ∃ j, a.2 ≤ j ∧ (a.1, j) ∈ inside ∧
       ∀ k, a.2 ≤ k → k ≤ j → (a.1, k) ∈ boundaryConnectedHullRegion n inside := by
-  rcases exists_mem_inside_same_col_ge_of_mem_boundaryConnectedHullRegion haHull with
-    ⟨j0, hj0ge, hj0In⟩
-  let P : ℕ → Prop := fun j => a.2 ≤ j ∧ (a.1, j) ∈ inside
-  have hP : ∃ j, P j := ⟨j0, hj0ge, hj0In⟩
-  let j := Nat.find hP
-  have haj : a.2 ≤ j := (Nat.find_spec hP).1
-  have hjIn : (a.1, j) ∈ inside := (Nat.find_spec hP).2
-  refine ⟨j, haj, hjIn, ?_⟩
-  intro k hk1 hk2
-  obtain ⟨t, rfl⟩ := Nat.exists_eq_add_of_le hk1
-  have hwalk :
-      ∀ t, a.2 + t ≤ j →
-        (a.1, a.2 + t) ∈ boundaryConnectedHullRegion n inside := by
-    intro t
-    induction t with
-    | zero =>
-        intro _
-        simpa using haHull
-    | succ t ih =>
-        intro hle
-        have hprevLe : a.2 + t ≤ j := by omega
-        have hprevHull : (a.1, a.2 + t) ∈ boundaryConnectedHullRegion n inside := ih hprevLe
-        have hprevNotIn : (a.1, a.2 + t) ∉ inside := by
-          intro hIn
-          have hfindLe : j ≤ a.2 + t := Nat.find_min' hP ⟨by omega, hIn⟩
-          omega
-        have hjStage : (a.1, j) ∈ gridExhaustion.region n := hInside hjIn
-        rcases Finset.mem_product.1 hjStage with ⟨hiRange, hjRange⟩
-        have hnextStage : (a.1, a.2 + t + 1) ∈ gridExhaustion.region n := by
-          refine Finset.mem_product.mpr ?_
-          constructor
-          · exact Finset.mem_range.mpr (Finset.mem_range.mp hiRange)
-          · exact Finset.mem_range.mpr (by
-              have hjLt : j < n + 1 := Finset.mem_range.mp hjRange
-              omega)
-        by_cases hnextHull : (a.1, a.2 + t + 1) ∈ boundaryConnectedHullRegion n inside
-        · exact hnextHull
-        · have hnextExt : (a.1, a.2 + t + 1) ∈ boundaryConnectedOutsideSubregion n inside := by
-            rcases not_mem_boundaryConnectedHullRegion_iff.1 hnextHull with hNotStage | hExt
-            · exact False.elim (hNotStage hnextStage)
-            · exact hExt
-          have hprevIn : (a.1, a.2 + t) ∈ inside :=
-            mem_inside_of_mem_boundaryConnectedHullRegion_of_adj_boundaryConnectedOutside
-              hprevHull hnextExt (gridAdjacent_vertical_forward a.1 (a.2 + t))
-          exact False.elim (hprevNotIn hprevIn)
-  simpa using hwalk t hk2
+  refine boundaryConnectedHullRegion_segment_along (fun k => (a.1, k)) hInside haHull
+    (exists_mem_inside_same_col_ge_of_mem_boundaryConnectedHullRegion haHull) ?_
+    (gridAdjacent_vertical_forward a.1)
+  intro i j le inStage
+  obtain ⟨fixed, hj⟩ := gridExhaustion_mem_iff.mp inStage
+  exact gridExhaustion_mem_iff.mpr ⟨fixed, le.trans hj⟩
 
 theorem exists_reach_inside_of_mem_boundaryConnectedHullRegion
     {n : ℕ} {inside : Region GridNode}
@@ -22557,57 +22213,15 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
     _ = C * (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
           simp [e]
 
-set_option maxHeartbeats 5000000 in
-theorem tsum_if_two_le_geometric
-    (r : ENNReal) :
+theorem tsum_if_two_le_geometric (r : ENNReal) :
     (∑' m : ℕ, if 2 ≤ m then r ^ m else 0) =
       r ^ 2 * (1 - r)⁻¹ := by
-  have hsubtype :
-      (∑' m : ↥((Finset.range 2 : Set ℕ)ᶜ), r ^ (m : ℕ)) =
-        ∑' m : ℕ, if 2 ≤ m then r ^ m else 0 := by
-    rw [tsum_subtype]
-    refine tsum_congr ?_
-    intro m
-    by_cases hm : m ∈ ((Finset.range 2 : Set ℕ)ᶜ)
-    · have hm2 : 2 ≤ m := by
-        simpa [Set.mem_compl_iff, Finset.mem_range] using hm
-      simp [hm2]
-    · have hm2 : ¬ 2 ≤ m := by
-        simpa [Set.mem_compl_iff, Finset.mem_range] using hm
-      simp [hm2]
-  have hshift :
-      (∑' m : ↥((Finset.range 2 : Set ℕ)ᶜ), r ^ (m : ℕ)) =
-        ∑' m : ℕ, r ^ (m + 2) := by
-    exact ((notMemRangeEquiv 2).symm.tsum_eq
-      (f := fun m : {n // n ∉ Finset.range 2} => r ^ (m : ℕ))).symm
-  rw [← hsubtype, hshift]
-  calc
-    (∑' m : ℕ, r ^ (m + 2)) = ∑' m : ℕ, r ^ 2 * r ^ m := by
-          refine tsum_congr ?_
-          intro m
-          rw [pow_add]
-          simp [mul_comm]
-    _ = r ^ 2 * ∑' m : ℕ, r ^ m := by
-          rw [ENNReal.tsum_mul_left]
-    _ = r ^ 2 * (1 - r)⁻¹ := by
-          rw [ENNReal.tsum_geometric]
+  simpa only [one_mul] using Mettapedia.Analysis.tsum_scaled_geometric_tail 1 r 2
 
-theorem tsum_if_two_le_connectedGeometric
-    (C r : ENNReal) :
+theorem tsum_if_two_le_connectedGeometric (C r : ENNReal) :
     (∑' m : ℕ, if 2 ≤ m then C * r ^ m else 0) =
-      C * r ^ 2 * (1 - r)⁻¹ := by
-  calc
-    (∑' m : ℕ, if 2 ≤ m then C * r ^ m else 0) =
-      ∑' m : ℕ, C * (if 2 ≤ m then r ^ m else 0) := by
-        refine tsum_congr ?_
-        intro m
-        by_cases hm : 2 ≤ m <;> simp [hm]
-    _ = C * (∑' m : ℕ, if 2 ≤ m then r ^ m else 0) := by
-        rw [ENNReal.tsum_mul_left]
-    _ = C * (r ^ 2 * (1 - r)⁻¹) := by
-        rw [tsum_if_two_le_geometric]
-    _ = C * r ^ 2 * (1 - r)⁻¹ := by
-        rw [mul_assoc]
+      C * r ^ 2 * (1 - r)⁻¹ :=
+  Mettapedia.Analysis.tsum_scaled_geometric_tail C r 2
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedGeometricCutCardBound_from_two
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -22621,7 +22235,6 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
         (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
   let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  let r : ENNReal := q * e⁻¹
   have hcount' :
       ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
         (((originConnectedContainingSubregions n).filter
@@ -22640,26 +22253,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
           simpa [e] using
             symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedCutCardRange_of_countBound
               (w := w) (n := n) (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ =
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        if 2 ≤ m then C * r ^ m else 0 := by
-          refine Finset.sum_congr rfl ?_
-          intro m hm
-          by_cases hge2 : 2 ≤ m
-          · simp [hge2, r, e, ENNReal.inv_pow]
-            calc
-              (C * q ^ m) * (e⁻¹) ^ m = C * (q ^ m * (e⁻¹) ^ m) := by
-                simp [mul_assoc]
-              _ = C * (q * e⁻¹) ^ m := by
-                rw [← mul_pow]
-          · simp [hge2]
-    _ ≤ ∑' m : ℕ, if 2 ≤ m then C * r ^ m else 0 := by
-          exact ENNReal.sum_le_tsum (Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1))
-    _ = C * r ^ 2 * (1 - r)⁻¹ := by
-          exact tsum_if_two_le_connectedGeometric C r
-    _ = C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-          simp [r, e, mul_assoc]
+    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
 
 theorem sum_originConnectedContainingSubregions_outerCutFactorInv_eq_sum_outerCutCardRange
     (w : ℝ) (n : ℕ) :
@@ -22762,7 +22356,6 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
         (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
   let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  let r : ENNReal := q * e⁻¹
   have hcount' :
       ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
         (((originConnectedContainingSubregions n).filter
@@ -22783,27 +22376,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
             symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_of_countBound_of_nonneg
               (w := w) (hw := hw) (n := n)
               (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ =
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        if 2 ≤ m then C * r ^ m else 0 := by
-          refine Finset.sum_congr rfl ?_
-          intro m hm
-          by_cases hge2 : 2 ≤ m
-          · simp [hge2, r, e, ENNReal.inv_pow]
-            calc
-              (C * q ^ m) * (e⁻¹) ^ m = C * (q ^ m * (e⁻¹) ^ m) := by
-                simp [mul_assoc]
-              _ = C * (q * e⁻¹) ^ m := by
-                rw [← mul_pow]
-          · simp [hge2]
-    _ ≤ ∑' m : ℕ, if 2 ≤ m then C * r ^ m else 0 := by
-          exact ENNReal.sum_le_tsum
-            (Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1))
-    _ = C * r ^ 2 * (1 - r)⁻¹ := by
-          exact tsum_if_two_le_connectedGeometric C r
-    _ = C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-          simp [r, e, mul_assoc]
+    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_counts
     (w : ℝ) (n : ℕ) :
@@ -22865,7 +22438,6 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
         (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
   let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  let r : ENNReal := q * e⁻¹
   have hcount' :
       ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
         (((originConnectedContainingSubregions n).filter
@@ -22885,27 +22457,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
           simpa [e] using
             symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_of_countBound
               (w := w) (n := n) (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ =
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        if 2 ≤ m then C * r ^ m else 0 := by
-          refine Finset.sum_congr rfl ?_
-          intro m hm
-          by_cases hge2 : 2 ≤ m
-          · simp [hge2, r, e, ENNReal.inv_pow]
-            calc
-              (C * q ^ m) * (e⁻¹) ^ m = C * (q ^ m * (e⁻¹) ^ m) := by
-                simp [mul_assoc]
-              _ = C * (q * e⁻¹) ^ m := by
-                rw [← mul_pow]
-          · simp [hge2]
-    _ ≤ ∑' m : ℕ, if 2 ≤ m then C * r ^ m else 0 := by
-          exact ENNReal.sum_le_tsum
-            (Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1))
-    _ = C * r ^ 2 * (1 - r)⁻¹ := by
-          exact tsum_if_two_le_connectedGeometric C r
-    _ = C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-          simp [r, e, mul_assoc]
+    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedHullGeometricCutCardBound_from_two
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -22919,7 +22471,6 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
         (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
   let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  let r : ENNReal := q * e⁻¹
   have hcount' :
       ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
         (((originConnectedHullContainingSubregions n).filter
@@ -22939,27 +22490,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
           simpa [e] using
             symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedHullCutCardRange_of_countBound
               (w := w) (n := n) (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ =
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        if 2 ≤ m then C * r ^ m else 0 := by
-          refine Finset.sum_congr rfl ?_
-          intro m hm
-          by_cases hge2 : 2 ≤ m
-          · simp [hge2, r, e, ENNReal.inv_pow]
-            calc
-              (C * q ^ m) * (e⁻¹) ^ m = C * (q ^ m * (e⁻¹) ^ m) := by
-                simp [mul_assoc]
-              _ = C * (q * e⁻¹) ^ m := by
-                rw [← mul_pow]
-          · simp [hge2]
-    _ ≤ ∑' m : ℕ, if 2 ≤ m then C * r ^ m else 0 := by
-          exact ENNReal.sum_le_tsum
-            (Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1))
-    _ = C * r ^ 2 * (1 - r)⁻¹ := by
-          exact tsum_if_two_le_connectedGeometric C r
-    _ = C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-          simp [r, e, mul_assoc]
+    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
 
 theorem originSpinDownExtractedHulls_cutCard_count_eq_zero_of_lt_two
     (n m : ℕ)
@@ -23012,7 +22543,6 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_extrac
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
         (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
   let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  let r : ENNReal := q * e⁻¹
   have hcount' :
       ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
         (((originSpinDownExtractedHulls n).filter
@@ -23031,27 +22561,7 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_extrac
           simpa [e] using
             symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_extractedHullCutCardRange_of_countBound
               (w := w) (n := n) (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ =
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        if 2 ≤ m then C * r ^ m else 0 := by
-          refine Finset.sum_congr rfl ?_
-          intro m hm
-          by_cases hge2 : 2 ≤ m
-          · simp [hge2, r, e, ENNReal.inv_pow]
-            calc
-              (C * q ^ m) * (e⁻¹) ^ m = C * (q ^ m * (e⁻¹) ^ m) := by
-                simp [mul_assoc]
-              _ = C * (q * e⁻¹) ^ m := by
-                rw [← mul_pow]
-          · simp [hge2]
-    _ ≤ ∑' m : ℕ, if 2 ≤ m then C * r ^ m else 0 := by
-          exact ENNReal.sum_le_tsum
-            (Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1))
-    _ = C * r ^ 2 * (1 - r)⁻¹ := by
-          exact tsum_if_two_le_connectedGeometric C r
-    _ = C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-          simp [r, e, mul_assoc]
+    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_cutCardBoxCandidateGeometricBound_from_two
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -25810,6 +25320,16 @@ abbrev symmetricGridZeroFieldOriginPeierlsErrorBound
           (localQueryEvent ({gridOrigin} : Region GridNode)
             gridOriginSpinUpLocalQuery)) ≤ ε
 
+private theorem peierlsError_of_spinDownMass {w ε : ℝ}
+    (nonneg : 0 ≤ ε) (small : ε < (1 / 2 : ℝ))
+    (bounded : ∀ n, symmetricGridZeroFieldPlusStageWorldMeasure w n
+      (originSpinDownWorldEvent n) ≤ ENNReal.ofReal ε) :
+    symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
+  refine ⟨nonneg, small, fun n => ?_⟩
+  have realBound := ENNReal.toReal_le_of_le_ofReal nonneg (bounded n)
+  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel (w := w) (n := n)] at realBound
+  exact realBound
+
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardRangeCountBound
     {w ε : ℝ} (countBound : ℕ → ℕ → ENNReal)
     (hε_nonneg : 0 ≤ ε) (hε_lt_half : ε < (1 / 2 : ℝ))
@@ -25824,7 +25344,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardRangeCountBound
             countBound n m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹) ≤
           ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -25839,14 +25359,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardRangeCountBound
               (w := w) (n := n) (countBound := countBound n)
               (hcount := hcount n)
       _ ≤ ENNReal.ofReal ε := htail n
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_geometricCutCardCountBound
     {w ε : ℝ} (C q : ENNReal)
@@ -25859,7 +25372,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_geometricCutCardCountBo
     (hgeom :
       C * (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -25868,14 +25381,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_geometricCutCardCountBo
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_geometricCutCardBound
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount n)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedCutCardRangeCountBound
     {w ε : ℝ} (countBound : ℕ → ℕ → ENNReal)
@@ -25891,7 +25397,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedCutCardRangeCo
             countBound n m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹) ≤
           ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -25906,14 +25412,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedCutCardRangeCo
               (w := w) (n := n) (countBound := countBound n)
               (hcount := hcount n)
       _ ≤ ENNReal.ofReal ε := htail n
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedGeometricCutCardCountBound
     {w ε : ℝ} (C q : ENNReal)
@@ -25926,7 +25425,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedGeometricCutCa
     (hgeom :
       C * (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -25935,14 +25434,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedGeometricCutCa
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedGeometricCutCardBound
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount n)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedGeometricCutCardCountBound_from_two
     {w ε : ℝ} (C q : ENNReal)
@@ -25956,7 +25448,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedGeometricCutCa
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
           (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -25965,14 +25457,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedGeometricCutCa
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedGeometricCutCardBound_from_two
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount n)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedHullGeometricCutCardCountBound_from_two
     {w ε : ℝ} (C q : ENNReal)
@@ -25986,7 +25471,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedHullGeometricC
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
           (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -25995,14 +25480,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedHullGeometricC
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedHullGeometricCutCardBound_from_two
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount n)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_extractedHullGeometricCutCardCountBound_from_two
     {w ε : ℝ} (C q : ENNReal)
@@ -26016,7 +25494,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_extractedHullGeometricC
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
           (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -26025,14 +25503,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_extractedHullGeometricC
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_extractedHullGeometricCutCardBound_from_two
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount n)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxCandidateGeometricCountBound_from_two
     {w ε : ℝ} (C q : ENNReal)
@@ -26045,7 +25516,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxCandidateGeom
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
           (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -26054,14 +25525,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxCandidateGeom
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_cutCardBoxCandidateGeometricBound_from_two
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCandidateGeometricCountBound_from_two
     {w ε : ℝ} (C q : ENNReal)
@@ -26075,7 +25539,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCandidate
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
           (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -26084,14 +25548,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCandidate
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_cutCardBoxHullCandidateGeometricBound_from_two
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCutSetCandidateGeometricCountBound_from_two
     {w ε : ℝ} (C q : ENNReal)
@@ -26104,7 +25561,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCutSetCan
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
           (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -26113,14 +25570,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCutSetCan
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_cutCardBoxHullCutSetCandidateGeometricBound_from_two
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCutSetCandidateAxisAnchoredGeometricCountBound_from_two
     {w ε : ℝ} (C q : ENNReal)
@@ -26134,7 +25584,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCutSetCan
           (1 - ((4 : ENNReal) * q) * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤
         ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -26143,14 +25593,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCutSetCan
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_cutCardBoxHullCutSetCandidateAxisAnchoredGeometricBound_from_two
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCutSetCandidateAxisAnchoredSimplexGeometricCountBound_from_two
     {w ε : ℝ} (C q : ENNReal)
@@ -26164,7 +25607,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCutSetCan
           (1 - ((2 : ENNReal) * q) * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤
         ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -26173,14 +25616,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutCardBoxHullCutSetCan
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_cutCardBoxHullCutSetCandidateAxisAnchoredSimplexGeometricBound_from_two
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem real_exp_eight_ge_512 : (512 : ℝ) ≤ Real.exp 8 := by
   have h := Real.sum_le_exp_of_nonneg (show (0 : ℝ) ≤ 8 by norm_num) 6
@@ -26387,7 +25823,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedOuterGeometric
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
           (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -26396,14 +25832,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedOuterGeometric
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedOuterGeometricCutCardBound_from_two_of_nonneg
         (w := w) hw (n := n) (C := C) (q := q) (hcount := hcount n)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedOuterGeometricCutCardCountBound_from_two
     {w ε : ℝ} (C q : ENNReal)
@@ -26417,7 +25846,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedOuterGeometric
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
           (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤ ENNReal.ofReal ε) :
     symmetricGridZeroFieldOriginPeierlsErrorBound w ε := by
-  refine ⟨hε_nonneg, hε_lt_half, ?_⟩
+  apply peierlsError_of_spinDownMass hε_nonneg hε_lt_half
   intro n
   have hdown_le :
       symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -26426,14 +25855,7 @@ theorem symmetricGridZeroFieldOriginPeierlsErrorBound_of_connectedOuterGeometric
     exact
       (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedOuterGeometricCutCardBound_from_two
         (w := w) (n := n) (C := C) (q := q) (hcount := hcount n)).trans hgeom
-  have hdown_real_le :
-      ENNReal.toReal
-          (symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originSpinDownWorldEvent n)) ≤ ε :=
-    ENNReal.toReal_le_of_le_ofReal hε_nonneg hdown_le
-  rw [symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_toReal_eq_one_sub_originSpinUp_finiteVolumeKernel
-      (w := w) (n := n)] at hdown_real_le
-  exact hdown_real_le
+  exact hdown_le
 
 /-- A Peierls error bound gives an explicit finite-volume plus/minus separation
 window at every stage: the minus-boundary origin-up probability is at most

@@ -24,8 +24,8 @@ The first-order step has no authority layer, so no authority condition arises he
 
 * **Pumped** (`producer_pumps`): making one occurrence from the empty configuration pumps to `n`
   occurrences, for every `n`.
-* **Refused** (`none_guard_stops`): a rule that makes `b` while requiring `b` missing fires once from
-  the empty configuration and is then refused, under every renaming of what it makes; its none query
+* **Refused** (`absent_guard_stops`): a rule that makes `b` while requiring `b` absent fires once from
+  the empty configuration and is then refused, under every renaming of what it makes; its absence
   guard is not an equation, so it is not query-free.
 -/
 
@@ -191,7 +191,7 @@ theorem once_valid : (once 7).Valid A marked blankStart := by
 
 /-- **Refused**: the rule fires once from the empty configuration and is then refused, whatever
 occurrence it would make; a positive balance does not pump it. -/
-theorem none_guard_stops :
+theorem absent_guard_stops :
     (once 7).Valid A marked blankStart ∧ (∀ o, ¬ (once o).Valid A marked ((once 7).result marked blankStart)) ∧
       ¬ QueryFree (once 7) := by
   refine ⟨once_valid, fun o valid => ?_, fun free => ?_⟩
@@ -210,6 +210,6 @@ end PumpControls
 #print axioms PumpControls.producer_supply
 #print axioms PumpControls.producer_pumps
 #print axioms PumpControls.once_valid
-#print axioms PumpControls.none_guard_stops
+#print axioms PumpControls.absent_guard_stops
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRuns

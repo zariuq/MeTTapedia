@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NeedMachi
 
 Projection retains heap occurrence identities and filters the actual
 accumulated equation history. The proof applies to this ground machine's
-positive and heap-none rules. Guards are checked at the original world;
+positive and heap-absence rules. Guards are checked at the original world;
 no count guard or nonrigid unification profile is claimed by this result.
 -/
 
@@ -25,7 +25,7 @@ def checkPart : Check Row → Option (Check (SnapshotCopy.Row Suspension))
   | .predicate quantifier (.heap row) => some (.predicate quantifier row)
   | _ => none
 
-def HeapNoneChecks (rule : RuleInstance Row) : Prop :=
+def HeapAbsenceChecks (rule : RuleInstance Row) : Prop :=
   ∀ check ∈ rule.checks, ∃ row, check = .predicate .none (.heap row)
 
 def heapRule (rule : RuleInstance Row) : RuleInstance (SnapshotCopy.Row Suspension) :=
@@ -103,10 +103,10 @@ theorem result_projected {rule : RuleInstance Row} {picked : Selection Occurrenc
   · ext occurrence
     simp [heapWorld,Selection.result,fire,Selection.commit,heapSelection,mem_heapPresent]
 
-/-- Each selected positive or heap-none firing has a genuine projected
+/-- Each selected positive or heap-absence firing has a genuine projected
 selection, with the same physical data resources and full data equations. -/
 theorem valid_projected {rule : RuleInstance Row} {picked : Selection Occurrence} {before : World}
-    (checks : HeapNoneChecks rule) (valid : picked.Valid action label rule before) :
+    (checks : HeapAbsenceChecks rule) (valid : picked.Valid action label rule before) :
     (heapSelection picked).Valid SnapshotCopy.action SnapshotCopy.label (heapRule rule) (heapWorld before) := by
   have takes : (heapSelection picked).taken.map SnapshotCopy.label = (heapRule rule).take := by
     change (picked.taken.filterMap heapPart).map SnapshotCopy.label = rule.take.filterMap rowPart
@@ -153,7 +153,7 @@ theorem valid_projected {rule : RuleInstance Row} {picked : Selection Occurrence
     exact congrArg Row.heap equal
 
 theorem step_projected {rule : RuleInstance Row} {before after : World}
-    (checks : HeapNoneChecks rule) (stepped : Step action label rule before after) :
+    (checks : HeapAbsenceChecks rule) (stepped : Step action label rule before after) :
     Step SnapshotCopy.action SnapshotCopy.label (heapRule rule) (heapWorld before) (heapWorld after) := by
   obtain ⟨picked,valid,rfl⟩ := stepped
   exact ⟨heapSelection picked,valid_projected checks valid,result_projected valid⟩
@@ -170,9 +170,9 @@ theorem heapRule_copyRule (job : Nat) (input : NeedControl.Control Nat)
 theorem copyRule_checks (job : Nat) (input : NeedControl.Control Nat)
     (reads : List (SnapshotCopy.Row Suspension)) (source : Nat)
     (operation : NeedStoreOperations.Operation) (resume : NeedControl.Resume)
-    (event : SnapshotCopy.Event Suspension) : HeapNoneChecks (copyRule job input reads source operation resume event) := by
+    (event : SnapshotCopy.Event Suspension) : HeapAbsenceChecks (copyRule job input reads source operation resume event) := by
   cases event <;>
-    simp [HeapNoneChecks,copyRule,SnapshotCopy.Event.rule,SnapshotCopy.beginRule,SnapshotCopy.copyRule,
+    simp [HeapAbsenceChecks,copyRule,SnapshotCopy.Event.rule,SnapshotCopy.beginRule,SnapshotCopy.copyRule,
       SnapshotCopy.finishRule,Check.map]
 
 theorem copy_projects {before after : World} (job : Nat) (input : NeedControl.Control Nat)
@@ -208,8 +208,8 @@ theorem commit_projects {before after : World} (job : Nat) (input : NeedControl.
     (event : NeedStoreOperations.Event)
     (stepped : Step action label (commitRule job input reads source resume event) before after) :
     Step SnapshotCopy.action SnapshotCopy.label (event.publishedRule job job) (heapWorld before) (heapWorld after) := by
-  have checks : HeapNoneChecks (commitRule job input reads source resume event) := by
-    simp [HeapNoneChecks,commitRule]
+  have checks : HeapAbsenceChecks (commitRule job input reads source resume event) := by
+    simp [HeapAbsenceChecks,commitRule]
   simpa only [heapRule_commitRule] using step_projected checks stepped
 
 theorem commit_heap_preserved {before after : World} {job source : Nat}
@@ -268,7 +268,7 @@ theorem heapSelection_liftCopySelection (picked : Selection (SnapshotCopy.Occurr
 
 /-- A concrete heap firing lifts with exactly its original physical heap
 selection and endpoint. The additional control read cannot alias a heap
-take, and the none test keeps its original admission world. -/
+take, and the absence test keeps its original admission world. -/
 theorem lift_copy_selection {before : World} (job : Nat) (input : NeedControl.Control Nat)
     (reads : List (SnapshotCopy.Row Suspension)) (source : Nat)
     (operation : NeedStoreOperations.Operation) (resume : NeedControl.Resume)

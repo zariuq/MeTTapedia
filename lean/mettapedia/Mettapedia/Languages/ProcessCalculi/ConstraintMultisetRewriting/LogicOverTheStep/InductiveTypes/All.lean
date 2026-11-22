@@ -24,7 +24,7 @@ with rights and installed schemas. Three facts, each with its own condition:
 * **induction** (`Facts.induction`): a property closed under the constructors holds of every row of
   the region in every state reached from the empty store, as an invariant of runs; the same
   condition;
-* **closure** ("these and no others", a refutation by none queries): every closure statement survives every
+* **closure** ("these and no others", a refutation by absence): every closure statement survives every
   other party exactly when the region is owned (`Facts.closure_of_soleSender`, with
   `ThatsAll.closedReadingSurvives_iff_owned`); a given closure statement survives a writer through
   the constructors exactly when its list is closed under them (`Facts.survives_iff_ruleClosedIn`). A

@@ -820,7 +820,10 @@ mutual
         apply NameWellSorted.bvar
         simp [inScope]
     | quote termSafe =>
-        exact NameWellSorted.quoteOfClosed (by decide) (termSafe.erase_wellSorted signatureTyped)
+        apply NameWellSorted.quote
+        have typed := termSafe.erase_wellSorted signatureTyped
+        simpa using typed.weakenBoundRight
+          (List.replicate depth rhoReflectivePresentation.nameSort)
     | signature =>
         simpa [CostName.erase] using (signatureTyped _).weakenBoundRight
           (List.replicate depth rhoReflectivePresentation.nameSort)

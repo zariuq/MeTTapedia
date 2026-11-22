@@ -58,10 +58,10 @@ theorem single_class_injective {root : Configuration (Term signature) Nat} {f g 
     (same : (Quot.mk _ [f] : CausalClass A label root) = Quot.mk _ [g]) : f = g :=
   Multiset.singleton_inj.mp (class_bag same)
 
-/-- A firing that takes a missing occurrence is refused. -/
-theorem refused_of_not_present {f : Run} {C : Configuration (Term signature) Nat} {o : Nat}
-    (taken : o ∈ f.selection.taken) (missing : o ∉ C.present) : ¬ f.Valid A label C := fun valid =>
-  missing (valid.firing.occurrences.taken_subset (by simpa [Selection.commit] using taken))
+/-- A firing that takes an absent occurrence is refused. -/
+theorem refused_of_absent {f : Run} {C : Configuration (Term signature) Nat} {o : Nat}
+    (taken : o ∈ f.selection.taken) (absent : o ∉ C.present) : ¬ f.Valid A label C := fun valid =>
+  absent (valid.firing.occurrences.taken_subset (by simpa [Selection.commit] using taken))
 
 /-- A firing that makes an occurrence already present is refused. -/
 theorem refused_of_made_present {f : Run} {C : Configuration (Term signature) Nat} {o : Nat}
@@ -164,7 +164,7 @@ theorem takes_token₃ (f : Run) (member : f ∈ alternatives₃) : 9 ∈ f.sele
 theorem token_gone₃ (g : Run) (inAlternatives : g ∈ alternatives₃) :
     ∀ f ∈ alternatives₃, ¬ f.Valid A label (g.result label root) := by
   intro f member
-  apply refused_of_not_present (takes_token₃ f member)
+  apply refused_of_absent (takes_token₃ f member)
   rcases cases₃ inAlternatives with rfl | rfl | rfl <;> decide
 
 theorem closed₃ : Closed A label alternatives₃ 1 root := by
@@ -317,7 +317,7 @@ theorem taker_after_reader : taker.Valid A label (reader.result label start) :=
   shared_variables_swap.1.2.1
 
 theorem taker_once : ¬ taker.Valid A label (taker.result label start) :=
-  refused_of_not_present (o := 0) (by simp [taker]) (by decide)
+  refused_of_absent (o := 0) (by simp [taker]) (by decide)
 
 theorem reader_once : ¬ reader.Valid A label (reader.result label start) :=
   refused_of_made_present (o := 3) (by simp [reader]) (by decide)
@@ -327,7 +327,7 @@ theorem forward_end :
   intro f member
   simp only [catalogue, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
-  · exact refused_of_not_present (o := 0) (by simp [taker]) (by decide)
+  · exact refused_of_absent (o := 0) (by simp [taker]) (by decide)
   · exact refused_of_made_present (o := 3) (by simp [reader]) (by decide)
 
 theorem backward_end :
@@ -335,7 +335,7 @@ theorem backward_end :
   intro f member
   simp only [catalogue, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
-  · exact refused_of_not_present (o := 0) (by simp [taker]) (by decide)
+  · exact refused_of_absent (o := 0) (by simp [taker]) (by decide)
   · exact refused_of_made_present (o := 3) (by simp [reader]) (by decide)
 
 open Classical in
@@ -483,7 +483,7 @@ open AnnotatedRuns.Controls (taker start taker_valid)
 
 /-- After the taker, the taker is refused: it took `0`. -/
 theorem taker_once : ¬ taker.Valid A label (taker.result label start) :=
-  refused_of_not_present (o := 0) (by simp [taker]) (by decide)
+  refused_of_absent (o := 0) (by simp [taker]) (by decide)
 
 theorem open_zero : ¬ Closed A label [taker] 0 start :=
   AnnotatedRunBranchCollection.Controls.Status.open_world
@@ -612,11 +612,11 @@ theorem staged_refused {C : Configuration (Term signature) Nat} (no9 : 9 ∉ C.p
     (no23 : 23 ∉ C.present) : ∀ g ∈ staged, ¬ g.Valid A label C := by
   intro g member
   rcases staged_takes g member with taken | taken
-  · exact refused_of_not_present taken no9
-  · exact refused_of_not_present taken no23
+  · exact refused_of_absent taken no9
+  · exact refused_of_absent taken no23
 
 theorem finish_refused_root : ¬ finish.Valid A label root :=
-  refused_of_not_present (o := 23) (by simp [finish]) (by decide)
+  refused_of_absent (o := 23) (by simp [finish]) (by decide)
 
 theorem staged_open_one : ¬ Closed A label staged 1 root := by
   intro closed
@@ -640,9 +640,9 @@ theorem staged_closed_two : Closed A label staged 2 root := by
     · exact absurd hValid (staged_refused (by decide) (by decide) h (covered h (by simp)))
     · exact absurd hValid (staged_refused (by decide) (by decide) h (covered h (by simp)))
     · rcases staged_cases (covered h (by simp)) with rfl | rfl | rfl | rfl
-      · exact absurd hValid (refused_of_not_present (o := 9) (by simp [first]) (by decide))
-      · exact absurd hValid (refused_of_not_present (o := 9) (by simp [second]) (by decide))
-      · exact absurd hValid (refused_of_not_present (o := 9) (by simp [prep]) (by decide))
+      · exact absurd hValid (refused_of_absent (o := 9) (by simp [first]) (by decide))
+      · exact absurd hValid (refused_of_absent (o := 9) (by simp [second]) (by decide))
+      · exact absurd hValid (refused_of_absent (o := 9) (by simp [prep]) (by decide))
       · exact staged_done
     · exact absurd gValid finish_refused_root
   · simp only [List.length_cons] at length
@@ -690,9 +690,9 @@ theorem staged_branches_two :
       · exact absurd hValid (staged_refused (by decide) (by decide) h (covered h (by simp)))
       · exact absurd hValid (staged_refused (by decide) (by decide) h (covered h (by simp)))
       · rcases staged_cases (covered h (by simp)) with rfl | rfl | rfl | rfl
-        · exact absurd hValid (refused_of_not_present (o := 9) (by simp [first]) (by decide))
-        · exact absurd hValid (refused_of_not_present (o := 9) (by simp [second]) (by decide))
-        · exact absurd hValid (refused_of_not_present (o := 9) (by simp [prep]) (by decide))
+        · exact absurd hValid (refused_of_absent (o := 9) (by simp [first]) (by decide))
+        · exact absurd hValid (refused_of_absent (o := 9) (by simp [second]) (by decide))
+        · exact absurd hValid (refused_of_absent (o := 9) (by simp [prep]) (by decide))
         · exact Or.inr (Or.inr rfl)
       · exact absurd gValid finish_refused_root
     · simp only [List.length_cons] at length
@@ -782,7 +782,7 @@ end Staged
 #print axioms regionBranches_everything
 #print axioms class_bag
 #print axioms single_class_injective
-#print axioms refused_of_not_present
+#print axioms refused_of_absent
 #print axioms Superposed.paths
 #print axioms Superposed.superposed_cancel
 #print axioms Superposed.superposed_reinforce

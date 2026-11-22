@@ -95,7 +95,7 @@ theorem skeleton_safe : skeleton_typed.ReflectiveSupportSafeAt
 def openSkeleton : ReflectiveWellSorted.OpenPattern
     (communicationDecoration.costWholeReflectionProfile FiniteWhole.sourceReflection.1)
     communicationDecoration.costWholeLanguage (freeContext table) [] (.base costWrappedSortName) :=
-  ⟨skeleton, ⟨skeleton_typed, rfl, rfl, skeleton_typed.isWellScopedAt⟩, by intro declaration member; rfl⟩
+  ⟨skeleton, ⟨skeleton_typed, rfl, rfl, skeleton_typed.isWellScopedAt⟩, by intro declaration member; exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ rfl⟩
 
 /-- Use the existing typed, quote-aware substitution engine with positional tokens. -/
 def restored := ReflectiveWellSorted.OpenPattern.substituteReflectiveSupported

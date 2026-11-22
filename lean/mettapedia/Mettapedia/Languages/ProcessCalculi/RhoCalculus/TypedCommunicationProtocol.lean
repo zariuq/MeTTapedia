@@ -284,7 +284,7 @@ def closedNilCommData : ClosedCommData where
   restTyped := by simp
   payloadLocallyClosed := by decide
   bodyStrict := by decide
-  channelSorted := .quote .unit (by decide)
+  channelSorted := .quote .unit
   channelSafe := by decide
   bodySorted := .unit
   bodySafe := by decide
@@ -343,10 +343,8 @@ def quotedBinderBody : Pattern :=
         [.apply "NQuote"
           [.apply "POutput" [.bvar 0, .apply "PZero" []]]]]
 
-/-- Its constructors are sorted when binders reach into quotations (rho's
-apply view). -/
 theorem quotedBinderBody_structurally_sorted :
-    ProcWellSorted rhoApplyPresentation FreeSortContext.empty
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
       [rhoReflectivePresentation.nameSort] quotedBinderBody := by
   apply ProcWellSorted.output
   · exact NameWellSorted.bvar (by simp [rhoReflectivePresentation])
@@ -354,18 +352,7 @@ theorem quotedBinderBody_structurally_sorted :
       (NameWellSorted.quote
         (ProcWellSorted.output
           (NameWellSorted.bvar (by simp [rhoReflectivePresentation]))
-          ProcWellSorted.unit)
-        (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits_of_reaching rfl _))
-
-/-- Authored rho's binders do not reach into quotations, so its sorting does
-not admit the quotation of code that mentions the bound channel. -/
-theorem quotedBinderBody_not_admitted :
-    ¬ ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
-      [rhoReflectivePresentation.nameSort] quotedBinderBody := by
-  intro typed
-  have closed := typed.quotesClosed rfl (by decide)
-  revert closed
-  decide
+          ProcWellSorted.unit))
 
 theorem quotedBinderBody_open_typed (name : String) :
     HasType (TypingContext.empty.extend name communicationName)
@@ -399,21 +386,17 @@ theorem quotedBinderBody_not_strict :
     strictCoreCommBody quotedBinderBody = false := by
   decide
 
-/-- Structural sorting under the apply view and ordinary opened typing do
-not imply admission: authored rho's sorting and the quote-safe semantic COMM
-fragment both reject the body. -/
+/-- Structural sorting and ordinary opened typing do not imply admission to
+the quote-safe semantic COMM fragment. -/
 theorem quotedBinderBody_boundary :
-    ProcWellSorted rhoApplyPresentation FreeSortContext.empty
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
         [rhoReflectivePresentation.nameSort] quotedBinderBody /\
       (forall name,
         HasType (TypingContext.empty.extend name communicationName)
           (openBVar 0 (.fvar name) quotedBinderBody) processTruth) /\
-      ¬ ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
-        [rhoReflectivePresentation.nameSort] quotedBinderBody /\
       strictCoreCommBody quotedBinderBody = false :=
   ⟨quotedBinderBody_structurally_sorted,
     quotedBinderBody_open_typed,
-    quotedBinderBody_not_admitted,
     quotedBinderBody_not_strict⟩
 
 /-! ## Axiom audit -/

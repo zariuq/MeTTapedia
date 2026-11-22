@@ -8,7 +8,7 @@ establishes all its location equations, and projection preserves exactly its
 payload models. Ordinary firings whose asks are equalities project with the
 same physical selection and complete payload equation store.
 
-The none query and count are deliberately outside this projection theorem: their
+Absence and count are deliberately outside this projection theorem: their
 observed regions depend on physical locations. No such guard is discarded or
 silently interpreted over a larger unlocated world.
 -/

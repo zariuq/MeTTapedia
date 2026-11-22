@@ -151,7 +151,8 @@ def supportedAssignment
         simpa only [assignment, support, decoded, OccurrenceTokens.supportedAssignment] using prior
     | some original =>
         intro declaration _member
-        simp [assignment, decoded, binderSafeAt]
+        exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+          simp [assignment, decoded, binderSafeAt])
 
 /-- Source-name restoration does not erase positional distinctions. -/
 theorem assignment_injective

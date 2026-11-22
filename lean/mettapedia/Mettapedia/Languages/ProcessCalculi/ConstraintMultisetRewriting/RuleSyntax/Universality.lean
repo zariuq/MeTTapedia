@@ -45,8 +45,8 @@ refines (`refines_of_identity`).
   move along the identity (`Controls.shrinking_excluded_at_identity`). Across frames with no morphism
   between them, a transition with solvable source knowledge is excluded
   (`Controls.no_morphism_excluded`).
-* Commits: a selection that takes a missing occurrence is not enabled
-  (`Controls.missing_take_not_enabled`), although another commit relates the same two stores.
+* Commits: a selection that takes an absent occurrence is not enabled
+  (`Controls.absent_take_not_enabled`), although another commit relates the same two stores.
 -/
 
 set_option autoImplicit false
@@ -400,8 +400,8 @@ theorem no_morphism_excluded {Firing : Bool → Type uF} (P : Interface.Step dis
 theorem discrete_solvable (s : Bool) : discrete.Solvable (a := s) [] :=
   ⟨s, ⟨rfl⟩, fun _ member => by cases member⟩
 
-/-- **A selection that takes a missing occurrence is not enabled.** -/
-theorem missing_take_not_enabled :
+/-- **A selection that takes an absent occurrence is not enabled.** -/
+theorem absent_take_not_enabled :
     ¬ Enabled (fun _ : ℕ => ()) ∅ ((⟨[0], [], []⟩ : Selection ℕ).commit (T := Unit)) := by
   intro enabled
   have inside := enabled.taken_subset
@@ -423,6 +423,6 @@ end Controls
 #print axioms Controls.shrinking_realized
 #print axioms Controls.shrinking_excluded_at_identity
 #print axioms Controls.no_morphism_excluded
-#print axioms Controls.missing_take_not_enabled
+#print axioms Controls.absent_take_not_enabled
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax

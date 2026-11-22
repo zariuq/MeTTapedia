@@ -202,7 +202,7 @@ inductive Move : World κ Γ star → Branch κ Γ star D.Ty → World κ Γ sta
       (fits : Solvable (K ++ rowUse w.scope r t)) :
       Move w ⟨K, .eval (.remove sp t k), fs, ps⟩ ⟨w.scope + 1, w.handles, setSpace w.spaces h rest⟩
         {⟨K ++ rowUse w.scope r t, .eval k, fs, ps⟩}
-  | removeMissing (w : World κ Γ star) (K : List (Constraint κ Γ star)) (sp t : Data κ Γ star)
+  | removeAbsent (w : World κ Γ star) (K : List (Constraint κ Γ star)) (sp t : Data κ Γ star)
       (k : Comp κ Γ star D.Ty) (fs ps) (h : Term S Γ star) (addressed : Determines K sp h)
       (none : ∀ r ∈ w.spaces h, ¬ Solvable (K ++ rowUse w.scope r t)) :
       Move w ⟨K, .eval (.remove sp t k), fs, ps⟩ w {⟨K, .eval k, fs, ps⟩}

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.InferenceTraceClassifying
-import Mathlib.CategoryTheory.PathCategory.Basic
+import Mettapedia.GSLT.Core.PathObservations
 
 /-!
 # The existing selected physical inference graph and its free paths
@@ -33,9 +33,8 @@ instance graph (definition : ValidatedCalculusLanguageDef) : Quiver (Vertex defi
 
 variable {definition : ValidatedCalculusLanguageDef}
 
-def actors {source : Vertex definition} : {target : Vertex definition} → Quiver.Path source target → List Bool
-  | _, .nil => []
-  | _, .cons past edge => actors past ++ [edge.actor]
+def actors {source target : Vertex definition} (path : Quiver.Path source target) : List Bool :=
+  path.observations (fun {before after} (edge : Edge before after) => [edge.actor])
 
 def recover {source : Vertex definition} : {target : Vertex definition} →
     (path : Quiver.Path source target) →
@@ -56,9 +55,8 @@ theorem ordinary {source target : Vertex definition} (path : Quiver.Path source 
 theorem actors_comp {source middle target : Vertex definition}
     (first : Quiver.Path source middle) (second : Quiver.Path middle target) :
     actors (first.comp second) = actors first ++ actors second := by
-  induction second with
-  | nil => simp [Quiver.Path.comp, actors]
-  | cons past edge earlier => simp [Quiver.Path.comp, actors, earlier, List.append_assoc]
+  unfold actors
+  exact Quiver.Path.observations_comp _ first second
 
 @[simp] theorem actors_single {source target : Vertex definition} (edge : Edge source target) :
     actors (Quiver.Hom.toPath (V := Vertex definition) edge) = [edge.actor] := rfl

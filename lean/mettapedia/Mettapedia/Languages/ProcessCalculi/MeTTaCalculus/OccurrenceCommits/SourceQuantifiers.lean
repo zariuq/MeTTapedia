@@ -14,8 +14,8 @@ compiled commits, counted, are those steps.
   is an `each` step over its linear rows, and every such step is realized by a fired commit.
 * **`every`** (`every_everyStep`): counted, firing the commit of a linear `every` row is the
   `every` step over the rows it amalgamates.
-* **remove all** (`fires_allTake_removeAll`): a transform whose one source takes a whole region
-  (`all take`) fires to the store without that region: the `removeAll` contract. With a matcher
+* **remove all** (`fires_collectTake_removeAll`): a transform whose one source takes a whole region
+  (`collect take`) fires to the store without that region: the `removeAll` contract. With a matcher
   that has at most one answer per value, `every (take p)` takes exactly the same occurrences
   (`everyTake_takes_eq_region`). With more answers per value an occurrence is taken by several
   rows and the `every` is not linear: `SourceControls` shows this modulo commutativity.
@@ -136,16 +136,16 @@ theorem sub_filter_eq_filter_not (M : Multiset T) (q : T → Prop) [DecidablePre
   rw [tsub_eq_iff_eq_add_of_le (Multiset.filter_le _ _), add_comm, Multiset.filter_add_not]
 
 /-- **Taking a whole region is the `removeAll` contract.** A transform whose one source is
-`all take` over a pattern fires to the store without the pattern's computed region. -/
-theorem fires_allTake_removeAll {p coll : P} {fold : Multiset T → T} {c : Commit O T}
-    (fires : Fires L m label S ⟨.cons (.all .take p coll fold) .done, []⟩ c) :
+`collect take` over a pattern fires to the store without the pattern's computed region. -/
+theorem fires_collectTake_removeAll {p coll : P} {fold : Multiset T → T} {c : Commit O T}
+    (fires : Fires L m label S ⟨.cons (.collect .take p coll fold) .done, []⟩ c) :
     labels label (fire S c) =
       (removeAll (labels label S) fun t => Matcher.region m (fun _ => none) p t = true).1 := by
   obtain ⟨x, member, linear, commit⟩ := fires
   have enabled : Enabled label S c := Fires.enabled ⟨x, member, linear, commit⟩
   unfold Transform.rows at member
   obtain ⟨y, inStep, z, inRest, rfl⟩ := mem_rows_cons.mp member
-  obtain ⟨τ, -, rfl⟩ := mem_stepRows_all.mp inStep
+  obtain ⟨τ, -, rfl⟩ := mem_stepRows_collect.mp inStep
   rw [rows_done] at inRest
   simp only [instTemplate, List.mapM_nil, Option.pure_def] at inRest
   rw [Multiset.mem_singleton] at inRest
@@ -180,7 +180,7 @@ theorem sum_answers_eq_region {p : P} {σ : Subst V T} (unitary : Matcher.Unitar
 
 omit [DecidableEq T] in
 /-- **With a unitary matcher, `every (take p)` takes exactly the region of `p`**, so it removes what
-`all take` removes. -/
+`collect take` removes. -/
 theorem everyTake_takes_eq_region (unitary : Matcher.Unitary m) {p : P} {σ : Subst V T} :
     (everyFootprint L m label S [] (.cons (.take p) .done) σ).takes =
       (regionOf label S (Matcher.region m σ p)).val := by

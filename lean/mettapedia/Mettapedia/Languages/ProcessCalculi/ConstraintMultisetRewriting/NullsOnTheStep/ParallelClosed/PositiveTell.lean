@@ -7,13 +7,13 @@ import Mettapedia.Logic.LP.TermEquality
 
 The separation `no_uniformTranslation` needs one property of its source: a composable neighbour
 switches reachable success off (`ParallelCalculus.Switchable`). Over first-order terms the step under
-a program with no check at all has it, with the same parallel composition as the none-guarded
+a program with no check at all has it, with the same parallel composition as the absence-guarded
 source (`stepCalculus`: the union of configurations, on disjoint stores with jointly solvable
 knowledge) and success "a row `9` is present". Occurrences are pairs of a row and a copy number,
 labelled by their row.
 
 * the program has one rule, `tellRule`: read a row `y`, tell `y = 5`, make the row `9`; it has no
-  checks (`tellRule_checks`): no none query, no count, no equality guard;
+  checks (`tellRule_checks`): no absence, no count, no equality guard;
 * alone, the store holding the row `x` succeeds (`request_succeeds`);
 * the store with no rows whose knowledge says `x = 6` is composable with it
   (`request_neighbour_composable`); beside it no firing of the program is admitted, since its
@@ -29,7 +29,7 @@ Composability supplies a solution of the two knowledges together. Admission besi
 needs a solution of the firing's own information together with the neighbour's knowledge
 (`Composition.positive_admission_iff`), and here there is none (`composable_not_monotone`): a tell
 must be consistent with the whole knowledge, the neighbour's included. So a parallel component can
-switch success off through a shared unknown, with no none guard. Without none queries and count checks
+switch success off through a shared unknown, with no absence guard. Without absence and count checks
 it can do so only when every run to success has a firing whose information mentions an unknown the
 neighbour's knowledge mentions (`SharedUnknown.switched_off_has_guard_or_shared`); over ground terms,
 where there are no unknowns, such a program is never switchable (`Monotone.not_switchable`).
@@ -73,7 +73,7 @@ def c (n : ℕ) : Term atoms := .const n
 /-- **The rule**: read a row `y`, tell `y = 5`, make the row `9`. -/
 def tellRule : RuleInstance (Term atoms) := ⟨[], [y], [(y, c 5)], [], [c 9]⟩
 
-/-- It has no checks: no none query, no count, no equality guard. -/
+/-- It has no checks: no absence, no count, no equality guard. -/
 theorem tellRule_checks : tellRule.checks = [] := rfl
 
 /-- The program of that one rule. -/

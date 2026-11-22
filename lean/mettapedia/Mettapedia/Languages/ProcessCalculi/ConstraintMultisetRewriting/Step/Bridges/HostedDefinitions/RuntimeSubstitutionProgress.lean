@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Brid
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Bridges.HostedDefinitions.RuntimeEnvironment
 
 /-!
-# Exact helper outcomes and none queries of infinite internal execution
+# Exact helper outcomes and absence of infinite internal execution
 
 The finite helper has unique successors and no rule at the public resume port.
 Its constructed runs therefore prove strong normalization of every initialized

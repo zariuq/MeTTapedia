@@ -165,6 +165,23 @@ particular equation languages in the modules below.
 
 Binding constructors are outside all of these carriers.
 
+## Executable world-model queries
+
+`WMCalculusNativeExecutable.lean` compiles the six-axis authored WM calculus,
+typed handles and explicit relation rows into the current native explorer.
+`WMCalculusFullNativeExecutable.lean` supplies the missing extension grammar
+and provider modes for the full maximal rule inventory, preserving its rules
+and premises. Both expose `ask`, with proved/refuted future modal mu-calculus
+verdicts, explicit unfinished-search outcomes, and separate admission/source
+typing failures. Verdict soundness concerns the supplied operational snapshot;
+provider rows need separate certification in a concrete world model.
+
+The corresponding `*Controls.lean` modules exercise revision cycles, contextual
+forgetting, overlap, output-producing guards, negative Kripke evidence, and
+resource/refusal boundaries. Probabilistic likelihood revision is developed
+separately in `../../PLN/WorldModel/FiniteProbabilisticPrograms.lean`; it does
+not satisfy the additive extraction law of the existing WM core calculus.
+
 ## Audit and Status Tracking
 
 | File | Contents |

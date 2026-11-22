@@ -40,8 +40,10 @@ noncomputable def positionalSourceTerm (node : CostStaticRegionNode source color
       typed.toHasType.isWellScopedAt⟩,
       by
         intro declaration membership
+        refine Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_map (fun sealed => ?_) (fun _ => typed.toHasType.isWellScopedAt)
+          (node.plan.abstractPattern_reflectiveScopeSafeAt declaration membership)
         rw [pattern_binderSafeAt]
-        exact node.plan.abstractPattern_reflectiveScopeSafeAt declaration membership⟩
+        exact sealed⟩
   exact ⟨term, typed, safe⟩
 
 @[simp] theorem positionalSourceTerm_pattern (node : CostStaticRegionNode source color targetFree) :

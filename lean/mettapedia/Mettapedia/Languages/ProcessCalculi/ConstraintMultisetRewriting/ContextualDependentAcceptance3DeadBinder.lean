@@ -113,7 +113,7 @@ theorem deadRound_keeps (fuel : Nat)
       cases fired
       exact anywhereRound_keeps facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete fuel base problem _ _ held computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
   | stuck =>
@@ -153,9 +153,9 @@ theorem dead_decided_of_cumulative
       ((∃ state finished, run ((deadFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((deadFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((deadFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (deadSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedNormal problem)
     (fun held nonempty => by

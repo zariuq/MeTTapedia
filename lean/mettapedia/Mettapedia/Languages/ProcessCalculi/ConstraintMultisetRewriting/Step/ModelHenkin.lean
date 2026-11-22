@@ -23,7 +23,7 @@ both sides evaluate alike (`HenkinModel.kernel`), and a guard formula is read th
   `solvable_iff_generic`: a store is solvable exactly when it has a generic point.
 * **Every model realizes solvable stores** (`exists_point_of_solvable`): a solvable store has a point
   in every model with points at every frame. Positive guards transfer to pulled-back points
-  (`satisfies_pull_of_positive`). The none query and count do not, in a model that identifies more than the
+  (`satisfies_pull_of_positive`). Absence and count do not, in a model that identifies more than the
   syntax (controls in `ModelControls`).
 * **Stage models** (`Frames.stage`): the points are the solutions into one frame. At a designated
   closed frame they are the closed points: closed asks are validity in the stage

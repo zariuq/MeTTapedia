@@ -140,7 +140,7 @@ theorem linearB_sound {a : Nat} {t : Tm Head a} (h : linearB t = true) : LeftLin
 theorem coveredB_sound {a : Nat} {left right : Tm Head a} (h : coveredB left right = true) :
     ∀ i, 0 < variableMultiplicity i right → 0 < variableMultiplicity i left := fun i occurs => by
   have row := List.all_eq_true.mp h i (List.mem_finRange i)
-  by_contra missing
+  by_contra absent
   have none : variableMultiplicity i left = 0 := by omega
   simp [none, occurs] at row
 

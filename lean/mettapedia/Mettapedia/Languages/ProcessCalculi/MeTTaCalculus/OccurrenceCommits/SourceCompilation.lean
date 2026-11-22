@@ -15,11 +15,11 @@ transform and a store into the ground commits of `Commits`, through a matcher (`
 * `absent p`: no occurrence of the region of `p`; a predicate query that saw nothing.
 * `unique a p`: exactly one occurrence in the region of `p`; a predicate query that saw it, and
   with `a = take` a take of it.
-* `all a p q fold`: the whole region of `p`, one predicate query (and with `a = take` taken); the
+* `collect a p q fold`: the whole region of `p`, one predicate query (and with `a = take` taken); the
   bag of its labels is folded into one value, which the pattern `q` matches.
 * `let p eval` (`letBind`): a computed value matched by `p`; no footprint.
 * conjunction: sources in sequence, bindings flowing left to right (`SourceList.cons`).
-* none queries of sources (`SourceList.absent`): the complete inner query has no row;
+* absence of sources (`SourceList.absent`): the complete inner query has no row;
   retain its completeness observations and continue without its local bindings.
 * `every rest`: from here on, every row fires in one commit (`SourceList.every`).
 
@@ -105,7 +105,7 @@ inductive Source (V : Type uV) (T : Type uT) (P : Type uP) where
   /-- Exactly one occurrence in the region of `p`. -/
   | unique (access : Access) (p : P)
   /-- The whole region of `p`; its bag of labels, folded, is matched by `coll`. -/
-  | all (access : Access) (p : P) (coll : P) (fold : Multiset T → T)
+  | collect (access : Access) (p : P) (coll : P) (fold : Multiset T → T)
   /-- A computed value matched by `p` (the `let` source). -/
   | letBind (p : P) (eval : Subst V T → List T)
 
@@ -283,7 +283,7 @@ def stepRows : Source V T P → Subst V T → Multiset (Subst V T × Pick O T)
             (τ, .query ⟨Matcher.region m σ p, regionOf label S (Matcher.region m σ p)⟩
               (access = .take))
       else 0
-  | .all access p coll fold, σ =>
+  | .collect access p coll fold, σ =>
       ((m coll σ (fold ((regionOf label S (Matcher.region m σ p)).val.map label)) : List _) :
           Multiset _).map fun τ =>
         (τ, .query ⟨Matcher.region m σ p, regionOf label S (Matcher.region m σ p)⟩
@@ -298,7 +298,7 @@ def Source.regions (m : Matcher V T P) : Source V T P → Subst V T → List (T 
   | .take p, σ => [Matcher.region m σ p]
   | .absent p, σ => [Matcher.region m σ p]
   | .unique _ p, σ => [Matcher.region m σ p]
-  | .all _ p _ _, σ => [Matcher.region m σ p]
+  | .collect _ p _ _, σ => [Matcher.region m σ p]
   | .letBind _ _, _ => []
 
 /-- **The completeness regions of a source list**: the computed regions of all its sources, under
@@ -473,9 +473,9 @@ theorem mem_stepRows_unique {access : Access} {p : P} {σ : Subst V T} {x : Subs
       exact ⟨o, inX, τ, answer, rfl⟩
   · simp [one]
 
-theorem mem_stepRows_all {access : Access} {p coll : P} {fold : Multiset T → T} {σ : Subst V T}
+theorem mem_stepRows_collect {access : Access} {p coll : P} {fold : Multiset T → T} {σ : Subst V T}
     {x : Subst V T × Pick O T} :
-    x ∈ stepRows m label S (.all access p coll fold) σ ↔
+    x ∈ stepRows m label S (.collect access p coll fold) σ ↔
       ∃ τ ∈ m coll σ (fold ((regionOf label S (Matcher.region m σ p)).val.map label)),
         x = (τ, .query ⟨Matcher.region m σ p, regionOf label S (Matcher.region m σ p)⟩
           (access = .take)) := by
@@ -603,8 +603,8 @@ theorem holds_of_mem_stepRows {s : Source V T P} {σ : Subst V T} {x : Subst V T
         simp only [footprint_query, Multiset.mem_singleton] at inQueries
         subst inQueries
         exact predicateQuery_holds_regionOf _
-  | all access p coll fold =>
-      obtain ⟨τ, -, rfl⟩ := mem_stepRows_all.mp member
+  | collect access p coll fold =>
+      obtain ⟨τ, -, rfl⟩ := mem_stepRows_collect.mp member
       refine ⟨?_, by simp, ?_⟩
       · intro o' inTakes
         simp only [footprint_query] at inTakes
@@ -750,7 +750,7 @@ theorem stepRows_congr {S S' : Finset O} {s : Source V T P} {σ : Subst V T}
       have a : regionOf label S (Matcher.region m σ p) = regionOf label S' (Matcher.region m σ p) :=
         agree _ (List.mem_singleton_self _)
       simp only [stepRows, a]
-  | all access p coll fold =>
+  | collect access p coll fold =>
       have a : regionOf label S (Matcher.region m σ p) = regionOf label S' (Matcher.region m σ p) :=
         agree _ (List.mem_singleton_self _)
       simp only [stepRows, a]
@@ -773,8 +773,8 @@ theorem extends_of_mem_stepRows (sound : Matcher.Sound L m) {S : Finset O} {s : 
   | unique access p =>
       obtain ⟨-, o, -, τ, answer, rfl⟩ := mem_stepRows_unique.mp member
       exact (sound answer).extends_
-  | all access p coll fold =>
-      obtain ⟨τ, answer, rfl⟩ := mem_stepRows_all.mp member
+  | collect access p coll fold =>
+      obtain ⟨τ, answer, rfl⟩ := mem_stepRows_collect.mp member
       exact (sound answer).extends_
   | letBind p eval =>
       obtain ⟨i, value, -, τ, answer, rfl⟩ := mem_stepRows_letBind.mp member
@@ -886,12 +886,12 @@ theorem mem_stepRows_iff_holds {S S' : Finset O} {s : Source V T P} {σ : Subst 
           holds.2.2 ⟨Matcher.region m σ p, regionOf label S (Matcher.region m σ p)⟩ (by simp)
         refine mem_stepRows_unique.mpr ⟨by rw [same]; exact one, o, by rw [same]; exact inX, τ,
           answer, by rw [same]⟩
-    | all access p coll fold =>
-        obtain ⟨τ, answer, rfl⟩ := mem_stepRows_all.mp member
+    | collect access p coll fold =>
+        obtain ⟨τ, answer, rfl⟩ := mem_stepRows_collect.mp member
         have same : regionOf label S' (Matcher.region m σ p) =
             regionOf label S (Matcher.region m σ p) :=
           holds.2.2 ⟨Matcher.region m σ p, regionOf label S (Matcher.region m σ p)⟩ (by simp)
-        exact mem_stepRows_all.mpr ⟨τ, by rw [same]; exact answer, by rw [same]⟩
+        exact mem_stepRows_collect.mpr ⟨τ, by rw [same]; exact answer, by rw [same]⟩
     | letBind p eval => exact member
 
 /-- **Footprint soundness: the footprint is exactly what the row depends on.** A row found at one

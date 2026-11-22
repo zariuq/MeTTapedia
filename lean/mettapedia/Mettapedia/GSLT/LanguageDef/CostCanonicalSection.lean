@@ -614,6 +614,26 @@ theorem mem_costStaticReflectivePresentations_iff_exists_source
         exact Or.inr (List.mem_map.mpr
           ⟨sourceDeclaration, membership, rfl⟩)
 
+/-- Both colors keep a closed source presentation closed. -/
+theorem costStaticReflectivePresentationDecl_quoteScope (source : CIGSLT)
+    (color : CostStaticColor) (declaration : ReflectivePresentationDecl)
+    (closed : declaration.quoteScope = .closed) :
+    (costStaticReflectivePresentationDecl source color declaration).quoteScope = .closed := by
+  cases color <;>
+    simp [costStaticReflectivePresentationDecl, costBaseReflectivePresentationDecl,
+      costWrappedReflectivePresentationDecl, mapReflectivePresentation, closed]
+
+/-- The Cost transport of a source profile that keeps quoted code closed keeps
+it closed. -/
+theorem costWholeReflectionProfile_closed (source : CIGSLT)
+    (closed : ReflectiveWellSorted.ClosedProfile source.reflection.1) :
+    ReflectiveWellSorted.ClosedProfile source.costWholeReflectionProfile := by
+  intro target membership
+  obtain ⟨color, sourceDeclaration, sourceMembership, rfl⟩ :=
+    (mem_costStaticReflectivePresentations_iff_exists_source source).1 membership
+  exact costStaticReflectivePresentationDecl_quoteScope source color sourceDeclaration
+    (closed sourceDeclaration sourceMembership)
+
 @[simp]
 theorem mapCostStaticSchemaPattern_bvar (source : CIGSLT)
     (color : CostStaticColor) (index : Nat) :
@@ -2733,11 +2753,12 @@ def ReflectiveWellSorted.OpenTerm.retagCostRegionFreeVariables
       (retagCostRegionFreeContext sourceFree) bound sort :=
   ⟨term.toCore.retagCostRegionFreeVariables.1,
     term.toCore.retagCostRegionFreeVariables.2, by
-      intro declaration membership
-      change binderSafeAt declaration.quoteConstructor bound.length
-        (Mettapedia.GSLT.LanguageDef.retagCostRegionFreeVariables term.1) = true
-      simpa only [binderSafeAt_retagCostRegionFreeVariables] using
-          term.2.2 declaration membership⟩
+      change ReflectiveWellSorted.ReflectiveScopeSafeAt profile bound.length
+        (Mettapedia.GSLT.LanguageDef.retagCostRegionFreeVariables term.1)
+      exact (ReflectiveWellSorted.ReflectiveScopeSafeAt.congr
+        (fun quoteConstructor => binderSafeAt_retagCostRegionFreeVariables quoteConstructor
+          bound.length term.1)
+        (isWellScopedAt_retagCostRegionFreeVariables bound.length term.1)).mpr term.2.2⟩
 
 @[simp]
 theorem ReflectiveWellSorted.OpenTerm.retagCostRegionFreeVariables_pattern
@@ -4235,7 +4256,7 @@ def costStaticSupportedOpenAssignment (source : CIGSLT)
         intro presentation membership
         simp only [costStaticRestorationSupport,
           costStaticRestorationAssignment, decodedName, List.length_nil]
-        rfl
+        exact scopeSafeAt_fvar _ _ _ _
     | none =>
         cases resolved :
             resolveTypedCostRegionBoundaryData boundary regions name with

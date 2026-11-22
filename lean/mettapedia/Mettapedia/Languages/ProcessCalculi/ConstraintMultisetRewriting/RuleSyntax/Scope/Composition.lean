@@ -44,7 +44,7 @@ footprint is independent of the neighbour and whose made identities are new to i
 
 Each hypothesis has its control in `CompositionControls`: a shared unknown (the knowledge of a
 neighbour without rows contradicting a tell on an unknown the system's row carries) refuses the
-firing and switches success off; none queries over ground rows, independent of everything, is refused
+firing and switches success off; absence over ground rows, independent of everything, is refused
 beside a ground row; an unsolvable neighbour refuses; a neighbour mentioning the firing's own opened
 unknown makes the opening not fresh.
 -/

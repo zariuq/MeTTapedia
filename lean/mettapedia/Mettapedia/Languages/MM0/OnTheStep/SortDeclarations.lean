@@ -13,9 +13,9 @@ holding the file's row alone:
   (`sort_environment_v1`) and `mm0-rs` does: a sort whose name no sort has is declared with its modifiers; a name
   declared again with the same modifiers is accepted and changes nothing; a name declared again with other
   modifiers is refused. The environment is a list of names with their modifiers.
-* **The theorem** (`accepted_reachable_iff`): rewriting of bags with the none query reaches a bag holding `accepted` from
+* **The theorem** (`accepted_reachable_iff`): rewriting of bags with absence reaches a bag holding `accepted` from
   the file's bag exactly when `declareAll [] ds` succeeds; on the step itself (`sorts_on_the_step`), for every
-  state that reads as the file's bag (`NoneRewriting.reachable_iff_none`), when identities are infinitely
+  state that reads as the file's bag (`AbsenceRewriting.reachable_iff_absent`), when identities are infinitely
   many. The direction "accepted only if well formed" is an invariant of every run (`Phase`, `phase_step`): the
   store is the cursor beside the rows of the environment of the statements read so far, then `accepted` beside
   the environment of the whole file; the twenty rules are checked one by one, and only `declareSort`,
@@ -36,7 +36,7 @@ open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax
 open NamesOnTheStep (Expr)
 open Presentation.Schematic
 open Machines (ReadsBag stepSystem listState listState_reads)
-open NoneRewriting
+open AbsenceRewriting
 open DeclarationProgram
 
 universe uO
@@ -108,7 +108,7 @@ theorem lookupSort_eq_none_iff {s : Expr} : ∀ {env : SortEnv}, lookupSort env 
         simp [lookupSort]
       · simp only [lookupSort, if_neg same, List.map_cons, List.mem_cons, not_or]
         rw [lookupSort_eq_none_iff (env := env)]
-        exact ⟨fun missing => ⟨Ne.symm same, missing⟩, fun both => both.2⟩
+        exact ⟨fun absent => ⟨Ne.symm same, absent⟩, fun both => both.2⟩
 
 theorem lookupSort_of_mem {s m : Expr} : ∀ {env : SortEnv}, (env.map Prod.fst).Nodup → (s, m) ∈ env →
     lookupSort env s = some m
@@ -318,8 +318,8 @@ theorem phase_start (ds₀ : List SortStatement) : Phase ds₀ (start ds₀) :=
 
 /-- **Every rewrite keeps the invariant.** -/
 theorem phase_step {ds₀ : List SortStatement} {bag bag' : Multiset Expr} (phase : Phase ds₀ bag)
-    (step : RewritesNone program bag bag') : Phase ds₀ bag' := by
-  obtain ⟨r, member, θ, rest, split, readsIn, -, nones, rfl⟩ := step
+    (step : RewritesAbsent program bag bag') : Phase ds₀ bag' := by
+  obtain ⟨r, member, θ, rest, split, readsIn, -, absences, rfl⟩ := step
   simp only [program, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases phase with ⟨done, rest₀, env, decomposed, checked, rfl⟩ | ⟨env, checked, rfl⟩
   · rcases member with rfl | rfl | rfl | rfl | member
@@ -333,7 +333,7 @@ theorem phase_step {ds₀ : List SortStatement} {bag bag' : Multiset Expr} (phas
           obtain ⟨hp, hst, hpr, hf, hs, hr⟩ := sort_statement_inv sameFile
           have fresh : sortName (θ 4) ∉ (([pending (fileTree ((d :: ds).map SortStatement.tree))] : List Expr) :
               Multiset Expr) + envBag env :=
-            nones (rowP 1 [u 4]) (List.mem_singleton_self _)
+            absences (rowP 1 [u 4]) (List.mem_singleton_self _)
           have unnamed : sortName d.name ∉ envRows env := fun inside =>
             fresh (mem_one_add.mpr (Or.inr (by rw [hs]; exact Multiset.mem_coe.mpr inside)))
           have looked : lookupSort env d.name = none :=
@@ -385,8 +385,8 @@ theorem phase_step {ds₀ : List SortStatement} {bag bag' : Multiset Expr} (phas
   · rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
       rfl | rfl | rfl | rfl | rfl | rfl <;> exact (no_take_at_accepted split (by decide)).elim
 
-theorem phase_multi {ds₀ : List SortStatement} : ∀ {bag bag' : (rewritingNone program).Term},
-    (rewritingNone program).MultiStep bag bag' → Phase ds₀ bag → Phase ds₀ bag'
+theorem phase_multi {ds₀ : List SortStatement} : ∀ {bag bag' : (rewritingAbsent program).Term},
+    (rewritingAbsent program).MultiStep bag bag' → Phase ds₀ bag → Phase ds₀ bag'
   | _, _, .refl _, phase => phase
   | _, _, .step first rest, phase => phase_multi rest (phase_step phase first)
 
@@ -402,7 +402,7 @@ theorem accepted_of_phase {ds₀ : List SortStatement} {bag : Multiset Expr} (ph
 /-! ## The runs -/
 
 theorem runs_of_declareAll : ∀ (ds : List SortStatement) (env env' : SortEnv), declareAll env ds = some env' →
-    (rewritingNone program).MultiStep
+    (rewritingAbsent program).MultiStep
       ((([pending (fileTree (ds.map SortStatement.tree))] : List Expr) : Multiset Expr) + envBag env)
       ((([accepted] : List Expr) : Multiset Expr) + envBag env')
   | [], env, env', done => by
@@ -450,9 +450,9 @@ theorem runs_of_declareAll : ∀ (ds : List SortStatement) (env env' : SortEnv),
 /-! ## The theorem -/
 
 /-- **A file of sort declarations reaches `accepted` exactly when MM0's rule accepts it**, by rewriting of bags
-with none queries. -/
+with absence. -/
 theorem accepted_reachable_iff (ds : List SortStatement) :
-    (∃ bag : Multiset Expr, (rewritingNone program).MultiStep (start ds) bag ∧ accepted ∈ bag) ↔
+    (∃ bag : Multiset Expr, (rewritingAbsent program).MultiStep (start ds) bag ∧ accepted ∈ bag) ↔
       (declareAll [] ds).isSome := by
   constructor
   · rintro ⟨bag, steps, inside⟩
@@ -470,7 +470,7 @@ theorem sorts_on_the_step {O : Type uO} [DecidableEq O] [Infinite O] (ds : List 
     (reads : ReadsBag s (start ds)) :
     (∃ s', (stepSystem O program).MultiStep s s' ∧ ∃ bag, ReadsBag s' bag ∧ accepted ∈ bag) ↔
       (declareAll [] ds).isSome :=
-  (reachable_iff_none program_fragment (fun bag => accepted ∈ bag) reads).symm.trans (accepted_reachable_iff ds)
+  (reachable_iff_absent program_fragment (fun bag => accepted ∈ bag) reads).symm.trans (accepted_reachable_iff ds)
 
 /-- The state of a file's row reads as the file's bag, so the theorem is about something. -/
 theorem start_reads (ds : List SortStatement) :

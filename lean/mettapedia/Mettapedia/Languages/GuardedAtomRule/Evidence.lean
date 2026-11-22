@@ -3496,8 +3496,7 @@ theorem rowsValid_iff (source : List Atom) (table : List Judgment)
 theorem shared_article_exact (source : List Atom) (article : Article source) (wanted : Judgment) :
     Shared.check article wanted = true ↔ ArticleValid article wanted := by
   rw [← Shared.checkJudgments_eq_check]
-  unfold Shared.checkJudgments Shared.checkJudgmentsWithWork
-  dsimp only
+  simp only [Shared.checkJudgments, Shared.checkJudgmentsWithWork_eq_inspectRows]
   cases processed : (Shared.inspectRows [] article.rows).table with
   | none =>
       constructor

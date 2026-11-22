@@ -1,0 +1,4 @@
+# Read after the core files: what the transported proofs and the functions cite.
+Library/QuotientProofs.mg
+Library/Propositions.mg
+Library/Foundations.mg

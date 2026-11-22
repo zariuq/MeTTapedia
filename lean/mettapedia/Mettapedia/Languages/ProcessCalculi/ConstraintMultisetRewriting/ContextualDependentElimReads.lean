@@ -423,7 +423,7 @@ theorem tower_mixed_decided_of_uncovered
       run (mixedTower.solver larger) problem larger = run (mixedTower.solver budget) problem budget ∧
       ((∃ state finished, run (mixedTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (mixedTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (mixedTower.solver larger) problem larger = .refuted absent)) :=
   tower_mixed_decided_of_mixedReads (fun {_} {problem} permuted nonempty => by
       obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : MixedCoveredHead equation
@@ -473,7 +473,7 @@ theorem tower_elimSigma_decided_of_uncovered
       run (elimSigmaTower.solver larger) problem larger = run (elimSigmaTower.solver budget) problem budget ∧
       ((∃ state finished, run (elimSigmaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (elimSigmaTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (elimSigmaTower.solver larger) problem larger = .refuted absent)) :=
   tower_elimSigma_decided_of_firing (fun {_} {problem} permuted nonempty => by
       have reads : ∃ bound, ∀ larger, bound ≤ larger → TowerElimSigmaReads larger problem := by
         obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty

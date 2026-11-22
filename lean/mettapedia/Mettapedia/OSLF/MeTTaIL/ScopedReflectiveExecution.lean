@@ -287,15 +287,23 @@ theorem literal_drop_quote_remains :
       .apply "Drop" [.apply "Quote" [.fvar "literal"]] := by
   decide
 
-/-- Quoted code that mentions the eliminated binder is not admitted by the
-closed scope, so the binder operation is never asked to look inside it. -/
+/-- Quoted code that mentions the eliminated binder is outside the closed-code
+fragment. The binder operation still leaves it as it is. -/
 theorem quoted_binder_not_admitted :
     ¬ QuotesClosed declaration (.apply "Quote" [.apply "F" [.bvar 0, .fvar "literal"]]) := by
   decide
 
-/-- Admitted quoted code keeps its free names while the binder outside it is
-replaced. -/
+/-- Substitution passes a quotation by, also when its code mentions the
+eliminated binder. -/
 theorem opaque_quote_keeps_name :
+    ScopedRuleInstantiation.reflectiveOperation declaration (.fvar "inserted")
+      (.apply "Quote" [.apply "F" [.bvar 0, .fvar "literal"]]) =
+      .apply "Quote" [.apply "F" [.bvar 0, .fvar "literal"]] := by
+  decide
+
+/-- The binder outside a quotation is replaced while the quoted code keeps its
+free names. -/
+theorem opaque_quote_beside_replaced_binder :
     ScopedRuleInstantiation.reflectiveOperation declaration (.fvar "inserted")
       (.apply "Pair" [.bvar 0, .apply "Quote" [.apply "F" [.fvar "literal"]]]) =
       .apply "Pair" [.fvar "inserted", .apply "Quote" [.apply "F" [.fvar "literal"]]] := by

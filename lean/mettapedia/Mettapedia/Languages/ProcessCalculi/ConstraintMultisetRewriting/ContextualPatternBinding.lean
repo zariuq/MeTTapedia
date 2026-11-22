@@ -44,7 +44,7 @@ theorem principal_on_spine (identity : V) {Γ : Ctx S}
     (rho : Ren S (declaration identity).1 Γ)
     (inverse : Strengthener (S := signature S declaration) rho)
     (body : Term (signature S declaration) (declaration identity).1 (declaration identity).2)
-    (missing : identity ∉ support body) :
+    (absent : identity ∉ support body) :
     (ContextualFamilies.action declaration Γ (declaration identity).2).Principal
       [(rename (S := signature S declaration) rho (generator declaration identity),
         rename (S := signature S declaration) rho body)] (ContextualBinding.answer identity body) := by
@@ -53,7 +53,7 @@ theorem principal_on_spine (identity : V) {Γ : Ctx S}
     have same := List.mem_singleton.mp member
     subst equation
     apply (solves_on_spine_iff identity rho inverse body _).mpr
-    rw [ContextualBinding.answer_same, ContextualBinding.instantiate_answer_of_notMem_support identity body body missing]
+    rw [ContextualBinding.answer_same, ContextualBinding.instantiate_answer_of_absent identity body body absent]
   · intro candidate solved
     have binding := solved
       (rename (S := signature S declaration) rho (generator declaration identity),
@@ -87,9 +87,9 @@ theorem solve_success_iff (identity : V) {Γ : Ctx S}
     · cases bound
     · exact ⟨body, (strengthenT_eq_some_iff inverse target body).mp recovered,
         by assumption, Option.some.inj bound⟩
-  · rintro ⟨body, recovered, missing, rfl⟩
+  · rintro ⟨body, recovered, absent, rfl⟩
     exact ⟨body, (strengthenT_eq_some_iff inverse target body).mpr recovered,
-      by simp [ContextualBinding.solve?, missing]⟩
+      by simp [ContextualBinding.solve?, absent]⟩
 
 theorem solve_principal (identity : V) {Γ : Ctx S}
     (rho : Ren S (declaration identity).1 Γ)
@@ -99,8 +99,8 @@ theorem solve_principal (identity : V) {Γ : Ctx S}
     (success : solve? identity rho inverse target = some assignment) :
     (ContextualFamilies.action declaration Γ (declaration identity).2).Principal
       [(rename (S := signature S declaration) rho (generator declaration identity), target)] assignment := by
-  obtain ⟨body, recovered, missing, rfl⟩ := (solve_success_iff identity rho inverse target assignment).mp success
+  obtain ⟨body, recovered, absent, rfl⟩ := (solve_success_iff identity rho inverse target assignment).mp success
   rw [← recovered]
-  exact principal_on_spine identity rho inverse body missing
+  exact principal_on_spine identity rho inverse body absent
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPatternBinding

@@ -310,7 +310,7 @@ theorem sigmaRound_eq_of_piece (fuel : Nat) {Θ : Context S.R} {problem : Equati
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the piece family decides, the Σ family decides with the same outcome.** -/
 theorem sigma_run_of_piece (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -344,7 +344,7 @@ theorem sigmaRound_not_stuck_of_expanded (fuel : Nat) {Θ : Context S.R} {proble
       exact liftCollapsed_not_stuck facts roots heads algebra rigid complete _
         (sigmaUpdate_rank facts roots heads algebra rigid complete reducer root rootComplete fuel problem) moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **The Σ family's readers**: a reader of the piece family, on the store or on its η-long prepared store
 η-expanded at Σ bases. -/
@@ -486,7 +486,7 @@ theorem sigmaRound_closure (fuel : Nat) :
       cases fired
       exact pieceRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening sn directed fuel _ _ _ permuted computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
 
@@ -510,9 +510,9 @@ theorem sigma_decided_of_firing
       ((∃ state finished, run ((sigmaFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((sigmaFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((sigmaFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (sigmaSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -564,7 +564,7 @@ theorem tower_sigma_decided_of_firing
       run (sigmaTower.solver larger) problem larger = run (sigmaTower.solver budget) problem budget ∧
       ((∃ state finished, run (sigmaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (sigmaTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (sigmaTower.solver larger) problem larger = .refuted absent)) :=
   sigma_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
@@ -587,7 +587,7 @@ theorem tower_sigma_decided_of_sigmaReads
       run (sigmaTower.solver larger) problem larger = run (sigmaTower.solver budget) problem budget ∧
       ((∃ state finished, run (sigmaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (sigmaTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (sigmaTower.solver larger) problem larger = .refuted absent)) :=
   tower_sigma_decided_of_firing (fun permuted nonempty => by
       obtain ⟨bound, eventually⟩ := reads permuted nonempty
       exact ⟨bound, fun larger enough => sigmaRound_not_stuck_of_sigmaReads (S := setting) TowerModel.facts

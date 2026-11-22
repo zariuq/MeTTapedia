@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 # A derived rule adds nothing: the run and the derived firing end in congruent states
 
 `Derived.derived_firing` matches every firing of a derived link by a run of two firings whose result
-agrees with it away from one missing identity and has one more equation `m ≐ m` in its knowledge, `m`
+agrees with it away from one absent identity and has one more equation `m ≐ m` in its knowledge, `m`
 a term that every substitution fixes.
 
 * `modulo_of_agree`: two such states are **equivalent modulo the knowledge** in the sense of
@@ -44,16 +44,16 @@ universe uT uS uO
 
 variable {T : Type uT} {S : Type uS} (A : SubstitutionAction T S) {O : Type uO}
 
-/-- **States that agree away from a missing identity, one with an extra equation between a fixed term
+/-- **States that agree away from an absent identity, one with an extra equation between a fixed term
 and itself, are equivalent modulo the knowledge.** -/
 theorem modulo_of_agree {m : T} (groundM : ∀ σ : S, A.apply σ m = m) {via : O}
     {u v : State (Terms T) O} (agree : Agree A via u v)
-    (knowledge : u.knowledge = v.knowledge ++ [(m, m)]) (missing : via ∉ v.present) :
+    (knowledge : u.knowledge = v.knowledge ++ [(m, m)]) (absent : via ∉ v.present) :
     Modulo (frames A) v u := by
   obtain ⟨present, labels, solutions⟩ := agree
   obtain ⟨uframe, uknow, upresent, ulabel⟩ := u
   obtain ⟨vframe, vknow, vpresent, vlabel⟩ := v
-  simp only at present labels solutions knowledge missing
+  simp only at present labels solutions knowledge absent
   subst present knowledge
   have fixed : ∀ (b : PUnit.{1}) (φ ψ : S),
       (frames A).E ((frames A).act (a := vframe) (b := b) φ m)
@@ -64,7 +64,7 @@ theorem modulo_of_agree {m : T} (groundM : ∀ σ : S, A.apply σ m = m) {via : 
     exact A.equivalence.refl _
   refine ⟨vknow ++ [(m, m)], ulabel, ⟨fun b σ => (solutions b σ).symm, ?_, ?_⟩, rfl⟩
   · intro o inside b σ _
-    have other : o ≠ via := fun same => missing (same ▸ inside)
+    have other : o ≠ via := fun same => absent (same ▸ inside)
     show A.E (A.apply σ (vlabel o)) (A.apply σ (ulabel o))
     rw [labels o other]
     exact A.equivalence.refl _
@@ -94,7 +94,7 @@ theorem modulo_of_agree {m : T} (groundM : ∀ σ : S, A.apply σ m = m) {via : 
         · exact supports t (Or.inr (Or.inl old))
         · rw [List.mem_singleton.mp new]
           exact fixed b φ ψ
-      · have other : o ≠ via := fun same => missing (same ▸ inside)
+      · have other : o ≠ via := fun same => absent (same ▸ inside)
         show (frames A).E ((frames A).act φ (ulabel o)) ((frames A).act ψ (ulabel o))
         rw [labels o other]
         exact supports (vlabel o) (Or.inr (Or.inr ⟨o, inside, rfl⟩))
@@ -108,7 +108,7 @@ theorem modulo_of_agree {m : T} (groundM : ∀ σ : S, A.apply σ m = m) {via : 
         show t ∈ (vknow ++ [(m, m)]).map Prod.snd
         rw [List.map_append]
         exact List.mem_append_left _ inSnd
-      · have other : o ≠ via := fun same => missing (same ▸ inside)
+      · have other : o ≠ via := fun same => absent (same ▸ inside)
         exact supports (vlabel o) (Or.inr (Or.inr ⟨o, inside, labels o other⟩))
 
 variable [DecidableEq O]
@@ -119,18 +119,18 @@ theorem derived_congruent {P : Program (Terms T)} {a m b : T} (groundA : ∀ σ 
     (groundM : ∀ σ : S, A.apply σ m = m) (groundB : ∀ σ : S, A.apply σ b = b)
     (first : link a m ∈ P) (second : link m b ∈ P) (s : State (Terms T) O)
     (g : Firing O (ext A) P s.frame) (fires : g.rule = link a b) (admitted : g.Admits (frames A) s)
-    {via : O} (missing : via ∉ s.present) (other : via ∉ g.selection.made) (Q : Program (Terms T)) :
+    {via : O} (absent : via ∉ s.present) (other : via ∉ g.selection.made) (Q : Program (Terms T)) :
     ∃ (g₁ : Firing O (ext A) P s.frame) (g₂ : Firing O (ext A) P (g₁.result (frames A) s).frame),
       g₁.rule = link a m ∧ g₁.Admits (frames A) s ∧ g₂.rule = link m b ∧
         g₂.Admits (frames A) (g₁.result (frames A) s) ∧
           Congruent (frames A) O (ext A) (MayBarb (frames A)) ⟨Q, g.result (frames A) s⟩
             ⟨Q, g₂.result (frames A) (g₁.result (frames A) s)⟩ := by
   obtain ⟨g₁, g₂, rule₁, admitted₁, rule₂, admitted₂, agree, knowledge⟩ :=
-    derived_firing A groundA groundM groundB first second s g fires admitted missing other
+    derived_firing A groundA groundM groundB first second s g fires admitted absent other
   have gone : via ∉ (g.result (frames A) s).present := by
     intro inside
     rcases mem_fire.mp inside with ⟨old, -⟩ | made
-    · exact missing old
+    · exact absent old
     · exact other (List.mem_toFinset.mp made)
   exact ⟨g₁, g₂, rule₁, admitted₁, rule₂, admitted₂,
     modulo_congruent_mayBarb Q (modulo_of_agree A groundM agree knowledge gone)⟩
@@ -175,12 +175,12 @@ theorem step_with_derived {P : Program (Terms T)} {a m b : T} (groundA : ∀ σ 
   rcases rule with inP | derived
   · exact ⟨g.result (frames A) s, .single ⟨reprogram g inP, admitted, rfl⟩, Congruent.refl _⟩
   · obtain ⟨via, fresh⟩ := Infinite.exists_notMem_finset (s.present ∪ g.selection.made.toFinset)
-    have missing : via ∉ s.present := fun inside => fresh (Finset.mem_union_left _ inside)
+    have absent : via ∉ s.present := fun inside => fresh (Finset.mem_union_left _ inside)
     have other : via ∉ g.selection.made := fun inside =>
       fresh (Finset.mem_union_right _ (List.mem_toFinset.mpr inside))
     obtain ⟨g₁, g₂, rule₁, admitted₁, rule₂, admitted₂, congruent⟩ :=
       derived_congruent A groundA groundM groundB (Or.inl first) (Or.inl second) s g derived admitted
-        missing other Q
+        absent other Q
     have in₁ : g₁.rule ∈ P := by
       rw [rule₁]
       exact first

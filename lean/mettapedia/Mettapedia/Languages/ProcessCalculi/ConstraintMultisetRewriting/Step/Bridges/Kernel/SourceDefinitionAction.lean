@@ -60,17 +60,17 @@ theorem source_check {source : SourceTerm} {result : CanonicalTerm}
     apply congrArg some
     apply CanonicalTerm.ext_term
     exact shape.symm
-  · rename_i missing
-    rw [typed] at missing
-    cases missing
+  · rename_i absent
+    rw [typed] at absent
+    cases absent
 
 theorem check_action (names : Names) (fixed : FunctionFixed names) (source : SourceTerm) :
     (mapTerm names source).check = source.check.map (mapCanonical names fixed) := by
   cases accepted : source.check with
   | none =>
-      have missing := (SourceTerm.check_eq_none_iff source).mp accepted
+      have absent := (SourceTerm.check_eq_none_iff source).mp accepted
       apply (SourceTerm.check_eq_none_iff _).mpr
-      rw [inference names fixed, missing]
+      rw [inference names fixed, absent]
       rfl
   | some result =>
       simp only [Option.map_some]

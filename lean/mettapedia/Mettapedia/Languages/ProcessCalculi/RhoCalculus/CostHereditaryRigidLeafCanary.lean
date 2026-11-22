@@ -115,7 +115,8 @@ theorem rhoQuoteDropBVar_not_reflectiveScopeSafe :
   have checked := safe rhoRigidBaseDeclaration membership
   have quoteName : rhoRigidBaseDeclaration.quoteConstructor =
       costBaseConstructorName "NQuote" := rfl
-  rw [quoteName] at checked
+  have closedScope : rhoRigidBaseDeclaration.quoteScope = .closed := by decide +kernel
+  rw [quoteName, closedScope, scopeSafeAt_closed] at checked
   simp [rhoQuoteDropBVarLeft, binderSafeAt, binderSafeListAt] at checked
 
 theorem rhoQuoteDropBVar_not_wellSorted :
@@ -163,8 +164,7 @@ private theorem rhoParallelSingletonBVarLeft_reflectiveScopeSafe :
       rhoCIGSLT.costWholeReflectionProfile rhoRigidProcBound.length
       rhoParallelSingletonBVarLeft := by
   intro declaration membership
-  simp [rhoParallelSingletonBVarLeft, rhoRigidProcBound,
-    binderSafeAt, binderSafeListAt]
+  simp [rhoParallelSingletonBVarLeft, rhoRigidProcBound]
 
 theorem rhoParallelSingletonBVarRight_wellSorted :
     OpenPatternWellSorted rhoCIGSLT.costWholeLanguage rhoRigidLeafFree
@@ -178,7 +178,7 @@ private theorem rhoParallelSingletonBVarRight_reflectiveScopeSafe :
       rhoCIGSLT.costWholeReflectionProfile rhoRigidProcBound.length
       rhoParallelSingletonBVarRight := by
   intro declaration membership
-  simp [rhoParallelSingletonBVarRight, rhoRigidProcBound, binderSafeAt]
+  simp [rhoParallelSingletonBVarRight, rhoRigidProcBound]
 
 /-- Checked open term used to exercise the production region-tree compiler. -/
 def rhoParallelSingletonBVarTerm :

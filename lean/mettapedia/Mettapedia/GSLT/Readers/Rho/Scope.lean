@@ -175,52 +175,14 @@ theorem boundSorts_get (env extra : List String) (i : Nat) (hi : i < env.length)
   simp [hi]
 
 mutual
-  theorem RName.resolve_safe : ∀ (env : List String) (m : RName),
-      binderSafeAt "NQuote" env.length (m.resolve env) = true
-    | env, .quote p => by
-      simp only [RName.resolve, binderSafeAt, beq_self_eq_true, if_true]
-      exact RProc.resolve_safe [] p
-    | env, .var x => by
-      simp only [RName.resolve]
-      cases hx : lookupIdx x env with
-      | some i => simp [binderSafeAt, lookupIdx_lt x env i hx]
-      | none => simp [binderSafeAt]
-  theorem RProc.resolve_safe : ∀ (env : List String) (p : RProc),
-      binderSafeAt "NQuote" env.length (p.resolve env) = true
-    | env, .nil => by simp [RProc.resolve, binderSafeAt, binderSafeListAt]
-    | env, .par ps => by
-      simp only [RProc.resolve, binderSafeAt]
-      exact RProcs.resolve_safe env ps
-    | env, .send m p => by
-      simp only [RProc.resolve, binderSafeAt, binderSafeListAt, Bool.and_eq_true]
-      exact ⟨RName.resolve_safe env m, RProc.resolve_safe env p, trivial⟩
-    | env, .recv m x p => by
-      simp only [RProc.resolve, binderSafeAt, binderSafeListAt, Bool.and_eq_true]
-      refine ⟨RName.resolve_safe env m, ?_, trivial⟩
-      have := RProc.resolve_safe (x :: env) p
-      simpa using this
-    | env, .drop m => by
-      simp only [RProc.resolve, binderSafeAt]
-      have hne : ("PDrop" == "NQuote") = false := by decide
-      simp only [hne, Bool.false_eq_true, if_false, binderSafeListAt, Bool.and_true]
-      exact RName.resolve_safe env m
-  theorem RProcs.resolve_safe : ∀ (env : List String) (ps : RProcs),
-      binderSafeListAt "NQuote" env.length (ps.resolve env) = true
-    | env, .nil => by simp [RProcs.resolve, binderSafeListAt]
-    | env, .cons p ps => by
-      simp only [RProcs.resolve, binderSafeListAt, Bool.and_eq_true]
-      exact ⟨RProc.resolve_safe env p, RProcs.resolve_safe env ps⟩
-end
-
-mutual
   theorem RName.resolve_wellSorted (free : FreeSortContext) :
       ∀ (env extra : List String) (m : RName), m.namesIn free env →
         NameWellSorted rhoReflectivePresentation free (boundSorts env extra) (m.resolve env)
     | env, extra, .quote p, h => by
       simp only [RName.resolve]
-      exact NameWellSorted.quoteOfSafe (by
+      exact NameWellSorted.quote (by
         have := RProc.resolve_wellSorted free [] (boundSorts env extra) p h
-        simpa [boundSorts] using this) (RProc.resolve_safe [] p)
+        simpa [boundSorts] using this)
     | env, extra, .var x, h => by
       simp only [RName.resolve]
       cases hx : lookupIdx x env with
@@ -262,6 +224,43 @@ mutual
         (RProcs.resolve_wellSorted free env extra ps h.2)
 end
 
+mutual
+  theorem RName.resolve_safe : ∀ (env : List String) (m : RName),
+      binderSafeAt "NQuote" env.length (m.resolve env) = true
+    | env, .quote p => by
+      simp only [RName.resolve, binderSafeAt, beq_self_eq_true, if_true]
+      exact RProc.resolve_safe [] p
+    | env, .var x => by
+      simp only [RName.resolve]
+      cases hx : lookupIdx x env with
+      | some i => simp [binderSafeAt, lookupIdx_lt x env i hx]
+      | none => simp [binderSafeAt]
+  theorem RProc.resolve_safe : ∀ (env : List String) (p : RProc),
+      binderSafeAt "NQuote" env.length (p.resolve env) = true
+    | env, .nil => by simp [RProc.resolve, binderSafeAt, binderSafeListAt]
+    | env, .par ps => by
+      simp only [RProc.resolve, binderSafeAt]
+      exact RProcs.resolve_safe env ps
+    | env, .send m p => by
+      simp only [RProc.resolve, binderSafeAt, binderSafeListAt, Bool.and_eq_true]
+      exact ⟨RName.resolve_safe env m, RProc.resolve_safe env p, trivial⟩
+    | env, .recv m x p => by
+      simp only [RProc.resolve, binderSafeAt, binderSafeListAt, Bool.and_eq_true]
+      refine ⟨RName.resolve_safe env m, ?_, trivial⟩
+      have := RProc.resolve_safe (x :: env) p
+      simpa using this
+    | env, .drop m => by
+      simp only [RProc.resolve, binderSafeAt]
+      have hne : ("PDrop" == "NQuote") = false := by decide
+      simp only [hne, Bool.false_eq_true, if_false, binderSafeListAt, Bool.and_true]
+      exact RName.resolve_safe env m
+  theorem RProcs.resolve_safe : ∀ (env : List String) (ps : RProcs),
+      binderSafeListAt "NQuote" env.length (ps.resolve env) = true
+    | env, .nil => by simp [RProcs.resolve, binderSafeListAt]
+    | env, .cons p ps => by
+      simp only [RProcs.resolve, binderSafeListAt, Bool.and_eq_true]
+      exact ⟨RProc.resolve_safe env p, RProcs.resolve_safe env ps⟩
+end
 
 /-- A process read from the top, with every free name a name: its term is well sorted and
 quote-safe, whatever its binders are called. -/

@@ -15,7 +15,7 @@ they failed before, and the first for a new one.
    package's settler postpones it, neither settling nor refuting (`principal_test_postponed`). The
    store is outside the pattern fragment; whether the tower's pattern-fragment witness keeps its
    failure over this package is not settled here.
-2. **The none query against framing** (`frameLaw_fails`). The dependent step has a none query. The firing
+2. **Absence against framing** (`frameLaw_fails`). The dependent step has an absence query. The firing
    that makes a number `0` where no present row is `0` is admitted at the empty state and refused
    beside a present `0`, for every settler, although its made label avoids the added row and the
    knowledge is untouched. What holds (`frame_test_graded`): a firing without queries keeps its
@@ -74,7 +74,7 @@ theorem principal_test_postponed :
 
 end Principal
 
-/-! ## 2. The none query against framing -/
+/-! ## 2. Absence against framing -/
 
 section Framing
 

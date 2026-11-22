@@ -43,7 +43,7 @@ Their definitions also quantify over admitted firings: `every` must hold every a
 maximal bag no admitted larger bag. Read with those quantifiers at the before-tells timing
 (`AdmitsEveryBeforeTells`, `AdmitsMaximalBeforeTells`, `AdmitsUniqueBeforeTells`), the commits are
 still restrictions of the before-tells bag step (`beforeTells_of_ownBeforeTells`), but not of the same
-commits read after the tells: completeness and maximality ask the none query of a further admitted match,
+commits read after the tells: completeness and maximality ask the absence of a further admitted match,
 so they are antitone in the admitted set, and fewer firings are admitted before the tells.
 `StepWeb.AskTimingControls` shows that in general neither includes the other. They agree where the ask
 parts entail the tells (`everyBeforeTells_iff_of_entailed`, `maximalBeforeTells_iff_of_entailed`), in

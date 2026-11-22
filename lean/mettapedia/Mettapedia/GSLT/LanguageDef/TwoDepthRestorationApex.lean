@@ -193,14 +193,14 @@ is necessary rather than merely convenient. -/
 theorem not_quoteStatusAgrees_of_foreignQuote {source : CIGSLT}
     {declaration owner : ReflectivePresentationDecl}
     (ownerMem : owner ∈ source.costWholeReflectionProfile.presentations)
+    (ownerClosed : owner.quoteScope = .closed)
     (foreign : owner.quoteConstructor ≠ declaration.quoteConstructor) :
     ¬ QuoteStatusAgrees source declaration := by
   intro agrees
   have restoration :
       ReflectiveContextSupport.isQuoteConstructor
-        source.costWholeReflectionProfile owner.quoteConstructor = true := by
-    unfold ReflectiveContextSupport.isQuoteConstructor
-    exact List.any_eq_true.mpr ⟨owner, ownerMem, beq_self_eq_true _⟩
+        source.costWholeReflectionProfile owner.quoteConstructor = true :=
+    ReflectiveContextSupport.isQuoteConstructor_of_mem ownerMem ownerClosed
   have keying :
       (owner.quoteConstructor == declaration.quoteConstructor) = false :=
     beq_eq_false_iff_ne.mpr foreign
@@ -391,14 +391,14 @@ only the endpoint-indexed condition and can discharge it locally. -/
 theorem not_ordinaryHeadCondition_of_foreignQuote {source : CIGSLT}
     {declaration owner : ReflectivePresentationDecl}
     (ownerMem : owner ∈ source.costWholeReflectionProfile.presentations)
+    (ownerClosed : owner.quoteScope = .closed)
     (foreign : owner.quoteConstructor ≠ declaration.quoteConstructor) :
     ¬ OrdinaryHeadCondition source declaration := by
   intro ordinaryHead
   have restoration :
       ReflectiveContextSupport.isQuoteConstructor
-        source.costWholeReflectionProfile owner.quoteConstructor = true := by
-    unfold ReflectiveContextSupport.isQuoteConstructor
-    exact List.any_eq_true.mpr ⟨owner, ownerMem, beq_self_eq_true _⟩
+        source.costWholeReflectionProfile owner.quoteConstructor = true :=
+    ReflectiveContextSupport.isQuoteConstructor_of_mem ownerMem ownerClosed
   have refuted := ordinaryHead owner.quoteConstructor foreign
   rw [restoration] at refuted
   exact Bool.noConfusion refuted

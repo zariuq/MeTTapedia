@@ -103,7 +103,7 @@ theorem the_justified_guard_emits_its_closed_result :
   ⟨selection, (valid_iff_factors locals captures _ _ _ _ _ _).mp
     an_existing_binding_justifies_the_same_guard, rfl, rfl, rfl⟩
 
-theorem the_condition_is_retained_although_its_variable_does_not_occur_in_output :
+theorem the_condition_is_retained_although_its_variable_is_absent_from_output :
     (prepared locals captures occupied selection equalityRule rows).rule.checks =
         [.equal (generator active (.inr 0)) (atom active)] ∧
       (prepared locals captures occupied selection equalityRule rows).rule.produce = [atom active] := by

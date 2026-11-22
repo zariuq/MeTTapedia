@@ -279,8 +279,8 @@ theorem instantiate_represented (declaration : ReflectivePresentationDecl) (dept
 open DerivedPresentationSyntax
 
 mutual
-theorem derived_name_data {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) : HasType language (typeFree free) (typeBound bound) name (.base "Name") ∧ Represented name := by
+theorem derived_name_data {free : FreeSortContext} {bound : List String} {name : Pattern}
+    (typed : NameWellSorted rhoReflectivePresentation free bound name) : HasType language (typeFree free) (typeBound bound) name (.base "Name") ∧ Represented name := by
   refine ⟨derived_name_typed typed, ?_⟩
   cases typed with
   | bvar _ | fvar _ => exact ⟨rfl, rfl⟩
@@ -289,8 +289,8 @@ theorem derived_name_data {scope : QuoteScope} {free : FreeSortContext} {bound :
       simpa using (derived_process_data process).2
 termination_by sizeOf name
 
-theorem derived_process_data {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) : HasType language (typeFree free) (typeBound bound) process (.base "Proc") ∧ Represented process := by
+theorem derived_process_data {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) : HasType language (typeFree free) (typeBound bound) process (.base "Proc") ∧ Represented process := by
   refine ⟨derived_process_typed typed, ?_⟩
   cases typed with
   | bvar _ | fvar _ | unit => exact ⟨rfl, rfl⟩
@@ -314,8 +314,8 @@ theorem derived_process_data {scope : QuoteScope} {free : FreeSortContext} {boun
       exact (represented_collection_iff _ _).mpr ((derived_processes_data processes).2)
 termination_by sizeOf process
 
-theorem derived_processes_data {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {processes : List Pattern}
-    (typed : ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound processes) :
+theorem derived_processes_data {free : FreeSortContext} {bound : List String} {processes : List Pattern}
+    (typed : ProcListWellSorted rhoReflectivePresentation free bound processes) :
     ElementsHaveType language (typeFree free) (typeBound bound) processes (.base "Proc") ∧
       (∀ process ∈ processes, Represented process) := by
   refine ⟨derived_processes_typed typed, ?_⟩
@@ -329,26 +329,26 @@ theorem derived_processes_data {scope : QuoteScope} {free : FreeSortContext} {bo
 termination_by sizeOf processes
 end
 
-theorem derived_name_represented {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) : Represented name :=
+theorem derived_name_represented {free : FreeSortContext} {bound : List String} {name : Pattern}
+    (typed : NameWellSorted rhoReflectivePresentation free bound name) : Represented name :=
   (derived_name_data typed).2
 
-theorem derived_process_represented {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) : Represented process :=
+theorem derived_process_represented {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) : Represented process :=
   (derived_process_data typed).2
 
-theorem derived_processes_represented {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {processes : List Pattern}
-    (typed : ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound processes) :
+theorem derived_processes_represented {free : FreeSortContext} {bound : List String} {processes : List Pattern}
+    (typed : ProcListWellSorted rhoReflectivePresentation free bound processes) :
     ∀ process ∈ processes, Represented process := (derived_processes_data typed).2
 
-theorem derived_name_open {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) :
+theorem derived_name_open {free : FreeSortContext} {bound : List String} {name : Pattern}
+    (typed : NameWellSorted rhoReflectivePresentation free bound name) :
     OpenPatternWellSorted language (typeFree free) (typeBound bound) (.base "Name") name :=
   ⟨derived_name_typed typed, (derived_name_represented typed).1,
     (derived_name_represented typed).2, (derived_name_typed typed).isWellScopedAt⟩
 
-theorem derived_process_open {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
+theorem derived_process_open {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
     OpenPatternWellSorted language (typeFree free) (typeBound bound) (.base "Proc") process :=
   ⟨derived_process_typed typed, (derived_process_represented typed).1,
     (derived_process_represented typed).2, (derived_process_typed typed).isWellScopedAt⟩

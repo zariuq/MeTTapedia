@@ -20,7 +20,7 @@ the principal unifier, and each continuation receives the dotted unifier.
 The relational semantics `Step admit` has the manuscript's four rules over
 named processes, with alpha-equivalence as its equivalence. Its COMM carries
 the variable convention (`Apart`): the inputs' pattern variables are distinct
-from each other, missing from the other input, and never rebound inside their
+from each other, absent from the other input, and never rebound inside their
 own continuation.
 -/
 

@@ -9,7 +9,7 @@ every channel joins exactly two parties, each endpoint is used linearly, and the
 communication topology a tree. Encoded in continuation-passing style, each step of a session uses a
 fresh name exactly once: one party makes a message there, the other takes it. This module
 identifies the commit programs with that shape and proves that, for them, deadlock freedom is
-exactly the none query of a cycle in who feeds whom, and exactly the existence of priorities.
+exactly the absence of a cycle in who feeds whom, and exactly the existence of priorities.
 
 ## Once-linear programs
 
@@ -62,7 +62,7 @@ A run is **maximal** when no unfired commit of the program is enabled after it; 
 Contention is not deadlock by itself. At the level of bags, a program whose every rule takes its
 process's token together with all the resources it needs, and returns the resources
 (`JointProgram`), never deadlocks: in every reachable bag the resources are all present, and a
-process waits only while its token is not present (`JointProgram.progress`). Two philosophers taking both
+process waits only while its token is absent (`JointProgram.progress`). Two philosophers taking both
 forks in one commit are an instance (`Controls.joint_philosophers_progress`); the same philosophers
 taking one fork at a time reach a stuck bag (`Controls.split_philosophers_stuck`).
 
@@ -463,7 +463,7 @@ theorem reachable_form {T : Multiset A} {M : Multiset A}
       omega
 
 /-- **Progress for joint takes**: in every reachable bag, a process whose token is present can
-fire. A process waits only while its token is not present. -/
+fire. A process waits only while its token is absent. -/
 theorem progress {T M : Multiset A} (reach : Relation.ReflTransGen J.Step (J.resources + T) M)
     (i : ι) (pending : J.token i ≤ M - J.resources) : (J.rule i).take ≤ M := by
   obtain ⟨T', rfl⟩ := J.reachable_form reach

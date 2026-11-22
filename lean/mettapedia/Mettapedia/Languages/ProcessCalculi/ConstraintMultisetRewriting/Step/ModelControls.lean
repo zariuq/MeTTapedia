@@ -14,7 +14,7 @@ All controls live in the first-order run layer, over small first-order signature
 * **Excluded middle** (`excludedMiddle_separates`): `X = true ∨ ¬ X = true` is asked at every
   solution, read pointwise, and is not forced at the identity. Asks agree with forcing on the flat
   fragment only (`Frames.entails_iff_forces`).
-* **The none query is forced** (`none_forced`): over `X = false`, the none query of `true` among the labels
+* **Absence is forced** (`absence_forced`): over `X = false`, the absence of `true` among the labels
   `{X}` is asked, and by the flat-fragment theorem it is forced at every solution.
 * **Confusion** (`unarySig`, `confusion_separates`). With one unary function `f`, the store
   `f X = f Y` asks `X = Y` (constructors are injective in the syntax). In the set model on `Bool`
@@ -112,20 +112,20 @@ theorem excludedMiddle_separates :
   · exact not_eq_const_of_var forced
   · exact forced PUnit.unit (branch true) rfl
 
-/-! ## The none query -/
+/-! ## Absence -/
 
-/-- The none query of `true` among the labels of `{0}`, where occurrence `0` is labelled `X`. -/
-def noTrue : GuardFormula (Term boolSig) Nat :=
+/-- The absence of `true` among the labels of `{0}`, where occurrence `0` is labelled `X`. -/
+def trueAbsent : GuardFormula (Term boolSig) Nat :=
   .predicate .none (.const true) {0} fun _ => xVar
 
-/-- **The none query over `X = false` is asked and forced.** -/
-theorem none_forced :
+/-- **Absence over `X = false` is asked and forced.** -/
+theorem absence_forced :
     boolFrames.Entails (a := PUnit.unit) [(xVar, .const false)]
-        (fun b θ => boolFrames.Satisfies (a := PUnit.unit) (b := b) θ noTrue) ∧
+        (fun b θ => boolFrames.Satisfies (a := PUnit.unit) (b := b) θ trueAbsent) ∧
       ∀ (b : PUnit) (θ : Subst boolSig), boolFrames.Models (a := PUnit.unit) (b := b) θ [(xVar, .const false)] →
-        boolFrames.Forces (a := PUnit.unit) noTrue b θ := by
+        boolFrames.Forces (a := PUnit.unit) trueAbsent b θ := by
   have asked : boolFrames.Entails (a := PUnit.unit) [(xVar, .const false)]
-      (fun b θ => boolFrames.Satisfies (a := PUnit.unit) (b := b) θ noTrue) := by
+      (fun b θ => boolFrames.Satisfies (a := PUnit.unit) (b := b) θ trueAbsent) := by
     intro _ θ solved o _ same
     have isFalse : θ 0 = Term.const false := solved _ (List.mem_singleton_self _)
     have isTrue : Term.const true = θ 0 := same
@@ -305,7 +305,7 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
 
 #print axioms AnnotatedRuns.ModelControls.caseSplit_separates
 #print axioms AnnotatedRuns.ModelControls.excludedMiddle_separates
-#print axioms AnnotatedRuns.ModelControls.none_forced
+#print axioms AnnotatedRuns.ModelControls.absence_forced
 #print axioms AnnotatedRuns.ModelControls.confusion_separates
 #print axioms AnnotatedRuns.ModelControls.constantModel_not_free
 #print axioms AnnotatedRuns.ModelControls.occurs_separates

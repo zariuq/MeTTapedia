@@ -23,8 +23,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Knowledge
   (`an_inconsistent_tell_is_a_zoned_proof_on_identities`).
 * **The context of a placement is a lent zone.** The run that reads, placed beside the
   occurrence `9`, is a graded proof with that occurrence lent
-  (`reads_beside_nine_is_a_lent_proof`); the firing that checks the none query of `9` has no graded
-  proof with it lent (`none_has_no_proof_with_nine_lent`).
+  (`reads_beside_nine_is_a_lent_proof`); the firing that checks the absence of `9` has no graded
+  proof with it lent (`absence_has_no_proof_with_nine_lent`).
 -/
 
 set_option autoImplicit false
@@ -281,9 +281,9 @@ theorem reads_beside_nine_is_a_lent_proof :
       reads_is_admitted_beside_nine⟩, trivial⟩
 
 open KnowledgeTensorFirstOrderControls (one) in
-/-- The firing that checks the none query of `9` has no graded proof with the occurrence `9` lent:
+/-- The firing that checks the absence of `9` has no graded proof with the occurrence `9` lent:
 a lent identity is seen by the check. -/
-theorem none_has_no_proof_with_nine_lent :
+theorem absence_has_no_proof_with_nine_lent :
     ¬ ∃ (along : (() : Unit) ⟶ ()) (reached : Set Unit) (left : Multiset Nat)
       (grade : Multiset Nat → Prop), grade 0 ∧
         (FirstOrder.identityZoned plain id).Proves () nine.present.val

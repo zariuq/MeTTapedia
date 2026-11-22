@@ -21,7 +21,7 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 
 mutual
 theorem sorted_name_safety : ∀ {context : Ctx sig} {pattern : Pattern},
-    NameWellSorted rhoApplyPresentation FreeSortContext.empty
+    NameWellSorted rhoReflectivePresentation FreeSortContext.empty
       (contextLabels context) pattern →
     ∃ term, readName context pattern = some term ∧
       ∀ depth, intrinsicQuoteSafe depth term = binderSafeAt "NQuote" depth pattern
@@ -33,7 +33,7 @@ theorem sorted_name_safety : ∀ {context : Ctx sig} {pattern : Pattern},
       change decide ((varIdx position).val < depth) = decide (_ < depth)
       rw [variableAt_read_index readout]
   | _, _, .fvar lookup => by simp [FreeSortContext.empty] at lookup
-  | context, _, .quote typed _ => by
+  | context, _, .quote typed => by
     obtain ⟨process, readout, safety⟩ := sorted_process_safety typed
     refine ⟨quoteRaw process, ?_, ?_⟩
     · change (readProcess context _).map quoteRaw = some (quoteRaw process)
@@ -44,7 +44,7 @@ theorem sorted_name_safety : ∀ {context : Ctx sig} {pattern : Pattern},
       rw [Bool.and_true, safety 0]
 
 theorem sorted_process_safety : ∀ {context : Ctx sig} {pattern : Pattern},
-    ProcWellSorted rhoApplyPresentation FreeSortContext.empty
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
       (contextLabels context) pattern →
     ∃ term, readProcess context pattern = some term ∧
       ∀ depth, intrinsicQuoteSafe depth term = binderSafeAt "NQuote" depth pattern
@@ -94,7 +94,7 @@ theorem sorted_process_safety : ∀ {context : Ctx sig} {pattern : Pattern},
   | _, _, .parallel typed => sorted_processes_safety typed
 
 theorem sorted_processes_safety : ∀ {context : Ctx sig} {patterns : List Pattern},
-    ProcListWellSorted rhoApplyPresentation FreeSortContext.empty
+    ProcListWellSorted rhoReflectivePresentation FreeSortContext.empty
       (contextLabels context) patterns →
     ∃ term, readProcesses context patterns = some term ∧
       ∀ depth, intrinsicQuoteSafe depth term = binderSafeListAt "NQuote" depth patterns

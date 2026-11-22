@@ -74,10 +74,10 @@ def annihilate (o : O) : Op O := fun W => if o ∈ W then some (W.erase o) else 
 /-- Read: defined exactly when the identity is present; keeps it. -/
 def point (o : O) : Op O := fun W => if o ∈ W then some W else none
 
-/-- Produce: defined exactly when the identity is not present. -/
+/-- Produce: defined exactly when the identity is absent. -/
 def create (o : O) : Op O := fun W => if o ∈ W then none else some (insert o W)
 
-/-- The complementary projector `1 − N`: the identity is not present. -/
+/-- The complementary projector `1 − N`: the identity is absent. -/
 def vacant (o : O) : Op O := fun W => if o ∈ W then none else some W
 
 /-! ## Per-mode relations -/
@@ -139,8 +139,8 @@ end Relations
 
 /-- A single-mode operator: it tests and changes only the membership of `o`. -/
 def SingleMode (o : O) (f : Op O) : Prop :=
-  ∃ (present missing : Option Bool),
-    ∀ W, f W = (if o ∈ W then present else missing).map
+  ∃ (present absent : Option Bool),
+    ∀ W, f W = (if o ∈ W then present else absent).map
       (fun keep => if keep then insert o W else W.erase o)
 
 theorem annihilate_single (o : O) : SingleMode o (annihilate o) :=
@@ -523,10 +523,10 @@ end Controls
 
 section Guards
 
-/-- The none guard of a region: the projector onto worlds with no row of the region. -/
-def vacantOn (region : Finset O) : Op O := fun W => if Disjoint region W then some W else none
+/-- The absence guard of a region: the projector onto worlds with no row of the region. -/
+def absentOn (region : Finset O) : Op O := fun W => if Disjoint region W then some W else none
 
-/-- A run of `vacant` projectors is defined exactly where every listed row is not present. -/
+/-- A run of `vacant` projectors is defined exactly where every listed row is absent. -/
 theorem runList_vacant (l : List O) (W W' : Finset O) :
     runList vacant l W = some W' ↔ (∀ o ∈ l, o ∉ W) ∧ W' = W := by
   induction l generalizing W with
@@ -536,26 +536,26 @@ theorem runList_vacant (l : List O) (W W' : Finset O) :
     · simp [runList_cons, vacant, h]
     · simp [runList_cons, vacant, h, ih]
 
-/-- **The none query is a product of single-mode projectors** `∏ (1 − N_o)`, in any listing. -/
-theorem vacantOn_eq_product (l : List O) : vacantOn l.toFinset = runList vacant l := by
+/-- **Absence is a product of single-mode projectors** `∏ (1 − N_o)`, in any listing. -/
+theorem absentOn_eq_product (l : List O) : absentOn l.toFinset = runList vacant l := by
   funext W
   by_cases h : Disjoint l.toFinset W
   · have all : ∀ o ∈ l, o ∉ W := fun o ho => Finset.disjoint_left.mp h (by simpa using ho)
-    rw [show vacantOn l.toFinset W = some W from if_pos h]
+    rw [show absentOn l.toFinset W = some W from if_pos h]
     exact ((runList_vacant l W W).mpr ⟨all, rfl⟩).symm
-  · rw [show vacantOn l.toFinset W = none from if_neg h]
+  · rw [show absentOn l.toFinset W = none from if_neg h]
     symm
     rcases hrun : runList vacant l W with _ | W'
     · rfl
     · obtain ⟨all, -⟩ := (runList_vacant l W W').mp hrun
       exact absurd (Finset.disjoint_left.mpr fun o ho => all o (by simpa using ho)) h
 
-/-- **Locality.** A none guard commutes with every commit that neither takes nor makes a
+/-- **Locality.** An absence guard commutes with every commit that neither takes nor makes a
 row of its region; this is the operator form of the region frame law. -/
-theorem vacantOn_comm_commit (region : Finset O) (taken read made : List O)
+theorem absentOn_comm_commit (region : Finset O) (taken read made : List O)
     (apartT : ∀ o ∈ taken, o ∉ region) (apartM : ∀ o ∈ made, o ∉ region) :
-    andThen (vacantOn region) (commit taken read made) =
-      andThen (commit taken read made) (vacantOn region) := by
+    andThen (absentOn region) (commit taken read made) =
+      andThen (commit taken read made) (absentOn region) := by
   funext W
   simp only [andThen]
   have frame : ∀ W', commit taken read made W = some W' → (Disjoint region W' ↔ Disjoint region W) := by
@@ -569,26 +569,26 @@ theorem vacantOn_comm_commit (region : Finset O) (taken read made : List O)
     · intro hd o hr
       exact ⟨fun hw => absurd hw (hd hr), fun hm => apartM o hm hr⟩
   by_cases hd : Disjoint region W
-  · rw [show vacantOn region W = some W from if_pos hd, Option.bind_some]
+  · rw [show absentOn region W = some W from if_pos hd, Option.bind_some]
     rcases hc : commit taken read made W with _ | W'
     · rfl
-    · simp only [Option.bind_some, vacantOn, (frame W' hc).mpr hd, if_true]
-  · rw [show vacantOn region W = none from if_neg hd, Option.bind_none]
+    · simp only [Option.bind_some, absentOn, (frame W' hc).mpr hd, if_true]
+  · rw [show absentOn region W = none from if_neg hd, Option.bind_none]
     rcases hc : commit taken read made W with _ | W'
     · rfl
-    · simp only [Option.bind_some, vacantOn]
+    · simp only [Option.bind_some, absentOn]
       rw [if_neg (fun h => hd ((frame W' hc).mp h))]
 
-/-- E5 (producer `P` of row 1, taker `C` of row 1, none guard `G` of row 1, from the empty
+/-- E5 (producer `P` of row 1, taker `C` of row 1, absence guard `G` of row 1, from the empty
 world): `G;P;C` and `P;C;G` run, `P;G;C` does not, and `G` commutes with neither `P` nor `C`. -/
 theorem e5_words :
-    andThen (andThen (vacantOn ({1} : Finset ℕ)) (commit [] [] [1])) (commit [1] [] []) ∅ = some ∅ ∧
-    andThen (andThen (commit ([] : List ℕ) [] [1]) (commit [1] [] [])) (vacantOn {1}) ∅ = some ∅ ∧
-    andThen (andThen (commit ([] : List ℕ) [] [1]) (vacantOn {1})) (commit [1] [] []) ∅ = none ∧
-    andThen (vacantOn ({1} : Finset ℕ)) (commit [] [] [1]) ∅ ≠
-      andThen (commit ([] : List ℕ) [] [1]) (vacantOn {1}) ∅ ∧
-    andThen (vacantOn ({1} : Finset ℕ)) (commit [1] [] []) {1} ≠
-      andThen (commit ([1] : List ℕ) [] []) (vacantOn {1}) {1} := by
+    andThen (andThen (absentOn ({1} : Finset ℕ)) (commit [] [] [1])) (commit [1] [] []) ∅ = some ∅ ∧
+    andThen (andThen (commit ([] : List ℕ) [] [1]) (commit [1] [] [])) (absentOn {1}) ∅ = some ∅ ∧
+    andThen (andThen (commit ([] : List ℕ) [] [1]) (absentOn {1})) (commit [1] [] []) ∅ = none ∧
+    andThen (absentOn ({1} : Finset ℕ)) (commit [] [] [1]) ∅ ≠
+      andThen (commit ([] : List ℕ) [] [1]) (absentOn {1}) ∅ ∧
+    andThen (absentOn ({1} : Finset ℕ)) (commit [1] [] []) {1} ≠
+      andThen (commit ([1] : List ℕ) [] []) (absentOn {1}) {1} := by
   decide
 
 end Guards

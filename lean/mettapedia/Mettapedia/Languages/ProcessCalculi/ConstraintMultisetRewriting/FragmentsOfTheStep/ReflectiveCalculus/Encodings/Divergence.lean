@@ -93,10 +93,10 @@ def omegaOutput : Pattern := output omegaChannel omegaCode
 
 theorem omegaBody_typed : ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
     [rhoReflectivePresentation.nameSort] omegaBody :=
-  .parallel (.cons (.output (.quote .unit (by decide)) (.drop (.bvar rfl))) (.cons (.drop (.bvar rfl)) .nil))
+  .parallel (.cons (.output (.quote .unit) (.drop (.bvar rfl))) (.cons (.drop (.bvar rfl)) .nil))
 
 theorem omegaCode_typed : ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] omegaCode :=
-  .input (.quote .unit (by decide)) omegaBody_typed
+  .input (.quote .unit) omegaBody_typed
 
 /-- **The calculus's substitution regenerates the process**: `D` receiving its own code makes
 `@0!(D) | D`. -/
@@ -107,13 +107,13 @@ theorem omega_substitution :
 /-- **The self-reproducing process** `D | @0!(D)`. -/
 def omega : RhoProcess :=
   ⟨.collection .hashBag [omegaCode, omegaOutput] none, (rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.parallel (.cons omegaCode_typed (.cons (.output (.quote .unit (by decide)) omegaCode_typed) .nil)), by decide⟩⟩
+    ⟨.parallel (.cons omegaCode_typed (.cons (.output (.quote .unit) omegaCode_typed) .nil)), by decide⟩⟩
 
 /-- Its contractum, as the communication rule writes it: `(@0!(D) | D)`, one component. -/
 def omegaNext : RhoProcess :=
   ⟨.collection .hashBag [.collection .hashBag [omegaOutput, omegaCode] none] none,
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.parallel (.cons (.parallel (.cons (.output (.quote .unit (by decide)) omegaCode_typed)
+      ⟨.parallel (.cons (.parallel (.cons (.output (.quote .unit) omegaCode_typed)
         (.cons omegaCode_typed .nil))) .nil), by decide⟩⟩
 
 /-- The communication rule takes `D | @0!(D)` to its contractum. -/

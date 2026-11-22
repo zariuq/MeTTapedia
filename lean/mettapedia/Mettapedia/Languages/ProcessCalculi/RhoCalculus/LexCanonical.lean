@@ -651,25 +651,14 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalTyping (procListWe
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern (binderSafeAt binderSafeListAt binderSafeListAt_eq_true_iff)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical (HashSetFree HashSetFreeList)
 
-/-- Resorting keeps the canonical form, hence quote admission. -/
-private theorem quoteAdmits_resortLex (process : Pattern) :
-    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits
-        rhoReflectivePresentation.toReflectivePresentationDecl (resortLex process) =
-      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits
-        rhoReflectivePresentation.toReflectivePresentationDecl process :=
-  Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission.quoteAdmits_of_canonicalize_eq (by
-    rw [CanonicalMatch.derivedCanonicalize_eq, CanonicalMatch.derivedCanonicalize_eq,
-      canonicalize_resortLex])
-
 mutual
   theorem resortLex_name {free : FreeSortContext} {bound : List String} {name : Pattern} :
       NameWellSorted rhoReflectivePresentation free bound name →
         NameWellSorted rhoReflectivePresentation free bound (resortLex name)
     | .bvar found => .bvar found
     | .fvar found => .fvar found
-    | .quote processTyped admitted => by
+    | .quote processTyped => by
         have resorted := NameWellSorted.quote (resortLex_proc processTyped)
-          ((quoteAdmits_resortLex _).trans admitted)
         simpa [resortLex, resortLexList] using resorted
 
   theorem resortLex_proc {free : FreeSortContext} {bound : List String} {process : Pattern} :
@@ -820,7 +809,7 @@ mutual
       NameWellSorted rhoReflectivePresentation free bound name → HashSetFree name
     | .bvar _ => trivial
     | .fvar _ => trivial
-    | .quote processTyped _ => by
+    | .quote processTyped => by
         simp only [HashSetFree, HashSetFreeList]
         exact ⟨proc_hashSetFree processTyped, trivial⟩
 
@@ -1061,7 +1050,7 @@ mutual
       NameWellSorted rhoReflectivePresentation (fun _ => none) bound name → RhoShaped name
     | .bvar _ => .bvar _
     | .fvar lookup => by cases lookup
-    | .quote processTyped _ => .apply (by decide) (.cons (proc_rhoShaped processTyped) .nil)
+    | .quote processTyped => .apply (by decide) (.cons (proc_rhoShaped processTyped) .nil)
 
   /-- Closed processes are rho shaped. -/
   theorem proc_rhoShaped {bound : List String} {process : Pattern} :

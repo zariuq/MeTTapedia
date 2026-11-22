@@ -43,10 +43,10 @@ theorem stateReads_present {initial : NativeState S O Γ sort}
     {occurrence : O} {pattern : ClosedTerm S Γ sort} (read : StateReads initial actual occurrence pattern) :
     Sum.inl occurrence ∈ actual.present := read.1
 
-theorem not_stateReads_of_missing {initial : NativeState S O Γ sort}
+theorem stateReads_not_absent {initial : NativeState S O Γ sort}
     {actual : State (OneFrame.Terms (Terms S O Γ sort)) (Ports O)}
-    {occurrence : O} (missing : Sum.inl occurrence ∉ actual.present) (pattern : ClosedTerm S Γ sort) :
-    ¬ StateReads initial actual occurrence pattern := fun read => missing read.1
+    {occurrence : O} (absent : Sum.inl occurrence ∉ actual.present) (pattern : ClosedTerm S Γ sort) :
+    ¬ StateReads initial actual occurrence pattern := fun read => absent read.1
 
 /-- Only this structural projection lemma unfolds the embedded state. -/
 theorem stateReads_embed (initial : NativeState S O Γ sort) (label : Ports O → Terms S O Γ sort)
@@ -146,7 +146,7 @@ theorem actual_atomic_reads_produced :
   (scoped_packet_iff NativePacketScopedQueriesControls.members NativePacketScopedQueriesControls.atomic_scoped 2 zero).mpr
     produced_packet
 
-theorem actual_atomic_unread (pattern : ClosedTerm base [] ()) :
+theorem actual_atomic_absent (pattern : ClosedTerm base [] ()) :
     ¬ StateReads state
       ((scopedStep (OneFrame.frames (packetAction (S := base) (O := Nat) (Γ := []) (sort := ())))
         (NativePacketScopedQueries.scopedQueries NativePacketScopedQueriesControls.members)).result
@@ -154,8 +154,8 @@ theorem actual_atomic_unread (pattern : ClosedTerm base [] ()) :
   intro read
   have packet := (scoped_packet_iff NativePacketScopedQueriesControls.members
     NativePacketScopedQueriesControls.atomic_scoped 4 pattern).mp read
-  have missing : Sum.inl (4 : Nat) ∉ (PacketResultReadouts.packetFinal NativePacketScopedQueriesControls.members).present := by decide
-  exact missing packet.1
+  have absent : Sum.inl (4 : Nat) ∉ (PacketResultReadouts.packetFinal NativePacketScopedQueriesControls.members).present := by decide
+  exact absent packet.1
 
 end Controls
 

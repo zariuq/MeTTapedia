@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Principal
 
 Two reads share occurrence 1, while occurrences 1 and 4 have the same value.
 The count is two physical occurrences. A principal answer preserves this
-guard and the none check. The wrong count is rejected before and after
+guard and the absence check. The wrong count is rejected before and after
 instantiation. A separate producer shows why the original output-shape test
 must survive even when instantiated output values become equal.
 -/
@@ -68,7 +68,7 @@ theorem count_two_holds (assignment : Subst signature) (solved : A.Models assign
   rw [matching_region_contains_two_equal_valued_occurrences assignment solved]
   decide
 
-theorem none_holds (assignment : Subst signature) (solved : A.Models assignment problem) :
+theorem absence_holds (assignment : Subst signature) (solved : A.Models assignment problem) :
     (Check.predicate .none (.const 9)).Holds A assignment label initial.present := by
   have bound := caller_binding_reaches_frame assignment ((problem_models_iff assignment).mp solved)
   change assignment 0 = Term.const (σ := signature) 0 at bound
@@ -94,7 +94,7 @@ theorem ordinary_firing_is_valid : selected.Valid A label rule initial := by
     · exact count_two_holds assignment solved
     · have same := List.mem_singleton.mp member
       subst check
-      exact none_holds assignment solved
+      exact absence_holds assignment solved
 
 def observed : List (Term signature) := [f (.var 0), .var 0, .const 9, .const 1]
 

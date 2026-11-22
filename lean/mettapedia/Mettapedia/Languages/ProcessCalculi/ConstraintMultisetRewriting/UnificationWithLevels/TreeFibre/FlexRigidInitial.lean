@@ -352,10 +352,10 @@ theorem flexRigidGlb_initial_or_refuted {Θ : Context S.R} {original : EquationS
       ¬ (frames S.levels).Solvable original := by
   obtain ⟨fuel, ends⟩ := flexRigidGlb_decided choices glb spec facts roots heads algebra rigid complete
     headTypingUnique total inside
-  rcases (ends fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨missing, _⟩
+  rcases (ends fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨absent, _⟩
   · exact Or.inl (flexRigidGlb_solved_initial choices glb spec facts roots heads algebra rigid complete
       headTypingUnique inside inh families solved)
-  · exact Or.inr missing
+  · exact Or.inr absent
 
 end Round
 

@@ -52,11 +52,11 @@ def clause (record : ArithmeticRecord) : QueueClause Cell ArithmeticRecord numbe
   guard number effect := effect = arithmetic record number ∧ permitted record number
   writes := match record with | .neutral => [] | _ => [.context]
   writes_distinct := by cases record <;> decide
-  unchanged name missing number := by
+  unchanged name absent number := by
     cases record with
     | neutral => rfl
-    | addSeven => simp only [List.mem_singleton] at missing; simp [fields, missing]
-    | double => simp only [List.mem_singleton] at missing; simp [fields, missing]
+    | addSeven => simp only [List.mem_singleton] at absent; simp [fields, absent]
+    | double => simp only [List.mem_singleton] at absent; simp [fields, absent]
 
 def rules : RuleSyntax.Program (Terms Value) := familyProgram clause
 
@@ -113,13 +113,13 @@ theorem canonical_enabled (writes : List Field) (generation : Field → Nat) (cu
     apply Finset.disjoint_left.mpr
     intro occurrence taken read
     obtain ⟨field, notWritten, rfl⟩ := List.mem_map.mp (List.mem_toFinset.mp read)
-    have missing : field ∉ writes := by simpa using (List.mem_filter.mp notWritten).2
+    have absent : field ∉ writes := by simpa using (List.mem_filter.mp notWritten).2
     rcases List.mem_cons.mp (List.mem_toFinset.mp taken) with same | taken
     · cases same
     · obtain ⟨other, written, same⟩ := List.mem_map.mp taken
       have equal := row_injective generation same
       subst other
-      exact missing written
+      exact absent written
   · change Disjoint (Occurrence.request (cursor+1) :: writes.map (nextRow generation)).toFinset
       (canonicalLayout generation cursor).support
     apply Finset.disjoint_left.mpr

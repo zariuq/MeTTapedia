@@ -105,9 +105,9 @@ theorem ambiguity_retained (forest : Forest) (profile : ParserProfileLayer) (inp
     (checked_forest_iff_source forest profile input checked second).mpr ⟨two⟩, different⟩
 
 theorem spurious_parse_rejected (forest : Forest) (profile : ParserProfileLayer)
-    (input : List Nat) (tree : CST) (notMem : ¬ Nonempty (Source profile input tree)) :
+    (input : List Nat) (tree : CST) (absent : ¬ Nonempty (Source profile input tree)) :
     ¬ Nonempty (Packed forest profile input tree) :=
-  fun replay => notMem (packed_reflects forest profile input tree replay)
+  fun replay => absent (packed_reflects forest profile input tree replay)
 
 theorem missing_parse_rejects_completeness (forest : Forest) (profile : ParserProfileLayer)
     (input : List Nat) (tree : CST) (source : Source profile input tree)

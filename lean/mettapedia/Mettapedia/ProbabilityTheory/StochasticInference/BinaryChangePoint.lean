@@ -126,6 +126,55 @@ theorem nextProbability_exact (hazard : UnitProbability) (history : List (Option
 def forecast (hazard : UnitProbability) (history : List (Option Bool)) : Option ℚ :=
   if history.isEmpty then some (1 / 2) else nextProbability hazard (filter hazard history)
 
+private theorem stat_affine (runs : List Run) (query : Nat → BooleanCPTEntry → ℚ) (a b : ℚ) :
+    stat runs (fun length counts => a * query length counts + b) =
+      a * stat runs query + b * stat runs (fun _ _ => 1) := by
+  induction runs with
+  | nil => simp [stat]
+  | cons head tail ih =>
+    simp only [stat, List.map_cons, List.sum_cons, mul_one] at ih ⊢
+    rw [ih]
+    ring
+
+private theorem advance_missing_total (hazard : UnitProbability) (runs : List Run) :
+    stat (advance hazard none runs) (fun _ _ => 1) = stat runs (fun _ _ => 1) := by
+  rw [advance_stat]
+  apply congrArg (stat runs)
+  funext length counts
+  simp [gain, likelihood]
+
+/-- With no sample this period the forecast still changes, because one
+more reset opportunity has passed. The shrinkage is toward the reset mean. -/
+theorem missing_period_forecast (hazard : UnitProbability) (runs : List Run) :
+    nextProbability hazard (advance hazard none runs) =
+      (nextProbability hazard runs).map (fun p => hazard.val / 2 + (1 - hazard.val) * p) := by
+  let predict : Nat → BooleanCPTEntry → ℚ :=
+    fun _ counts => hazard.val / 2 + (1 - hazard.val) * predictive counts true
+  have reset : predict 1 empty = 1 / 2 := by
+    have initial : predictive empty true = 1 / 2 := by decide +kernel
+    simp only [predict, initial]
+    ring
+  have step : stat (advance hazard none runs) predict =
+      (1 - hazard.val) * stat runs predict + (hazard.val / 2) * stat runs (fun _ _ => 1) := by
+    rw [advance_stat, ← stat_affine]
+    apply congrArg (stat runs)
+    funext length counts
+    simp only [gain, likelihood, incorporate, Option.elim_none, mul_one]
+    rw [reset]
+    change hazard.val * (1 / 2) + (1 - hazard.val) * predict length counts = _
+    ring
+  unfold nextProbability
+  dsimp only
+  rw [advance_missing_total]
+  by_cases evidence : 0 < stat runs (fun _ _ => 1)
+  · simp only [if_pos evidence, Option.map_some]
+    change some (stat (advance hazard none runs) predict / stat runs (fun _ _ => 1)) =
+      some (hazard.val / 2 + (1 - hazard.val) * (stat runs predict / stat runs (fun _ _ => 1)))
+    rw [step, add_div, mul_div_assoc, mul_div_cancel_right₀ _ evidence.ne']
+    congr 1
+    ring
+  · simp [evidence]
+
 /-- The period list controls the hazards. Withdrawn and unknown reports
 leave their slot in the sequence. -/
 def timeline {Id : Type*} [DecidableEq Id] (periods : List Id) (ledger : EvidenceLedger Id Bool) :

@@ -251,20 +251,20 @@ theorem join_app {m n : Nat} {function argument : Tm Head m} (linear : LeftLinea
     · exact subst_congr_occurring argument (fun index occurs => by
         have := linear index
         simp only [variableMultiplicity] at this
-        have missing : variableMultiplicity index function = 0 := by omega
-        simp only [join, missing, lt_self_iff_false, ite_false])
+        have absent : variableMultiplicity index function = 0 := by omega
+        simp only [join, absent, lt_self_iff_false, ite_false])
   · intro index occurs
     simp only [variableMultiplicity] at occurs
     by_cases inFunction : 0 < variableMultiplicity index function
     · simpa only [join, inFunction, ite_true] using firstRel index inFunction
     · have inArgument : 0 < variableMultiplicity index argument := by omega
       simpa only [join, inFunction, ite_false] using secondRel index inArgument
-  · intro index missing
-    simp only [variableMultiplicity] at missing
-    have functionZero : variableMultiplicity index function = 0 := by omega
-    have argumentZero : variableMultiplicity index argument = 0 := by omega
-    simp only [join, functionZero, lt_self_iff_false, ite_false]
-    exact secondRest index argumentZero
+  · intro index absent
+    simp only [variableMultiplicity] at absent
+    have functionAbsent : variableMultiplicity index function = 0 := by omega
+    have argumentAbsent : variableMultiplicity index argument = 0 := by omega
+    simp only [join, functionAbsent, lt_self_iff_false, ite_false]
+    exact secondRest index argumentAbsent
 
 /-- **A term equal up to heads to an instance of a pattern is an instance of the pattern**, at a
 substitution related pointwise to the given one. -/
@@ -286,9 +286,9 @@ theorem match_pattern {defined : DeclName → Prop} {m : Nat} {flag : Bool} {ter
           subst equal
           simpa only [ite_true] using same
         · omega
-      · intro index missing
-        simp only [variableMultiplicity] at missing
-        split at missing
+      · intro index absent
+        simp only [variableMultiplicity] at absent
+        split at absent
         · omega
         · rename_i different
           show (if index = candidate then t else σ' index) = σ' index
@@ -320,7 +320,7 @@ theorem match_pattern {defined : DeclName → Prop} {m : Nat} {flag : Bool} {ter
       | refl sameInner =>
           obtain ⟨σ, rfl, related, rest⟩ := innerIH innerLinear sameInner
           exact ⟨σ, rfl, fun index occurs => related index (by simpa only [variableMultiplicity] using occurs),
-            fun index missing => rest index (by simpa only [variableMultiplicity] using missing)⟩
+            fun index absent => rest index (by simpa only [variableMultiplicity] using absent)⟩
 
 /-- **A term equal up to heads to an instance of a left side is an instance of the left side.** -/
 theorem match_leftSide {defined : DeclName → Prop} {m : Nat} {term : Tm Head m} {name : DeclName}
@@ -386,12 +386,12 @@ theorem simulate (equations : ConstructorPresentation R) (reflexive : ∀ h, rel
       obtain ⟨arity, left, right, σ', rule, rfl, rfl⟩ := equations.presentation.cover h
       have rule' := (equations.same left right).mp rule
       obtain ⟨name, -, -, side⟩ := equations.system.left rule'
-      obtain ⟨σ, rfl, occurring, missing⟩ := match_leftSide side (equations.system.linear rule') same
+      obtain ⟨σ, rfl, occurring, absent⟩ := match_leftSide side (equations.system.linear rule') same
       refine ⟨_, .root (equations.presentation.sound rule σ), (UpToHeads.self reflexive right).subst ?_⟩
       intro i
       by_cases occurs : 0 < variableMultiplicity i left
       · exact occurring i occurs
-      · rw [missing i (by omega)]
+      · rw [absent i (by omega)]
         exact UpToHeads.self reflexive _
   | congPiDom _ ih =>
       intro t same

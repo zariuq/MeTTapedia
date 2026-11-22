@@ -9,7 +9,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LogicOver
 The program-free step (`Semantic.ruleOffers`) offers every semantic firing under its rule.
 
 * `Probes`: under rule labels the queries of a firing are invisible, so the step moves as the
-  occurrence step of the rule and the raw step has the same moves; the guard, tell, none queries, count
+  occurrence step of the rule and the raw step has the same moves; the guard, tell, absence, count
   and take probes, the multiplicity of a class read by the take of `k` copies; what bisimilar
   configurations share.
 * `Characterization`: for every substitution action, on configurations with consistent knowledge,

@@ -67,7 +67,7 @@ theorem solvedShape_keepLeft {Θ : Context S.R} {rest : EquationStore (TotalTerm
       cases same
       exact (shaped moved movedSmaller computed fun other member => sides other (List.mem_cons_of_mem _ member)).keepLeft
         [equation]
-  | refuted missing => cases same
+  | refuted absent => cases same
 
 theorem SolvedShape.throughNewest {Θ : Context S.R} (view : Newest Θ) (problem : EquationStore (TotalTerm Θ))
     (solve : (stored : EquationStore (TotalTerm (extend view.base view.type))) → Option (Found stored))

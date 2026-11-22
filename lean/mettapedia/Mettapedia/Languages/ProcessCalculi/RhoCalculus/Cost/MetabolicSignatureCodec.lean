@@ -57,7 +57,7 @@ theorem number_typed (n : Nat) (bound : List String) :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty bound (numberCode n) := by
   induction n with
   | zero => exact .unit
-  | succ n ih => exact .output (.quote .unit (by decide)) ih
+  | succ n ih => exact .output (.quote .unit) ih
 
 @[simp]
 theorem number_safe (n depth : Nat) : binderSafeAt "NQuote" depth (numberCode n) = true := by
@@ -110,7 +110,7 @@ theorem atom_canonical (atom : Ground) : canonicalize (atomCode atom) = atomCode
 
 theorem atom_typed (atom : Ground) (bound : List String) :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty bound (atomCode atom) :=
-  .output (.quote .unit (by decide)) (number_typed _ _)
+  .output (.quote .unit) (number_typed _ _)
 
 @[simp]
 theorem atom_safe (atom : Ground) (depth : Nat) : binderSafeAt "NQuote" depth (atomCode atom) = true := by

@@ -279,8 +279,8 @@ theorem compiled_application_executes (n : Nat) :
               (Pipeline.observationTree targetCode (instantiateObservation point (result.label 0))) =
             some (observedResult n) := by
   have known : (Frames.contextual signature).Models (localPoint n) schema.knowledge := by
-    intro equation missing
-    cases missing
+    intro equation absent
+    cases absent
   have captureModel : List.Forall₂ (fun parameter argument =>
       instantiateObservation (localPoint n) parameter = instantiateObservation caller argument)
       schema.params (captures initial false) := .cons rfl .nil
@@ -317,7 +317,7 @@ theorem capture_is_in_full_information :
 
 /-- The capture equation really is additional information. Comparing only
 the base firing would omit the very equation certified by this solver case. -/
-theorem capture_does_not_occur_in_base_information :
+theorem capture_is_absent_from_base_information :
     (observe capturedParameter, observe capturedSource) ∉
       firing.base.information (Frames.contextual signature) initial := by
   change (observe capturedParameter, observe capturedSource) ∉ ([] : List _)
@@ -343,8 +343,8 @@ theorem compiled_application_with_capture_solver (n : Nat) :
             (instantiateObservation (Assignment.compose residual captureAnswer) (result.label 0))) =
         some (observedResult n) := by
   have known : (Frames.contextual signature).Models (localPoint n) schema.knowledge := by
-    intro equation missing
-    cases missing
+    intro equation absent
+    cases absent
   have captureModel : List.Forall₂ (fun parameter argument =>
       instantiateObservation (localPoint n) parameter = instantiateObservation caller argument)
       schema.params (captures initial false) := .cons rfl .nil
@@ -368,7 +368,7 @@ end PipelineExample
 #print axioms Pipeline.application_materializes_with_solver
 #print axioms PipelineExample.physical_application_changes_the_tree
 #print axioms PipelineExample.compiled_application_executes
-#print axioms PipelineExample.capture_does_not_occur_in_base_information
+#print axioms PipelineExample.capture_is_absent_from_base_information
 #print axioms PipelineExample.compiled_application_with_capture_solver
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.BindingIntegration

@@ -84,9 +84,9 @@ theorem request_admitted : request.Admits X := by
 theorem actual_two_stage_read :
     ∃ run : (protocolMachine (E := E) (O := Nat) (R := Nat) X ambient).Run (hosted ordinary rows closures),
       run.word.length = 2 ∧ run.last.present = {0, 1} ∧ run.last.rules = {0} ∧ 2 ∉ run.last.present := by
-  obtain ⟨run, length, _, present, held, missing⟩ := execution_of_direct (E := E) X ordinary rows closures 0 PUnit.unit
+  obtain ⟨run, length, _, present, held, absent⟩ := execution_of_direct (E := E) X ordinary rows closures 0 PUnit.unit
     ruleOpening datumOpening 2 1 ambient (Set.mem_singleton helper) (by decide) (by decide) request_admitted
-  exact ⟨run, length, by simpa [ordinary] using present, held, missing⟩
+  exact ⟨run, length, by simpa [ordinary] using present, held, absent⟩
 
 theorem colliding_temporary_refuses_completion :
     ¬ (consumer (E := E) ordinary rows closures 0 PUnit.unit ruleOpening datumOpening X 1 1).Admits X ambient := by

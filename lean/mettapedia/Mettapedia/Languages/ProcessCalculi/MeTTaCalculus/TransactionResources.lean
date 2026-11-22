@@ -628,8 +628,8 @@ theorem coexecutible_iff_concurrent (first second : Request Location Atom)
     rw [afterSecondEq] at firstAfterSecond
     obtain ⟨secondAfter, joinedFromFirst⟩ := (request_steps_iff second _ _).mp secondAfterFirst
     obtain ⟨firstAfter, joinedFromSecond⟩ := (request_steps_iff first _ _).mp firstAfterSecond
-    refine requests.concurrent_of_square M _ _ (fun _ missing => absurd missing (by simp [requests]))
-      (fun _ missing => absurd missing (by simp [requests])) ⟨enabledFirst, enabledSecond,
+    refine requests.concurrent_of_square M _ _ (fun _ absent => absurd absent (by simp [requests]))
+      (fun _ absent => absurd absent (by simp [requests])) ⟨enabledFirst, enabledSecond,
         secondAfter, firstAfter, networkOf_injective (joinedFromFirst.symm.trans joinedFromSecond)⟩
   · intro concurrent
     have square := requests.square_of_concurrent concurrent

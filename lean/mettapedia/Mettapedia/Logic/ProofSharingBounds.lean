@@ -115,7 +115,7 @@ theorem dag_checked (level : Nat) : Shared.checkJudgments (certificate level) le
   have table : (Shared.inspectRows [] (rows level)).table = some (List.range (level + 1)) := by
     simpa [rows, baseRow, Shared.inspectRows, Shared.inspectRow, Shared.inspectPremises,
       presentation, premises, conclusion, List.range_eq_range', List.range'_succ] using tail
-  simp only [Shared.checkJudgments, Shared.checkJudgmentsWithWork, certificate, table]
+  simp only [Shared.checkJudgments, Shared.checkJudgmentsWithWork_eq_inspectRows, certificate, table]
   simp
 
 /-- The accepted DAG performs exactly two premise checks per nonbase row and

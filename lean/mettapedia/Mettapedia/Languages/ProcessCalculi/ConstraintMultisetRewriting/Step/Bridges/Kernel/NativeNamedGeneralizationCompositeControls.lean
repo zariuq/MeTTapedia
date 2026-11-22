@@ -55,7 +55,7 @@ theorem actual_conversion_eq_claim : conversion = some conversionClaim := by
   simp only [conversion, computed, bind, Option.bind_some, found, identified]
 
 /-- The actual and compact provenance labels both pass the bounded checked
-GEN block. The conversion compiler is missing from this comparison. -/
+GEN block. The conversion compiler is absent from this comparison. -/
 theorem compact_named_gen_actual_origin :
     (namedGenBlock? SourceProfileModels.policy input conversionClaim binder
       ("actual-named-GEN", 1)).isSome =

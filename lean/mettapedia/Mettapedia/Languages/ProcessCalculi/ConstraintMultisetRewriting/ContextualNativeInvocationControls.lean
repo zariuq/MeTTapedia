@@ -73,7 +73,7 @@ theorem the_actual_empty_body_finishes_once (fuel : Nat) :
   refine ⟨observed, rule, selection, outputs, flags, budget, queries, equivalent, ?_, rfl, ?_, ?_⟩
   · rw [body.native.producer_result_physical ∅ observed.firing (.nil _) selection]
     rfl
-  · have missing := body.native.completed_control_not_present ∅ observed.firing selection
+  · have missing := body.native.completed_control_absent ∅ observed.firing selection
     exact if_neg missing
   · exact body.native.no_immediate_resource_replay ∅ observed.firing selection body.native.bindingSelection body.native.invocation_control_taken
 

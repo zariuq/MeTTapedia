@@ -27,7 +27,7 @@ knowledge store, published along the solver's returned frame).
 
 * `ret_on_call_refused`, `ret_on_call_no_run`: the `ret` rule at the call's row is refused by the hosted
   step, so its live firing is refused by the native step, and its family has no run in either step.
-* `guard_refuses`: beside a row that matches the call at one solution, the none guard of `apply`
+* `guard_refuses`: beside a row that matches the call at one solution, the absence guard of `apply`
   without a matching equation refuses the hosted firing, so the native step refuses its live firing.
 * `competing_calls_not_apart`, `competing_calls_not_compatible`: two calls consuming the same call row
   are not apart, and in the packet image (`NativePacketRounds.compatible_iff`) they are not compatible:
@@ -335,10 +335,10 @@ def besidePresented : Presented ([] : Ctx MSig) () besideState where
       rw [Function.update_of_ne (a' := Hosting.Composition.Controls.P0.equations.length + 1) one]
       exact (startPresented N Hosting.Composition.Controls.P0 Hosting.Composition.UnmatchedControls.qgx).label_eq o
 
-/-- **Negative, through the guard**: beside a row that matches the call at one solution, the none query
+/-- **Negative, through the guard**: beside a row that matches the call at one solution, the absence
 guard of `apply` with no matching equation refuses the hosted firing
 (`Composition.UnmatchedControls.partial_match_stuck`), so the native step refuses its live firing: the
-none check over shared rows reads the row at every solution, as the hosted check does. -/
+absence check over shared rows reads the row at every solution, as the hosted check does. -/
 theorem guard_refuses (occupied : Finset ℕ) (fuel : ℕ) :
     ¬ (live N besideState besidePresented occupied (placedUnmatched (κ := mkeys) N) ⟨[0], [], [2]⟩
       fuel).toNative.Realized := by

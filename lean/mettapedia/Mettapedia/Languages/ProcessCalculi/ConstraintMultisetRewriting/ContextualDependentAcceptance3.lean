@@ -141,7 +141,7 @@ theorem generalRound_keeps (fuel : Nat)
       rw [computed] at fired
       cases fired
       exact base problem _ _ held computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
   | stuck =>
@@ -173,7 +173,7 @@ theorem olderRound_keeps (fuel : Nat)
       cases fired
       exact generalRound_keeps facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete fuel base problem _ _ held computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
   | stuck =>
@@ -205,7 +205,7 @@ theorem inPlaceRound_keeps (fuel : Nat)
       cases fired
       exact olderRound_keeps facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete fuel base problem _ _ held computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
   | stuck =>
@@ -248,8 +248,8 @@ theorem inPlace_decided_of_cumulative
       ((∃ state finished, run ((inPlaceFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((inPlaceFamily facts roots heads algebra rigid complete declared choices reducer root
-            normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run ((inPlaceFamily facts roots heads algebra rigid complete declared choices reducer root
+            normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger = .refuted absent)) :=
   (inPlaceSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete stable (fun problem => MillerNormal problem)
     (fun held nonempty => by

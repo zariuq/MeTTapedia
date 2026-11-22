@@ -67,7 +67,7 @@ the intensional identity type only; an observational identity type `Id (U0 → U
 inhabitant, as its reading in the model has (`id_inhabited_in_model`). The refusal of
 `SetExtensionality` (`extensionality_refused`) would not change: observational type theory, as
 designed, keeps judgmental equality intensional, so `S` and `T` stay apart in the knowledge, and by
-`Observability.conservative_iff` the none query and counting of rows of `S` and of `T` keep their
+`Observability.conservative_iff` the absence and counting of rows of `S` and of `T` keep their
 separate answers. Only a knowledge that reflected propositional equality into judgmental equality
 would identify them (`Consequences.rowR`), and its equality would then have to decide logical
 equivalence of the propositions it contains.

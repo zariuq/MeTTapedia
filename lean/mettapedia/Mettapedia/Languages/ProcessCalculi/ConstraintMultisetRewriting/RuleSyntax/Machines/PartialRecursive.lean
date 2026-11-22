@@ -14,7 +14,7 @@ This module hosts that machine on `RuleSyntax.step`, at the one first-order fram
 * **The program** (`program`): nineteen rules, one per rewrite of the authored machine (`rule`, transcribed
   from `PartrecMachine.rewrites`; that the transcription is the authored reduction on the encoded image is the
   theorem `rewrites_iff` with `reduces_iff_successor`). Each takes one row and makes one row. No rule has a read, a tell, an equation guard,
-  a none check, a count check or a query pattern (`rule_fragment`): the tests of the machine (the code, the
+  an absence check, a count check or a query pattern (`rule_fragment`): the tests of the machine (the code, the
   continuation, the empty list, a zero head, a successor head) are patterns, so positive rules suffice. The program does not depend on the function computed: the code of the function is data in the row.
   The machine is a term-rewriting machine in the sense of `Machines.TermRewriting` (`program_eq_rootRules`).
 * **The row of a configuration** (`Point.row`): a pending evaluation or a configuration of the machine, as one

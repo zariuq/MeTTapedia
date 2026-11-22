@@ -12,7 +12,7 @@ modulo the knowledge. Every separation below names its context in its statement.
 The one-frame instance of the examples (`RuleSyntax.Examples`): first-order terms with numerals as
 constants and variables, identities `ℕ`, the may-barbs (`Separates`).
 
-* **A row context** (`row_kind`; the seed is the tree's `none_not_monotone`). The rule "make `5`
+* **A row context** (`row_kind`; the seed is the tree's `absence_not_monotone`). The rule "make `5`
   where no `9` is present" and the rule "make `5`" are closed bisimilar from the empty store
   (`spawn_bisimilar`): no `9` ever appears. The context that adds the row `9` at identity `0`
   (`nineRow`) stops the first and not the second.
@@ -149,7 +149,7 @@ theorem empty_stuck (s : State Tm ℕ) : ¬ Moves ⟨∅, s⟩ := by
   rintro ⟨T, -, f, -, -⟩
   exact Set.notMem_empty _ f.member
 
-/-- An identity missing from a finite set. -/
+/-- An identity absent from a finite set. -/
 theorem fresh_identity (W : Finset ℕ) : W.sup id + 1 ∉ W := by
   intro inside
   have bound : W.sup id + 1 ≤ W.sup id := Finset.le_sup (f := id) inside
@@ -177,7 +177,7 @@ theorem bisimilar_of_stuck {S T : Sys} (stuckS : ¬ Moves S) (stuckT : ¬ Moves 
     · exact absurd ⟨A', moved⟩ stuckS
     · exact absurd ⟨A', moved⟩ stuckT
 
-/-! ## Adding a row: none queries -/
+/-! ## Adding a row: absence -/
 
 /-- No row at all. -/
 def empty : State Tm ℕ := ⟨PUnit.unit, [], ∅, fun _ => c 0⟩
@@ -223,8 +223,8 @@ theorem guarded_answers (s : State Tm ℕ) (fives : Fives s) (ext : PUnit) (ι :
   obtain ⟨-, shapes, enabled, solvable, -, collect⟩ := (admits_iff _).mp admitted
   refine (admits_iff _).mpr ⟨spawnGuarded_fresh s _ (Or.inl rfl), shapes, enabled, solvable,
     fun check member => ?_, collect⟩
-  have isNone : check = .predicate .none (c 9) := List.mem_singleton.mp member
-  subst isNone
+  have isAbsent : check = .predicate .none (c 9) := List.mem_singleton.mp member
+  subst isAbsent
   intro b σ _ o present equated
   have five : s.label o = c 5 := fives.2 o present
   have nine : (c 9 : Term atoms) = c 5 := by
@@ -354,7 +354,7 @@ theorem row_kind : Separates [nineRow] ⟨{spawnGuarded}, empty⟩ ⟨{spawn}, e
     ⟨0, by simp, by simp⟩ (related.symm.moves moving)
 
 /-- **The guarded and the unguarded spawn are not congruent.** -/
-theorem none_separates : ¬ Cong ⟨{spawnGuarded}, empty⟩ ⟨{spawn}, empty⟩ :=
+theorem absence_separates : ¬ Cong ⟨{spawnGuarded}, empty⟩ ⟨{spawn}, empty⟩ :=
   not_cong_of_separates row_kind
 
 /-! ## Adding a rule: counting -/
@@ -627,7 +627,7 @@ theorem beside_separates : Separates besideFeeder ⟨{spawnGuarded}, empty⟩ �
 #print axioms spawn_moves
 #print axioms guarded_stuck_nine
 #print axioms row_kind
-#print axioms none_separates
+#print axioms absence_separates
 #print axioms sevens_barbs
 #print axioms sevens_bisimilar
 #print axioms countOne_moves

@@ -161,9 +161,9 @@ theorem re_solvable : (frames setting.levels).Solvable reStore :=
 /-- **A principal answer**, over the reordered, instantiated telescope. -/
 theorem re_principal : ∃ (Δ : Context setting.R) (answer : Δ ⟶ ctxRe),
     (frames setting.levels).Principal reStore answer := by
-  rcases re_settles.principal_or_unsolvable with found | missing
+  rcases re_settles.principal_or_unsolvable with found | absent
   · exact found
-  · exact absurd re_solvable missing
+  · exact absurd re_solvable absent
 
 end Controls
 

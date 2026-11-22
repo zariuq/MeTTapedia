@@ -115,12 +115,12 @@ theorem Context.plug_uses {n m : Nat} (context : Context Head n m) (name : DeclN
 theorem fresh_name_license (name : DeclName)
     (newRules : ∀ {m : Nat} {left right : Tm Head m}, next.computation.step left right →
       old.computation.step left right ∨ Uses name left)
-    {n : Nat} {term : Tm Head n} (missing : ¬ Uses name term) :
+    {n : Nat} {term : Tm Head n} (absent : ¬ Uses name term) :
     RootAgreementAt (old := old) (next := next) term := by
   intro m context redex same target reduction
   rcases newRules reduction with oldRule | contains
   · exact oldRule
-  · exact False.elim (missing (same ▸ Context.plug_uses context name redex contains))
+  · exact False.elim (absent (same ▸ Context.plug_uses context name redex contains))
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.ComputationEvolution
 

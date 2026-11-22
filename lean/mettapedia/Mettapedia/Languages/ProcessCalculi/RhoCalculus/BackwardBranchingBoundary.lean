@@ -49,7 +49,7 @@ theorem outputTowerPattern_wellSorted : ∀ n,
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty []
       (outputTowerPattern n)
   | 0 => .unit
-  | n + 1 => .output (.quote .unit (by decide)) (outputTowerPattern_wellSorted n)
+  | n + 1 => .output (.quote .unit) (outputTowerPattern_wellSorted n)
 
 theorem outputTowerPattern_binderSafe : ∀ n,
     binderSafeAt "NQuote" 0 (outputTowerPattern n) = true
@@ -68,7 +68,7 @@ def outputTower (n : Nat) : RhoProcess :=
 def outputTowerName (n : Nat) : RhoClosedTerm rhoName :=
   ⟨.apply "NQuote" [(outputTower n).1],
     (rhoClosedTermWellSorted_name_iff _).mpr
-      ⟨NameWellSorted.quoteOfSafe (outputTowerPattern_wellSorted n) (outputTowerPattern_binderSafe n), by
+      ⟨.quote (outputTowerPattern_wellSorted n), by
         change binderSafeAt "NQuote" 0 (outputTowerPattern n) = true
         exact outputTowerPattern_binderSafe n⟩⟩
 
@@ -83,8 +83,8 @@ def nilPredecessor (n : Nat) : RhoProcess :=
        .apply "POutput" [(outputTowerName n).1, .apply "PZero" []]] none,
     (rhoClosedTermWellSorted_process_iff _).mpr
       ⟨.parallel
-          (.cons (.input (NameWellSorted.quoteOfSafe (outputTowerPattern_wellSorted n) (outputTowerPattern_binderSafe n)) .unit)
-            (.cons (.output (NameWellSorted.quoteOfSafe (outputTowerPattern_wellSorted n) (outputTowerPattern_binderSafe n)) .unit) .nil)),
+          (.cons (.input (.quote (outputTowerPattern_wellSorted n)) .unit)
+            (.cons (.output (.quote (outputTowerPattern_wellSorted n)) .unit) .nil)),
         by
           change binderSafeAt "NQuote" 0
             (.collection .hashBag

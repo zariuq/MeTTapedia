@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Nati
 /-!
 # A finite native family with one symbolic state and fixed program
 
-Every present physical row retains its original schema closure. Missing made
+Every present physical row retains its original schema closure. Absent made
 identities receive the producing member's actual output closure. The finite
 program contains every member's packet clause, with a distinct use tag for
 each position, including equal member values at different positions.

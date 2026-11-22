@@ -6,8 +6,8 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.InteractionTypes.Facets
 A read at a set of names `A` is a predicate of the occurrences there: `P (restrict A S)` at the
 store `S`. Three shapes matter.
 
-* **Universal reads** (`∀`, `¬∃`: none queries, "every row here is like this") are downward closed
-  (`OccurrenceCommits.DownwardClosed`; the none query is `none_downward_closed`): they survive removals
+* **Universal reads** (`∀`, `¬∃`: absence, "every row here is like this") are downward closed
+  (`OccurrenceCommits.DownwardClosed`; absence is `absence_downward_closed`): they survive removals
   and can fail by one arrival.
 * **Existential reads** (a matched witness, "some row here is like this") are upward closed
   (`OccurrenceCommits.UpwardClosed`): they survive arrivals and can fail by one removal.
@@ -24,8 +24,8 @@ store `S`. Three shapes matter.
   this is `OccurrenceCommits.holds_fireList_of_no_write`, and inside a scope
   `OccurrenceCommits.scope_read_stable`; the first two conditions refine it by polarity.
 
-Each condition is necessary for some read of its shape: one make falsifies the none query
-(`Controls.none_falsified_by_make`), one take falsifies the existence of a witness
+Each condition is necessary for some read of its shape: one make falsifies absence
+(`Controls.absence_falsified_by_make`), one take falsifies the existence of a witness
 (`Controls.exists_falsified_by_take`).
 
 ## What validation at commit time can check, for each shape
@@ -116,16 +116,16 @@ def place : ℕ → Bool := fun n => n % 2 == 1
 /-- The read looks at name `false` (even labels). -/
 def atEven : Bool → Bool := fun b => !b
 
-/-- No occurrence at the read's names: a universal read. Of the held part, it is the
-none read of the names' region (`OccurrenceCommits.restrict_eq_empty_iff`). -/
-abbrev NoneMatch : Finset ℕ → Prop := fun B => B = ∅
+/-- Absence of every occurrence at the read's names: a universal read. Of the held part, it is the
+absence read of the names' region (`OccurrenceCommits.restrict_eq_empty_iff`). -/
+abbrev Absent : Finset ℕ → Prop := fun B => B = ∅
 
 /-- Some occurrence at the read's names: an existential read. -/
 abbrev Witnessed : Finset ℕ → Prop := fun B => B.Nonempty
 
-theorem noneMatch_downward : DownwardClosed NoneMatch := by
+theorem absent_downward : DownwardClosed Absent := by
   intro small large sub holds
-  unfold NoneMatch at holds ⊢
+  unfold Absent at holds ⊢
   subst holds
   exact Finset.subset_empty.mp sub
 
@@ -144,11 +144,11 @@ def makeThree : Commit ℕ ℕ := ⟨∅, ∅, {3}, []⟩
 
 /-- **One make falsifies a universal read.** The store `{1}` has nothing at the even name; after
 making `2` it does. -/
-theorem none_falsified_by_make :
-    NoneMatch (restrict lab place atEven {1}) ∧
-      ¬ NoneMatch (restrict lab place atEven (fireList {1} [makeTwo])) := by
+theorem absence_falsified_by_make :
+    Absent (restrict lab place atEven {1}) ∧
+      ¬ Absent (restrict lab place atEven (fireList {1} [makeTwo])) := by
   refine ⟨by decide, ?_⟩
-  unfold NoneMatch
+  unfold Absent
   decide
 
 /-- **One take falsifies an existential read.** The store `{4}` has a witness at the even name;
@@ -163,10 +163,10 @@ theorem exists_falsified_by_take :
 /-- Makes elsewhere and takes are harmless to the universal read; makes are harmless to the
 existential read. -/
 theorem harmless_writes :
-    NoneMatch (restrict lab place atEven (fireList {1} [makeThree])) ∧
+    Absent (restrict lab place atEven (fireList {1} [makeThree])) ∧
       Witnessed (restrict lab place atEven (fireList {4} [makeTwo])) := by
   refine ⟨?_, ⟨4, by decide⟩⟩
-  unfold NoneMatch
+  unfold Absent
   decide
 
 /-- **A universal read is not validated by occurrences.** Every occurrence of the store at the
@@ -175,9 +175,9 @@ is still present, and the read fails. -/
 theorem universal_not_validated_by_occurrences :
     ({1} : Finset ℕ) ⊆ fireList {1} [makeTwo] ∧
       restrict lab place atEven ({1} : Finset ℕ) ⊆ restrict lab place atEven (fireList {1} [makeTwo]) ∧
-      NoneMatch (restrict lab place atEven {1}) ∧
-      ¬ NoneMatch (restrict lab place atEven (fireList {1} [makeTwo])) := by
-  refine ⟨by decide, by decide, none_falsified_by_make⟩
+      Absent (restrict lab place atEven {1}) ∧
+      ¬ Absent (restrict lab place atEven (fireList {1} [makeTwo])) := by
+  refine ⟨by decide, by decide, absence_falsified_by_make⟩
 
 /-- **An existential read is validated by its witness**, an instance of
 `monotone_of_witnesses_present`: the witness `4` is still present after the make of `2`. -/

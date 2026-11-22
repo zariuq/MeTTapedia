@@ -40,7 +40,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 Concrete native-style range enumeration and independently opened schematic
 readings compose with retained physical cells and the existing source query
 machine. Clone, close, generation failure, cancellation and bounded residuals
-remain distinct operations. The none query, count and collect query use the same complete
+remain distinct operations. Absence, count and collect query use the same complete
 region, while take admission separately requires current resources.
 
 The actual one-row handoff shares its row witness between a cursor delivery,

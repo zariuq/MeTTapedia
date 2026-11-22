@@ -158,7 +158,7 @@ theorem Activity.header_typed {Γ : Ctx sig} (world : World Γ 0) (activity : Ac
       exact typed_input_body (code_typed (seedChannel rhoAtomicNameContext self)
         (world channel).channel (ordinary guarded world).handler)
   | sendCode channel body guarded self =>
-      exact ⟨NameWellSorted.quoteOfSafe (seedCode_typed rhoAtomicNameContext self) (seedCode_safe self 0),
+      exact ⟨.quote (seedCode_typed rhoAtomicNameContext self),
         code_typed (seedChannel rhoAtomicNameContext self) (world channel).channel
           (ordinary guarded world).handler⟩
   | request => exact ⟨allocatorRequest.typed, .drop allocatorReply.typed⟩

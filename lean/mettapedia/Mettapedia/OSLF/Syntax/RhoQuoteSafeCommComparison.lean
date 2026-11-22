@@ -457,8 +457,7 @@ theorem authored_comm_target_residual_equiv
     simpa using pointwise
   exact ProcResidualEquiv.trans
     (ProcResidualEquiv.struct
-      (Mettapedia.OSLF.Binding.RhoAuthoredCommRuleCover.authoredResult_structuralCongruence payload body
-        payloadSafe bodySafe))
+      (Mettapedia.OSLF.Binding.RhoAuthoredCommRuleCover.authoredResult_structuralCongruence payload body))
     (ProcResidualEquiv.trans whole
       (ProcResidualEquiv.struct
         (StructuralCongruence.par_singleton

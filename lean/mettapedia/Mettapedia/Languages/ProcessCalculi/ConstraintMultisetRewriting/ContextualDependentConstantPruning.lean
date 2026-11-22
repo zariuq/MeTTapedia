@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 The source context contains F:A->C; the target retains the outer context
 and replaces F by H:C. The answer substitution is F := lambda x.H.
 The source constraint is the actual scoped equation F x = F y under two
-fresh arguments, rather than an assumed none queries of an argument dependency.
+fresh arguments, rather than an assumed absence of an argument dependency.
 -/
 
 set_option autoImplicit false

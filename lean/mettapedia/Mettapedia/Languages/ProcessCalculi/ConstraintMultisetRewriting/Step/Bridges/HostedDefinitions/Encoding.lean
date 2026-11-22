@@ -100,7 +100,7 @@ private theorem readPattern_patternData {pattern : Pattern} (tree : ConstructorT
       rfl
 
 private theorem constructor_nil (tag : String) : ConstructorTree (.apply tag []) :=
-  .node tag [] (fun _ missing => False.elim (List.not_mem_nil missing))
+  .node tag [] (fun _ absent => False.elim (List.not_mem_nil absent))
 
 private theorem constructor_one (tag : String) {a : Pattern} (ha : ConstructorTree a) :
     ConstructorTree (.apply tag [a]) :=

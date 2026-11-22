@@ -364,9 +364,9 @@ theorem relabel_of_not_mem {a : Obj} (old : O → Tm a) :
     ∀ (made : List O) (rows : List (Tm a)) {o : O}, o ∉ made → relabel old made rows o = old o
   | [], _, _, _ => rfl
   | _ :: _, [], _, _ => rfl
-  | o' :: rest, t :: ts, o, missing => by
-      have other : o ≠ o' := fun same => missing (List.mem_cons.mpr (Or.inl same))
-      have later : o ∉ rest := fun inside => missing (List.mem_cons.mpr (Or.inr inside))
+  | o' :: rest, t :: ts, o, absent => by
+      have other : o ≠ o' := fun same => absent (List.mem_cons.mpr (Or.inl same))
+      have later : o ∉ rest := fun inside => absent (List.mem_cons.mpr (Or.inr inside))
       simp only [relabel, if_neg other]
       exact relabel_of_not_mem old rest ts later
 
@@ -396,9 +396,9 @@ theorem result_label_made (shapes : f.Shapes X s) {o : O} {t : Tm (E.target f.ex
   exact relabel_zip (f.row X s) f.selection.made (f.opened X).produce shapes.2.2.1 lengths (o, t) inside
 
 /-- **Every other identity keeps its label, read at the extended frame.** -/
-theorem result_label_other {o : O} (missing : o ∉ f.selection.made) :
+theorem result_label_other {o : O} (absent : o ∉ f.selection.made) :
     (f.result X s).label o = f.row X s o :=
-  relabel_of_not_mem (f.row X s) f.selection.made (f.opened X).produce missing
+  relabel_of_not_mem (f.row X s) f.selection.made (f.opened X).produce absent
 
 end Firing
 

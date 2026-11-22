@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProofRele
 /-!
 # The grade of an interchange cell, for checks that read the frame
 
-A checked system's firings ask a check of the residual frame: none queries and counting are such
+A checked system's firings ask a check of the residual frame: absence and counting are such
 checks. Its interchange cells are taken with the semantic admissibility: a swap is allowed where
 the two firings run in both orders to one state (`SemanticCell`). A cell made at a state is
 **placed** beside more atoms (`beside`) exactly where each of its swaps still runs in both orders
@@ -17,8 +17,8 @@ there (`Rearrangement.Survives`); this set of frames is the cell's grade.
 * `checked_blind`: the guards of a two-zone system, read as checks, are blind. So the cells of every
   two-zone system have the full grade.
 
-The controls file shows that counting and none queries do not: a counting cell is not placed beside one
-more counted atom although one of its two runs still runs there, and a none check has two runs
+The controls file shows that counting and absence do not: a counting cell is not placed beside one
+more counted atom although one of its two runs still runs there, and an absence check has two runs
 of the same uses, in two orders, joined by no cell.
 -/
 

@@ -1,0 +1,26 @@
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.constantApplied
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.constantApplied
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 128 Mettapedia.Machines.FunctionalCorrespondenceRuns.substitutionApplied
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 128 Mettapedia.Machines.FunctionalCorrespondenceRuns.substitutionApplied
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.capture
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.capture
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.failingArgument
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 Mettapedia.Machines.FunctionalCorrespondenceRuns.failingArgument
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 1 Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 1 Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek 32 (Mettapedia.Machines.Tm.var 0)
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine 32 (Mettapedia.Machines.Tm.var 0)
+Mettapedia.Machines.CEK.execute 0 ⟨.ret (.lit 3), []⟩
+Mettapedia.Machines.Krivine.execute 0 ⟨.lit 3, [], []⟩
+Mettapedia.Machines.CEK.evalV 32 [] Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied
+Mettapedia.Machines.Krivine.evalN 32 [] Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied
+Mettapedia.Machines.CEK.evalV 32 [] Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure
+Mettapedia.Machines.Krivine.evalN 32 [] Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure
+Mettapedia.Machines.CEK.run 32 ⟨.ev Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied [], []⟩
+Mettapedia.Machines.Krivine.run 32 ⟨Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied, [], []⟩
+Mettapedia.Machines.CEK.run 1 ⟨.ev Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied [], []⟩
+Mettapedia.Machines.Krivine.run 1 ⟨Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied, [], []⟩

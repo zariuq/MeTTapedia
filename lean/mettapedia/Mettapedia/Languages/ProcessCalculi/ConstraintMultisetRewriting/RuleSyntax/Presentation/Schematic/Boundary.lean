@@ -12,8 +12,8 @@ guard); the relation environment is asked to add nothing to the equality (`noEq`
 beyond what the rule matches, and none is an oracle (`Presentation.Oracle`).
 
 * For that class the step is closed under parallel composition (`schematic_parClosed`, from
-  `Matching.semanticStep_beside`), so it is never the none step (`schematic_not_none`, the corollary of
-  `NullsOnTheStep.Composition.parClosed_not_noneReduces`).
+  `Matching.semanticStep_beside`), so it is never the absence step (`schematic_not_absence`, the corollary of
+  `NullsOnTheStep.Composition.parClosed_not_absence`).
 * **Open bags are needed** (`closedBag_steps`, `closedBag_refuses`, `closedBag_not_parClosed`): the builtin
   equality alone, comparing the rest with a bag that has no rest variable, `rest = {}`, presents "make `12` where
   the store is empty", and that step is not closed under parallel composition.
@@ -51,7 +51,7 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical (matchPatternForRule matchPatte
 open Mettapedia.OSLF.Framework.TypeSynthesis (langSemanticReducesUsing langDiamondUsing langGSLTUsing)
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis (EquationPredicate)
 open Mettapedia.GSLT.LanguageDef.EquationSemantics (EquationEquiv StepModuloEquations)
-open NullsOnTheStep.Composition (ParClosed NoneReduces parClosed_not_noneReduces)
+open NullsOnTheStep.Composition (ParClosed AbsentReduces parClosed_not_absence)
 open MeTTaCalculus.OccurrenceCommits (Enabled fire)
 open Interface (Frames)
 open NamesOnTheStep (Expr)
@@ -68,11 +68,11 @@ theorem schematic_parClosed {rules : List SRule} (noEq : ∀ args, relEnv.tuples
     (fragment : ∀ r ∈ rules, RangeRestrictedPositive r) : ParClosed (onTerms relEnv (presentSchematic rules)) :=
   fun _ _ u step => semanticStep_beside noEq fragment u.leaves step
 
-/-- **So it is never the none step.** -/
-theorem schematic_not_none {rules : List SRule} (noEq : ∀ args, relEnv.tuples "eq" args = [])
-    (fragment : ∀ r ∈ rules, RangeRestrictedPositive r) (missing made : Expr) :
-    ¬ ∀ t t', onTerms relEnv (presentSchematic rules) t t' ↔ NoneReduces missing made t t' :=
-  parClosed_not_noneReduces (schematic_parClosed noEq fragment) missing made
+/-- **So it is never the absence step.** -/
+theorem schematic_not_absence {rules : List SRule} (noEq : ∀ args, relEnv.tuples "eq" args = [])
+    (fragment : ∀ r ∈ rules, RangeRestrictedPositive r) (absent made : Expr) :
+    ¬ ∀ t t', onTerms relEnv (presentSchematic rules) t t' ↔ AbsentReduces absent made t t' :=
+  parClosed_not_absence (schematic_parClosed noEq fragment) absent made
 
 /-- The empty bag. -/
 def emptyBag : Pattern := .collection .hashBag [] none
@@ -274,7 +274,7 @@ theorem survivor_framework_steps :
     rw [matchPatternForRule_eq_syntactic, matchPattern_iff_matchRel]
     exact .collection (by decide) .nilRest
   have found : initial.find? (·.1 == "rest") = some ("rest", .collection .hashBag [] none) := by simp [initial]
-  have missing : initial.find? (·.1 == unknownName 0) = none := by
+  have absent : initial.find? (·.1 == unknownName 0) = none := by
     simp [initial, beq_iff_eq, Ne.symm (unknownName_ne_rest 0)]
   refine ⟨1, .rule (List.mem_singleton_self _) matched (.nil initial) ?_⟩
   rw [applyBindingsForRule_schematic, applyBindings_collection, restResolution_bound found]
@@ -282,7 +282,7 @@ theorem survivor_framework_steps :
   rw [List.append_nil, show app (sym 7) x = Term.app RowFunction.app (args2 (sym 7) x) from rfl, applyBindings_app]
   show Pattern.collection .hashBag [.apply "App" [applyBindings initial (rowCode (.sym 7)),
     applyBindings initial (.fvar (unknownName 0))]] none = survivorTerm
-  rw [applyBindings_rowCode, applyBindings_fvar_none missing]
+  rw [applyBindings_rowCode, applyBindings_fvar_none absent]
   rfl
 
 /-- **That term is the store of no rows**: no row's code is a metavariable. -/
@@ -411,7 +411,7 @@ theorem knowledge_needed (storeOf : Finset ℕ → (ℕ → Tm) → Pattern) (L 
   exact toldSix_refused (atTold.mp (atOpen.mpr ⟨tellFiring, tellFiring_admitted⟩))
 
 #print axioms schematic_parClosed
-#print axioms schematic_not_none
+#print axioms schematic_not_absence
 #print axioms closedBag_steps
 #print axioms closedBag_refuses
 #print axioms closedBag_not_parClosed

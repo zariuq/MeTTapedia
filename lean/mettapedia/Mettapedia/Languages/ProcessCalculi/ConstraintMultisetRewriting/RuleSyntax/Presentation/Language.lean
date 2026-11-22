@@ -25,7 +25,7 @@ the takes and the reads without repetition (`consumes`) and yields the made rows
 reading (`naive`) lists every read; `Possibility.Controls` shows it presents a different step.
 
 **The fragment** (`Positive`): every check is an equation guard, and the rule has no collect pattern. Rules
-with none queries or count checks, or with collect patterns, are outside it.
+with absence or count checks, or with collect patterns, are outside it.
 
 What is proved here about the framework's step on stores, for every reading:
 * `step_storeCode`: a primitive step of the presented language from a store is a rule whose consumed rows
@@ -71,7 +71,7 @@ instance (r : Rule Rows) : Decidable (Positive r) := by
   unfold Positive
   infer_instance
 
-/-- A check of a ground rule holds when its sides are identical. The none query and count checks are not decided
+/-- A check of a ground rule holds when its sides are identical. Absence and count checks are not decided
 here: they are outside the fragment. -/
 def groundCheck : Check Expr → Bool
   | .equal left right => decide (left = right)

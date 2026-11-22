@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.DerivationWordMachineRelationEnv
 import Mettapedia.OSLF.MeTTaIL.RelationQueryAdmission
+import Mettapedia.OSLF.MeTTaIL.ContextualPremisePlan
 
 /-!
 # Operational simulation lemmas for the derivation-word machine
@@ -74,15 +75,8 @@ def inputAcceptedBindings
 theorem applyBindings_fvar_of_lookup
     (bindings : Bindings) (name : String) (value : Pattern)
     (found : bindings.lookup name = some value) :
-    applyBindings bindings (.fvar name) = value := by
-  unfold Bindings.lookup at found
-  cases foundPair : bindings.find? (fun entry => entry.1 == name) with
-  | none => simp [foundPair] at found
-  | some entry =>
-      rcases entry with ⟨entryName, entryValue⟩
-      simp only [foundPair, Option.map_some, Option.some.injEq] at found
-      subst entryValue
-      simp [applyBindings, foundPair]
+    applyBindings bindings (.fvar name) = value :=
+  applyBindings_boundVariable_eq found
 
 theorem matchDecodedInput_exact
     (id formula provenance relevance : Pattern) :
@@ -193,354 +187,145 @@ theorem matchDecisionState_exact (nextServiceState : Pattern) :
     DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs,
     mergeBindings]
 
-theorem input_accept_step_mem
-    (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
-    (record rest nodes nextIdPattern root serviceStatePattern idPattern
-      formulaPattern provenancePattern relevancePatternValue advancedPattern
-      nextServiceStatePattern : Pattern)
-    (expectedId actualId : Nat) (relevance : RelevanceWitness)
-    (serviceState : ServiceState)
-    (provenance : Provenance) (formula : Formula)
-    (recordDecoded :
-      decodeDecision host record =
-        decoded (DerivationCheckMachineLanguageDef.a "dcm:input"
-          [idPattern, formulaPattern, provenancePattern,
-           relevancePatternValue]))
-    (nextIdDecoded : decodeIndex? nextIdPattern = some expectedId)
-    (idDecoded : decodeIndex? idPattern = some actualId)
-    (relevanceDecoded :
-      decodeRelevance? relevancePatternValue = some relevance)
-    (serviceStateDecoded :
-      decodeServiceState? host serviceStatePattern = some serviceState)
-    (provenanceDecoded :
-      decodeProvenance? host provenancePattern = some provenance)
-    (formulaDecoded : decodeFormula? host formulaPattern = some formula)
-    (indexAccepted :
-      indexDecision expectedId actualId =
-        DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-          [advancedPattern])
-    (relevanceAccepted :
-      relevanceDecision actualId relevance =
-        DerivationCheckMachineLanguageDef.a "dcm:decision-accept")
-    (inputAccepted :
-      inputDecision host actualId serviceState provenance formula =
-        DerivationCheckMachineLanguageDef.decisionState
-          nextServiceStatePattern) :
-    run rest
-        (DerivationCheckMachineLanguageDef.nodesCons
-          (DerivationCheckMachineLanguageDef.node idPattern formulaPattern
-            relevancePatternValue
-            (DerivationCheckMachineLanguageDef.a "dcm:unlinked"))
-          nodes)
-        advancedPattern root nextServiceStatePattern ∈
-      rewriteAt (engineBasePremises (relationEnv host)) language 1
-      (run (recordsCons record rest) nodes nextIdPattern root
-        serviceStatePattern) := by
-  let start := inputStartBindings record rest nodes nextIdPattern root
-    serviceStatePattern
-  let afterDecode := inputDecodedBindings record rest nodes nextIdPattern root
-    serviceStatePattern idPattern formulaPattern provenancePattern
-    relevancePatternValue
-  let afterIndex := inputIndexedBindings record rest nodes nextIdPattern root
-    serviceStatePattern idPattern formulaPattern provenancePattern
-    relevancePatternValue advancedPattern
-  let final := inputAcceptedBindings record rest nodes nextIdPattern root
-    serviceStatePattern idPattern formulaPattern provenancePattern
-    relevancePatternValue advancedPattern nextServiceStatePattern
-  have decodePremise :
-      afterDecode ∈ premiseStepWithEnv (relationEnv host) language start
-        (query "DWMDecodeRecord" [v "record", decoded
-          (DerivationCheckMachineLanguageDef.a "dcm:input"
-            [v "id", v "formula", v "provenance", v "relevance"])]) := by
-    apply premiseStepWithEnv_relationQuery_of_env_tuple
-      (tuple := [record, decoded
-        (DerivationCheckMachineLanguageDef.a "dcm:input"
-          [idPattern, formulaPattern, provenancePattern,
-           relevancePatternValue])])
-      (extension := inputDecodeQueryExtension idPattern formulaPattern
-        provenancePattern relevancePatternValue)
-    · have row : [record, decoded
-          (DerivationCheckMachineLanguageDef.a "dcm:input"
-            [idPattern, formulaPattern, provenancePattern,
-             relevancePatternValue])] ∈
-          relationTuples host "DWMDecodeRecord"
-            [record, decoded
-              (DerivationCheckMachineLanguageDef.a "dcm:input"
-                [v "id", v "formula", v "provenance", v "relevance"])] := by
-        simp [relationTuples, recordDecoded]
-      simpa [relationEnv, start, inputStartBindings, applyBindings,
-        DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, decoded] using row
-    · apply matchRelationArgs_bound_cons
-        (tailExtension := inputDecodeMatchExtension idPattern formulaPattern
-          provenancePattern relevancePatternValue)
-        (combined := inputDecodeQueryExtension idPattern formulaPattern
-          provenancePattern relevancePatternValue)
-        (found := by simp [start, inputStartBindings, Bindings.lookup])
-        (combine := by simp [inputDecodeMatchExtension,
-          inputDecodeQueryExtension, mergeBindings])
-      apply matchRelationArgs_single
-        (extension := inputDecodeMatchExtension idPattern formulaPattern
-          provenancePattern relevancePatternValue)
-        (extended := inputDecodeArgumentBindings record rest nodes
-          nextIdPattern root serviceStatePattern idPattern formulaPattern
-          provenancePattern relevancePatternValue)
-      · have matched :
-            inputDecodeMatchExtension idPattern formulaPattern
-              provenancePattern relevancePatternValue ∈
-            matchPattern
-              (decoded (DerivationCheckMachineLanguageDef.a "dcm:input"
-                [v "id", v "formula", v "provenance", v "relevance"]))
-              (decoded (DerivationCheckMachineLanguageDef.a "dcm:input"
-                [idPattern, formulaPattern, provenancePattern,
-                 relevancePatternValue])) := by
-          rw [matchDecodedInput_exact]
-          simp
-        simpa [matchRelationArgument, start, inputStartBindings, decoded,
-          DerivationWordMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.a, v, applyBindings] using matched
-      · simp [start, inputStartBindings, inputDecodeArgumentBindings,
-          inputDecodeMatchExtension, inputDecodeQueryExtension,
-          mergeBindings]
-    · simp [start, afterDecode, inputStartBindings, inputDecodedBindings,
-        inputDecodeQueryExtension, mergeBindings]
-  have indexPremise :
-      afterIndex ∈ premiseStepWithEnv (relationEnv host) language afterDecode
-        (query "DCMIndexAdvance" [v "nextId", v "id",
-          DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-            [v "advanced"]]) := by
-    apply premiseStepWithEnv_relationQuery_of_env_tuple
-      (tuple := [nextIdPattern, idPattern,
-        DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-          [advancedPattern]])
-      (extension := [("advanced", advancedPattern)])
-    · have row : [nextIdPattern, idPattern,
-          DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-            [advancedPattern]] ∈
-          relationTuples host "DCMIndexAdvance"
-            [nextIdPattern, idPattern,
-              DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-                [v "advanced"]] := by
-        rw [indexAdvance_tuple_for_request host nextIdPattern idPattern
-          (DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-            [v "advanced"])
-          expectedId actualId nextIdDecoded idDecoded]
-        rw [indexAccepted]
-        simp
-      simpa [relationEnv, afterDecode, inputDecodedBindings,
-        inputStartBindings, DerivationCheckMachineLanguageDef.a, v,
-        applyBindings] using row
-    · apply matchRelationArgs_bound_cons
-        (tailExtension := [("advanced", advancedPattern)])
-        (combined := [("advanced", advancedPattern)])
-        (found := by simp [afterDecode, inputDecodedBindings,
-          inputStartBindings, Bindings.lookup])
-        (combine := by simp [mergeBindings])
-      apply matchRelationArgs_bound_cons
-        (tailExtension := [("advanced", advancedPattern)])
-        (combined := [("advanced", advancedPattern)])
-        (found := by simp [afterDecode, inputDecodedBindings,
-          inputStartBindings, Bindings.lookup])
-        (combine := by simp [mergeBindings])
-      apply matchRelationArgs_single
-        (extension := [("advanced", advancedPattern)])
-        (extended := afterIndex)
-      · have matched : [("advanced", advancedPattern)] ∈
-            matchPattern
-              (DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-                [v "advanced"])
-              (DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-                [advancedPattern]) := by
-          rw [matchDecisionIndex_exact]
-          simp
-        simpa [matchRelationArgument, afterDecode, inputDecodedBindings,
-          inputStartBindings, DerivationCheckMachineLanguageDef.a, v,
-          applyBindings] using matched
-      · simp [afterDecode, afterIndex, inputDecodedBindings,
-          inputIndexedBindings, inputStartBindings, mergeBindings]
-    · simp [afterDecode, afterIndex, inputDecodedBindings,
-        inputIndexedBindings, inputStartBindings, mergeBindings]
-  have relevancePremise :
-      afterIndex ∈ premiseStepWithEnv (relationEnv host) language afterIndex
-        (query "DCMRelevanceShapeDecision" [v "id", v "relevance",
-          DerivationCheckMachineLanguageDef.a "dcm:decision-accept"]) := by
-    apply premiseStepWithEnv_relationQuery_of_env_tuple
-      (tuple := [idPattern, relevancePatternValue,
-        DerivationCheckMachineLanguageDef.a "dcm:decision-accept"])
-      (extension := [])
-    · have row : [idPattern, relevancePatternValue,
-          DerivationCheckMachineLanguageDef.a "dcm:decision-accept"] ∈
-          relationTuples host "DCMRelevanceShapeDecision"
-            [idPattern, relevancePatternValue,
-              DerivationCheckMachineLanguageDef.a "dcm:decision-accept"] := by
-        rw [relevanceShape_tuple_for_request host idPattern
-          relevancePatternValue
-          (DerivationCheckMachineLanguageDef.a "dcm:decision-accept")
-          actualId relevance idDecoded relevanceDecoded]
-        rw [relevanceAccepted]
-        simp
-      simpa [relationEnv, afterIndex, inputIndexedBindings,
-        inputDecodedBindings, inputStartBindings,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings] using row
-    · apply matchRelationArgs_bound_cons
-        (tailExtension := []) (combined := [])
-        (found := by simp [afterIndex, inputIndexedBindings,
-          inputDecodedBindings, inputStartBindings, Bindings.lookup])
-        (combine := by simp [mergeBindings])
-      apply matchRelationArgs_bound_cons
-        (tailExtension := []) (combined := [])
-        (found := by simp [afterIndex, inputIndexedBindings,
-          inputDecodedBindings, inputStartBindings, Bindings.lookup])
-        (combine := by simp [mergeBindings])
-      apply matchRelationArgs_single
-        (extension := []) (extended := afterIndex)
-      · have matched : [] ∈
-            matchPattern
-              (DerivationCheckMachineLanguageDef.a "dcm:decision-accept")
-              (DerivationCheckMachineLanguageDef.a
-                "dcm:decision-accept") := by
-          rw [matchDecisionAccept_exact]
-          simp
-        simpa [matchRelationArgument, DerivationCheckMachineLanguageDef.a,
-          applyBindings] using matched
-      · simp [mergeBindings]
-    · simp [mergeBindings]
-  have inputPremise :
-      final ∈ premiseStepWithEnv (relationEnv host) language afterIndex
-        (query "DCMInputDecision" [v "id", v "serviceState",
-          v "provenance", v "formula",
-          DerivationCheckMachineLanguageDef.decisionState
-            (v "nextServiceState")]) := by
-    apply premiseStepWithEnv_relationQuery_of_env_tuple
-      (tuple := [idPattern, serviceStatePattern, provenancePattern,
-        formulaPattern,
-        DerivationCheckMachineLanguageDef.decisionState
-          nextServiceStatePattern])
-      (extension := [("nextServiceState", nextServiceStatePattern)])
-    · have row : [idPattern, serviceStatePattern, provenancePattern,
-          formulaPattern,
-          DerivationCheckMachineLanguageDef.decisionState
-            nextServiceStatePattern] ∈
-          relationTuples host "DCMInputDecision"
-            [idPattern, serviceStatePattern, provenancePattern,
-              formulaPattern,
-              DerivationCheckMachineLanguageDef.decisionState
-                (v "nextServiceState")] := by
-        rw [inputDecision_tuple_for_request host actualId idPattern
-          serviceStatePattern provenancePattern formulaPattern
-          (DerivationCheckMachineLanguageDef.decisionState
-            (v "nextServiceState"))
-          serviceState provenance formula idDecoded serviceStateDecoded
-          provenanceDecoded formulaDecoded]
-        rw [inputAccepted]
-        simp
-      simpa [relationEnv, afterIndex, inputIndexedBindings,
-        inputDecodedBindings, inputStartBindings,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.decisionState, v,
-        applyBindings] using row
-    · apply matchRelationArgs_bound_cons
-        (tailExtension := [("nextServiceState", nextServiceStatePattern)])
-        (combined := [("nextServiceState", nextServiceStatePattern)])
-        (found := by simp [afterIndex, inputIndexedBindings,
-          inputDecodedBindings, inputStartBindings, Bindings.lookup])
-        (combine := by simp [mergeBindings])
-      apply matchRelationArgs_bound_cons
-        (tailExtension := [("nextServiceState", nextServiceStatePattern)])
-        (combined := [("nextServiceState", nextServiceStatePattern)])
-        (found := by simp [afterIndex, inputIndexedBindings,
-          inputDecodedBindings, inputStartBindings, Bindings.lookup])
-        (combine := by simp [mergeBindings])
-      apply matchRelationArgs_bound_cons
-        (tailExtension := [("nextServiceState", nextServiceStatePattern)])
-        (combined := [("nextServiceState", nextServiceStatePattern)])
-        (found := by simp [afterIndex, inputIndexedBindings,
-          inputDecodedBindings, inputStartBindings, Bindings.lookup])
-        (combine := by simp [mergeBindings])
-      apply matchRelationArgs_bound_cons
-        (tailExtension := [("nextServiceState", nextServiceStatePattern)])
-        (combined := [("nextServiceState", nextServiceStatePattern)])
-        (found := by simp [afterIndex, inputIndexedBindings,
-          inputDecodedBindings, inputStartBindings, Bindings.lookup])
-        (combine := by simp [mergeBindings])
-      apply matchRelationArgs_single
-        (extension := [("nextServiceState", nextServiceStatePattern)])
-        (extended := final)
-      · have matched : [("nextServiceState", nextServiceStatePattern)] ∈
-            matchPattern
-              (DerivationCheckMachineLanguageDef.decisionState
-                (v "nextServiceState"))
-              (DerivationCheckMachineLanguageDef.decisionState
-                nextServiceStatePattern) := by
-          rw [matchDecisionState_exact]
-          simp
-        simpa [matchRelationArgument, afterIndex, inputIndexedBindings,
-          inputDecodedBindings, inputStartBindings,
-          DerivationCheckMachineLanguageDef.decisionState,
-          DerivationCheckMachineLanguageDef.a, v, applyBindings] using matched
-      · simp [afterIndex, final, inputIndexedBindings,
-          inputAcceptedBindings, inputDecodedBindings, inputStartBindings,
-          mergeBindings]
-    · simp [afterIndex, final, inputIndexedBindings, inputAcceptedBindings,
-        inputDecodedBindings, inputStartBindings, mergeBindings]
-  have premiseEvidence :
-      PremisesAt (engineBasePremises (relationEnv host)) language 0 start
-        (liftRewrite
-          DerivationCheckMachineLanguageDef.inputAcceptTransition).premises
-        final := by
-    rw [liftedInputAccept_premises]
-    exact .cons (.relationQuery (by
-        simpa [engineBasePremises, query] using decodePremise))
-      (.cons (.relationQuery (by
-          simpa [engineBasePremises, query] using indexPremise))
-        (.cons (.relationQuery (by
-            simpa [engineBasePremises, query] using relevancePremise))
-          (.cons (.relationQuery (by
-              simpa [engineBasePremises, query] using inputPremise))
-            (.nil final))))
-  apply mem_rewriteAt_iff_stepAt.mpr
-  exact .rule
-    (by simp [language, transitions, liftedTransitions_eq_admitted_map,
-      DerivationCheckMachineLanguageDef.transitions])
-    (by
-      rw [show
-        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
-          language
-          (liftRewrite
-            DerivationCheckMachineLanguageDef.inputAcceptTransition)
-          (run (recordsCons record rest) nodes nextIdPattern root
-            serviceStatePattern) =
-        matchPattern
-          (liftRewrite
-            DerivationCheckMachineLanguageDef.inputAcceptTransition).left
-          (run (recordsCons record rest) nodes nextIdPattern root
-            serviceStatePattern) by rfl]
-      rw [liftedInputAccept_left]
-      simp [start, inputStartBindings, run, recordsCons,
-        DerivationWordMachineLanguageDef.a, v, matchPattern, matchArgs,
-        mergeBindings])
-    premiseEvidence
-    (by
-      rw [show
-        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
-          language
-          (liftRewrite
-            DerivationCheckMachineLanguageDef.inputAcceptTransition) final =
-        applyBindings final
-          (liftRewrite
-            DerivationCheckMachineLanguageDef.inputAcceptTransition).right
-          by
-            apply Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
-            exact liftedInputAccept_depthAligned]
-      rw [liftedInputAccept_right]
-      simp [final, inputAcceptedBindings, inputIndexedBindings,
-        inputDecodedBindings, inputStartBindings, run,
-        DerivationCheckMachineLanguageDef.nodesCons,
-        DerivationCheckMachineLanguageDef.node,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationWordMachineLanguageDef.a, v, applyBindings])
+theorem generic_record_left_match_exact
+    (rule : RewriteRule)
+    (record rest nodes nextId root serviceState : Pattern)
+    (leftExact : rule.left =
+      run (recordsCons (v "record") (v "rest")) (v "nodes")
+        (v "nextId") (v "root") (v "serviceState")) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+        language rule
+        (run (recordsCons record rest) nodes nextId root serviceState) =
+      [inputStartBindings record rest nodes nextId root serviceState] := by
+  rw [show
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+        language rule
+        (run (recordsCons record rest) nodes nextId root serviceState) =
+      matchPattern rule.left
+        (run (recordsCons record rest) nodes nextId root serviceState) by rfl]
+  rw [leftExact]
+  simp [inputStartBindings, run, recordsCons,
+    DerivationWordMachineLanguageDef.a, v, matchPattern, matchArgs,
+    mergeBindings]
 
-#print axioms input_accept_step_mem
+#print axioms generic_record_left_match_exact
+
+private theorem matchRelationArgs_bound_cons_empty
+    {seed : Bindings} {key : String} {value : Pattern} {args values : List Pattern}
+    (bound : seed.lookup key = some value) (empty : matchRelationArgs seed args values = []) :
+    matchRelationArgs seed (.fvar key :: args) (value :: values) = [] := by
+  simp [matchRelationArgs, matchRelationArgument, bound, mergeBindings, empty]
+
+private theorem binaryDecision_premise_empty (env : RelationEnv) (lang : LanguageDef)
+    (relation : String) (seed : Bindings) (first second : String)
+    (valueFirst valueSecond schema reply : Pattern)
+    (firstBound : seed.lookup first = some valueFirst)
+    (secondBound : seed.lookup second = some valueSecond)
+    (rows :
+      let request := [valueFirst, valueSecond, applyBindings seed schema]
+      builtinRelationTuples lang relation request ++ env.tuples relation request =
+        [[valueFirst, valueSecond, reply]])
+    (mismatch : matchRelationArgument seed schema reply = []) :
+    premiseStepWithEnv env lang seed (.relationQuery relation [.fvar first, .fvar second, schema]) = [] := by
+  have noOutput : matchRelationArgs seed [schema] [reply] = [] := by
+    simp [matchRelationArgs, mismatch]
+  have noMatch : matchRelationArgs seed [.fvar first, .fvar second, schema]
+      [valueFirst, valueSecond, reply] = [] :=
+    matchRelationArgs_bound_cons_empty firstBound
+      (matchRelationArgs_bound_cons_empty secondBound noOutput)
+  change relationQueryStep env lang seed relation [.fvar first, .fvar second, schema] = []
+  simp only [relationQueryStep, List.map_cons, List.map_nil,
+    applyBindings_boundVariable_eq firstBound, applyBindings_boundVariable_eq secondBound]
+  rw [rows]
+  simp only [List.flatMap_singleton, noMatch, List.filterMap_nil]
+
+theorem indexAdvance_premise_empty_of_fault
+    (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
+    (seed : Bindings) (nextId id schema fault : Pattern) (expected actual : Nat)
+    (nextBound : seed.lookup "nextId" = some nextId)
+    (idBound : seed.lookup "id" = some id)
+    (nextDecoded : decodeIndex? nextId = some expected)
+    (idDecoded : decodeIndex? id = some actual)
+    (faulted : indexDecision expected actual = DerivationCheckMachineLanguageDef.decisionFault fault) :
+    premiseStepWithEnv (relationEnv host) language seed
+      (query "DCMIndexAdvance" [v "nextId", v "id",
+        DerivationCheckMachineLanguageDef.a "dcm:decision-index" [schema]]) = [] := by
+  refine binaryDecision_premise_empty _ _ _ _ _ _ _ _ _
+    (DerivationCheckMachineLanguageDef.decisionFault fault) nextBound idBound ?_ ?_
+  · change relationTuples host "DCMIndexAdvance"
+      [nextId, id, applyBindings seed
+        (DerivationCheckMachineLanguageDef.a "dcm:decision-index" [schema])] = _
+    rw [indexAdvance_tuple_for_request host nextId id _ expected actual nextDecoded idDecoded,
+      faulted]
+  · simp [DerivationCheckMachineLanguageDef.decisionFault, matchRelationArgument,
+      DerivationCheckMachineLanguageDef.a, matchPattern]
+
+theorem relevanceAccept_premise_empty_of_fault
+    (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
+    (seed : Bindings) (id relevancePatternValue fault : Pattern) (actual : Nat)
+    (relevance : RelevanceWitness)
+    (idBound : seed.lookup "id" = some id)
+    (relevanceBound : seed.lookup "relevance" = some relevancePatternValue)
+    (idDecoded : decodeIndex? id = some actual)
+    (relevanceDecoded : decodeRelevance? relevancePatternValue = some relevance)
+    (faulted : relevanceDecision actual relevance = DerivationCheckMachineLanguageDef.decisionFault fault) :
+    premiseStepWithEnv (relationEnv host) language seed
+      (query "DCMRelevanceShapeDecision" [v "id", v "relevance",
+        DerivationCheckMachineLanguageDef.a "dcm:decision-accept"]) = [] := by
+  refine binaryDecision_premise_empty _ _ _ _ _ _ _ _ _
+    (DerivationCheckMachineLanguageDef.decisionFault fault) idBound relevanceBound ?_ ?_
+  · change relationTuples host "DCMRelevanceShapeDecision"
+      [id, relevancePatternValue, applyBindings seed
+        (DerivationCheckMachineLanguageDef.a "dcm:decision-accept")] = _
+    rw [relevanceShape_tuple_for_request host id relevancePatternValue _ actual relevance
+      idDecoded relevanceDecoded, faulted]
+  · simp [DerivationCheckMachineLanguageDef.decisionFault, matchRelationArgument,
+      DerivationCheckMachineLanguageDef.a, matchPattern]
+
+private def inputDecodeQuery : Premise :=
+  query "DWMDecodeRecord" [v "record", decoded
+    (DerivationCheckMachineLanguageDef.a "dcm:input"
+      [v "id", v "formula", v "provenance", v "relevance"])]
+
+private def advanceIndexQuery : Premise :=
+  query "DCMIndexAdvance" [v "nextId", v "id",
+    DerivationCheckMachineLanguageDef.a "dcm:decision-index" [v "advanced"]]
+
+private def acceptRelevanceQuery : Premise :=
+  query "DCMRelevanceShapeDecision" [v "id", v "relevance",
+    DerivationCheckMachineLanguageDef.a "dcm:decision-accept"]
+
+private theorem input_decode_premise_exact
+    (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
+    (record rest nodes nextId root serviceState id formula provenance relevance : Pattern)
+    (recordDecoded : decodeDecision host record =
+      decoded (DerivationCheckMachineLanguageDef.a "dcm:input" [id, formula, provenance, relevance])) :
+    premiseStepWithEnv (relationEnv host) language
+      (inputStartBindings record rest nodes nextId root serviceState) inputDecodeQuery =
+      [inputDecodedBindings record rest nodes nextId root serviceState id formula provenance relevance] := by
+  simp [inputDecodeQuery, premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
+    relationEnv, relationTuples, recordDecoded, inputStartBindings, inputDecodedBindings,
+    query, v, decoded, DerivationWordMachineLanguageDef.a, DerivationCheckMachineLanguageDef.a,
+    matchRelationArgs, matchRelationArgument, matchPattern, matchArgs, mergeBindings,
+    applyBindings, Bindings.lookup]
+
+private theorem input_index_premise_exact
+    (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
+    (record rest nodes nextId root serviceState id formula provenance relevance advanced : Pattern)
+    (expected actual : Nat)
+    (nextIdDecoded : decodeIndex? nextId = some expected)
+    (idDecoded : decodeIndex? id = some actual)
+    (indexAccepted : indexDecision expected actual =
+      DerivationCheckMachineLanguageDef.a "dcm:decision-index" [advanced]) :
+    premiseStepWithEnv (relationEnv host) language
+      (inputDecodedBindings record rest nodes nextId root serviceState id formula provenance relevance)
+      advanceIndexQuery =
+      [inputIndexedBindings record rest nodes nextId root serviceState id formula provenance relevance advanced] := by
+  simp [advanceIndexQuery, premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
+    relationEnv, relationTuples, nextIdDecoded, idDecoded, indexAccepted,
+    inputStartBindings, inputDecodedBindings, inputIndexedBindings, query, v,
+    DerivationCheckMachineLanguageDef.a, matchRelationArgs, matchRelationArgument,
+    matchPattern, matchArgs, mergeBindings, applyBindings, Bindings.lookup]
 
 theorem input_accept_applyRule_exact
     (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
@@ -587,42 +372,17 @@ theorem input_accept_applyRule_exact
             (DerivationCheckMachineLanguageDef.a "dcm:unlinked"))
           nodes)
         advancedPattern root nextServiceStatePattern] := by
-  let start := inputStartBindings record rest nodes nextIdPattern root
-    serviceStatePattern
-  let afterDecode := inputDecodedBindings record rest nodes nextIdPattern root
-    serviceStatePattern idPattern formulaPattern provenancePattern
-    relevancePatternValue
   let afterIndex := inputIndexedBindings record rest nodes nextIdPattern root
     serviceStatePattern idPattern formulaPattern provenancePattern
     relevancePatternValue advancedPattern
   let final := inputAcceptedBindings record rest nodes nextIdPattern root
     serviceStatePattern idPattern formulaPattern provenancePattern
     relevancePatternValue advancedPattern nextServiceStatePattern
-  have decodeExact :
-      premiseStepWithEnv (relationEnv host) language start
-        (query "DWMDecodeRecord" [v "record", decoded
-          (DerivationCheckMachineLanguageDef.a "dcm:input"
-            [v "id", v "formula", v "provenance", v "relevance"])]) =
-        [afterDecode] := by
-    simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-      relationEnv, relationTuples, recordDecoded, start, afterDecode,
-      inputStartBindings, inputDecodedBindings,
-      query, v, decoded, DerivationWordMachineLanguageDef.a,
-      DerivationCheckMachineLanguageDef.a, matchRelationArgs,
-      matchRelationArgument, matchPattern, matchArgs, mergeBindings,
-      applyBindings, Bindings.lookup]
-  have indexExact :
-      premiseStepWithEnv (relationEnv host) language afterDecode
-        (query "DCMIndexAdvance" [v "nextId", v "id",
-          DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-            [v "advanced"]]) = [afterIndex] := by
-    simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-      relationEnv, relationTuples, nextIdDecoded, idDecoded, indexAccepted,
-      afterDecode, afterIndex, inputStartBindings, inputDecodedBindings,
-      inputIndexedBindings, query, v,
-      DerivationCheckMachineLanguageDef.a, matchRelationArgs,
-      matchRelationArgument, matchPattern, matchArgs, mergeBindings,
-      applyBindings, Bindings.lookup]
+  have decodeExact := input_decode_premise_exact host record rest nodes nextIdPattern root
+    serviceStatePattern idPattern formulaPattern provenancePattern relevancePatternValue recordDecoded
+  have indexExact := input_index_premise_exact host record rest nodes nextIdPattern root
+    serviceStatePattern idPattern formulaPattern provenancePattern relevancePatternValue
+    advancedPattern expectedId actualId nextIdDecoded idDecoded indexAccepted
   have relevanceExact :
       premiseStepWithEnv (relationEnv host) language afterIndex
         (query "DCMRelevanceShapeDecision" [v "id", v "relevance",
@@ -650,111 +410,104 @@ theorem input_accept_applyRule_exact
       DerivationCheckMachineLanguageDef.decisionState, matchRelationArgs,
       matchRelationArgument, matchPattern, matchArgs, mergeBindings,
       applyBindings, Bindings.lookup]
-  unfold applyRuleUsing
-  rw [show
-    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
-      language
-      (liftRewrite DerivationCheckMachineLanguageDef.inputAcceptTransition)
-      (run (recordsCons record rest) nodes nextIdPattern root
-        serviceStatePattern) = [start] by
+  refine (applyRuleUsing_eq_of_plan (result := some final)
+    (generic_record_left_match_exact _ _ _ _ _ _ _ liftedInputAccept_left) ?_).trans ?_
+  · rw [liftedInputAccept_premises]
+    exact .advance decodeExact (.advance indexExact
+      (.advance relevanceExact (.advance inputExact (.done final))))
+  · have output :
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
+          language (liftRewrite DerivationCheckMachineLanguageDef.inputAcceptTransition)
+          final =
+        run rest
+          (DerivationCheckMachineLanguageDef.nodesCons
+            (DerivationCheckMachineLanguageDef.node idPattern formulaPattern
+              relevancePatternValue
+              (DerivationCheckMachineLanguageDef.a "dcm:unlinked"))
+            nodes)
+          advancedPattern root nextServiceStatePattern := by
       rw [show
-        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
           language
+          (liftRewrite DerivationCheckMachineLanguageDef.inputAcceptTransition)
+          final =
+        applyBindings final
           (liftRewrite
-            DerivationCheckMachineLanguageDef.inputAcceptTransition)
-          (run (recordsCons record rest) nodes nextIdPattern root
-            serviceStatePattern) =
-        matchPattern
-          (liftRewrite
-            DerivationCheckMachineLanguageDef.inputAcceptTransition).left
-          (run (recordsCons record rest) nodes nextIdPattern root
-            serviceStatePattern) by rfl]
-      rw [liftedInputAccept_left]
-      simp [start, inputStartBindings, run, recordsCons,
-        DerivationWordMachineLanguageDef.a, v, matchPattern, matchArgs,
-        mergeBindings]]
-  rw [liftedInputAccept_premises]
-  have decodeStepExact :
-      premiseStepUsing (engineBasePremises (relationEnv host)) language
-        (fun _ => []) start
-        (query "DWMDecodeRecord" [v "record", decoded
-          (DerivationCheckMachineLanguageDef.a "dcm:input"
-            [v "id", v "formula", v "provenance", v "relevance"])]) =
-        [afterDecode] := by
-    simpa only [query, premiseStepUsing, engineBasePremises] using decodeExact
-  have indexStepExact :
-      premiseStepUsing (engineBasePremises (relationEnv host)) language
-        (fun _ => []) afterDecode
-        (query "DCMIndexAdvance" [v "nextId", v "id",
-          DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-            [v "advanced"]]) = [afterIndex] := by
-    simpa only [query, premiseStepUsing, engineBasePremises] using indexExact
-  have relevanceStepExact :
-      premiseStepUsing (engineBasePremises (relationEnv host)) language
-        (fun _ => []) afterIndex
-        (query "DCMRelevanceShapeDecision" [v "id", v "relevance",
-          DerivationCheckMachineLanguageDef.a "dcm:decision-accept"]) =
-        [afterIndex] := by
-    simpa only [query, premiseStepUsing, engineBasePremises] using relevanceExact
-  have inputStepExact :
-      premiseStepUsing (engineBasePremises (relationEnv host)) language
-        (fun _ => []) afterIndex
-        (query "DCMInputDecision" [v "id", v "serviceState",
-          v "provenance", v "formula",
-          DerivationCheckMachineLanguageDef.decisionState
-            (v "nextServiceState")]) = [final] := by
-    simpa only [query, premiseStepUsing, engineBasePremises] using inputExact
-  have premisesExact :
-      premisesUsing (engineBasePremises (relationEnv host)) language
-        (fun _ => [])
-        [query "DWMDecodeRecord" [v "record", decoded
-            (DerivationCheckMachineLanguageDef.a "dcm:input"
-              [v "id", v "formula", v "provenance", v "relevance"])],
-          query "DCMIndexAdvance" [v "nextId", v "id",
-            DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-              [v "advanced"]],
-          query "DCMRelevanceShapeDecision" [v "id", v "relevance",
-            DerivationCheckMachineLanguageDef.a "dcm:decision-accept"],
-          query "DCMInputDecision" [v "id", v "serviceState",
-            v "provenance", v "formula",
-            DerivationCheckMachineLanguageDef.decisionState
-              (v "nextServiceState")]] start = [final] := by
-    simp only [premisesUsing, decodeStepExact, indexStepExact,
-      relevanceStepExact, inputStepExact, List.flatMap_singleton]
-  have outputExact :
-      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
-        language
-        (liftRewrite DerivationCheckMachineLanguageDef.inputAcceptTransition)
-        final =
-      run rest
+            DerivationCheckMachineLanguageDef.inputAcceptTransition).right
+        by
+          apply Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+          exact liftedInputAccept_depthAligned]
+      rw [liftedInputAccept_right]
+      simp [final, inputAcceptedBindings, inputIndexedBindings,
+        inputDecodedBindings, inputStartBindings, run,
+        DerivationCheckMachineLanguageDef.nodesCons,
+        DerivationCheckMachineLanguageDef.node,
+        DerivationCheckMachineLanguageDef.a,
+        DerivationWordMachineLanguageDef.a, v, applyBindings]
+    exact congrArg (fun term => [term]) output
+
+#print axioms input_accept_applyRule_exact
+
+theorem input_accept_step_mem
+    (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
+    (record rest nodes nextIdPattern root serviceStatePattern idPattern
+      formulaPattern provenancePattern relevancePatternValue advancedPattern
+      nextServiceStatePattern : Pattern)
+    (expectedId actualId : Nat) (relevance : RelevanceWitness)
+    (serviceState : ServiceState)
+    (provenance : Provenance) (formula : Formula)
+    (recordDecoded :
+      decodeDecision host record =
+        decoded (DerivationCheckMachineLanguageDef.a "dcm:input"
+          [idPattern, formulaPattern, provenancePattern,
+           relevancePatternValue]))
+    (nextIdDecoded : decodeIndex? nextIdPattern = some expectedId)
+    (idDecoded : decodeIndex? idPattern = some actualId)
+    (relevanceDecoded :
+      decodeRelevance? relevancePatternValue = some relevance)
+    (serviceStateDecoded :
+      decodeServiceState? host serviceStatePattern = some serviceState)
+    (provenanceDecoded :
+      decodeProvenance? host provenancePattern = some provenance)
+    (formulaDecoded : decodeFormula? host formulaPattern = some formula)
+    (indexAccepted :
+      indexDecision expectedId actualId =
+        DerivationCheckMachineLanguageDef.a "dcm:decision-index"
+          [advancedPattern])
+    (relevanceAccepted :
+      relevanceDecision actualId relevance =
+        DerivationCheckMachineLanguageDef.a "dcm:decision-accept")
+    (inputAccepted :
+      inputDecision host actualId serviceState provenance formula =
+        DerivationCheckMachineLanguageDef.decisionState
+          nextServiceStatePattern) :
+    run rest
         (DerivationCheckMachineLanguageDef.nodesCons
           (DerivationCheckMachineLanguageDef.node idPattern formulaPattern
             relevancePatternValue
             (DerivationCheckMachineLanguageDef.a "dcm:unlinked"))
           nodes)
-        advancedPattern root nextServiceStatePattern := by
-    rw [show
-      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
-        language
-        (liftRewrite DerivationCheckMachineLanguageDef.inputAcceptTransition)
-        final =
-      applyBindings final
-        (liftRewrite
-          DerivationCheckMachineLanguageDef.inputAcceptTransition).right
-      by
-        apply Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
-        exact liftedInputAccept_depthAligned]
-    rw [liftedInputAccept_right]
-    simp [final, inputAcceptedBindings, inputIndexedBindings,
-      inputDecodedBindings, inputStartBindings, run,
-      DerivationCheckMachineLanguageDef.nodesCons,
-      DerivationCheckMachineLanguageDef.node,
-      DerivationCheckMachineLanguageDef.a,
-      DerivationWordMachineLanguageDef.a, v, applyBindings]
-  simp only [List.flatMap_singleton, premisesExact, List.map_singleton,
-    outputExact]
+        advancedPattern root nextServiceStatePattern ∈
+      rewriteAt (engineBasePremises (relationEnv host)) language 1
+      (run (recordsCons record rest) nodes nextIdPattern root
+        serviceStatePattern) := by
+  let sourceRule := DerivationCheckMachineLanguageDef.inputAcceptTransition
+  let base := engineBasePremises (relationEnv host)
+  change _ ∈ language.rewrites.flatMap (fun rule =>
+    applyRuleUsing base language (fun _ => []) rule _)
+  refine List.mem_flatMap.mpr ⟨liftRewrite sourceRule (by rfl), ?_, ?_⟩
+  · change liftRewrite sourceRule (by rfl) ∈ transitions
+    exact List.mem_cons_of_mem _ (every_source_transition_is_lifted sourceRule
+      (by simp [sourceRule, DerivationCheckMachineLanguageDef.transitions]))
+  · rw [input_accept_applyRule_exact host record rest nodes nextIdPattern root
+      serviceStatePattern idPattern formulaPattern provenancePattern
+      relevancePatternValue advancedPattern nextServiceStatePattern expectedId
+      actualId relevance serviceState provenance formula recordDecoded
+      nextIdDecoded idDecoded relevanceDecoded serviceStateDecoded
+      provenanceDecoded formulaDecoded indexAccepted relevanceAccepted inputAccepted]
+    exact List.mem_singleton_self _
 
-#print axioms input_accept_applyRule_exact
+#print axioms input_accept_step_mem
 
 /-- A decoder row cannot satisfy a differently shaped decode decision.  The
 statement is independent of any particular instruction tag and is the
@@ -859,29 +612,6 @@ theorem applyRuleUsing_empty_of_decode_mismatch
 
 #print axioms applyRuleUsing_empty_of_decode_mismatch
 
-theorem generic_record_left_match_exact
-    (rule : RewriteRule)
-    (record rest nodes nextId root serviceState : Pattern)
-    (leftExact : rule.left =
-      run (recordsCons (v "record") (v "rest")) (v "nodes")
-        (v "nextId") (v "root") (v "serviceState")) :
-    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
-        language rule
-        (run (recordsCons record rest) nodes nextId root serviceState) =
-      [inputStartBindings record rest nodes nextId root serviceState] := by
-  rw [show
-    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
-        language rule
-        (run (recordsCons record rest) nodes nextId root serviceState) =
-      matchPattern rule.left
-        (run (recordsCons record rest) nodes nextId root serviceState) by rfl]
-  rw [leftExact]
-  simp [inputStartBindings, run, recordsCons,
-    DerivationWordMachineLanguageDef.a, v, matchPattern, matchArgs,
-    mergeBindings]
-
-#print axioms generic_record_left_match_exact
-
 theorem generic_record_rule_empty_of_decode_mismatch
     (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
     (rule : RewriteRule)
@@ -939,13 +669,16 @@ theorem generic_lifted_record_rule_empty_of_decode_mismatch
     applyRuleUsing (engineBasePremises (relationEnv host)) language
       (fun _ => []) (liftRewrite sourceRule unannotated)
       (run (recordsCons record rest) nodes nextId root serviceState) = [] := by
-  apply generic_record_rule_empty_of_decode_mismatch host
-    (liftRewrite sourceRule unannotated) record rest nodes nextId root serviceState
-    expectedInstruction actualInstruction (sourceRule.premises.map liftPremise)
-  · simp [liftRewrite, sourceInstructionExact]
-  · simpa [liftRewrite] using leftExact
-  · exact recordDecoded
-  · exact mismatchAtStart
+  have rejected := decode_query_empty_of_mismatch host
+    (inputStartBindings record rest nodes nextId root serviceState) record
+    expectedInstruction actualInstruction (by simp [inputStartBindings, Bindings.lookup])
+    recordDecoded mismatchAtStart
+  refine applyRuleUsing_eq_of_plan (result := none)
+    (generic_record_left_match_exact _ _ _ _ _ _ _ leftExact) ?_
+  rw [show (liftRewrite sourceRule unannotated).premises =
+    query "DWMDecodeRecord" [v "record", decoded expectedInstruction] ::
+      sourceRule.premises.map liftPremise by simp [liftRewrite, sourceInstructionExact]]
+  exact .reject rejected
 
 #print axioms generic_lifted_record_rule_empty_of_decode_mismatch
 
@@ -1070,30 +803,42 @@ theorem input_index_fault_excludes_later_rule
       (fun _ => []) (liftRewrite sourceRule unannotated)
       (run (recordsCons record rest) nodes nextIdPattern root
         serviceStatePattern) = [] := by
+  have rejected : PremisePlan (engineBasePremises (relationEnv host)) language (fun _ => [])
+      (inputStartBindings record rest nodes nextIdPattern root serviceStatePattern)
+      [inputDecodeQuery, advanceIndexQuery] none :=
+    .advance (input_decode_premise_exact host record rest nodes nextIdPattern root
+      serviceStatePattern idPattern formulaPattern provenancePattern relevancePatternValue recordDecoded)
+      (.reject (indexAdvance_premise_empty_of_fault host
+        (inputDecodedBindings record rest nodes nextIdPattern root serviceStatePattern
+          idPattern formulaPattern provenancePattern relevancePatternValue)
+        nextIdPattern idPattern (v "advanced") faultPatternValue expectedId actualId
+        (by simp [inputDecodedBindings, inputStartBindings, Bindings.lookup])
+        (by simp [inputDecodedBindings, Bindings.lookup])
+        nextIdDecoded idDecoded indexFaulted))
   simp only [inputIndexSuccessSourceRules, List.mem_cons, List.mem_nil_iff,
     or_false] at membership
-  rcases membership with rfl | rfl | rfl <;>
-    simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-      engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-      liftPattern, liftPremise,
-      DerivationCheckMachineLanguageDef.inputRelevanceFaultTransition,
-      DerivationCheckMachineLanguageDef.inputDecisionFaultTransition,
-      DerivationCheckMachineLanguageDef.inputAcceptTransition,
-      DerivationCheckMachineLanguageDef.run,
-      DerivationCheckMachineLanguageDef.instructionsCons,
-      DerivationCheckMachineLanguageDef.decisionFault,
-      DerivationCheckMachineLanguageDef.decisionState,
-      DerivationCheckMachineLanguageDef.outcomeFault,
-      DerivationCheckMachineLanguageDef.halted,
-      DerivationCheckMachineLanguageDef.a,
-      DerivationCheckMachineLanguageDef.v,
-      DerivationCheckMachineLanguageDef.query,
-      query, v, run, recordsCons, decoded,
-      DerivationWordMachineLanguageDef.a, relationEnv, relationTuples,
-      recordDecoded, nextIdDecoded, idDecoded, indexFaulted,
-      premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-      matchRelationArgs, matchRelationArgument, matchPattern, matchArgs,
-      mergeBindings, applyBindings, Bindings.lookup]
+  rcases membership with rfl | rfl | rfl
+  all_goals
+    refine applyRuleUsing_eq_nil_of_rejected_prefix
+      (generic_record_left_match_exact _ _ _ _ _ _ _ ?_) ?_ rejected
+    · simp [liftRewrite, liftLeft, liftPattern,
+        DerivationCheckMachineLanguageDef.inputRelevanceFaultTransition,
+        DerivationCheckMachineLanguageDef.inputDecisionFaultTransition,
+        DerivationCheckMachineLanguageDef.inputAcceptTransition,
+        DerivationCheckMachineLanguageDef.run,
+        DerivationCheckMachineLanguageDef.instructionsCons,
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        run, recordsCons, v, DerivationWordMachineLanguageDef.a]
+    · simp [inputDecodeQuery, advanceIndexQuery, liftRewrite,
+        sourceInstruction?, liftPremise, liftPattern,
+        DerivationCheckMachineLanguageDef.inputRelevanceFaultTransition,
+        DerivationCheckMachineLanguageDef.inputDecisionFaultTransition,
+        DerivationCheckMachineLanguageDef.inputAcceptTransition,
+        DerivationCheckMachineLanguageDef.run,
+        DerivationCheckMachineLanguageDef.instructionsCons,
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.query, query, v, decoded,
+        DerivationWordMachineLanguageDef.a]
 
 #print axioms input_index_fault_excludes_later_rule
 
@@ -1234,30 +979,43 @@ theorem input_relevance_fault_excludes_later_rule
       (fun _ => []) (liftRewrite sourceRule unannotated)
       (run (recordsCons record rest) nodes nextIdPattern root
         serviceStatePattern) = [] := by
-  simp only [inputRelevanceSuccessSourceRules, List.mem_cons,
-    List.mem_nil_iff, or_false] at membership
-  rcases membership with rfl | rfl <;>
-    simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-      engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-      liftPattern, liftPremise,
-      DerivationCheckMachineLanguageDef.inputDecisionFaultTransition,
-      DerivationCheckMachineLanguageDef.inputAcceptTransition,
-      DerivationCheckMachineLanguageDef.run,
-      DerivationCheckMachineLanguageDef.instructionsCons,
-      DerivationCheckMachineLanguageDef.decisionFault,
-      DerivationCheckMachineLanguageDef.decisionState,
-      DerivationCheckMachineLanguageDef.outcomeFault,
-      DerivationCheckMachineLanguageDef.halted,
-      DerivationCheckMachineLanguageDef.a,
-      DerivationCheckMachineLanguageDef.v,
-      DerivationCheckMachineLanguageDef.query,
-      query, v, run, recordsCons, decoded,
-      DerivationWordMachineLanguageDef.a, relationEnv, relationTuples,
-      recordDecoded, nextIdDecoded, idDecoded, relevanceDecoded,
-      indexAccepted, relevanceFaulted, premiseStepWithEnv,
-      relationQueryStep, builtinRelationTuples, matchRelationArgs,
-      matchRelationArgument, matchPattern, matchArgs, mergeBindings,
-      applyBindings, Bindings.lookup]
+  have rejected : PremisePlan (engineBasePremises (relationEnv host)) language (fun _ => [])
+      (inputStartBindings record rest nodes nextIdPattern root serviceStatePattern)
+      [inputDecodeQuery, advanceIndexQuery, acceptRelevanceQuery] none :=
+    .advance (input_decode_premise_exact host record rest nodes nextIdPattern root
+      serviceStatePattern idPattern formulaPattern provenancePattern relevancePatternValue recordDecoded)
+      (.advance (input_index_premise_exact host record rest nodes nextIdPattern root
+        serviceStatePattern idPattern formulaPattern provenancePattern relevancePatternValue
+        advancedPattern expectedId actualId nextIdDecoded idDecoded indexAccepted)
+        (.reject (relevanceAccept_premise_empty_of_fault host
+          (inputIndexedBindings record rest nodes nextIdPattern root serviceStatePattern
+            idPattern formulaPattern provenancePattern relevancePatternValue advancedPattern)
+          idPattern relevancePatternValue faultPatternValue actualId relevance
+          (by simp [inputIndexedBindings, inputDecodedBindings, Bindings.lookup])
+          (by simp [inputIndexedBindings, inputDecodedBindings, Bindings.lookup])
+          idDecoded relevanceDecoded relevanceFaulted)))
+  simp only [inputRelevanceSuccessSourceRules, List.mem_cons, List.mem_nil_iff,
+    or_false] at membership
+  rcases membership with rfl | rfl
+  all_goals
+    refine applyRuleUsing_eq_nil_of_rejected_prefix
+      (generic_record_left_match_exact _ _ _ _ _ _ _ ?_) ?_ rejected
+    · simp [liftRewrite, liftLeft, liftPattern,
+        DerivationCheckMachineLanguageDef.inputDecisionFaultTransition,
+        DerivationCheckMachineLanguageDef.inputAcceptTransition,
+        DerivationCheckMachineLanguageDef.run,
+        DerivationCheckMachineLanguageDef.instructionsCons,
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        run, recordsCons, v, DerivationWordMachineLanguageDef.a]
+    · simp [inputDecodeQuery, advanceIndexQuery, acceptRelevanceQuery, liftRewrite,
+        sourceInstruction?, liftPremise, liftPattern,
+        DerivationCheckMachineLanguageDef.inputDecisionFaultTransition,
+        DerivationCheckMachineLanguageDef.inputAcceptTransition,
+        DerivationCheckMachineLanguageDef.run,
+        DerivationCheckMachineLanguageDef.instructionsCons,
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.query, query, v, decoded,
+        DerivationWordMachineLanguageDef.a]
 
 #print axioms input_relevance_fault_excludes_later_rule
 
@@ -1470,184 +1228,23 @@ theorem generic_non_input_lifted_rule_empty
   simp only [genericNonInputSourceRules, List.mem_cons, List.mem_nil_iff,
     or_false] at membership
   rcases membership with rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.inferIndexFaultTransition record rest
-      nodes nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [v "id", v "rule", v "parents", v "evidence", v "conclusion",
-         v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [id, formula, provenance, relevance])
-    · simp [sourceInstruction?,
-        DerivationCheckMachineLanguageDef.inferIndexFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
+  all_goals
+    refine generic_lifted_record_rule_empty_of_decode_mismatch host _ record
+      rest nodes nextId root serviceState _ _ rfl ?_ recordDecoded ?_
     · simp [liftLeft, liftPattern,
         DerivationCheckMachineLanguageDef.inferIndexFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern,
-        matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.inferRelevanceFaultTransition record
-      rest nodes nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [v "id", v "rule", v "parents", v "evidence", v "conclusion",
-         v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [id, formula, provenance, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.inferRelevanceFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.inferRelevanceFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern,
-        matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.inferParentFaultTransition record rest
-      nodes nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [v "id", v "rule", v "parents", v "evidence", v "conclusion",
-         v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [id, formula, provenance, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.inferParentFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.inferParentFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern,
-        matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.inferRuleFaultTransition record rest
-      nodes nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [v "id", v "rule", v "parents", v "evidence", v "conclusion",
-         v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [id, formula, provenance, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.inferRuleFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.inferRuleFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern,
-        matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.inferAcceptTransition record rest nodes
-      nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [v "id", v "rule", v "parents", v "evidence", v "conclusion",
-         v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [id, formula, provenance, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.inferAcceptTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.inferAcceptTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern,
-        matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.dropFaultTransition record rest nodes
-      nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:drop" [v "id"])
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [id, formula, provenance, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.dropFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.dropFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern,
-        matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.dropAcceptTransition record rest nodes
-      nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:drop" [v "id"])
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [id, formula, provenance, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.dropAcceptTransition,
         DerivationCheckMachineLanguageDef.run,
         DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.dropAcceptTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        run, recordsCons, v, DerivationWordMachineLanguageDef.a]
     · simp [decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, matchPattern, matchArgs]
 
 #print axioms generic_non_input_lifted_rule_empty
 

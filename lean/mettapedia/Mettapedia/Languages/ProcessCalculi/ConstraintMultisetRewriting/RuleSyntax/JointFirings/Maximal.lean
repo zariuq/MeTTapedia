@@ -8,7 +8,7 @@ admitted, its keys are distinct, and every jointly admitted bag of distinct matc
 no other key.
 
 * Its steps are steps of the bag step (`Bag.AdmitsMaximal.admits`).
-* **What "maximal" asks is a none query** (`Bag.admitsMaximal_iff`): there is no jointly admitted bag of
+* **What "maximal" asks is an absence** (`Bag.admitsMaximal_iff`): there is no jointly admitted bag of
   distinct matches with the same matches and one more. Like the completeness of `every`, it is read at the
   entry state over every selection of present rows, and it is not kept when rows are added.
 * **Not kept when a row is added** (`MaximalControls.lone_maximal`, `MaximalControls.lone_not_maximal`):
@@ -48,7 +48,7 @@ variable {X s}
 theorem AdmitsMaximal.admits {f : Bag O E P s.frame} (maximal : f.AdmitsMaximal X s) : f.Admits X s :=
   maximal.1
 
-/-- **What "maximal" asks is a none query**: no jointly admitted bag of distinct matches has the same
+/-- **What "maximal" asks is an absence**: no jointly admitted bag of distinct matches has the same
 matches and one more. -/
 theorem admitsMaximal_iff (f : Bag O E P s.frame) :
     f.AdmitsMaximal X s ↔ f.Admits X s ∧ f.Distinct ∧

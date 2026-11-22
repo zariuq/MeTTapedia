@@ -24,8 +24,8 @@ the two-token state (`beside_tokens`).
   neighbour.
 * **A maximal bag is switched off** (`maximal_switched_off`, from `MaximalControls`).
 
-Completeness, uniqueness and maximality ask the none query of a further match, and a private neighbour can
-hold one; they behave as a none check does (`Scope.admits_beside` is stated for positive rules for
+Completeness, uniqueness and maximality ask the absence of a further match, and a private neighbour can
+hold one; they behave as an absence check does (`Scope.admits_beside` is stated for positive rules for
 the same reason).
 -/
 

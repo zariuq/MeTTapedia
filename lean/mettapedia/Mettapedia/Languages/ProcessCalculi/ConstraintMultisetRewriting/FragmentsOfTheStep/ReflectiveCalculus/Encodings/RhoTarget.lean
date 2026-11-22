@@ -16,7 +16,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTh
   its canonical bag: `step_congr`, `barb_congr`).
 * **The separation with the faithful calculus as target**: no uniform translation (homomorphic on
   parallel composition up to the equations, preserving and reflecting reachable success) goes into it
-  from the step with the none-guarded program (`no_uniformTranslation_none`) or from the step with
+  from the step with the absence-guarded program (`no_uniformTranslation_absence`) or from the step with
   the positive program whose tell is on a shared unknown (`no_uniformTranslation_positiveTell`).
 * **Control**: the criterion can be met with this target: the identity is a uniform translation of the
   calculus into itself (`identity_uniform`).
@@ -86,9 +86,9 @@ theorem rhoParallel_persistent (ω : G [] .nm) : (rhoParallel ω).Persistent whe
     · exact ⟨P, .refl, (barb_congr same _).mpr shows⟩
     · exact ⟨Q, .head ((step_congr same Q₁).mpr step) rest, shows⟩
 
-/-- **No uniform translation of the step with the none-guarded program into the faithful
+/-- **No uniform translation of the step with the absence-guarded program into the faithful
 reflective calculus**, for every success channel `ω`. -/
-theorem no_uniformTranslation_none (ω : G [] .nm) :
+theorem no_uniformTranslation_absence (ω : G [] .nm) :
     IsEmpty (UniformTranslation NullsOnTheStep.ParallelClosed.source (rhoParallel ω)) :=
   isEmpty_uniformTranslation NullsOnTheStep.ParallelClosed.source_switchable (rhoParallel_persistent ω)
 
@@ -112,7 +112,7 @@ def identity_uniform (ω : G [] .nm) : UniformTranslation (rhoParallel ω) (rhoP
 #print axioms step_congr
 #print axioms barb_congr
 #print axioms rhoParallel_persistent
-#print axioms no_uniformTranslation_none
+#print axioms no_uniformTranslation_absence
 #print axioms no_uniformTranslation_positiveTell
 #print axioms identity_uniform
 

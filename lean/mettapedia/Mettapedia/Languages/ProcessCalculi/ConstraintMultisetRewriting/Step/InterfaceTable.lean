@@ -27,20 +27,20 @@ names the restriction theorem, the separating control and the bridge.
 | runs | `Step.Run.models_start` | `runs_firstOrder` | `runs_helper`, `runs_native` | `runs_dependent` |
 | the cut | `cut_preserved` | `cut_firstOrder` | `cut_helper`, `cut_native` | `cut_dependent` |
 | guards | `holds_of_admitted` | `guards_firstOrder` | `guards_helper` | `guards_dependent` |
-| predicate queries | `DependentFull.entails_none_iff`, `Frames.Principal.entails_count_iff` | `none_firstOrder`, `count_firstOrder` | `none_contextual`, `count_contextual` (frames); the helper step has no queries; native: `admission_native` asks them | `none_dependent`, `count_dependent` |
+| predicate queries | `DependentFull.entails_absent_iff`, `Frames.Principal.entails_count_iff` | `absence_firstOrder`, `count_firstOrder` | `absence_contextual`, `count_contextual` (frames); the helper step has no queries; native: `admission_native` asks them | `absence_dependent`, `count_dependent` |
 | spaces | `Spaces.run_executable`, `present_result_spaces` (any instance); independence: restriction `quiet` | `located_independent`, `located_static_independent`; bridge `exact_independent`; control `Spaces.Controls.shared_variable_crosses_spaces` | `spaces_helper`: no restriction (helper tells constrain only fresh helpers) | `dependent_independent`; control `SpacesInterface.Controls.dependent_shared_variable_crosses_spaces`; gap: located labels for queries |
-| permissions | `refused_without_*`, `witness_present` (any instance); `none_preserved` under `LabelLaw` | `old_owned_none_preserved`, `old_owned_witness_present`; control `PermissionsInterface.Controls.relabel_spoils_none` | `witness_helper`; none queries: the helper step's rows carry no terms; native: gap | `dependent_none_preserved`; controls `DependentControls.shared_none_spoiled`, `owned_make_refused`, `owned_none_survives` |
+| permissions | `refused_without_*`, `witness_present` (any instance); `absence_preserved` under `LabelLaw` | `old_owned_absence_preserved`, `old_owned_witness_present`; control `PermissionsInterface.Controls.relabel_spoils_absence` | `witness_helper`; absence: the helper step's rows carry no terms; native: gap | `dependent_absence_preserved`; controls `DependentControls.shared_absence_spoiled`, `owned_make_refused`, `owned_absence_survives` |
 | disequations | `DisequalityFrames.frames`; `Interface.Step.withDisequations` over every step under `Reflects`, guards kept and asked at separating solutions | `oneFrame_admits_iff`; R92 controls | `diseq_helper`, `ContextualTell.control`; native: `diseq_native` (guarded native firings, `PreparedStep.nativeGuarded`); control `PreparedStep.Controls.control` | `diseq_dependent`, `DependentTell.control` |
 | evidence rows | `not_admits_of_not_solvable`; `run_solvable` under `SettlesConservatively` (`RetractsSettlement` suffices) | `old_firstOrder_run_consistent`; `Evidence.Family.table` | `evidence_helper`, native `EvidenceInterface.Native.native_run_solvable`; four-way family: gap (the helper step has no reads or queries; native firings not built) | `dependent_run_solvable`; `EvidenceInterface.DependentFamily.table` |
 | races and identity | `Race.Generic.bisimilar_of_same` | `races_firstOrder` | `races_helper` | `DependentFull.plain_bisimilar_of_same` (no helpers) |
-| programs | gap: one core over the interface | R82, R89, R95 (first-order core) | R98, R100; joined by `step_join`, `none_agrees`, `return_admitted_iff` | gap |
+| programs | gap: one core over the interface | R82, R89, R95 (first-order core) | R98, R100; joined by `step_join`, `absence_agrees`, `return_admitted_iff` | gap |
 
 Restriction, separating control and bridge, for the features that do not hold on every instance:
 * **spaces commute**: restriction `quiet` (`located_independent`, `dependent_independent`); control
   `shared_variable_crosses_spaces` and its dependent form; bridge `quiet_of_exact`, `exact_independent`
   (a syntactic condition a program checks), and `Controls.quiet_read_exact`;
-* **none queries under permissions**: restriction `LabelLaw` (`none_preserved`); control
-  `relabel_spoils_none`; bridge `locatedLabels_law`, `dependentLabels_law`;
+* **absence under permissions**: restriction `LabelLaw` (`absence_preserved`); control
+  `relabel_spoils_absence`; bridge `locatedLabels_law`, `dependentLabels_law`;
 * **disequations**: restriction `Reflects` (`Interface.Step.withDisequations`, for every step); control
   `Restriction.guess_breaks_frame`, `guess_not_reflects`; bridge `firstOrder_reflects`,
   `Dependent.reflects`, `Contextual.reflects`, and for the native step, whose result is the solver's
@@ -134,13 +134,13 @@ theorem guards_firstOrder {C : Configuration T O} {f : AnnotatedRuns.Firing T S 
   holds_of_admitted _ admitted
 
 omit [DecidableEq O] in
-theorem none_firstOrder {Occ : Type} (K : EquationStore T) (p : T) (present : Finset Occ) (row : Occ → T) :
+theorem absence_firstOrder {Occ : Type} (K : EquationStore T) (p : T) (present : Finset Occ) (row : Occ → T) :
     (Frames.ofSubstitution A).Entails (a := PUnit.unit) K
         (fun b τ => ∀ o ∈ present, ¬ (Frames.ofSubstitution A).E (a := b)
           ((Frames.ofSubstitution A).act (a := PUnit.unit) (b := b) τ p)
           ((Frames.ofSubstitution A).act (a := PUnit.unit) (b := b) τ (row o))) ↔
       ∀ o ∈ present, ¬ (Frames.ofSubstitution A).Solvable (a := PUnit.unit) (K ++ [(p, row o)]) :=
-  Interface.DependentFull.entails_none_iff (Frames.ofSubstitution A) K p present row
+  Interface.DependentFull.entails_absent_iff (Frames.ofSubstitution A) K p present row
 
 theorem count_firstOrder {K : EquationStore T} {answer : S}
     (principal : (Frames.ofSubstitution A).Principal (a := PUnit.unit) (m := PUnit.unit) K answer)
@@ -206,13 +206,13 @@ theorem guards_helper {s : Interface.Helpers.State S O} {f : Interface.Helpers.F
   holds_of_admitted _ admitted
 
 omit [DecidableEq O] in
-theorem none_contextual {F : Interface.Frames.Frame S} (K : EquationStore (Observation S F.arity))
+theorem absence_contextual {F : Interface.Frames.Frame S} (K : EquationStore (Observation S F.arity))
     (p : Observation S F.arity) (present : Finset O) (row : O → Observation S F.arity) :
     (Frames.contextual S).Entails K
         (fun _ τ => ∀ o ∈ present, ¬ (Frames.contextual S).E ((Frames.contextual S).act τ p)
           ((Frames.contextual S).act τ (row o))) ↔
       ∀ o ∈ present, ¬ (Frames.contextual S).Solvable (K ++ [(p, row o)]) :=
-  Interface.DependentFull.entails_none_iff (Frames.contextual S) K p present row
+  Interface.DependentFull.entails_absent_iff (Frames.contextual S) K p present row
 
 theorem count_contextual {F M : Interface.Frames.Frame S} {K : EquationStore (Observation S F.arity)}
     {answer : Assignment F.arity M.arity} (principal : (Frames.contextual S).Principal K answer)
@@ -341,13 +341,13 @@ theorem guards_dependent {s : State rules O} {f : Firing levels s} (admitted : (
   holds_of_admitted (step levels O).toStep admitted
 
 omit [DecidableEq O] in
-theorem none_dependent {Δ : Context rules} (K : EquationStore (TotalTerm Δ)) (p : TotalTerm Δ)
+theorem absence_dependent {Δ : Context rules} (K : EquationStore (TotalTerm Δ)) (p : TotalTerm Δ)
     (present : Finset O) (row : O → TotalTerm Δ) :
     (ContextualDependentEta.frames levels).Entails K
         (fun _ τ => ∀ o ∈ present, ¬ (ContextualDependentEta.frames levels).E
           ((ContextualDependentEta.frames levels).act τ p) ((ContextualDependentEta.frames levels).act τ (row o))) ↔
       ∀ o ∈ present, ¬ (ContextualDependentEta.frames levels).Solvable (K ++ [(p, row o)]) :=
-  entails_none_iff (ContextualDependentEta.frames levels) K p present row
+  entails_absent_iff (ContextualDependentEta.frames levels) K p present row
 
 theorem count_dependent {Δ M : Context rules} {K : EquationStore (TotalTerm Δ)} {answer : M ⟶ Δ}
     (principal : (ContextualDependentEta.frames levels).Principal K answer) (pattern : TotalTerm Δ)
@@ -374,7 +374,7 @@ end Dependent
 #print axioms runs_firstOrder
 #print axioms cut_firstOrder
 #print axioms guards_firstOrder
-#print axioms none_firstOrder
+#print axioms absence_firstOrder
 #print axioms count_firstOrder
 #print axioms races_firstOrder
 #print axioms frames_contextual
@@ -382,7 +382,7 @@ end Dependent
 #print axioms runs_helper
 #print axioms cut_helper
 #print axioms guards_helper
-#print axioms none_contextual
+#print axioms absence_contextual
 #print axioms count_contextual
 #print axioms spaces_helper
 #print axioms witness_helper
@@ -399,7 +399,7 @@ end Dependent
 #print axioms runs_dependent
 #print axioms cut_dependent
 #print axioms guards_dependent
-#print axioms none_dependent
+#print axioms absence_dependent
 #print axioms count_dependent
 #print axioms diseq_dependent
 

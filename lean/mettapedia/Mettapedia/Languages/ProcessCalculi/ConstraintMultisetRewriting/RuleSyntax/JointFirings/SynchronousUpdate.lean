@@ -4,21 +4,21 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 /-!
 # What a bag adds to the step of the program: a synchronous update, and nothing in between
 
-## The none query judged at the entry state (`Synchronous`)
+## Absence judged at the entry state (`Synchronous`)
 
 Two rules over ground rows: `addUnless 1 2` makes a `1` unless a `2` is present; `addUnless 2 1` makes a `2`
 unless a `1` is present. From the empty state:
 
-* **the bag of one match of each is admitted** (`both_admitted`), both none checks read at the entry
+* **the bag of one match of each is admitted** (`both_admitted`), both absences read at the entry
   state, and its result holds a `1` and a `2` (`both_result`); it is one step of the bag step
   (`bag_reaches`);
 * **no run of the step of the program reaches a state holding a `1` and a `2`** (`no_run_reaches`):
-  every firing of either rule checks that the other kind is not present and adds only its own kind
+  every firing of either rule checks that the other kind is absent and adds only its own kind
   (`addUnless_step`), so along every run at most one kind is present (`reachable_one_kind`).
 
 So the bag's result is reached by no order of its members, nor by any other run: the foundation's form of
 the synchronous update of `OccurrenceCommits.Waves` (`Controls.every_synchronous_update`). Members with
-none checks are where `OneAfterAnother.peel` needs positive rules.
+absence checks are where `OneAfterAnother.peel` needs positive rules.
 
 ## Nothing comes between the members (`Between`)
 
@@ -167,7 +167,7 @@ theorem both_members {m : OneMember action ℕ program} (inside : m ∈ both.mem
   · exact Or.inl first
   · exact Or.inr (List.mem_singleton.mp rest)
 
-/-- **The bag is admitted at the empty state**, each none read there. -/
+/-- **The bag is admitted at the empty state**, each absence read there. -/
 theorem both_admitted : Bag.AdmitsOwn X empty both := by
   refine ⟨⟨fresh_of_ground_bag action empty _ fun m inside => ?_, by decide, by decide,
       fun m inside => ?_⟩, ⟨by decide, by decide, by decide, by decide,

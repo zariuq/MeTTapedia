@@ -15,7 +15,7 @@ with composition restricted to systems whose joint knowledge is solvable (`stepP
   can only add witnesses to an `any` query. A rule with only equation checks and no collect pattern
   is `RuleSyntax.Scope.Positive`, and is monotone (`positive_monotone`).
 * **The dividing line** (`switched_has_guard`): if a composable neighbour switches a system off, the
-  system's program has a rule with a none query (`none`) check, a count check or a collect pattern; run
+  system's program has a rule with an absence (`none`) check, a count check or a collect pattern; run
   by run (`switched_every_run_guarded`), every run of the system alone to success fires a rule that
   is not positive.
 * The four-rule program of the reflective calculus is positive (`image_positive`), so the translation
@@ -35,11 +35,11 @@ with composition restricted to systems whose joint knowledge is solvable (`stepP
 
 The theorem holds for every neighbour with solvable knowledge (the composability), with any rows
 and any program: the neighbour's rules join the system's by the union and may fire on the system's
-rows, and they may be guarded by none queries; under may-success they only add runs. The hypotheses have
+rows, and they may be guarded by absence; under may-success they only add runs. The hypotheses have
 an instance together (`positive_beside_guarded`: the system of the four-rule program with the row
-`ω!(0)` beside a system with the row `*@0` and the none-guarded rule). Controls, one per clause:
+`ω!(0)` beside a system with the row `*@0` and the absence-guarded rule). Controls, one per clause:
 knowledge without a solution, once every pair is composable, switches a positive system off
-(`junk_switches`); a row switches off a system with a none check (`solvable_switchable`); the
+(`junk_switches`); a row switches off a system with an absence check (`solvable_switchable`); the
 controls of the rules clause and of count checks and collect patterns are in `DividingLineControls`.
 
 ## The proof: replay up to the renaming the tensor does
@@ -719,7 +719,7 @@ theorem succeeds_beside {ω : G [] .nm} {S T : System}
   exact ⟨⟨P ∪ T.program, w'⟩, systemRuns_of_states run', shows'⟩
 
 /-- **The dividing line.** If a composable neighbour switches a system off, the system's program has
-a rule with a none check, a count check or a collect pattern. -/
+a rule with an absence check, a count check or a collect pattern. -/
 theorem switched_has_guard {ω : G [] .nm} {S T : System}
     (composable : (stepParallelSolvable ω).composable S T)
     (succeeds : (stepParallelSolvable ω).Succeeds S)
@@ -775,8 +775,8 @@ theorem image_never_switched {ω : G [] .nm} (closed : Closed ω) (P : RhoProces
   succeeds_beside (fun r member => positive_monotone (image_positive r member)) composable succeeds
 
 /-- **The hypotheses have an instance together, with a neighbour that has a row and a rule guarded by
-none queries**: the system of the four-rule program with the row `ω!(0)` is positive and succeeds; it is
-composable with the system holding the row `*@0` and the none-guarded rule, which is not positive;
+absence**: the system of the four-rule program with the row `ω!(0)` is positive and succeeds; it is
+composable with the system holding the row `*@0` and the absence-guarded rule, which is not positive;
 side by side they succeed. -/
 theorem positive_beside_guarded {ω : G [] .nm} (closed : Closed ω) :
     (∀ r ∈ (outputSystem ω).program, RuleSyntax.Scope.Positive r) ∧

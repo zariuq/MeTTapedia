@@ -10,7 +10,7 @@ row once.
 ## Declarative rows
 
 * A source steps from a substitution (`DStep`) when it picks an occurrence of the store whose label
-  its pattern solves modulo `E` (read, take), finds its **semantic region** empty (`absent`), finds
+  its pattern solves modulo `E` (read, take), finds its **semantic region** empty (absent), finds
   exactly one occurrence there (unique), or folds the whole region into a value its collection
   pattern solves (all); `let` takes a computed value. The semantic region (`semRegion`) is the set
   of values some step of the pattern reaches: no algorithm is involved.
@@ -19,9 +19,9 @@ row once.
   suffix's linear rows (`Transversal`): one representative of each model-level row, every such row
   represented, none twice. Rows are compared modulo `E` (`RowEquiv`): `E`-equivalent
   substitutions, the same picks, made labels related by `E`.
-* The none query of a source query means that no declarative inner row exists. It keeps
+* Absence of a source query means that no declarative inner row exists. It keeps
   the complete observation footprint and passes the original bindings to its
-  continuation. Nested none query uses the same rule.
+  continuation. Nested absence uses the same rule.
 
 ## Agreement (`agreement`)
 
@@ -244,9 +244,9 @@ inductive DStep : Source V T P → Subst V T → Subst V T × Pick O T → Prop
         L.Step σ p (label o) τ →
           DStep (.unique access p) σ
             (τ, .query ⟨semRegion L σ p, regionOf label S (semRegion L σ p)⟩ (access = .take))
-  | all {access : Access} {p coll : P} {fold : Multiset T → T} {σ τ : Subst V T} :
+  | collect {access : Access} {p coll : P} {fold : Multiset T → T} {σ τ : Subst V T} :
       L.Step σ coll (fold ((regionOf label S (semRegion L σ p)).val.map label)) τ →
-        DStep (.all access p coll fold) σ
+        DStep (.collect access p coll fold) σ
           (τ, .query ⟨semRegion L σ p, regionOf label S (semRegion L σ p)⟩ (access = .take))
   | letBind {p : P} {eval : Subst V T → List T} {σ τ : Subst V T} {i : ℕ} {value : T} :
       (eval σ)[i]? = some value → L.Step σ p value τ → DStep (.letBind p eval) σ (τ, .result i)
@@ -257,7 +257,7 @@ noncomputable def Source.semRegions : Source V T P → Subst V T → List (T →
   | .take p, σ => [semRegion L σ p]
   | .absent p, σ => [semRegion L σ p]
   | .unique _ p, σ => [semRegion L σ p]
-  | .all _ p _ _, σ => [semRegion L σ p]
+  | .collect _ p _ _, σ => [semRegion L σ p]
   | .letBind _ _, _ => []
 
 /-- The semantic completeness regions of a source list. -/
@@ -375,10 +375,10 @@ theorem dStep_of_mem_stepRows (sound : Matcher.Sound L m) (complete : Matcher.Co
       obtain ⟨one, o, inX, τ, answer, rfl⟩ := mem_stepRows_unique.mp member
       rw [regionEq] at one inX ⊢
       exact DStep.unique one inX (sound answer)
-  | all access p coll fold =>
-      obtain ⟨τ, answer, rfl⟩ := mem_stepRows_all.mp member
+  | collect access p coll fold =>
+      obtain ⟨τ, answer, rfl⟩ := mem_stepRows_collect.mp member
       rw [regionEq] at answer ⊢
-      exact DStep.all (sound answer)
+      exact DStep.collect (sound answer)
   | letBind p eval =>
       obtain ⟨i, value, at_i, τ, answer, rfl⟩ := mem_stepRows_letBind.mp member
       exact DStep.letBind at_i (sound answer)
@@ -426,9 +426,9 @@ theorem exists_stepRows_of_dStep (sound : Matcher.Sound L m) (complete : Matcher
         τ, answer, rfl⟩, equiv, ?_⟩
       rw [regionEq]
       exact pickEquiv_refl _
-  | @all access p coll fold _ τ' stepY =>
+  | @collect access p coll fold _ τ' stepY =>
       obtain ⟨τ, answer, equiv⟩ := complete same stepY
-      refine ⟨_, mem_stepRows_all.mpr ⟨τ, by rw [regionEq]; exact answer, rfl⟩, equiv, ?_⟩
+      refine ⟨_, mem_stepRows_collect.mpr ⟨τ, by rw [regionEq]; exact answer, rfl⟩, equiv, ?_⟩
       rw [regionEq]
       exact pickEquiv_refl _
   | @letBind p eval _ τ' i value at_i stepY =>
@@ -444,7 +444,7 @@ def Source.binds (L : TermLayer V T P) : Source V T P → Finset V
   | .take p => L.vars p
   | .absent _ => ∅
   | .unique _ p => L.vars p
-  | .all _ _ coll _ => L.vars coll
+  | .collect _ _ coll _ => L.vars coll
   | .letBind p _ => L.vars p
 
 omit [DecidableEq V] in
@@ -465,8 +465,8 @@ theorem stepRows_isSome_iff (sound : Matcher.Sound L m) {s : Source V T P} {σ :
   | unique access p =>
       obtain ⟨-, o, -, τ, answer, rfl⟩ := mem_stepRows_unique.mp member
       exact (sound answer).isSome_iff v
-  | all access p coll fold =>
-      obtain ⟨τ, answer, rfl⟩ := mem_stepRows_all.mp member
+  | collect access p coll fold =>
+      obtain ⟨τ, answer, rfl⟩ := mem_stepRows_collect.mp member
       exact (sound answer).isSome_iff v
   | letBind p eval =>
       obtain ⟨i, value, -, τ, answer, rfl⟩ := mem_stepRows_letBind.mp member
@@ -540,7 +540,7 @@ theorem stepRows_nodup (minimal : Matcher.Minimal L m) (s : Source V T P) (σ : 
           rw [Finset.mem_val, Finset.mem_singleton] at inO inO'
           exact absurd (inO.trans inO'.symm) different
       · simp
-  | all access p coll fold =>
+  | collect access p coll fold =>
       simp only [stepRows, Multiset.map_map]
       exact nodup_answers minimal coll σ _ _
   | letBind p eval =>
@@ -630,7 +630,7 @@ theorem lets_cons {s : Source V T P} {rest : SourceList V T P}
   | take p => exact ⟨fun _ _ h => (by cases h), respects⟩
   | absent p => exact ⟨fun _ _ h => (by cases h), respects⟩
   | unique a p => exact ⟨fun _ _ h => (by cases h), respects⟩
-  | all a p q f => exact ⟨fun _ _ h => (by cases h), respects⟩
+  | collect a p q f => exact ⟨fun _ _ h => (by cases h), respects⟩
 
 omit [DecidableEq V] in
 /-- Two steps that agree up to the theory, from one start, bind the same variables. -/
@@ -730,14 +730,14 @@ theorem agreementFor (sound : Matcher.Sound L m) (complete : Matcher.Complete L 
           obtain ⟨z', member, _⟩ := (iq σ).2.1 σ (SubstEquiv.refl L.equivalence σ) z row
           simp [empty] at member
         · rw [complRegions_eq_sem sound complete]
-      · obtain ⟨missing, y', restRow, rfl⟩ := declared
+      · obtain ⟨absent, y', restRow, rfl⟩ := declared
         obtain ⟨x', inRest, equiv⟩ := (ir σ).2.1 σ' same y' restRow
         have empty : rows L m label S [] query σ = 0 := by
           apply Multiset.eq_zero_of_forall_notMem
           intro z member
           obtain ⟨z', inOther, _⟩ := (iq σ').2.1 σ (SubstEquiv.symm L.equivalence same)
             z ((iq σ).1 z member)
-          exact missing ⟨z', (iq σ').1 z' inOther⟩
+          exact absent ⟨z', (iq σ').1 z' inOther⟩
         refine ⟨(x'.1, .amalgam (complQueries label S (complRegions m query σ)) :: x'.2),
           mem_rows_absent.mpr ⟨empty, x', inRest, rfl⟩, equiv.1, ?_⟩
         apply List.Forall₂.cons _ equiv.2

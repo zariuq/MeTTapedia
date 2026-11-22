@@ -13,7 +13,7 @@ make, and predicate queries) does instead.
 * `Monotone`: in rho a neighbour can only add behaviour (`weakBarb_par`), so firing now or else,
   priority and exact counts have no compositional rho encoding
   (`rho_cannot_encode_tryReceive`, `rho_cannot_encode_priority`, `rho_cannot_encode_exactlyOne`).
-  Absence itself is `ConsensusNumbers.rho_cannot_encode_none`.
+  Absence itself is `ConsensusNumbers.rho_cannot_encode_absence`.
 * `Symmetry`: binary steps, such as rho's COMM, cannot break symmetry: no leader is elected from a
   split symmetric configuration (`no_symmetric_election`, `rho_no_symmetric_election`); one join
   step elects (`Controls.joinTable_elects`).

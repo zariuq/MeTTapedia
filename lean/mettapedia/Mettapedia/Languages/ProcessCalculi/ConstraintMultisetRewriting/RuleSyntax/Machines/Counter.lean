@@ -13,7 +13,7 @@ On `RuleSyntax.step`, at the one first-order frame over rows with unknowns:
   value is a term built from zero and successor (`num`).
 * **The program** (`counterRules`): for an increment one rule, for a decrement two. Each takes the control row
   and the row of one register and makes them again (`incRule`, `decSuccRule`, `decZeroRule`). The program is a
-  finite list of rules; no rule has a read, a tell, an equation guard, a none check, a count check or a query
+  finite list of rules; no rule has a read, a tell, an equation guard, an absence check, a count check or a query
   pattern (`counterRules_fragment`). The test for zero is the pattern `reg i zero` against the pattern
   `reg i (successor x)`: positive rules suffice.
 * **One machine step is one rewrite of the bag** (`rewrites_iff`), hence **one firing, and no other firing is

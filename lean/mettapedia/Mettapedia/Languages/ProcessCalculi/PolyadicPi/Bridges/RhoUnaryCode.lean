@@ -66,9 +66,7 @@ theorem NameValue.typed {depth : Nat} (name : NameValue depth) :
       apply NameWellSorted.bvar
       simp [bounds, rhoReflectivePresentation, index.isLt]
   | atom label | reserved label => exact .fvar rfl
-  | allocated index =>
-      exact NameWellSorted.quoteOfSafe ((seedCode_typed rhoAtomicNameContext index).weakenBoundRight _)
-        (seedCode_safe index 0)
+  | allocated index => exact .quote ((seedCode_typed rhoAtomicNameContext index).weakenBoundRight _)
 
 theorem NameValue.safe {depth : Nat} (name : NameValue depth) :
     binderSafeAt "NQuote" depth name.term = true := by

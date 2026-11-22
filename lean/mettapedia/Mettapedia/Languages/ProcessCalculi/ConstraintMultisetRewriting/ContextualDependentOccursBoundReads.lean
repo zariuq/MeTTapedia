@@ -53,7 +53,7 @@ theorem tower_bound_decided_of_uncovered
       run (boundTower.solver larger) problem larger = run (boundTower.solver budget) problem budget ∧
       ((∃ state finished, run (boundTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (boundTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (boundTower.solver larger) problem larger = .refuted absent)) :=
   tower_bound_decided_of_reads (fun {_} {problem} permuted nonempty => by
       obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : MixedCoveredHead equation

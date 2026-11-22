@@ -18,7 +18,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 # The step of a program as a presented language
 
 The positive ground fragment of the step of a program (rules that take, read and make rows, with equation
-guards between their own ground terms; no none query, count or collect query) is presented as a language definition of
+guards between their own ground terms; no absence, count or collect query) is presented as a language definition of
 the tree's framework, and the framework's constructions applied to it are the step's.
 
 * **The presentation** (`Rows`, `Language`): sorts `Nat`, `Row`, `Store`; one constructor per row former and
@@ -37,7 +37,7 @@ the tree's framework, and the framework's constructions applied to it are the st
   law (`sat_split_iff`; for every language of rows and stores without authored equations, `sat_split_iff_in`) and
   the law that a firing of a part is a firing of the whole, in the generated types (`split_possibly`), on the
   instance-set step (`succ_beside`, by `positive_admission_monotone`) and on `RuleSyntax.step` itself
-  (`StepBeside.admitted_beside`); a none-guarded rule breaks it (`spawn_fires_alone`, `spawn_refused_beside`,
+  (`StepBeside.admitted_beside`); an absence-guarded rule breaks it (`spawn_fires_alone`, `spawn_refused_beside`,
   `spawn_presentation_control`).
 * **Substitutability** (`Substitutability`, `Controls`): on finite programs of the fragment, the barbed types, which
   the presented language generates (`barbed_generated`), agree at two stores exactly when the configurations are
@@ -51,10 +51,10 @@ the tree's framework, and the framework's constructions applied to it are the st
 * **Row formers and the OSLF type system** (`Formers`): the constructor former at rows (`sat_built_rowCode_iff`),
   "some row of the store has the type" (`sat_someRow_iff`), and the diamond of the OSLF type system the framework
   generates at the sort `Store` (`oslf_diamond_iff`).
-* **Where presentation without premises stops** (`Boundary`, `Oracle`): no presented program steps as the none query
-  step (`presented_not_none`, the corollary of `parClosed_not_noneReduces`) or has the none program's
-  possibility (`none_not_presented`). A rewrite whose premise asks the relation environment about the whole
-  store presents none queries (`whole_presents_none`) and has no parallel context rule (`whole_not_parClosed`); the
+* **Where presentation without premises stops** (`Boundary`, `Oracle`): no presented program steps as the absence
+  step (`presented_not_absence`, the corollary of `parClosed_not_absence`) or has the absence program's
+  possibility (`absence_not_presented`). A rewrite whose premise asks the relation environment about the whole
+  store presents absence (`whole_presents_absence`) and has no parallel context rule (`whole_not_parClosed`); the
   relation environment is an arbitrary function, so the same device presents every yes/no question of the store
   (`Oracle.oracle_step_iff`, `Oracle.count_presented`): such premises are oracles, and the boundary is a boundary
   of presentations whose premises ask nothing of the store beyond their matches. A guard over a caller's unknown is

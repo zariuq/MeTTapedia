@@ -94,8 +94,8 @@ theorem source_typed {free : FreeTypeContext} {bound : List TypeExpr}
     (.cons (output_typed channelTyped payloadTyped) restTyped))
 
 mutual
-theorem derived_name_typed {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) :
+theorem derived_name_typed {free : FreeSortContext} {bound : List String} {name : Pattern}
+    (typed : NameWellSorted rhoReflectivePresentation free bound name) :
     HasType language (typeFree free) (typeBound bound) name (.base "Name") := by
   cases typed with
   | bvar selected =>
@@ -109,8 +109,8 @@ theorem derived_name_typed {scope : QuoteScope} {free : FreeSortContext} {bound 
   | quote process => exact quote_typed (derived_process_typed process)
 termination_by sizeOf name
 
-theorem derived_process_typed {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
+theorem derived_process_typed {free : FreeSortContext} {bound : List String} {process : Pattern}
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
     HasType language (typeFree free) (typeBound bound) process (.base "Proc") := by
   cases typed with
   | bvar selected =>
@@ -128,8 +128,8 @@ theorem derived_process_typed {scope : QuoteScope} {free : FreeSortContext} {bou
   | parallel processes => exact parallel_typed (derived_processes_typed processes)
 termination_by sizeOf process
 
-theorem derived_processes_typed {scope : QuoteScope} {free : FreeSortContext} {bound : List String} {processes : List Pattern}
-    (typed : ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound processes) :
+theorem derived_processes_typed {free : FreeSortContext} {bound : List String} {processes : List Pattern}
+    (typed : ProcListWellSorted rhoReflectivePresentation free bound processes) :
     ElementsHaveType language (typeFree free) (typeBound bound) processes (.base "Proc") := by
   cases typed with
   | nil => exact .nil _ _

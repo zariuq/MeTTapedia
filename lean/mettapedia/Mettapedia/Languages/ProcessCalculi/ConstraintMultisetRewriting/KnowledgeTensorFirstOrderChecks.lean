@@ -4,7 +4,7 @@ import Mettapedia.Logic.LinearLogic.KnowledgeTensorFrameGrades
 /-!
 # The first-order step with all its checks, as graded tensor proofs
 
-An equality check is a guard on knowledge. A none check and a counting check read every
+An equality check is a guard on knowledge. An absence check and a counting check read every
 present occurrence, through its label only (`holds_iff_holdsOn`). Read on the two zones, the
 present labels are the premises of the use and the residual frame, so these checks are checks
 on the frame in the sense of `CheckedSystem`.

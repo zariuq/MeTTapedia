@@ -273,7 +273,7 @@ theorem result_readout
       exact List.mem_map.mpr ⟨field, written, rfl⟩
     · exact satisfies
   · rw [outputRow, if_neg written]
-    have missing : row generation field ∉ (selection (table index) generation).made := by
+    have absent : row generation field ∉ (selection (table index) generation).made := by
       intro made
       obtain ⟨other, _, same⟩ := List.mem_map.mp made
       have sameField := congrArg Prod.fst (Sum.inl.inj same)
@@ -288,7 +288,7 @@ theorem result_readout
         exact PreparedRules.other_readout (schema table model domains index)
           (rule_member table model domains index)
           (snapshot table model domains index values generation) certificate
-          (selection (table index) generation) (row generation field) missing environment
+          (selection (table index) generation) (row generation field) absent environment
       _ = _ := by
         change cell table model (table index).before field values =
           cell table model (table index).after field values

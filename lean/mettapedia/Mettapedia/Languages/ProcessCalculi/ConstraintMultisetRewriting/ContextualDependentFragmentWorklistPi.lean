@@ -314,7 +314,7 @@ theorem piRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (T
   split
   · rename_i update smaller computed
     simp only [computed, roundView, foundView, Option.map_some]
-  · rename_i missing computed
+  · rename_i absent computed
     simp only [computed, roundView, foundView, Option.map_none]
   · rename_i computed
     first | rfl | simp only [computed, foundView]

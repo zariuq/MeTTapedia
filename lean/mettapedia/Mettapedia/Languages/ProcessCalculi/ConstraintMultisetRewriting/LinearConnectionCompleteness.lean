@@ -58,7 +58,7 @@ theorem consumed_distinct_of_executable :
       have gone := executes.1.consumed_removed inHead
       have neverMade : ∀ producer ∈ events, o ∉ producer.2.made :=
         fun producer member made => fresh producer (List.mem_cons_of_mem _ member) o made initial
-      exact (none_stays A label events _ o executes.2 gone neverMade consumer member).2 consumed
+      exact (absent_stays A label events _ o executes.2 gone neverMade consumer member).2 consumed
 
 theorem fresh_boundary_of_fresh_from (events : List (Event T O)) (before : Configuration T O)
     (fresh : FreshFrom before events) : Disjoint (made events) before.present := by

@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 # Retained native import composes with the actual held read execution
 
 The imported cell is the complete original row, not just an equal payload at
-one model. Loading fails as an option if the physical cell is not present. Exact
+one model. Loading fails as an option if the physical cell is absent. Exact
 retention reconstructs the independent logical source and licenses its actual
 two-step protocol, preserving the decoded live view and resource identities.
 The heap/source representation relation is the explicit native boundary.

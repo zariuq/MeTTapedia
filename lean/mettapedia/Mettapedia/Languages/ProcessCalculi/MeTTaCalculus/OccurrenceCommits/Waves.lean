@@ -19,8 +19,8 @@ store. This module answers three questions about a wave.
    a reader and a taker of one occurrence form a wave with exactly one order
    (`Controls.reader_taker_wave`). Mutual independence is the case with no edges, where every
    order runs (`executable_of_pairwise_independent`). Write skew is a two-cycle
-   (`Controls.write_skew_no_order`); two "add unless present" commits race through their none query
-   reads (`Controls.none_race_no_order`).
+   (`Controls.write_skew_no_order`); two "add unless present" commits race through their absence
+   reads (`Controls.absence_race_no_order`).
 3. **What does `every` mean?** `every` commits all rows of one match at once, as one commit whose
    footprint is the amalgamation of the rows (`amalgamate`). Its predicate queries are judged at the
    snapshot, so rows do not see one another. `every` fires only when every row is enabled, **no two
@@ -31,11 +31,11 @@ store. This module answers three questions about a wave.
    (`Controls.every_refuses_double_take`). When `every` fires it reaches the wave commit
    (`fire_amalgamate`); it agrees with a serialization of its rows exactly when their precedence
    relation is acyclic (`every_fires_serializable_iff`), and with every serialization exactly when
-   they are pairwise independent. With a none query cycle it is a synchronous update that no
+   they are pairwise independent. With an absence cycle it is a synchronous update that no
    serialization produces (`Controls.every_synchronous_update`). That is the meaning `every`
    should have: its rows are one decision. Separate transactions are not: when a policy commits
    their combined effect without validating reads, it applies an effect that no order of them
-   produces whenever their precedence has a cycle (`ValidationPolicies`). With a none query cycle
+   produces whenever their precedence has a cycle (`ValidationPolicies`). With an absence cycle
    that effect is the synchronous update; with a kept-read cycle (write skew) it is not even one
    commit, since the amalgamation would keep and take one occurrence
    (`Controls.write_skew_no_order`).
@@ -712,7 +712,7 @@ theorem write_skew_no_order :
     revert this
     decide
 
-/-! ### Two "add unless present" commits: a none race -/
+/-! ### Two "add unless present" commits: an absence race -/
 
 /-- The region of outputs. -/
 def isOut : Atom → Bool
@@ -747,9 +747,9 @@ theorem addUnlessB_enabled : Enabled label {0} addUnlessB where
     subst member
     decide
 
-/-- **A none race has no executable order** (each makes inside the other's none region),
+/-- **An absence race has no executable order** (each makes inside the other's absence region),
 while their amalgamation, a synchronous update, makes both outputs. -/
-theorem none_race_no_order :
+theorem absence_race_no_order :
     ¬ (∃ l, l.Perm [addUnlessA, addUnlessB] ∧ Executable label {0} l) ∧
       Enabled label {0} (amalgamate [addUnlessA, addUnlessB]) := by
   have enabled : ∀ c ∈ [addUnlessA, addUnlessB], Enabled label {0} c := by
@@ -778,7 +778,7 @@ theorem none_race_no_order :
     simp only [List.mem_cons, List.not_mem_nil, or_false] at inE inD
     rcases inE with rfl | rfl <;> rcases inD with rfl | rfl <;> decide
 
-/-- **`every` as a synchronous update.** The amalgamation of the two none-guarded rows makes
+/-- **`every` as a synchronous update.** The amalgamation of the two absence-guarded rows makes
 both outputs, a store that no serialization of the rows reaches: run one after the other, the
 second is disabled. -/
 theorem every_synchronous_update :

@@ -692,7 +692,7 @@ theorem matches_made {W : Type} {next : W → MetaArity S} (ρ : Assignment (lat
   rw [Assignment.instantiate_compose, Assignment.instantiate_compose]
 
 omit [DecidableEq O] [DecidableEq S.Srt] [∀ result, DecidableEq (S.Op result)] in
-theorem none_iff_region {Local Shared W : Type} {locals : Local → MetaArity S} {captures : Shared → MetaArity S}
+theorem absent_iff_region {Local Shared W : Type} {locals : Local → MetaArity S} {captures : Shared → MetaArity S}
     {next : W → MetaArity S} (candidate : Assignment captures next)
     (rows : O → ContextualConditionalRows.Row locals captures Γ sort) (world : Finset O)
     (pattern : Term (signature S captures) Γ sort) :
@@ -714,7 +714,7 @@ theorem predicate_iff_region {Local Shared W : Type} {locals : Local → MetaAri
   | any =>
       show (∃ o ∈ world, _) ↔ (ContextualConditionalGuards.region locals candidate rows world pattern).Nonempty
       simp only [Finset.Nonempty, ContextualConditionalGuards.mem_region]
-  | none => exact none_iff_region candidate rows world pattern
+  | none => exact absent_iff_region candidate rows world pattern
 
 /-- **The region of a carried pattern at the published result is the region of the pattern at the
 state**, read at the restriction, when the pattern sees none of the execution's takes and none of

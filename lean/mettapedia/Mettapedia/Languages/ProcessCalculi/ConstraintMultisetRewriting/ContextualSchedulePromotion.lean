@@ -196,32 +196,66 @@ namespace Certificate
 
 variable {locals} {source middle target : Endpoint locals O Γ sort}
 
-def questions {source : Endpoint locals O Γ sort} : {target : Endpoint locals O Γ sort} →
-    Certificate locals source target → List (Question locals (O := O) Γ sort)
+def observations {A : Type*}
+    (observe : ∀ {before : Endpoint locals O Γ sort}, Prepared locals before → List A)
+    {source : Endpoint locals O Γ sort} : {target : Endpoint locals O Γ sort} →
+    Certificate locals source target → List A
   | _, .nil _ => []
-  | _, .snoc past next => past.questions ++ next.questions
+  | _, .snoc past next => past.observations observe ++ observe next
 
-def selections {source : Endpoint locals O Γ sort} : {target : Endpoint locals O Γ sort} →
-    Certificate locals source target → List (Selection O)
-  | _, .nil _ => []
-  | _, .snoc past next => past.selections ++ [next.selection]
+private def observationsWithSuffix {A : Type*}
+    (observe : ∀ {before : Endpoint locals O Γ sort}, Prepared locals before → List A)
+    {source : Endpoint locals O Γ sort} : {target : Endpoint locals O Γ sort} →
+    Certificate locals source target → List A → List A
+  | _, .nil _, suffix => suffix
+  | _, .snoc past next, suffix => observationsWithSuffix observe past (observe next ++ suffix)
 
-def fuels {source : Endpoint locals O Γ sort} : {target : Endpoint locals O Γ sort} →
-    Certificate locals source target → List Nat
-  | _, .nil _ => []
-  | _, .snoc past next => past.fuels ++ [next.fuel]
+private theorem observationsWithSuffix_eq {A : Type*}
+    (observe : ∀ {before : Endpoint locals O Γ sort}, Prepared locals before → List A)
+    (certificate : Certificate locals source target) (suffix : List A) :
+    observationsWithSuffix observe certificate suffix = certificate.observations observe ++ suffix := by
+  induction certificate generalizing suffix with
+  | nil => rfl
+  | snoc past next earlier =>
+      simp only [observationsWithSuffix, observations, earlier, List.append_assoc]
+
+private def collectObservations {A : Type*}
+    (observe : ∀ {before : Endpoint locals O Γ sort}, Prepared locals before → List A)
+    {source target : Endpoint locals O Γ sort}
+    (certificate : Certificate locals source target) : List A :=
+  observationsWithSuffix observe certificate []
+
+@[csimp] theorem observations_eq_collect : @observations = @collectObservations := by
+  funext
+  simp only [collectObservations, observationsWithSuffix_eq, List.append_nil]
+
+def questions (certificate : Certificate locals source target) : List (Question locals (O := O) Γ sort) :=
+  certificate.observations Prepared.questions
+
+def selections (certificate : Certificate locals source target) : List (Selection O) :=
+  certificate.observations (fun prepared => [prepared.selection])
+
+def fuels (certificate : Certificate locals source target) : List Nat :=
+  certificate.observations (fun prepared => [prepared.fuel])
 
 def append (first : Certificate locals source middle) : {target : Endpoint locals O Γ sort} →
     Certificate locals middle target → Certificate locals source target
   | _, .nil _ => first
   | _, .snoc past next => .snoc (append first past) next
 
+theorem observations_append {A : Type*}
+    (observe : ∀ {before : Endpoint locals O Γ sort}, Prepared locals before → List A)
+    (first : Certificate locals source middle) (second : Certificate locals middle target) :
+    (first.append second).observations observe =
+      first.observations observe ++ second.observations observe := by
+  induction second with
+  | nil => simp [append, observations]
+  | snoc past next earlier => simp [append, observations, earlier, List.append_assoc]
+
 theorem questions_append (first : Certificate locals source middle)
     (second : Certificate locals middle target) :
-    (first.append second).questions = first.questions ++ second.questions := by
-  induction second with
-  | nil => simp [append, questions]
-  | snoc past next earlier => simp [append, questions, earlier, List.append_assoc]
+    (first.append second).questions = first.questions ++ second.questions :=
+  observations_append Prepared.questions first second
 
 theorem checked_append (first : Certificate locals source middle)
     (second : Certificate locals middle target) :
@@ -237,23 +271,29 @@ def realize {source : Endpoint locals O Γ sort} : {target : Endpoint locals O �
       let split := (checked_append_iff locals past.questions next.questions).mp accepted
       (realize past split.1).cons (next.firing split.2)
 
-theorem realize_selections (certificate : Certificate locals source target)
-    (accepted : Checked locals certificate.questions) :
-    ContextualExecution.selections (certificate.realize accepted) = certificate.selections := by
+theorem realize_observations {A : Type*}
+    (prepared : ∀ {before : Endpoint locals O Γ sort}, Prepared locals before → List A)
+    (realized : ∀ {before after : Endpoint locals O Γ sort}, Firing locals before after → List A)
+    (preserves : ∀ {before : Endpoint locals O Γ sort} (step : Prepared locals before)
+      (accepted : Checked locals step.questions), realized (step.firing accepted) = prepared step)
+    (certificate : Certificate locals source target) (accepted : Checked locals certificate.questions) :
+    (certificate.realize accepted).observations realized = certificate.observations prepared := by
   induction certificate with
   | nil => rfl
   | snoc past next earlier =>
-      simp only [realize, ContextualExecution.selections, selections, Prepared.firing]
-      rw [earlier]
+      simp only [realize, Quiver.Path.observations_cons, observations, preserves, earlier]
+
+theorem realize_selections (certificate : Certificate locals source target)
+    (accepted : Checked locals certificate.questions) :
+    ContextualExecution.selections (certificate.realize accepted) = certificate.selections :=
+  realize_observations (fun step => [step.selection]) (fun edge => [edge.selection])
+    (fun _ _ => rfl) certificate accepted
 
 theorem realize_fuels (certificate : Certificate locals source target)
     (accepted : Checked locals certificate.questions) :
-    ContextualExecution.fuels (certificate.realize accepted) = certificate.fuels := by
-  induction certificate with
-  | nil => rfl
-  | snoc past next earlier =>
-      simp only [realize, ContextualExecution.fuels, fuels, Prepared.firing]
-      rw [earlier]
+    ContextualExecution.fuels (certificate.realize accepted) = certificate.fuels :=
+  realize_observations (fun step => [step.fuel]) (fun edge => [edge.fuel])
+    (fun _ _ => rfl) certificate accepted
 
 theorem realize_append (first : Certificate locals source middle)
     (second : Certificate locals middle target)

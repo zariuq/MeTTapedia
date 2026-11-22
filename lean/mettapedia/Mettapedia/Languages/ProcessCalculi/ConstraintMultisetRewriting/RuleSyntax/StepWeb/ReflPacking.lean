@@ -23,7 +23,7 @@ under the quote.
   name laws.
 * Controls (`packing_needs_the_quote`): two cooling orders give different spines at `QN` and equal quotes.
 
-That every row of the child is cooled before the close is the close's none guard
+That every row of the child is cooled before the close is the close's absence guard
 (`ReflLocated.Controls.close_root_fires`, `close_root_waits`). That the rows are the reduct's components is
 the REFL correspondence's business.
 -/

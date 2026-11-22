@@ -49,7 +49,7 @@ give the commits, events and states of `SplitPhaseRuns`.
 
 Small traces decided by evaluation (`decide`): a taker-then-reader snapshot run is valid and its
 history serializable; the same run validated in `serializable` mode is refused; write skew under
-`snapshot` is a valid run whose history is not serializable; a double take is refused; a none query
+`snapshot` is a valid run whose history is not serializable; a double take is refused; an absence
 read fails at a store holding an occurrence of its region; a facet is opaque to patterns; rows of
 an `every` that share a take are refused, rows that take apart pass.
 -/
@@ -1012,14 +1012,14 @@ theorem write_skew_not_serializable :
     serializableB (labelOf skewTable) skewStart.store (historyC skewStart skewRun) = false := by
   decide
 
-/-- A none read over the region of outputs at `&s`, written as a pattern with a variable. -/
-def noneQuery : TQuery := ⟨[(.sym "&s", .var 0)], []⟩
+/-- An absence read over the region of outputs at `&s`, written as a pattern with a variable. -/
+def absenceQuery : TQuery := ⟨[(.sym "&s", .var 0)], []⟩
 
 /-- A region with a variable matches every atom of its location. -/
-theorem region_matches_location : regionPred noneQuery.spec tok = true := by decide
+theorem region_matches_location : regionPred absenceQuery.spec tok = true := by decide
 
-/-- **Negative control**: the none read fails at a store holding an occurrence of its region. -/
-theorem none_fails_when_present : holdsB L [0] noneQuery = false := by decide
+/-- **Negative control**: the absence read fails at a store holding an occurrence of its region. -/
+theorem absence_fails_when_present : holdsB L [0] absenceQuery = false := by decide
 
 /-- A facet is opaque: a pattern with the facet's shape does not see through it. -/
 theorem facet_opaque :

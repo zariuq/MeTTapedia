@@ -455,7 +455,7 @@ def theory
       ∃ command, enabled command ∧ Fires selects command source target :=
   Iff.rfl
 
-/-- Quiescence is the none query of an enabled transaction, not a distinguished
+/-- Quiescence is absence of an enabled transaction, not a distinguished
 fallback answer. -/
 theorem theory_normalForm_iff
     (selects : Selection Location Atom Pattern Environment)

@@ -8,7 +8,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Rati
 Every pair below must differ, and differs on an actual step. Except for the occurs check, the
 controls run on the first-order step over ground terms, restricted to a four-rule theory (`sp`):
 
-* `spawn`: if `U` is not present, make `T`;
+* `spawn`: if `U` is absent, make `T`;
 * `consume`: take `T`, make `U`;
 * `drop`: take `T`, make nothing;
 * `clash`: tell `T = U`.
@@ -17,9 +17,9 @@ controls run on the first-order step over ground terms, restricted to a four-rul
 
 * **The empty container is not the empty answer set** (`emptyStore_has_successor`,
   `store_without_successor`): the empty store has a successor, and the store holding `U` has none.
-* **The none query is not refusal** (`none_admits`, `refusal_without_none`,
-  `spawn_forbidden`): where `U` is not present, the guard of `spawn` holds and `spawn` is admitted;
-  `consume` is refused at the empty store although it asks no none query; where `U` is present, `spawn`
+* **Absence is not refusal** (`absence_admits`, `refusal_without_absence`,
+  `failed_absence_forbids`): where `U` is absent, the guard of `spawn` holds and `spawn` is admitted;
+  `consume` is refused at the empty store although it asks no absence; where `U` is present, `spawn`
   is prepared and forbidden.
 * **No answers is not one empty answer** (`one_empty_answer`): at the store holding `T`, `drop` leaves
   the empty store, so the state has an answer, and it is empty; the store holding `U` has none.
@@ -33,7 +33,7 @@ controls run on the first-order step over ground terms, restricted to a four-rul
   same rule is admitted. Its null is scoped to the frames, not to the firing.
 
 "No verdict" is separated from admission and from refusal in `SchemaGuards`; the two nulls of
-none queries (known missing, not known present) are separated by `KnowledgeTensorWeight.undetermined_separates`.
+absence (known absent, not known present) are separated by `KnowledgeTensorWeight.undetermined_separates`.
 -/
 
 set_option autoImplicit false
@@ -65,14 +65,14 @@ def clashAt : Fir × List ℕ := (⟨clash, [], ⟨[], [], []⟩⟩, [])
 /-! ## Reading refusals -/
 
 /-- A firing that takes `T` is refused where no `T` is present. -/
-theorem takes_T_refused {σ : Conf × Set ℕ} (noneOfT : ∀ o ∈ σ.1.present, o.1 ≠ factT)
+theorem takes_T_refused {σ : Conf × Set ℕ} (absentT : ∀ o ∈ σ.1.present, o.1 ≠ factT)
     (f : Fir × List ℕ) (takesT : f.1.rule.take = [factT]) : ¬ sp.Admits (s := σ) f := by
   intro admitted
   have valid := valid_of admitted
   have takes := takes_match valid
   rw [takesT] at takes
   obtain ⟨o, taken, isT⟩ := match_one takes
-  exact noneOfT o (taken_present valid (by rw [taken]; simp)) isT.symm
+  exact absentT o (taken_present valid (by rw [taken]; simp)) isT.symm
 
 /-- `clash` has no solution at any state. -/
 theorem clash_unsolvable (σ : Conf × Set ℕ) (f : Fir × List ℕ) (isClash : f.1.rule = clash) :
@@ -92,14 +92,14 @@ theorem spawn_admitted : sp.Admits (s := emptyS) spawnAt := by
   intro c member
   simp only [spawn, rule, List.mem_singleton] at member
   subst member
-  exact none_holds (by decide)
+  exact absent_holds (by decide)
 
 /-- **The store holding `U` has no successor.** -/
 theorem onlyU_no_successor : NoSuccessor sp onlyU := by
   intro f admitted
   have valid := valid_of admitted
   rcases admitted.2.1 with isSpawn | isConsume | isDrop | isClash
-  · exact none_refuted valid (p := factU) (by rw [isSpawn]; simp [spawn, rule])
+  · exact absent_refuted valid (p := factU) (by rw [isSpawn]; simp [spawn, rule])
       (o := (factU, 0)) (by decide) rfl
   · exact takes_T_refused (by decide) f (by rw [isConsume]; rfl) admitted
   · exact takes_T_refused (by decide) f (by rw [isDrop]; rfl) admitted
@@ -115,15 +115,15 @@ theorem store_without_successor : ¬ EmptyStore sp onlyU ∧ NoSuccessor sp only
       have none : ({(factU, 0)} : Finset Occ) = ∅ := empty
       simp at none, onlyU_no_successor⟩
 
-/-! ## The none query and refusal -/
+/-! ## Absence and refusal -/
 
-/-- **The none query admits**: where `U` is not present, the guard holds and `spawn` is admitted. -/
-theorem none_admits :
+/-- **Absence admits**: where `U` is absent, the guard holds and `spawn` is admitted. -/
+theorem absence_admits :
     (Check.predicate .none factU).Holds ground () Prod.fst emptyS.1.present ∧ sp.Admits (s := emptyS) spawnAt :=
-  ⟨none_holds (by decide), spawn_admitted⟩
+  ⟨absent_holds (by decide), spawn_admitted⟩
 
-/-- **Refusal without none queries**: `consume` asks no none query, and is refused at the empty store. -/
-theorem refusal_without_none :
+/-- **Refusal without absence**: `consume` asks no absence, and is refused at the empty store. -/
+theorem refusal_without_absence :
     consume.checks = [] ∧ ∀ f : Fir × List ℕ, f.1.rule = consume → ¬ sp.Admits (s := emptyS) f :=
   ⟨rfl, fun f isConsume => takes_T_refused (by decide) f (by rw [isConsume]; rfl)⟩
 
@@ -133,7 +133,7 @@ theorem spawn_prepared : sp.Prepares (s := onlyU) spawnAt := by
   intro e member
   exact absurd (show e ∈ ([] : List (Equation Expr)) from member) List.not_mem_nil
 
-/-- **Failed none query forbids**: at the store holding `U`, `spawn` is prepared and refused. -/
+/-- **Failed absence forbids**: at the store holding `U`, `spawn` is prepared and refused. -/
 theorem spawn_forbidden : Forbidden sp (s := onlyU) spawnAt :=
   ⟨spawn_prepared, onlyU_no_successor spawnAt⟩
 
@@ -205,8 +205,8 @@ end Occurs
 
 #print axioms emptyStore_has_successor
 #print axioms store_without_successor
-#print axioms none_admits
-#print axioms refusal_without_none
+#print axioms absence_admits
+#print axioms refusal_without_absence
 #print axioms spawn_forbidden
 #print axioms one_empty_answer
 #print axioms no_successor_with_candidates

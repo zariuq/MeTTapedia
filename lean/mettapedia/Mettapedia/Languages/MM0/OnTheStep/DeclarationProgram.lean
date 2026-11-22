@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MM0.OnTheStep.NoneRewriting
+import Mettapedia.Languages.MM0.OnTheStep.AbsenceRewriting
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Machines.TermRewriting
 
 /-!
@@ -27,7 +27,7 @@ gives a finite program of it that checks the sort and term statements of an `.mm
 ## The program (`program`, twenty rules)
 
 Each rule takes one row. A lookup in the environment is a read of a row with unknowns, solved by the match; a
-freshness condition is a none query whose pattern is written within the unknowns the take binds.
+freshness condition is an absence query whose pattern is written within the unknowns the take binds.
 
 * `declareSort`: the next statement is a sort whose name is no sort's: make its name and entry rows.
   `repeatSort`: the next statement declares a sort again with the same modifiers: accept it, change nothing
@@ -48,11 +48,11 @@ These are the checks of MM0's GSLT definition of term declarations, written by h
 unknown sort, bound dependencies, strict bound sort, duplicate binder, unknown dependency, pure target), with the
 refusals left as stuck runs: a declaration is refused when no rule continues its check.
 
-**In the fragment** (`program_fragment`): every rule has no collect pattern, none queries only, and is range
-restricted, so `NoneRewriting.reachable_iff_none` relates the program's rewriting of bags to the step.
+**In the fragment** (`program_fragment`): every rule has no collect pattern, absence queries only, and is range
+restricted, so `AbsenceRewriting.reachable_iff_absent` relates the program's rewriting of bags to the step.
 
 **Firing lemmas** (`declareSort_fires` and the rest): each rule rewrites a bag holding its taken row, given its
-reads among the other rows and its none patterns missing.
+reads among the other rows and its absence patterns absent.
 -/
 
 set_option autoImplicit false
@@ -65,7 +65,7 @@ open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax
 open NamesOnTheStep (Expr)
 open Presentation.Schematic
 open Machines (unknowns vars_of_mem_unknowns)
-open NoneRewriting
+open AbsenceRewriting
 
 /-! ## Ground rows -/
 
@@ -210,50 +210,50 @@ def rowP (kind : ℕ) (args : List Tm) : Tm := appP (appP (.const (.sym 3)) (.co
   rw [inst_listP]
   rfl
 
-/-! ## Rules with takes, reads, none queries and made rows -/
+/-! ## Rules with takes, reads, absence queries and made rows -/
 
-/-- **A rule** with takes, reads, none queries and made rows; no tell, no guard, no collect query. -/
-def mkRule (take read missing produce : List Tm) : SRule :=
-  ⟨PUnit.unit, ⟨take, read, [], missing.map (Check.predicate .none), produce⟩, []⟩
+/-- **A rule** with takes, reads, absence queries and made rows; no tell, no guard, no collect query. -/
+def mkRule (take read absent produce : List Tm) : SRule :=
+  ⟨PUnit.unit, ⟨take, read, [], absent.map (Check.predicate .none), produce⟩, []⟩
 
-theorem flatMap_checkTerms_none : ∀ l : List Tm, (l.map (Check.predicate .none)).flatMap checkTerms = l
+theorem flatMap_checkTerms_absent : ∀ l : List Tm, (l.map (Check.predicate .none)).flatMap checkTerms = l
   | [] => rfl
   | p :: l => by
-      rw [List.map_cons, List.flatMap_cons, flatMap_checkTerms_none l]
+      rw [List.map_cons, List.flatMap_cons, flatMap_checkTerms_absent l]
       rfl
 
-theorem flatMap_nonePatternOf_none : ∀ l : List Tm, (l.map (Check.predicate .none)).flatMap nonePatternOf = l
+theorem flatMap_absenceOf_absent : ∀ l : List Tm, (l.map (Check.predicate .none)).flatMap absenceOf = l
   | [] => rfl
   | p :: l => by
-      rw [List.map_cons, List.flatMap_cons, flatMap_nonePatternOf_none l]
+      rw [List.map_cons, List.flatMap_cons, flatMap_absenceOf_absent l]
       rfl
 
-theorem flatMap_guardOf_none : ∀ l : List Tm, (l.map (Check.predicate .none)).flatMap guardOf = []
+theorem flatMap_guardOf_absent : ∀ l : List Tm, (l.map (Check.predicate .none)).flatMap guardOf = []
   | [] => rfl
   | p :: l => by
-      rw [List.map_cons, List.flatMap_cons, flatMap_guardOf_none l]
+      rw [List.map_cons, List.flatMap_cons, flatMap_guardOf_absent l]
       rfl
 
-theorem nonePatternsOf_mkRule (take read missing produce : List Tm) :
-    nonePatternsOf (mkRule take read missing produce) = missing :=
-  flatMap_nonePatternOf_none missing
+theorem absencesOf_mkRule (take read absent produce : List Tm) :
+    absencesOf (mkRule take read absent produce) = absent :=
+  flatMap_absenceOf_absent absent
 
-theorem equationsOf_mkRule (take read missing produce : List Tm) :
-    equationsOf (mkRule take read missing produce) = [] := by
-  show [] ++ (missing.map (Check.predicate .none)).flatMap guardOf = []
-  rw [flatMap_guardOf_none]
+theorem equationsOf_mkRule (take read absent produce : List Tm) :
+    equationsOf (mkRule take read absent produce) = [] := by
+  show [] ++ (absent.map (Check.predicate .none)).flatMap guardOf = []
+  rw [flatMap_guardOf_absent]
   rfl
 
-theorem written_mkRule (take read missing produce : List Tm) :
-    written (mkRule take read missing produce) = missing ++ produce := by
-  show [] ++ [] ++ (missing.map (Check.predicate .none)).flatMap checkTerms ++ produce = missing ++ produce
-  rw [flatMap_checkTerms_none]
+theorem written_mkRule (take read absent produce : List Tm) :
+    written (mkRule take read absent produce) = absent ++ produce := by
+  show [] ++ [] ++ (absent.map (Check.predicate .none)).flatMap checkTerms ++ produce = absent ++ produce
+  rw [flatMap_checkTerms_absent]
   rfl
 
-/-- **A rule whose none patterns and made rows have only unknowns of its takes and reads is in the fragment.** -/
-theorem mkRule_restricted {take read missing produce : List Tm}
-    (range : ∀ t ∈ missing ++ produce, ∀ x ∈ unknowns t, ∃ t' ∈ take ++ read, x ∈ unknowns t') :
-    NoneRestricted (mkRule take read missing produce) := by
+/-- **A rule whose absence patterns and made rows have only unknowns of its takes and reads is in the fragment.** -/
+theorem mkRule_restricted {take read absent produce : List Tm}
+    (range : ∀ t ∈ absent ++ produce, ∀ x ∈ unknowns t, ∃ t' ∈ take ++ read, x ∈ unknowns t') :
+    AbsenceRestricted (mkRule take read absent produce) := by
   refine ⟨rfl, List.all_eq_true.mpr fun c inside => ?_, fun t inWritten x vars => ?_⟩
   · obtain ⟨p, -, rfl⟩ := List.mem_map.mp inside
     rfl
@@ -362,8 +362,8 @@ def program : List SRule :=
     regularDep, regularDepsDone, regularName, regularBlank, regularNamesDone, bindersDone, arrowArgument,
     arrowDep, arrowDepsDone, arrowReturn, returnDep, returnDepsDone]
 
-/-- **The program is in the fragment**: no collect pattern, none queries only, range restricted. -/
-theorem program_fragment : ∀ r ∈ program, NoneRestricted r := by
+/-- **The program is in the fragment**: no collect pattern, absence queries only, range restricted. -/
+theorem program_fragment : ∀ r ∈ program, AbsenceRestricted r := by
   intro r member
   simp only [program, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
@@ -373,16 +373,16 @@ theorem program_fragment : ∀ r ∈ program, NoneRestricted r := by
 /-! ## Firing -/
 
 /-- **A rule of the program fires** at a bag holding the instances of its takes beside other rows, when its
-reads are among the other rows and its none patterns are missing from the bag. -/
+reads are among the other rows and its absence patterns are absent from the bag. -/
 theorem fires {r : SRule} (member : r ∈ program) (θ : ℕ → Expr) (others : Multiset Expr)
     {bag bag' : Multiset Expr}
     (split : ((r.body.take.map (inst θ) : List Expr) : Multiset Expr) + others = bag)
     (readsIn : ∀ q ∈ r.body.read, inst θ q ∈ others) (noEquations : equationsOf r = [])
-    (nones : ∀ p ∈ nonePatternsOf r, inst θ p ∉ bag)
+    (absences : ∀ p ∈ absencesOf r, inst θ p ∉ bag)
     (after : bag' = ((r.body.produce.map (inst θ) : List Expr) : Multiset Expr) + others) :
-    RewritesNone program bag bag' :=
+    RewritesAbsent program bag bag' :=
   ⟨r, member, θ, others, split, readsIn,
-    fun e inside => by rw [noEquations] at inside; exact absurd inside List.not_mem_nil, nones, after⟩
+    fun e inside => by rw [noEquations] at inside; exact absurd inside List.not_mem_nil, absences, after⟩
 
 /-- An instantiation listing the values of the unknowns `0, 1, …`. -/
 def values (l : List Expr) : ℕ → Expr := fun n => l.getD n (.sym 0)
@@ -390,7 +390,7 @@ def values (l : List Expr) : ℕ → Expr := fun n => l.getD n (.sym 0)
 theorem declareSort_fires (p st pr f s rest : Expr) (others : Multiset Expr)
     (fresh : sortName s ∉
       ([pending (node "file_more" [node "statement_sort" [p, st, pr, f, s], rest])] : Multiset Expr) + others) :
-    RewritesNone program
+    RewritesAbsent program
       (([pending (node "file_more" [node "statement_sort" [p, st, pr, f, s], rest])] : Multiset Expr) + others)
       (([sortName s, sortEntry s (modifiers p st pr f), pending rest] : Multiset Expr) + others) :=
   fires (r := declareSort) (by simp [program]) (values [p, st, pr, f, s, rest]) others rfl
@@ -402,7 +402,7 @@ theorem declareSort_fires (p st pr f s rest : Expr) (others : Multiset Expr)
 
 theorem repeatSort_fires (p st pr f s rest : Expr) (others : Multiset Expr)
     (known : sortEntry s (modifiers p st pr f) ∈ others) :
-    RewritesNone program
+    RewritesAbsent program
       (([pending (node "file_more" [node "statement_sort" [p, st, pr, f, s], rest])] : Multiset Expr) + others)
       (([pending rest] : Multiset Expr) + others) :=
   fires (r := repeatSort) (by simp [program]) (values [p, st, pr, f, s, rest]) others rfl
@@ -414,7 +414,7 @@ theorem repeatSort_fires (p st pr f s rest : Expr) (others : Multiset Expr)
     rfl
 
 theorem acceptFile_fires (others : Multiset Expr) :
-    RewritesNone program (([pending (node "file_empty" [])] : Multiset Expr) + others)
+    RewritesAbsent program (([pending (node "file_empty" [])] : Multiset Expr) + others)
       (([accepted] : Multiset Expr) + others) :=
   fires (r := acceptFile) (by simp [program]) (values []) others rfl
     (fun q inside => absurd inside List.not_mem_nil) (equationsOf_mkRule _ _ _ _)
@@ -424,7 +424,7 @@ theorem acceptFile_fires (others : Multiset Expr) :
 theorem startTerm_fires (t args ty rest : Expr) (others : Multiset Expr)
     (fresh : termName t ∉
       ([pending (node "file_more" [node "statement_term" [t, args, ty], rest])] : Multiset Expr) + others) :
-    RewritesNone program
+    RewritesAbsent program
       (([pending (node "file_more" [node "statement_term" [t, args, ty], rest])] : Multiset Expr) + others)
       (([termName t, binders t args ty rest] : Multiset Expr) + others) :=
   fires (r := startTerm) (by simp [program]) (values [t, args, ty, rest]) others rfl
@@ -436,7 +436,7 @@ theorem startTerm_fires (t args ty rest : Expr) (others : Multiset Expr)
 
 theorem boundGroup_fires (t names s more ty rest p pr f : Expr) (others : Multiset Expr)
     (known : sortEntry s (modifiers p (node "strict_no" []) pr f) ∈ others) :
-    RewritesNone program
+    RewritesAbsent program
       (([binders t (node "tbinders_more" [node "tbinder_bound" [names, node "typ_deps" [s, node "ids_empty" []]],
           more]) ty rest] : Multiset Expr) + others)
       (([boundNames t names s more ty rest] : Multiset Expr) + others) :=
@@ -451,7 +451,7 @@ theorem boundGroup_fires (t names s more ty rest p pr f : Expr) (others : Multis
 theorem boundName_fires (t x xs s more ty rest : Expr) (others : Multiset Expr)
     (fresh : binderName t x ∉
       ([boundNames t (node "ids_more" [x, xs]) s more ty rest] : Multiset Expr) + others) :
-    RewritesNone program
+    RewritesAbsent program
       (([boundNames t (node "ids_more" [x, xs]) s more ty rest] : Multiset Expr) + others)
       (([binderName t x, boundVar t x, boundNames t xs s more ty rest] : Multiset Expr) + others) :=
   fires (r := boundName) (by simp [program]) (values [t, x, xs, s, more, ty, rest]) others rfl
@@ -462,7 +462,7 @@ theorem boundName_fires (t x xs s more ty rest : Expr) (others : Multiset Expr)
     rfl
 
 theorem boundNamesDone_fires (t s more ty rest : Expr) (others : Multiset Expr) :
-    RewritesNone program
+    RewritesAbsent program
       (([boundNames t (node "ids_empty" []) s more ty rest] : Multiset Expr) + others)
       (([binders t more ty rest] : Multiset Expr) + others) :=
   fires (r := boundNamesDone) (by simp [program]) (values [t, s, more, ty, rest]) others rfl
@@ -472,7 +472,7 @@ theorem boundNamesDone_fires (t s more ty rest : Expr) (others : Multiset Expr) 
 
 theorem regularGroup_fires (t names s deps more ty rest m : Expr) (others : Multiset Expr)
     (known : sortEntry s m ∈ others) :
-    RewritesNone program
+    RewritesAbsent program
       (([binders t (node "tbinders_more" [node "tbinder_regular" [names, node "typ_deps" [s, deps]], more]) ty
           rest] : Multiset Expr) + others)
       (([regularDeps t deps names more ty rest] : Multiset Expr) + others) :=
@@ -486,7 +486,7 @@ theorem regularGroup_fires (t names s deps more ty rest m : Expr) (others : Mult
 
 theorem regularDep_fires (t d ds names more ty rest : Expr) (others : Multiset Expr)
     (bound : boundVar t d ∈ others) :
-    RewritesNone program
+    RewritesAbsent program
       (([regularDeps t (node "ids_more" [d, ds]) names more ty rest] : Multiset Expr) + others)
       (([regularDeps t ds names more ty rest] : Multiset Expr) + others) :=
   fires (r := regularDep) (by simp [program]) (values [t, d, ds, names, more, ty, rest]) others rfl
@@ -498,7 +498,7 @@ theorem regularDep_fires (t d ds names more ty rest : Expr) (others : Multiset E
     rfl
 
 theorem regularDepsDone_fires (t names more ty rest : Expr) (others : Multiset Expr) :
-    RewritesNone program
+    RewritesAbsent program
       (([regularDeps t (node "ids_empty" []) names more ty rest] : Multiset Expr) + others)
       (([regularNames t names more ty rest] : Multiset Expr) + others) :=
   fires (r := regularDepsDone) (by simp [program]) (values [t, names, more, ty, rest]) others rfl
@@ -508,7 +508,7 @@ theorem regularDepsDone_fires (t names more ty rest : Expr) (others : Multiset E
 
 theorem regularName_fires (t x xs more ty rest : Expr) (others : Multiset Expr)
     (fresh : binderName t x ∉ ([regularNames t (node "bids_more" [x, xs]) more ty rest] : Multiset Expr) + others) :
-    RewritesNone program
+    RewritesAbsent program
       (([regularNames t (node "bids_more" [x, xs]) more ty rest] : Multiset Expr) + others)
       (([binderName t x, regularNames t xs more ty rest] : Multiset Expr) + others) :=
   fires (r := regularName) (by simp [program]) (values [t, x, xs, more, ty, rest]) others rfl
@@ -519,7 +519,7 @@ theorem regularName_fires (t x xs more ty rest : Expr) (others : Multiset Expr)
     rfl
 
 theorem regularBlank_fires (t xs more ty rest : Expr) (others : Multiset Expr) :
-    RewritesNone program
+    RewritesAbsent program
       (([regularNames t (node "bids_blank" [xs]) more ty rest] : Multiset Expr) + others)
       (([regularNames t xs more ty rest] : Multiset Expr) + others) :=
   fires (r := regularBlank) (by simp [program]) (values [t, xs, more, ty, rest]) others rfl
@@ -528,7 +528,7 @@ theorem regularBlank_fires (t xs more ty rest : Expr) (others : Multiset Expr) :
     rfl
 
 theorem regularNamesDone_fires (t more ty rest : Expr) (others : Multiset Expr) :
-    RewritesNone program
+    RewritesAbsent program
       (([regularNames t (node "bids_empty" []) more ty rest] : Multiset Expr) + others)
       (([binders t more ty rest] : Multiset Expr) + others) :=
   fires (r := regularNamesDone) (by simp [program]) (values [t, more, ty, rest]) others rfl
@@ -537,7 +537,7 @@ theorem regularNamesDone_fires (t more ty rest : Expr) (others : Multiset Expr) 
     rfl
 
 theorem bindersDone_fires (t ty rest : Expr) (others : Multiset Expr) :
-    RewritesNone program
+    RewritesAbsent program
       (([binders t (node "tbinders_empty" []) ty rest] : Multiset Expr) + others)
       (([arrow t ty rest] : Multiset Expr) + others) :=
   fires (r := bindersDone) (by simp [program]) (values [t, ty, rest]) others rfl
@@ -547,7 +547,7 @@ theorem bindersDone_fires (t ty rest : Expr) (others : Multiset Expr) :
 
 theorem arrowArgument_fires (t s deps tail rest m : Expr) (others : Multiset Expr)
     (known : sortEntry s m ∈ others) :
-    RewritesNone program
+    RewritesAbsent program
       (([arrow t (node "arrow_more" [node "typ_deps" [s, deps], tail]) rest] : Multiset Expr) + others)
       (([arrowDeps t deps tail rest] : Multiset Expr) + others) :=
   fires (r := arrowArgument) (by simp [program]) (values [t, s, deps, tail, rest, m]) others rfl
@@ -559,7 +559,7 @@ theorem arrowArgument_fires (t s deps tail rest m : Expr) (others : Multiset Exp
     rfl
 
 theorem arrowDep_fires (t d ds tail rest : Expr) (others : Multiset Expr) (bound : boundVar t d ∈ others) :
-    RewritesNone program
+    RewritesAbsent program
       (([arrowDeps t (node "ids_more" [d, ds]) tail rest] : Multiset Expr) + others)
       (([arrowDeps t ds tail rest] : Multiset Expr) + others) :=
   fires (r := arrowDep) (by simp [program]) (values [t, d, ds, tail, rest]) others rfl
@@ -571,7 +571,7 @@ theorem arrowDep_fires (t d ds tail rest : Expr) (others : Multiset Expr) (bound
     rfl
 
 theorem arrowDepsDone_fires (t tail rest : Expr) (others : Multiset Expr) :
-    RewritesNone program
+    RewritesAbsent program
       (([arrowDeps t (node "ids_empty" []) tail rest] : Multiset Expr) + others)
       (([arrow t tail rest] : Multiset Expr) + others) :=
   fires (r := arrowDepsDone) (by simp [program]) (values [t, tail, rest]) others rfl
@@ -581,7 +581,7 @@ theorem arrowDepsDone_fires (t tail rest : Expr) (others : Multiset Expr) :
 
 theorem arrowReturn_fires (t s deps rest st pr f : Expr) (others : Multiset Expr)
     (known : sortEntry s (modifiers (node "pure_no" []) st pr f) ∈ others) :
-    RewritesNone program
+    RewritesAbsent program
       (([arrow t (node "arrow_last" [node "typ_deps" [s, deps]]) rest] : Multiset Expr) + others)
       (([returnDeps t deps rest] : Multiset Expr) + others) :=
   fires (r := arrowReturn) (by simp [program]) (values [t, s, deps, rest, st, pr, f]) others rfl
@@ -593,7 +593,7 @@ theorem arrowReturn_fires (t s deps rest st pr f : Expr) (others : Multiset Expr
     rfl
 
 theorem returnDep_fires (t d ds rest : Expr) (others : Multiset Expr) (bound : boundVar t d ∈ others) :
-    RewritesNone program
+    RewritesAbsent program
       (([returnDeps t (node "ids_more" [d, ds]) rest] : Multiset Expr) + others)
       (([returnDeps t ds rest] : Multiset Expr) + others) :=
   fires (r := returnDep) (by simp [program]) (values [t, d, ds, rest]) others rfl
@@ -605,7 +605,7 @@ theorem returnDep_fires (t d ds rest : Expr) (others : Multiset Expr) (bound : b
     rfl
 
 theorem returnDepsDone_fires (t rest : Expr) (others : Multiset Expr) :
-    RewritesNone program
+    RewritesAbsent program
       (([returnDeps t (node "ids_empty" []) rest] : Multiset Expr) + others)
       (([pending rest] : Multiset Expr) + others) :=
   fires (r := returnDepsDone) (by simp [program]) (values [t, rest]) others rfl

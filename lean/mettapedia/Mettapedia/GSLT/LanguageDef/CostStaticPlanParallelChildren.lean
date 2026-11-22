@@ -142,14 +142,14 @@ theorem CostStaticRegionPlan.parallelChildrenCanonicalStopAligned_of_rawAlignmen
                   rightAdmission.wellSorted.1.2.2.1
               have leftReflectiveElements : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     leftAvailable.length leftElements = true := by
                 intro presentation membership
                 simpa [binderSafeAt] using
                   leftAdmission.wellSorted.2 presentation membership
               have rightReflectiveElements : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     rightAvailable.length rightElements = true := by
                 intro presentation membership
                 simpa [binderSafeAt] using

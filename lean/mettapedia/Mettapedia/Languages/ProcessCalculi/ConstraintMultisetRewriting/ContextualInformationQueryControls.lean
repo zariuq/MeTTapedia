@@ -23,20 +23,20 @@ theorem the_actual_refuter_constructs_the_joined_information :
   · exact ⟨ContextualFrameUnifier.solvable_of_consistent ⟨generator captures, SubstitutionAction.models_nil _ _⟩, by simp⟩
   · intro chosen member
     obtain rfl := List.mem_singleton.mp member
-    exact the_shared_variable_conjunction_certifiably_matches_none
+    exact the_shared_variable_conjunction_is_certifiably_absent
 
 theorem the_information_profile_retains_the_shared_query :
-    ContextualConjunctiveNone.Ask queries locals captures [] patterns rows world :=
-  the_actual_refuter_constructs_the_joined_information.noneMatch patterns (List.mem_singleton_self _)
+    ContextualConjunctiveAbsence.Ask queries locals captures [] patterns rows world :=
+  the_actual_refuter_constructs_the_joined_information.absent patterns (List.mem_singleton_self _)
 
 theorem the_added_joint_witness_refuses_the_same_information :
     ¬ Admitted queries locals [] rows enlarged [] [patterns] := by
   intro admitted
   exact adding_that_row_invalidates_the_guard
-    (admitted.noneMatch patterns (List.mem_singleton_self _))
+    (admitted.absent patterns (List.mem_singleton_self _))
 
 theorem stopping_the_query_solver_is_not_a_joined_certificate :
-    ContextualConjunctiveNone.certifies queries locals captures 0 [] patterns rows world = false :=
+    ContextualConjunctiveAbsence.certifies queries locals captures 0 [] patterns rows world = false :=
   zero_fuel_does_not_refute_any_of_the_nonempty_candidate_set
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualInformationQueryControls

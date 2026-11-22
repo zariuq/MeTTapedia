@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+import Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-!
 # Syntax derived from a reflective presentation
@@ -9,11 +9,9 @@ below provide the corresponding induction principle on the shared `Pattern`
 carrier.  They are indexed by the proof-oriented signature data; they are not
 a second term syntax and contain no hard-coded rho constructor names.
 
-A quotation is admitted as its presentation's quote scope requires
-(`ReflectiveSubstitution.quoteAdmits`). Under a closed scope quoted code is closed
-with respect to object binders, as contextual modal type theory types the body
-of `box` in the empty object context; a quotation whose payload exposes a drop
-denotes that name and is not code. A reaching scope admits every quotation.
+Sorting is structural: a quotation is a name whenever its code is a process in
+the same context. Whether a substitution policy admits a quotation is a separate
+judgment (`ReflectiveQuoteAdmission`) and no premise of sorting.
 -/
 
 namespace Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
@@ -39,7 +37,6 @@ mutual
         NameWellSorted presentation free bound (.fvar name)
     | quote {bound : List String} {process : Pattern} :
         ProcWellSorted presentation free bound process →
-        ReflectiveSubstitution.quoteAdmits presentation.toReflectivePresentationDecl process = true →
         NameWellSorted presentation free bound
           (.apply presentation.quoteConstructor [process])
 
@@ -105,7 +102,7 @@ mutual
         rw [List.getElem?_append_left inBounds]
         exact lookup
     | fvar lookup => exact .fvar lookup
-    | quote processTyped admitted => exact .quote (processTyped.weakenBoundRight extension) admitted
+    | quote processTyped => exact .quote (processTyped.weakenBoundRight extension)
 
   /-- Process form of outer-context weakening. -/
   theorem ProcWellSorted.weakenBoundRight
@@ -182,9 +179,7 @@ theorem ProcListWellSorted.eraseIdx
       | zero => exact tailTyped
       | succ index => exact .cons headTyped (inductionHypothesis tailTyped index)
 
-/-! ## Presentation-parametric examples -/
-
-/-! ## Scope and admission -/
+/-! ## Scope -/
 
 mutual
   /-- A derived name uses only the indices of its sort context. -/
@@ -197,7 +192,7 @@ mutual
     | bvar lookup =>
         simpa [Pattern.isWellScopedAt] using (List.getElem?_eq_some_iff.mp lookup).1
     | fvar _ => rfl
-    | quote processTyped _ =>
+    | quote processTyped =>
         simpa [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] using processTyped.isWellScopedAt
 
   /-- A derived process uses only the indices of its sort context. -/
@@ -236,6 +231,8 @@ mutual
           processesTyped.isWellScopedListAt]
 end
 
+/-! ## Presentation-parametric examples -/
+
 section Examples
 
 variable (presentation : ReflectiveProcessSignature)
@@ -248,31 +245,27 @@ example : ProcWellSorted presentation FreeSortContext.empty []
 /-- Positive: quoting the unit yields a name. -/
 example : NameWellSorted presentation FreeSortContext.empty []
     (.apply presentation.quoteConstructor
-      [.apply presentation.parallelUnitConstructor []]) := by
-  refine .quote .unit ?_
-  unfold ReflectiveSubstitution.quoteAdmits
-  split <;> simp [ReflectiveSubstitution.resolveQuotes, ReflectiveSubstitution.resolveQuotesList,
-    ReflectiveSubstitution.finishResolveApply, ReflectiveSubstitution.exposedDrop?,
-    ReflectiveSubstitution.parallelLeaves, ReflectiveSubstitution.closedCode, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt]
+      [.apply presentation.parallelUnitConstructor []]) :=
+  .quote .unit
 
-/-- Negative: under a closed scope, quoted code that mentions an enclosing binder is
-not a name, although its code is a well-sorted process. -/
-theorem quoted_binder_not_name_of_closed (closed : presentation.quoteScope = .closed) :
-    ¬ NameWellSorted presentation FreeSortContext.empty [presentation.nameSort]
+/-- Positive: a quotation is a name also when its code mentions an enclosing
+binder, whatever substitution later does with that code. -/
+theorem quoted_binder_name_wellSorted :
+    NameWellSorted presentation FreeSortContext.empty [presentation.nameSort]
       (.apply presentation.quoteConstructor
-        [.collection presentation.parallelCollection
-          [.apply presentation.dropConstructor [.bvar 0],
-            .apply presentation.dropConstructor [.bvar 0]] none]) := by
+        [.apply presentation.outputConstructor
+          [.bvar 0, .apply presentation.parallelUnitConstructor []]]) :=
+  .quote (.output (.bvar rfl) .unit)
+
+/-- Negative: quoting does not bind, so code that mentions an unbound index does
+not become a name by being quoted. -/
+theorem quoted_unbound_not_name_wellSorted_empty :
+    ¬ NameWellSorted presentation FreeSortContext.empty []
+      (.apply presentation.quoteConstructor
+        [.apply presentation.dropConstructor [.bvar 0]]) := by
   intro typed
-  cases typed with
-  | quote _ admitted =>
-      simp [ReflectiveSubstitution.quoteAdmits, closed, ReflectiveSubstitution.exposedDrop?,
-        ReflectiveSubstitution.closedCode, ReflectiveSubstitution.closedCodeList,
-        ReflectiveSubstitution.resolveQuotes, ReflectiveSubstitution.resolveQuotesList,
-        ReflectiveSubstitution.parallelLeaves, ReflectiveSubstitution.parallelLeavesList,
-        ReflectiveSubstitution.finishResolveApply, Pattern.isWellScopedAt,
-        Pattern.isWellScopedListAt] at admitted
+  have inScope := typed.isWellScopedAt
+  simp [Pattern.isWellScopedAt, Pattern.isWellScopedListAt] at inScope
 
 /-- Negative: a top-level bound variable is rejected in an empty context. -/
 theorem bvar_zero_not_name_wellSorted_empty :

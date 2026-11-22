@@ -26,7 +26,7 @@ along `invariant_of_run`), and as fact 1 read through the least fixed point (`ge
 `induction_of_membership`).
 
 **Fact 3, closure** ("these and no others", an exhaustive list of the rows present, a refutation by
-none queries): a statement `ClosedBy L` says every row of the region present is in `L`. Two exact
+absence): a statement `ClosedBy L` says every row of the region present is in `L`. Two exact
 conditions:
 
 * every closure statement survives every other party's step **exactly when the region is owned**

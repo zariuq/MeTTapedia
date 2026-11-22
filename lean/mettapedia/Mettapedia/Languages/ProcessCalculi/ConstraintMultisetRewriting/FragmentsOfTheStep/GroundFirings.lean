@@ -101,9 +101,9 @@ theorem fresh_outputs : ∀ (values : List Expr) (world : Finset Occ), ∃ made 
   | value :: values, world => by
       obtain ⟨o, fresh, atValue⟩ := exists_fresh world value
       obtain ⟨made, distinct, away, outputs⟩ := fresh_outputs values (insert o world)
-      have missing : o ∉ made := fun member =>
+      have absent : o ∉ made := fun member =>
         Finset.disjoint_left.mp away (by simpa using member) (by simp)
-      refine ⟨o :: made, List.nodup_cons.mpr ⟨missing, distinct⟩, ?_, ?_⟩
+      refine ⟨o :: made, List.nodup_cons.mpr ⟨absent, distinct⟩, ?_, ?_⟩
       · apply Finset.disjoint_left.mpr
         intro item inMade inWorld
         rcases List.mem_cons.mp (by simpa using inMade) with rfl | member

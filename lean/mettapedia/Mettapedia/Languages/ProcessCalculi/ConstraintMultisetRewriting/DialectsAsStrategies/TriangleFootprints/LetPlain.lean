@@ -186,14 +186,14 @@ theorem unify_plain (policy : Entry.RebuildPolicy) :
   have identical {environment left right} (same : left.erase = right.erase) :
       applied environment left right environment (.identical same) :=
     fun _ _ plainEnv => plainEnv
-  have bindLeft {environment name right} (missing : name ∉ TypeSubst.typeVars right.erase) :
+  have bindLeft {environment name right} (absent : name ∉ TypeSubst.typeVars right.erase) :
       applied environment (.var name) right (Entry.Value.bind policy environment name right)
-        (.bindLeft missing) :=
+        (.bindLeft absent) :=
     fun _ plainRight plainEnv => bind_plain policy plainEnv name plainRight
   have bindRight {environment left name} (nonvar : ∀ other, left.erase ≠ .var other)
-      (missing : name ∉ TypeSubst.typeVars left.erase) :
+      (absent : name ∉ TypeSubst.typeVars left.erase) :
       applied environment left (.var name) (Entry.Value.bind policy environment name left)
-        (.bindRight nonvar missing) :=
+        (.bindRight nonvar absent) :=
     fun plainLeft _ plainEnv => bind_plain policy plainEnv name plainLeft
   have expression {environment output left right earlier later}
       (children : Entry.Value.UnifyListRel policy environment left right output)

@@ -1528,7 +1528,11 @@ theorem rho_boundaryPlan_canonicalize_ne_bvar
           simpa only [declaration] using
             CostHereditaryForeignBoundaryWitness.rhoDecl_mem_profile
               declarationColor)
-      rw [quoteHead] at safe canonical
+      rw [quoteHead, Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_closed (CostCanonicalLaws.rho_costWholeReflectionProfile_closed
+        declaration (by
+          simpa only [declaration] using
+            CostHereditaryForeignBoundaryWitness.rhoDecl_mem_profile declarationColor))] at safe
+      rw [quoteHead] at canonical
       exact (canonicalize_quote_ne_bvar_of_binderSafeAt declaration
         (Ne.symm
           (CostHereditaryForeignBoundaryWitness.rhoDecl_drop_ne_quote

@@ -1,4 +1,6 @@
 function List.mergeSort: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, which is not read
-function List.MergeSort.Internal.splitInTwo: erased proofs in the definition or its equations are not reconstructed
+function List.MergeSort.Internal.splitInTwo: applies _private.Init.Data.List.Sort.Basic.0.List.MergeSort.Internal.splitInTwo._proof_3, which is not read
 function Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading: applies Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel, which is not read
 function Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.sourceFuel: applies List.MergeSort.Internal.splitInTwo, which is not read
+function _private.Init.Data.List.Sort.Basic.0.List.MergeSort.Internal.splitInTwo._proof_3: applies List.map, which is not read
+function _private.Init.Data.List.Sort.Basic.0.List.MergeSort.Internal.splitInTwo._proof_4: applies List.map, which is not read

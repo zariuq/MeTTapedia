@@ -902,9 +902,9 @@ theorem comm_one_transition (label : O → Pattern) (t u channel A B : Pattern) 
     fun o other₁ other₂ => ?_, ⟨σ, solvedσ⟩, reads⟩
   · show fire C.present ((commSelection first second made₁ made₂).commit (T := Unit)) = _
     simp [fire, Selection.commit, commSelection]
-  · have missing : o ∉ (commAt ρ first second made₁ made₂).selection.made := by
+  · have absent : o ∉ (commAt ρ first second made₁ made₂).selection.made := by
       simp [commAt, commSelection, other₁, other₂]
-    exact (Firing.result_label_other (X := X) (s := embed label C) _ missing).trans (psubst_none (label o))
+    exact (Firing.result_label_other (X := X) (s := embed label C) _ absent).trans (psubst_none (label o))
 
 end Step
 

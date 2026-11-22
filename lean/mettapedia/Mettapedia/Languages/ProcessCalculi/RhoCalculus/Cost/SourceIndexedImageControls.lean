@@ -91,7 +91,7 @@ def closedInput : RhoProcess :=
   ⟨.apply "PInput"
     [.apply "NQuote" [.apply "PZero" []], .lambda none (.apply "PZero" [])],
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.input (.quote .unit (by decide)) .unit, by decide +kernel⟩⟩
+      ⟨.input (.quote .unit) .unit, by decide +kernel⟩⟩
 
 /-- The actual source carrier contains this principal-bearing term. -/
 def closedInputSource : rhoCIGSLT.CanonicalCarrier :=

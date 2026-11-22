@@ -173,6 +173,79 @@ theorem owner_count_bounded (state : State) (valid : state.Valid) :
   rw [valid.2.length_eq]
   exact List.length_filterMap_le _ _
 
+/-! ## A used count does not identify the occupied slots -/
+
+/-- The reader stops after finding the advertised number of owners. The
+second component counts *slots inspected*, including empty slots. -/
+def scanCounted : List (Option Chunk) → Nat → List Chunk × Nat
+  | [], _ => ([], 0)
+  | _ :: _, 0 => ([], 0)
+  | none :: rest, remaining + 1 =>
+      let next := scanCounted rest (remaining + 1)
+      (next.1, next.2 + 1)
+  | some chunk :: rest, remaining + 1 =>
+      let next := scanCounted rest remaining
+      (chunk :: next.1, next.2 + 1)
+
+theorem scanCounted_complete (directory : List (Option Chunk)) (count : Nat)
+    (enough : (occupied directory).length ≤ count) :
+    (scanCounted directory count).1 = occupied directory := by
+  induction directory generalizing count with
+  | nil => rfl
+  | cons slot rest ih =>
+      cases count with
+      | zero =>
+          have empty : occupied (slot :: rest) = [] :=
+            List.length_eq_zero_iff.mp (Nat.eq_zero_of_le_zero enough)
+          exact empty.symm
+      | succ count =>
+          cases slot with
+          | none =>
+              exact ih _ (by simpa [occupied] using enough)
+          | some chunk =>
+              have bound : (occupied rest).length ≤ count := by
+                simpa [occupied, Nat.succ_le_succ_iff] using enough
+              simp [scanCounted, occupied, ih _ bound]
+
+theorem scanCounted_release_refines (directory : List (Option Chunk)) (live : Finset Chunk) :
+    release live (scanCounted directory (occupied directory).length).1 =
+      sweep live directory := by
+  rw [scanCounted_complete directory _ le_rfl, sweep_occupied]
+
+/-- Even with an exact used count of one, finding a last-slot owner takes
+as many slot reads as a capacity scan. -/
+theorem counted_scan_sparse_last (emptySlots : Nat) (owner : Chunk) :
+    scanCounted (List.replicate emptySlots none ++ [some owner]) 1 =
+      ([owner], emptySlots + 1) := by
+  induction emptySlots with
+  | zero => rfl
+  | succ n ih =>
+      simp [List.replicate_succ, scanCounted, ih, Nat.add_assoc]
+
+/-- With individual release as the primitive, a successful disposal must
+issue one release per live owner. This does not assume a particular order,
+nor apply to payloads that can be bulk-freed without individual release. -/
+theorem complete_release_work (live : Finset Chunk) (owners : List Chunk)
+    (done : release live owners = some ∅) : owners.length = live.card := by
+  induction owners generalizing live with
+  | nil =>
+      have empty : live = ∅ := by simpa [release] using done
+      simp [empty]
+  | cons owner rest ih =>
+      by_cases mem : owner ∈ live
+      · have tail : release (live.erase owner) rest = some ∅ := by
+          simpa [release, mem] using done
+        have actual := ih _ tail
+        rw [Finset.card_erase_of_mem mem] at actual
+        simp only [List.length_cons]
+        have positive : 0 < live.card := Finset.card_pos.mpr ⟨owner, mem⟩
+        omega
+      · simp [release, mem] at done
+
+theorem registered_owners_attain_release_bound (state : State) (valid : state.Valid) :
+    state.owners.length = state.owners.toFinset.card :=
+  complete_release_work _ _ (disposal_retires_all state valid)
+
 /-- Exclusive entry extent, including the reserved zero slot. -/
 def denseChunks (extent : Nat) : Nat := if extent = 0 then 0 else (extent - 1) / 16384 + 1
 

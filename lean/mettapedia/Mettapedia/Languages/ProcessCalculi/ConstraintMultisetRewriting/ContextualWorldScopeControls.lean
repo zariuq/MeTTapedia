@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Scope ledgers retain continuations and captures across activations
 
-A continuation contains a scope missing from visible rows. The first firing
+A continuation contains a scope absent from visible rows. The first firing
 opens two uses of one physical schema, retains its equation scopes, and
 publishes a later schema capturing its rule local. A subsequent activation
 keeps that earlier capture while allocating new locals above the ledger.

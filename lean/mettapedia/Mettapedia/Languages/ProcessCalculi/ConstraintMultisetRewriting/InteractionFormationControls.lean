@@ -142,7 +142,7 @@ def observeEmpty : RuleInstance Value := ⟨[], [], [], [.predicate .none (true,
 def observeSelection : Selection Nat := ⟨[], [], [1]⟩
 def empty : Configuration Value Nat := ⟨[], ∅⟩
 
-theorem private_none_valid_even_when_empty : observeSelection.Valid locatedAction (label done) observeEmpty empty := by
+theorem private_absence_valid_even_when_empty : observeSelection.Valid locatedAction (label done) observeEmpty empty := by
   refine ⟨by decide, by decide, rfl, rfl, rfl, ?_, ⟨action.identity, by simp [Selection.problem, Selection.equations, empty, observeEmpty, observeSelection]⟩, ?_⟩
   · exact ⟨by simp [Selection.commit, observeSelection], by simp [Selection.commit, observeSelection],
       by simp [Selection.commit, observeSelection], by simp [Selection.commit, observeSelection, empty],
@@ -156,13 +156,13 @@ theorem private_none_valid_even_when_empty : observeSelection.Valid locatedActio
 theorem full_formation_refuses_empty_private_observation :
     ¬InteractionFormation.Formed clientRights (label done) observeSelection observeEmpty := by
   intro formed
-  exact InteractionFormation.no_observe_forbids_none formed (true, secret) (by simp [observeEmpty]) rfl
+  exact InteractionFormation.no_observe_forbids_absence formed (true, secret) (by simp [observeEmpty]) rfl
 
 theorem send_only_client_can_observe_empty_private_region :
     system.Step (activate observeEmpty) locatedAction (label done) false empty
       (observeSelection.result (label done) observeEmpty empty) := by
   refine ⟨(), by simp [system], (), observeEmpty, rfl, observeSelection,
-    private_none_valid_even_when_empty, ?_, rfl⟩
+    private_absence_valid_even_when_empty, ?_, rfl⟩
   intro occurrence made
   have same : occurrence = 1 := by simpa [observeSelection] using made
   subst occurrence

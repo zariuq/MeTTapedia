@@ -156,14 +156,14 @@ theorem origins_instances_of_shapes (schedule : Schedule S O Γ sort before afte
         change ((List.ofFn (producedOrigin middle mid queries plan picked)).get _).Instances candidate pattern ↔ _
         rw [List.get_ofFn]
         exact produced_origin_instances_of_shape middle mid queries plan picked distinct outputs port candidate pattern
-      · have missing : ContextualTemplateSource.assign picked.made
+      · have absent : ContextualTemplateSource.assign picked.made
             (List.ofFn (producedOrigin middle mid queries plan picked)) occurrence = none := by
           cases found : ContextualTemplateSource.assign picked.made
               (List.ofFn (producedOrigin middle mid queries plan picked)) occurrence with
           | none => rfl
           | some origin => exact False.elim (made (ContextualTemplateSource.assign_mem _ _ _ _ found))
         change Origin.Instances candidate pattern ((ContextualTemplateSource.assign picked.made _ _).getD _) ↔ _
-        rw [missing]
+        rw [absent]
         change ((past.origins occurrence).map (captureFrame queries middle mid.declarations).assignment).Instances
           candidate pattern ↔ _
         rw [Origin.map_instances, ContextualClauseSourceState.retained_matches occurrence made,

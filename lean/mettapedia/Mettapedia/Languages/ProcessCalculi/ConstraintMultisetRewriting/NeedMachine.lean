@@ -217,7 +217,7 @@ theorem start_source_instruction {program : Program} {before after : World} {sto
   cases selected : intent.plan.action <;> simp [startRule,selected,member]
 
 /-- Source availability constructs an actual start firing with fresh
-physical outputs. The edit case retains the original none queries admission cut. -/
+physical outputs. The edit case retains the original absence admission cut. -/
 theorem start_exists {program : Program} (before : World) (next : Nat) (intent : Intent program)
     (consistent : action.Consistent before.equations)
     (current : Has before.present (.control next intent.plan.input))

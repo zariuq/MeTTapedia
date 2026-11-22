@@ -59,7 +59,7 @@ theorem inPlaceRound_eq_of_older (fuel : Nat) {Θ : Context S.R} {problem : Equa
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the older family decides, the in-place family decides with the same outcome.** -/
 theorem inPlace_run_of_older (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -92,7 +92,7 @@ theorem inPlaceRound_not_stuck_of_rule (fuel : Nat) {Θ : Context S.R} {problem 
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-! ## Eventual constancy -/
 
@@ -241,7 +241,7 @@ theorem inPlaceRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationSto
       | some found => rfl
       | none => rfl
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 include stable in
 /-- **The in-place round is eventually constant on every store.** -/
@@ -306,8 +306,8 @@ theorem inPlace_decided_of_settling_miller
       ((∃ state finished, run ((inPlaceFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((inPlaceFamily facts roots heads algebra rigid complete declared choices reducer root
-            normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run ((inPlaceFamily facts roots heads algebra rigid complete declared choices reducer root
+            normalizes certifyNormal headTypingUnique rootComplete).solver larger) problem larger = .refuted absent)) :=
   (inPlaceSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete stable
     (fun problem => ContextualDependentShortClosure.StratifiedMiller S.levels problem) eventual).decided

@@ -144,7 +144,7 @@ private def rhoBaseEmpty :
     · exact rho_costBaseParallelConstructor_params
     · exact .nil [] _
   · intro presentation membership
-    rfl
+    simp
 
 private def rhoBaseEmptyNode :
     CostStaticRegionNode rhoCIGSLT .base FreeTypeContext.empty :=
@@ -387,7 +387,7 @@ private def emptyParallel
   refine ⟨.collection .hashBag [] none,
     ⟨emptyParallel_typed configuration, rfl, rfl, rfl⟩, ?_⟩
   intro declaration membership
-  rfl
+  simp
 
 private theorem colorOverlap
     (configuration : RhoCostLayerConfiguration) :

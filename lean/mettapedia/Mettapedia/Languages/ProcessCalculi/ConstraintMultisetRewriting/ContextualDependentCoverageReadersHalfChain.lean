@@ -80,7 +80,7 @@ theorem twinRound_not_stuck_of_rest (fuel : Nat) {Θ : Context S.R} {problem : E
       headTypingUnique rootComplete fuel problem with
   | stuck => exact moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **The pairs round moves where η for Σ does.** -/
 theorem pairsRound_not_stuck_of_rest (fuel : Nat) {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
@@ -93,7 +93,7 @@ theorem pairsRound_not_stuck_of_rest (fuel : Nat) {Θ : Context S.R} {problem : 
       headTypingUnique rootComplete fuel problem with
   | stuck => exact moving
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **The rows of the upper chain, at one budget.** -/
 def ChainReads (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Prop :=
@@ -207,7 +207,7 @@ theorem tower_dead_decided_of_fullReads
       run (deadTower.solver larger) problem larger = run (deadTower.solver budget) problem budget ∧
       ((∃ state finished, run (deadTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (deadTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (deadTower.solver larger) problem larger = .refuted absent)) :=
   tower_dead_decided_of_firing
     (fun permuted nonempty => firing_of_fullReads (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads
       TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete

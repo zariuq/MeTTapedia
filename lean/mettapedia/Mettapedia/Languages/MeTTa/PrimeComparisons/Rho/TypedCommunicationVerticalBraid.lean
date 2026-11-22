@@ -638,11 +638,12 @@ def communicationGeneratedCost1Term :
     ⟨⟨communicationGeneratedCost1_typed, rfl, rfl,
       communicationGeneratedCost1_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [communicationGeneratedCost1Pattern, communicationGeneratedCore,
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [communicationGeneratedCost1Pattern, communicationGeneratedCore,
     communicationGeneratedName, communicationGeneratedBaseNil,
     communicationGeneratedWrappedNil, communicationGeneratedSignature,
     communicationGeneratedStack, communicationGeneratedEmptyStack,
-    binderSafeAt, binderSafeListAt]
+    binderSafeAt, binderSafeListAt])
 
 /-- Its proof-relevant Cost1 elaboration is constructed by the actual region
 compiler, not postulated from compact syntax. -/
@@ -831,13 +832,14 @@ noncomputable def communicationGeneratedCost2Term :
     ⟨⟨communicationGeneratedCost2_typed, rfl, rfl,
       communicationGeneratedCost2_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [communicationGeneratedCost2Pattern,
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [communicationGeneratedCost2Pattern,
     communicationGeneratedCost1Pattern, communicationGeneratedCore,
     communicationGeneratedName, communicationGeneratedBaseNil,
     communicationGeneratedWrappedNil, communicationGeneratedSignature,
     communicationGeneratedStack, communicationGeneratedEmptyStack,
     WrappableIGSLT.costClosureSymbols, mapPattern, mapPatternList_eq_map,
-    binderSafeAt, binderSafeListAt]
+    binderSafeAt, binderSafeListAt])
 
 /-- The selected Cost2 compiler retains a checked region tree over this exact
 transported communication term. -/

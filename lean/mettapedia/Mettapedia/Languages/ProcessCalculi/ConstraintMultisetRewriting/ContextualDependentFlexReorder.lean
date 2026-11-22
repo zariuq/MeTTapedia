@@ -69,7 +69,7 @@ def afterExchange {Γ : Context S.R} {problem : EquationStore (TotalTerm Γ)} (e
   | some (.solved solved smaller) => some (.solved (exchanged.then solved) (by
       change solved.target.arity < Γ.arity
       omega))
-  | some (.refuted missing) => some (.refuted fun solvable => missing (exchanged.solvable_iff.mp solvable))
+  | some (.refuted absent) => some (.refuted fun solvable => absent (exchanged.solvable_iff.mp solvable))
 
 /-- **Exchange the two newest declarations, then solve below the moved one.** When the newest declaration does not
 depend on the one below it, the two are exchanged; the store is separated past the moved declaration, now the newest;
@@ -139,7 +139,7 @@ def reorderRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (Total
       match reorderRule facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
           headTypingUnique fuel problem with
       | some (.solved update smaller) => .progress update (below_of_arity facts roots heads algebra rigid complete smaller)
-      | some (.refuted missing) => .refuted missing
+      | some (.refuted absent) => .refuted absent
       | none => .stuck
   | other => other
 
@@ -164,7 +164,7 @@ theorem reorderRound_eq_of_elims (fuel : Nat) {Θ : Context S.R} {problem : Equa
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the eliminations family decides, the reorder family decides with the same outcome.** -/
 theorem reorder_run_of_elims (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -213,9 +213,9 @@ theorem reorderRound_not_stuck_of_reorder (fuel : Nat) {Θ : Context S.R} {probl
       rw [computed]
       cases found with
       | solved update smaller => exact fun impossible => by cases impossible
-      | refuted missing => exact fun impossible => by cases impossible
+      | refuted absent => exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- The search decides when one of its depths does. -/
 theorem reorderSearch_isSome_of_mem (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -267,7 +267,7 @@ theorem exchangeThen_isSome (fuel : Nat)
   rw [computed]
   cases found with
   | solved update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-! ## Eventual constancy -/
 
@@ -422,10 +422,10 @@ theorem reorderRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationSto
       | some found =>
           cases found with
           | solved update smaller => rfl
-          | refuted missing => rfl
+          | refuted absent => rfl
       | none => rfl
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 include stable in
 /-- **The reorder round is eventually constant on every store.** -/

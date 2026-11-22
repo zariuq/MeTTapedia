@@ -133,7 +133,7 @@ theorem actual_input_kernel_path :
 theorem actual_stream_counts :
     afterStream.registered.receipts.size = 2 ∧ afterStream.registered.registered.cache.size = 2 := by decide +kernel
 
-theorem missing_input_is_not_another_step : (receiveAt? streamedInitial 2).isNone = true := rfl
+theorem absent_input_is_not_another_step : (receiveAt? streamedInitial 2).isNone = true := rfl
 
 theorem duplicate_parent_occurrences_retained :
     secondPrepared.event.sourceParents = [37,37] ∧ secondPrepared.event.command.parents = [0,0] ∧

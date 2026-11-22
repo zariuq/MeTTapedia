@@ -73,7 +73,7 @@ theorem definition_admission_transfer (empty : rules.computation = RootComputati
       P.Holds f N g ↔ (listFrames S).Models g (guards f))
     {s : State} (f : Firing s) (i : Fin (P.target f).length)
     (t : Binding.Term (Sig S (P.target f)) ((P.target f).get i).1 ((P.target f).get i).2)
-    (missing : i ∉ Binding.ContextualFamily.support t)
+    (absent : i ∉ Binding.ContextualFamily.support t)
     (defined : P.information f = definitionStore (P.target f) i t) :
     P.Admits f ↔ P.Shapes f ∧
       Enabled (fun _ : O => ()) (P.present s) ((P.selection f).commit (T := Unit)) ∧
@@ -81,7 +81,7 @@ theorem definition_admission_transfer (empty : rules.computation = RootComputati
       (Dependent.frames rules).Entails ((translation names realization).store (P.information f))
         (fun _ g => (Dependent.frames rules).Models g
           ((translation names realization).store (guards f))) := by
-  have principal := definition_principal (P.target f) i t missing
+  have principal := definition_principal (P.target f) i t absent
   have factors := definition_factorsOnImage names realization (P.target f) i t
   rw [← defined] at principal factors
   exact admission_transfer names realization P guards holds

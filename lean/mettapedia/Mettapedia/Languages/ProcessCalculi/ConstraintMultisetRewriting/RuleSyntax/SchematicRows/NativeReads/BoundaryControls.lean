@@ -41,7 +41,7 @@ theorem two_native_ranges_keep_unknowns : HeadRanges.twoRuns keys 6 3 2 = [0, 1,
 
 theorem arity_mismatch_keeps_only_unknowns : HeadRanges.twoRuns keys 6 3 5 = [0, 1] := by decide
 
-theorem missing_rigid_bucket_keeps_unknowns : HeadRanges.twoRuns keys 6 9 2 = [0, 1] := by decide
+theorem absent_rigid_bucket_keeps_unknowns : HeadRanges.twoRuns keys 6 9 2 = [0, 1] := by decide
 
 def unsortedKeys (i : Nat) : HeadRanges.HeadKey :=
   toLex (if i = 0 then (9, 2) else if i = 1 then (3, 2) else (7, 1))
@@ -52,7 +52,7 @@ theorem missing_sortedness_can_lose_a_match :
 #print axioms permitted_read
 #print axioms released_reader_invalidates
 #print axioms two_native_ranges_keep_unknowns
-#print axioms missing_rigid_bucket_keeps_unknowns
+#print axioms absent_rigid_bucket_keeps_unknowns
 #print axioms missing_sortedness_can_lose_a_match
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.SchematicRows.NativeReads.BoundaryControls

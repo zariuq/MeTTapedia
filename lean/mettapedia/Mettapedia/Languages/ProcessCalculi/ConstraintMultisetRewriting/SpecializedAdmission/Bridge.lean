@@ -100,7 +100,7 @@ theorem mix_of_sol {R : Rule} {s : St} {p : List Tm} {o : List Nat} {σ : Nat �
 
 /-! ## The instance as a firing of the first-order step -/
 
-/-- An ask, a none query or a count as a check of the first-order step; a host is none. -/
+/-- An ask, an absence or a count as a check of the first-order step; a host is none. -/
 def Guard.toCheck? (f : Tm → Tm) : Guard → Option (Check Tm)
   | .ask a b => some (.equal (f a) (f b))
   | .none q => some (.predicate .none (f q))

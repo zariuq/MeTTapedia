@@ -264,7 +264,7 @@ variable [DecidableRel S.R.cumulative] (glb : Head → Head → Option Head)
 universes, no declaration mentioning `X` or an unknown of `t`, and a greatest lower bound with `u` for every misfit
 unknown. -/
 structure DepSolvable {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexDep e) : Prop where
-  notMem : v.X ∉ e.2.2.code.support
+  absent : v.X ∉ e.2.2.code.support
   heads : ∀ h ∈ codHeads e.2.2.code, ∃ k, S.R.headTyping h k ∧ S.R.cumulative k v.u
   occurring : ∀ Y ∈ e.2.2.code.support, ∃ w, Ctx.lookup Θ.raw Y = .head w ∧ S.R.isUniverse w
   apart : ∀ i, ∀ j ∈ (Ctx.lookup Θ.raw i).support, j ≠ v.X ∧ j ∉ e.2.2.code.support
@@ -389,7 +389,7 @@ def depNarrowSolveUpdate {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : F
             Presentation.subst g.substitution e'.2.2.code := by
           change Presentation.subst (fun i => Presentation.subst g.substitution (solveSub v.X e'.2.2.code i))
             e'.2.2.code = _
-          rw [← subst_comp, subst_solveSub_fresh _ ok.notMem]
+          rw [← subst_comp, subst_solveSub_fresh _ ok.absent]
         rw [fixed, v.side_left]
         change Presentation.subst g.substitution (solveSub v.X e'.2.2.code v.X) = _
         rw [solveSub_self]
@@ -613,7 +613,7 @@ theorem dep_settles {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexDe
       apply misfit
       refine ⟨h, member, fun k typing below => none ⟨k, typing, below⟩⟩
     have ok : DepSolvable glb v :=
-      { notMem := occurs
+      { absent := occurs
         heads := headsOk
         occurring := occurring
         apart := apart

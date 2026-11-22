@@ -7,7 +7,7 @@ Location tags are supplied by source operation metadata: request consumption,
 protected premise reads, condition data and protected outputs may occupy
 different physical spaces. Projection reconstructs every original field.
 
-Equality asks retain their payload meaning. No claim projects none queries/count
+Equality asks retain their payload meaning. No claim projects absence/count
 observations away from their physical regions.
 -/
 

@@ -8,7 +8,7 @@ read as the cells `cells` (identity, reading). Here, for EVERY run of coolings, 
 followed by ANY admitted close of the reflection:
 
 * `closeRoot_waits`: a close is refused while some row reads, at every solution, as a row at the child: the
-  close's none check, with its free unknown `Y` moved onto that row's reading;
+  close's absence check, with its free unknown `Y` moved onto that row's reading;
 * `refl_close_sound`: the run cooled exactly the cells, each once, in some order, and the reflection kept its
   label;
 * `refl_close_reads`: the made row reads, at every solution, as `for(@(pPar (cells' readings)) <- x) 0 @ Root`.
@@ -58,7 +58,7 @@ theorem close_reflection_reading (label : O → Pattern) (C : Configuration Patt
   exact nameLaws_pReflect_iff.mp parts
 
 /-- **The close waits**: while a row reads, at every solution of the knowledge, as `a @ Child(Root, x, p)`, every
-close of the reflection `x?(p) @ Root` is refused. The close asks for the none query of `Y @ Child(Root, X, P)` with
+close of the reflection `x?(p) @ Root` is refused. The close asks for the absence of `Y @ Child(Root, X, P)` with
 `Y` free; moving `Y` onto `a` gives a solution of its information at which that row is present. -/
 theorem closeRoot_waits [DecidableEq O] (label : O → Pattern) (C : Configuration Pattern O) (x p : Pattern)
     (reflection token made₁ : O) (ρ : PSubst)

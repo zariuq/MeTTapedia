@@ -45,7 +45,7 @@ theorem unresolved_is_not_empty_answer_set :
 def consumeAt : Fir × List ℕ := (⟨consume, [], ⟨[(factT, 0)], [], [(factU, 0)]⟩⟩, [])
 
 theorem consume_refused : ¬ sp.Admits (s := emptyS) consumeAt :=
-  refusal_without_none.2 consumeAt rfl
+  refusal_without_absence.2 consumeAt rfl
 
 /-- **The refusal of one candidate is not the empty answer set.** -/
 theorem refusal_halt_is_not_empty_answer_set (strategy : (s : Conf × Set ℕ) → Attempt sp s)

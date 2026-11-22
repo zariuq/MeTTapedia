@@ -1,0 +1,74 @@
+function	theorem	kind	statement_digest	axioms
+Mettapedia.Machines.FunctionalCorrespondenceRuns.cek	Mettapedia.Machines.FunctionalCorrespondenceRuns.cek.eq_1	equation	414248729	propext
+Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied	Mettapedia.Machines.FunctionalCorrespondenceRuns.identityApplied.eq_1	equation	271256019	
+Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine	Mettapedia.Machines.FunctionalCorrespondenceRuns.krivine.eq_1	equation	4209225981	propext
+Mettapedia.Machines.FunctionalCorrespondenceRuns.constantApplied	Mettapedia.Machines.FunctionalCorrespondenceRuns.constantApplied.eq_1	equation	529866432	
+Mettapedia.Machines.FunctionalCorrespondenceRuns.substitutionApplied	Mettapedia.Machines.FunctionalCorrespondenceRuns.substitutionApplied.eq_1	equation	1938503380	
+Mettapedia.Machines.FunctionalCorrespondenceRuns.capture	Mettapedia.Machines.FunctionalCorrespondenceRuns.capture.eq_1	equation	196498672	
+Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure	Mettapedia.Machines.FunctionalCorrespondenceRuns.discardFailure.eq_1	equation	2241793177	
+Mettapedia.Machines.FunctionalCorrespondenceRuns.failingArgument	Mettapedia.Machines.FunctionalCorrespondenceRuns.failingArgument.eq_1	equation	3936036668	
+Mettapedia.Machines.CEK.execute	Mettapedia.Machines.CEK.execute.eq_1	equation	2101695405	propext
+Mettapedia.Machines.Krivine.execute	Mettapedia.Machines.Krivine.execute.eq_1	equation	439600678	propext
+Mettapedia.Machines.CEK.evalV	Mettapedia.Machines.CEK.evalV.eq_1	equation	1671370375	propext
+Mettapedia.Machines.CEK.evalV	Mettapedia.Machines.CEK.evalV.eq_2	equation	1028680667	propext
+Mettapedia.Machines.CEK.evalV	Mettapedia.Machines.CEK.evalV.eq_3	equation	1375103737	propext
+Mettapedia.Machines.CEK.evalV	Mettapedia.Machines.CEK.evalV.eq_4	equation	1893047606	propext
+Mettapedia.Machines.CEK.evalV	Mettapedia.Machines.CEK.evalV.eq_5	equation	723687948	propext
+Mettapedia.Machines.Krivine.evalN	Mettapedia.Machines.Krivine.evalN.eq_1	equation	3402378474	propext
+Mettapedia.Machines.Krivine.evalN	Mettapedia.Machines.Krivine.evalN.eq_2	equation	1492611974	propext
+Mettapedia.Machines.Krivine.evalN	Mettapedia.Machines.Krivine.evalN.eq_3	equation	2166749307	propext
+Mettapedia.Machines.Krivine.evalN	Mettapedia.Machines.Krivine.evalN.eq_4	equation	234550224	propext
+Mettapedia.Machines.Krivine.evalN	Mettapedia.Machines.Krivine.evalN.eq_5	equation	2593114802	propext
+Mettapedia.Machines.CEK.run	Mettapedia.Machines.CEK.run.eq_1	equation	623048064	propext
+Mettapedia.Machines.Krivine.run	Mettapedia.Machines.Krivine.run.eq_1	equation	3538199073	propext
+Mettapedia.Machines.CEK.step	Mettapedia.Machines.CEK.step.eq_1	equation	842857366	propext
+Mettapedia.Machines.CEK.step	Mettapedia.Machines.CEK.step.eq_2	equation	1727210458	propext
+Mettapedia.Machines.CEK.step	Mettapedia.Machines.CEK.step.eq_3	equation	2318798561	propext
+Mettapedia.Machines.CEK.step	Mettapedia.Machines.CEK.step.eq_4	equation	1078431610	propext
+Mettapedia.Machines.CEK.step	Mettapedia.Machines.CEK.step.eq_5	equation	2317186388	propext
+Mettapedia.Machines.CEK.step	Mettapedia.Machines.CEK.step.eq_6	equation	3860125627	propext
+Mettapedia.Machines.CEK.step	Mettapedia.Machines.CEK.step.eq_7	equation	3607173979	propext
+Mettapedia.Machines.CEK.step	Mettapedia.Machines.CEK.step.eq_8	equation	4067127322	propext
+Mettapedia.Machines.Krivine.kstep	Mettapedia.Machines.Krivine.kstep.eq_1	equation	2932622529	propext
+Mettapedia.Machines.Krivine.kstep	Mettapedia.Machines.Krivine.kstep.eq_2	equation	673465231	propext
+Mettapedia.Machines.Krivine.kstep	Mettapedia.Machines.Krivine.kstep.eq_3	equation	1257936961	propext
+Mettapedia.Machines.Krivine.kstep	Mettapedia.Machines.Krivine.kstep.eq_4	equation	2867676712	propext
+Mettapedia.Machines.Krivine.kstep	Mettapedia.Machines.Krivine.kstep.eq_5	equation	510637257	propext
+Mettapedia.Machines.FunctionalCorrespondenceRuns.identity	Mettapedia.Machines.FunctionalCorrespondenceRuns.identity.eq_1	equation	941779773	
+Mettapedia.Machines.FunctionalCorrespondenceRuns.constant	Mettapedia.Machines.FunctionalCorrespondenceRuns.constant.eq_1	equation	1087767700	
+Mettapedia.Machines.FunctionalCorrespondenceRuns.substitution	Mettapedia.Machines.FunctionalCorrespondenceRuns.substitution.eq_1	equation	106781519	
+Mettapedia.Machines.BoundedDeterministicRun.execute	Mettapedia.Machines.BoundedDeterministicRun.execute.eq_1	equation	694162695	
+Mettapedia.Machines.BoundedDeterministicRun.execute	Mettapedia.Machines.BoundedDeterministicRun.execute.eq_2	equation	2674387127	
+Mettapedia.Machines.CEK.answer	Mettapedia.Machines.CEK.answer.eq_1	equation	751802632	propext
+Mettapedia.Machines.CEK.answer	Mettapedia.Machines.CEK.answer.eq_2	equation	2766976297	propext
+Mettapedia.Machines.Krivine.answer	Mettapedia.Machines.Krivine.answer.eq_1	equation	3771706626	propext
+Mettapedia.Machines.Krivine.answer	Mettapedia.Machines.Krivine.answer.eq_2	equation	3537431511	propext
+Mettapedia.Machines.Krivine.answer	Mettapedia.Machines.Krivine.answer.eq_3	equation	2423629682	propext
+List.get?Internal	List.get?Internal.eq_1	equation	2513291620	propext
+List.get?Internal	List.get?Internal.eq_2	equation	502803095	propext
+List.get?Internal	List.get?Internal.eq_3	equation	3081298950	propext
+Mettapedia.Machines.CEK.evalV.match_3	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.CEK.evalV.match_3.eq_1	matcher-equation	1522369111	
+Mettapedia.Machines.CEK.evalV.match_3	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.CEK.evalV.match_3.eq_2	matcher-equation	1232764441	
+Mettapedia.Machines.CEK.evalV.match_1	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.CEK.evalV.match_1.eq_1	matcher-equation	3806271111	
+Mettapedia.Machines.CEK.evalV.match_1	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.CEK.evalV.match_1.eq_2	matcher-equation	3535269664	
+Mettapedia.Machines.Krivine.evalN.match_1	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.Krivine.evalN.match_1.eq_1	matcher-equation	800462214	
+Mettapedia.Machines.Krivine.evalN.match_1	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.Krivine.evalN.match_1.eq_2	matcher-equation	2686110303	
+Mettapedia.Machines.Krivine.evalN.match_3	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.Krivine.evalN.match_3.eq_1	matcher-equation	513933053	
+Mettapedia.Machines.Krivine.evalN.match_3	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.Krivine.evalN.match_3.eq_2	matcher-equation	2207841843	
+Mettapedia.Machines.Krivine.evalN.match_3	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.Krivine.evalN.match_3.eq_3	matcher-equation	341714793	
+Mettapedia.Machines.BoundedDeterministicRun.run	Mettapedia.Machines.BoundedDeterministicRun.run.eq_1	equation	1885623802	
+Mettapedia.Machines.BoundedDeterministicRun.run	Mettapedia.Machines.BoundedDeterministicRun.run.eq_2	equation	2913267591	
+Option.map	Option.map.eq_1	equation	2348205275	
+Option.map	Option.map.eq_2	equation	2206276830	
+Mettapedia.Machines.Krivine.kstep.match_1	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.Krivine.kstep.match_1.eq_1	matcher-equation	927748803	
+Mettapedia.Machines.BoundedDeterministicRun.run.match_1	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.BoundedDeterministicRun.run.match_1.eq_1	matcher-equation	2748517707	
+Mettapedia.Machines.BoundedDeterministicRun.run.match_1	_private.scripts.ExportLeanCodeEquations.0.Mettapedia.Machines.BoundedDeterministicRun.run.match_1.eq_2	matcher-equation	3555122778	
+instDecidableEqBool	instDecidableEqBool.eq_1	equation	2136972715	
+Mettapedia.Machines.BoundedDeterministicRun.Result.state	Mettapedia.Machines.BoundedDeterministicRun.Result.state	projection	3688474632	-
+Mettapedia.Machines.BoundedDeterministicRun.Result.steps	Mettapedia.Machines.BoundedDeterministicRun.Result.steps	projection	1256813240	-
+Mettapedia.Machines.BoundedDeterministicRun.Result.outcome	Mettapedia.Machines.BoundedDeterministicRun.Result.outcome	projection	2784625493	-
+Unit.unit	Unit.unit.eq_1	equation	3722246311	
+Bool.decEq	Bool.decEq.eq_1	equation	1564927632	
+Bool.decEq	Bool.decEq.eq_2	equation	3540440316	
+Bool.decEq	Bool.decEq.eq_3	equation	526094128	
+Bool.decEq	Bool.decEq.eq_4	equation	3387219894	

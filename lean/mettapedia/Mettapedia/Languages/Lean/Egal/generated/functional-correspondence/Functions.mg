@@ -4180,3 +4180,13 @@ Theorem Lean_FunctionalCorrespondenceRuns_krivine_unfold : forall a0 a1, Lean_Fu
 let a0 a1. reflexivity.
 Qed.
 
+(** Not, from its equation theorem **)
+Definition Lean_Not : set -> set := fun a0 => (Pi_ ux :e a0, Lean_False_Prop).
+Theorem Lean_Not_eq_1 : forall v_a :e LeanProp, (Lean_Not v_a) = (Pi_ ux :e v_a, Lean_False_Prop).
+let v_a. assume H_v_a: v_a :e LeanProp.
+reflexivity.
+Qed.
+Theorem Lean_Not_unfold : forall a0, Lean_Not a0 = (Pi_ ux :e a0, Lean_False_Prop).
+let a0. reflexivity.
+Qed.
+

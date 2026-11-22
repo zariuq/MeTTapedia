@@ -700,7 +700,7 @@ theorem repeated_reads_cannot_rebind_one_produced_value_independently :
 def finalRows := ContextualPairFrames.rowsAfterBoth locals captures rows producer (consumer true) produced outputs
 def finalWorld := fire middleWorld ((consumer true).commit (T := Unit))
 
-theorem no_row_matches_the_consumed_lambda_at_the_final_cut :
+theorem the_consumed_lambda_is_absent_at_the_final_cut :
     ContextualGuardSemantics.Ask locals (problem true) finalRows finalWorld (.predicate .none (closedLambda shared)) := by
   intro Future future candidate solved occurrence present matched
   have world : finalWorld = {7, 8, 100} := by decide +kernel
@@ -733,8 +733,8 @@ theorem the_original_count_cannot_be_rebased_to_the_final_cut :
   refine ⟨fun _ future candidate solved => exactly_one_live_lambda_at_admission true future candidate solved, ?_⟩
   intro rebased
   have counted := rebased Empty ground model (causal_model true)
-  have missing := no_row_matches_the_consumed_lambda_at_the_final_cut Empty ground model (causal_model true)
-  have empty := (ContextualGuardSemantics.none_iff_empty locals model finalRows finalWorld (closedLambda shared)).mp missing
+  have absent := the_consumed_lambda_is_absent_at_the_final_cut Empty ground model (causal_model true)
+  have empty := (ContextualGuardSemantics.absent_iff_empty locals model finalRows finalWorld (closedLambda shared)).mp absent
   change (ContextualGuardSemantics.region locals model finalRows finalWorld (closedLambda shared)).card = 1 at counted
   rw [empty] at counted
   exact Nat.zero_ne_one counted

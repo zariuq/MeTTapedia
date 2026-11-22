@@ -245,8 +245,8 @@ theorem within_stepRows_from (sound : Matcher.Sound L m) {σ₀ σ : Subst V T}
       exact within_full_from sound keysSound grows _ _ fun consumed t covered => by
         simp only [decide_eq_true_eq] at consumed
         simpa [Source.static, consumed] using covered
-  | all access p coll fold =>
-      obtain ⟨τ, -, rfl⟩ := mem_stepRows_all.mp member
+  | collect access p coll fold =>
+      obtain ⟨τ, -, rfl⟩ := mem_stepRows_collect.mp member
       exact within_full_from sound keysSound grows _ _ fun consumed t covered => by
         simp only [decide_eq_true_eq] at consumed
         simpa [Source.static, consumed] using covered

@@ -54,7 +54,8 @@ private theorem text_of_characters_factorization
 
 theorem authored_characters_factorization : GeneratedBinarySource.authoredSourceChars =
     GeneratedBinarySource.authoredPrefixChars ++ GeneratedBinarySource.authoredBinaryChars ++
-      GeneratedBinarySource.authoredSuffixChars := by rfl
+      GeneratedBinarySource.authoredSuffixChars :=
+  GeneratedBinarySource.authored_characters_factorization
 
 theorem authored_text_factorization : GeneratedBinarySource.authoredSourceText =
     GeneratedBinarySource.authoredPrefixText ++ GeneratedBinarySource.authoredBinaryText ++

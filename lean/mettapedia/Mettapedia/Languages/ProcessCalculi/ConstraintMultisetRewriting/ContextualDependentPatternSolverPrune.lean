@@ -211,8 +211,8 @@ def tryPrune (fuel : Nat) {Γ₀ : Context S.R} (older : TypeOver Γ₀) (newer 
                                 exchanged.remaining with
                             | none => none
                             | some (.solved solved smaller) => some (.solved ((pruned.then exchanged).then solved) smaller)
-                            | some (.refuted missing) =>
-                                some (.refuted fun solvable => missing ((pruned.then exchanged).solvable_iff.mp solvable))
+                            | some (.refuted absent) =>
+                                some (.refuted fun solvable => absent ((pruned.then exchanged).solvable_iff.mp solvable))
                           else none
                         else none
                         else none
@@ -315,8 +315,8 @@ def exchangeAt (fuel : Nat) {Γ₀ : Context S.R} (older : TypeOver Γ₀) (newe
                   certifyNormal fuel (ContextualDependentParameterExchange.second next.val older) exchanged.remaining with
               | none => none
               | some (.solved solved smaller) => some (.solved (exchanged.then solved) smaller)
-              | some (.refuted missing) =>
-                  some (.refuted fun solvable => missing (exchanged.solvable_iff.mp solvable))
+              | some (.refuted absent) =>
+                  some (.refuted fun solvable => absent (exchanged.solvable_iff.mp solvable))
           else none
 
 /-- **The exchange rule** at the two newest declarations. -/
@@ -351,17 +351,17 @@ def fullRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTer
   match patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes certifyNormal
       fuel problem with
   | some (.solved update smaller) => .progress update (Prod.Lex.left _ _ smaller)
-  | some (.refuted missing) => .refuted missing
+  | some (.refuted absent) => .refuted absent
   | none =>
       match pruneRule rigid facts complete roots heads algebra declared choices reducer root normalizes certifyNormal
           headTypingUnique fuel problem with
       | some (.solved update smaller) => .progress update (Prod.Lex.left _ _ smaller)
-      | some (.refuted missing) => .refuted missing
+      | some (.refuted absent) => .refuted absent
       | none =>
           match exchangeRule rigid facts complete roots heads algebra declared choices reducer root normalizes
               certifyNormal fuel problem with
           | some (.solved update smaller) => .progress update (Prod.Lex.left _ _ smaller)
-          | some (.refuted missing) => .refuted missing
+          | some (.refuted absent) => .refuted absent
           | none => ContextualDependentWorklist.round rigid facts complete roots heads algebra declared choices reducer
               fuel problem
 
@@ -381,23 +381,23 @@ theorem fullRound_nil (fuel : Nat) {Θ : Context S.R} :
 /-- **Refutations are certified**: a rigid clash, or a refutation by the pattern rule, or one by
 the pattern rule after a no-loss prune and exchange, or after a no-loss exchange alone. -/
 theorem fullRound_refuted_grounds (fuel : Nat) {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    {missing : ¬ (frames S.levels).Solvable problem}
+    {absent : ¬ (frames S.levels).Solvable problem}
     (refuted : fullRound rigid facts complete roots heads algebra declared choices reducer root normalizes
-      certifyNormal headTypingUnique fuel problem = .refuted missing) :
+      certifyNormal headTypingUnique fuel problem = .refuted absent) :
     ContextualDependentRigid.storeClashes problem = true ∨
-      (∃ missing', patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes
-        certifyNormal fuel problem = some (.refuted missing')) ∨
-      (∃ missing', pruneRule rigid facts complete roots heads algebra declared choices reducer root normalizes
-        certifyNormal headTypingUnique fuel problem = some (.refuted missing')) ∨
-      (∃ missing', exchangeRule rigid facts complete roots heads algebra declared choices reducer root normalizes
-        certifyNormal fuel problem = some (.refuted missing')) := by
+      (∃ absent', patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes
+        certifyNormal fuel problem = some (.refuted absent')) ∨
+      (∃ absent', pruneRule rigid facts complete roots heads algebra declared choices reducer root normalizes
+        certifyNormal headTypingUnique fuel problem = some (.refuted absent')) ∨
+      (∃ absent', exchangeRule rigid facts complete roots heads algebra declared choices reducer root normalizes
+        certifyNormal fuel problem = some (.refuted absent')) := by
   unfold fullRound at refuted
   cases found : patternRule rigid facts complete roots heads algebra declared choices reducer root normalizes
       certifyNormal fuel problem with
   | some result =>
       cases result with
       | solved update smaller => simp only [found] at refuted; cases refuted
-      | refuted missing' => exact .inr (.inl ⟨missing', rfl⟩)
+      | refuted absent' => exact .inr (.inl ⟨absent', rfl⟩)
   | none =>
       simp only [found] at refuted
       cases pruned : pruneRule rigid facts complete roots heads algebra declared choices reducer root normalizes
@@ -405,7 +405,7 @@ theorem fullRound_refuted_grounds (fuel : Nat) {Θ : Context S.R} {problem : Equ
       | some result =>
           cases result with
           | solved update smaller => simp only [pruned] at refuted; cases refuted
-          | refuted missing' => exact .inr (.inr (.inl ⟨missing', rfl⟩))
+          | refuted absent' => exact .inr (.inr (.inl ⟨absent', rfl⟩))
       | none =>
           simp only [pruned] at refuted
           cases exchanged : exchangeRule rigid facts complete roots heads algebra declared choices reducer root
@@ -413,7 +413,7 @@ theorem fullRound_refuted_grounds (fuel : Nat) {Θ : Context S.R} {problem : Equ
           | some result =>
               cases result with
               | solved update smaller => simp only [exchanged] at refuted; cases refuted
-              | refuted missing' => exact .inr (.inr (.inr ⟨missing', rfl⟩))
+              | refuted absent' => exact .inr (.inr (.inr ⟨absent', rfl⟩))
           | none =>
           simp only [exchanged] at refuted
           exact .inl (ContextualDependentWorklist.round_refuted_clashes rigid facts complete roots heads algebra declared

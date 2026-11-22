@@ -22,7 +22,7 @@ data. This file proves the obstruction that separates the two.
   then a run, not a firing; one firing per call needs schemas computed per equation.
 * **The call occurrence is consumed** (`call_consumed`): an admitted firing on a call takes its
   occurrence, so no second firing uses it; this is the invocation-control law of the contextual
-  native lowering (`ContextualNativeBodies.Body.completed_control_not_present`) in the first-order,
+  native lowering (`ContextualNativeBodies.Body.completed_control_absent`) in the first-order,
   guard-free case.
 -/
 

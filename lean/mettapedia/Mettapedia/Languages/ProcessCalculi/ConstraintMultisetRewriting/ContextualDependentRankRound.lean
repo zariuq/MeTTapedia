@@ -157,7 +157,7 @@ def rankedRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalT
     Round S.levels (weightRank facts roots heads algebra rigid complete) problem :=
   match occursFullRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem with
-  | .refuted missing => .refuted missing
+  | .refuted absent => .refuted absent
   | .progress update _ =>
       if lower : update.target.arity < Θ.arity then
         .progress update (below_of_arity facts roots heads algebra rigid complete lower)
@@ -172,15 +172,15 @@ noncomputable def rankedFamily : ContextualDependentDecisiveDriver.Family S.leve
 
 /-- **Every refutation of the ranked round is a refutation of the full occurs round.** -/
 theorem rankedRound_refuted {fuel : Nat} {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    {missing : ¬ (frames S.levels).Solvable problem}
+    {absent : ¬ (frames S.levels).Solvable problem}
     (refuted : rankedRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-      certifyNormal headTypingUnique rootComplete fuel problem = .refuted missing) :
-    ∃ missing', occursFullRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-      certifyNormal headTypingUnique rootComplete fuel problem = .refuted missing' := by
+      certifyNormal headTypingUnique rootComplete fuel problem = .refuted absent) :
+    ∃ absent', occursFullRound facts roots heads algebra rigid complete declared choices reducer root normalizes
+      certifyNormal headTypingUnique rootComplete fuel problem = .refuted absent' := by
   unfold rankedRound at refuted
   split at refuted
-  · rename_i missing' computed
-    exact ⟨missing', computed⟩
+  · rename_i absent' computed
+    exact ⟨absent', computed⟩
   · split at refuted
     · cases refuted
     · unfold rankedRest at refuted
@@ -231,7 +231,7 @@ theorem rankedRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationStor
         (roundView (rankedRest facts roots heads algebra rigid complete declared choices reducer fuel problem)) := by
   unfold rankedRound
   split
-  · rename_i missing computed
+  · rename_i absent computed
     simp only [computed, roundView, rankedView]
   · rename_i update smaller computed
     by_cases lower : update.target.arity < Θ.arity

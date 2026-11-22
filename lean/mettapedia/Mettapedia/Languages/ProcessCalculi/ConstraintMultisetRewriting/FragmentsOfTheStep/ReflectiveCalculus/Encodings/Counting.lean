@@ -12,7 +12,7 @@ up to the target's static equivalence and to preserve and reflect reachable succ
 equivalence respects reachable success in both directions (the equations of the reflective calculus;
 its barbed bisimilarity over names that include the success channel), a translation must keep apart
 any two systems that some test tells apart, and countably many tests tell apart uncountably many
-positive systems. So no such translation exists, and no none check, count check or collect pattern
+positive systems. So no such translation exists, and no absence check, count check or collect pattern
 is involved.
 
 * `nest`: `0`, `*@0`, `*@*@0`, …; similar only at equal depth (`nest_similar`). The row of `n` is
@@ -25,7 +25,7 @@ is involved.
 * Instances: `positive_not_into_rho` (the reflective calculus with its equations, the target of the
   separation), `positive_not_into_symmetric` (any symmetric relation that respects success, hence
   `positive_not_into_bisimilar`), and `step_not_into_rho_by_counting` (the negative half of the
-  separation, with no none check).
+  separation, with no absence check).
 * The hypothesis that the relation respects success both ways is needed: the total relation does not
   respect success, and with it the characteristic function of success is uniform
   (`oracle_with_total`).
@@ -318,7 +318,7 @@ theorem positive_not_into_bisimilar (ω : G [] .nm) {N : G [] .nm → Prop} (obs
     (fun _ _ ⟨R, bisimulation, related⟩ => ⟨R, bisimulation, bisimulation.symm related⟩)
     (bisimilar_respects ω observed)
 
-/-- **The negative half of the separation, with no none check**: no uniform translation of the
+/-- **The negative half of the separation, with no absence check**: no uniform translation of the
 step with restricted composition into the reflective calculus, because its positive systems already
 have none. -/
 theorem step_not_into_rho_by_counting (ω : G [] .nm) :

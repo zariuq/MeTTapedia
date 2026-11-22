@@ -186,6 +186,42 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) ((
 rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite T0. reflexivity. } exact nat_0.
 Qed.
 
+Definition Lean_Nat_mrec : set -> (set -> set -> set) -> set -> set := fun h0 h1 t => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set =>
+    SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) t.
+Theorem Lean_Nat_miota0 : forall h0:set, forall h1:(set -> set -> set), Lean_Nat_mrec h0 h1 (Lean_Nat_zero_node) = h0.
+let h0 h1.
+prove IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) (IndNode Lean_Nat_K
+    Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 0 (TupArgs 0 SeqNil)) = h0.
+rewrite IndRec_iota Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct Lean_Nat_bounded Lean_Nat_arity (fun k a r:set => SeqAt (SeqCons (h0)
+    (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) 0 (ordsuccI1 1 0 (ordsuccI2 0)) (TupArgs 0 SeqNil) (Lean_Nat_zero_args ).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0) ((IndRes Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 0 (fun j => IndRec Lean_Nat_K
+    Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) ((TupArgs 0 SeqNil) j))) 0))) SeqNil))
+    0 = h0.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Nat_miota1 : forall h0:set, forall h1:(set -> set -> set), forall x0 :e Lean_Nat, Lean_Nat_mrec h0 h1 (Lean_Nat_succ_node x0) = (h1 x0 (Lean_Nat_mrec h0 h1 x0)).
+let h0 h1. let x0. assume H0: x0 :e Lean_Nat.
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+claim R0: (IndRes Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (fun j => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix
+    Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) ((TupArgs 1 (SeqCons (x0) SeqNil)) j))) 0 = Lean_Nat_mrec h0 h1 x0.
+{ rewrite IndRes_at Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (fun j => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix
+    Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) ((TupArgs 1 (SeqCons (x0) SeqNil)) j)) 0 (In_eq_rs 0 (Lean_Nat_N 1) 1 Lean_Nat_N1 (ordsuccI2
+    0)) Lean_Nat_R1_0. prove IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil))
+    k) ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) = IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a
+    0) (r 0))) SeqNil)) k) x0. rewrite T0. reflexivity. }
+prove IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) (IndNode Lean_Nat_K
+    Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (TupArgs 1 (SeqCons (x0) SeqNil))) = (h1 x0 (Lean_Nat_mrec h0 h1 x0)).
+rewrite IndRec_iota Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct Lean_Nat_bounded Lean_Nat_arity (fun k a r:set => SeqAt (SeqCons (h0)
+    (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) 1 (ordsuccI2 1) (TupArgs 1 (SeqCons (x0) SeqNil)) (Lean_Nat_succ_args x0 H0).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) ((IndRes Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (fun j => IndRec
+    Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) ((TupArgs 1 (SeqCons (x0)
+    SeqNil)) j))) 0))) SeqNil)) 1 = (h1 x0 (Lean_Nat_mrec h0 h1 x0)).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite T0. reflexivity. } exact nat_0.
+Qed.
+
 Theorem Lean_Nat_HM0 : forall C:set -> set, forall h0 h1, h0 :e (C Lean_Nat_zero_node) -> forall a :e IndArgs Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B
     Lean_Nat_All 0, forall r:set -> set, (forall j :e Lean_Nat_N 0, Lean_Nat_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) 0 a (IndRes
     Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 0 r) :e C (IndNode Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O
@@ -271,6 +307,11 @@ claim HM: forall k :e Lean_Nat_K, forall a :e IndArgs Lean_Nat_K Lean_Nat_T Lean
 let t. assume Ht: t :e Lean_Nat.
 exact IndRec_type Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct Lean_Nat_bounded Lean_Nat_arity (fun k a r:set => SeqAt (SeqCons (h0)
     (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) C HM t (SepE1 Lean_Nat_All (fun x:set => IndIdx Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B x = 0) t Ht).
+Qed.
+
+Theorem Lean_Nat_rec_In : forall C:set, forall h0 :e C, forall h1 :e (Pi_ x0 :e Lean_Nat, (Pi_ y0 :e C, C)), forall t :e Lean_Nat, Lean_Nat_rec h0 h1 t :e C.
+let C.
+exact Lean_Nat_rec_type (fun _ => C).
 Qed.
 
 Definition Lean_Nat_casesOn : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt
@@ -381,6 +422,11 @@ exact IndRec_type Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Na
     (SeqCons ((h1 (a 0))) SeqNil)) k) C HM t (SepE1 Lean_Nat_All (fun x:set => IndIdx Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B x = 0) t Ht).
 Qed.
 
+Theorem Lean_Nat_casesOn_In : forall C:set, forall h0 :e C, forall h1 :e (Pi_ x0 :e Lean_Nat, C), forall t :e Lean_Nat, Lean_Nat_casesOn h0 h1 t :e C.
+let C.
+exact Lean_Nat_casesOn_type (fun _ => C).
+Qed.
+
 Theorem Lean_Nat_ind : forall P:set -> prop, (P Lean_Nat_zero_node) -> (forall x0 :e Lean_Nat, P x0 -> P (Lean_Nat_succ_node x0)) -> forall t :e Lean_Nat, P t.
 let P. assume H0. assume H1.
 claim M0: 0 :e {z :e 1 | P Lean_Nat_zero_node}.
@@ -406,6 +452,7 @@ apply Lean_Nat_ind.
   - let x0. assume Hx0. assume IH0. exact (Pi_0_ap (motive x0) (fun y0 => (motive (Lean_Nat_succ_node x0))) (Pi_0_ap Lean_Nat (fun x0 => (Pi_ y0 :e (motive x0), (motive (Lean_Nat_succ_node x0)))) H1
     x0 Hx0) 0 IH0).
 Qed.
+
 
 
 Theorem Lean_Nat_noconf0_1 : forall y0, Lean_Nat_zero_node <> (Lean_Nat_succ_node y0).
@@ -645,6 +692,27 @@ prove SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) 1 = h1.
 rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
 Qed.
 
+Definition Lean_Bool_mrec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons (h1) SeqNil)) k) t.
+Theorem Lean_Bool_miota0 : forall h0:set, forall h1:set, Lean_Bool_mrec h0 h1 (Lean_Bool_false_node) = h0.
+let h0 h1.
+prove IndRec Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) k) (IndNode Lean_Bool_K
+    Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B 0 (TupArgs 0 SeqNil)) = h0.
+rewrite IndRec_iota Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B Lean_Bool_distinct Lean_Bool_bounded Lean_Bool_arity (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons (h1) SeqNil)) k) 0 (ordsuccI1 1 0 (ordsuccI2 0)) (TupArgs 0 SeqNil) (Lean_Bool_false_args ).
+prove SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) 0 = h0.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Bool_miota1 : forall h0:set, forall h1:set, Lean_Bool_mrec h0 h1 (Lean_Bool_true_node) = h1.
+let h0 h1.
+prove IndRec Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) k) (IndNode Lean_Bool_K
+    Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B 1 (TupArgs 0 SeqNil)) = h1.
+rewrite IndRec_iota Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B Lean_Bool_distinct Lean_Bool_bounded Lean_Bool_arity (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons (h1) SeqNil)) k) 1 (ordsuccI2 1) (TupArgs 0 SeqNil) (Lean_Bool_true_args ).
+prove SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) 1 = h1.
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+
 Theorem Lean_Bool_HM0 : forall C:set -> set, forall h0 h1, h0 :e (C Lean_Bool_false_node) -> forall a :e IndArgs Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O
     Lean_Bool_B Lean_Bool_All 0, forall r:set -> set, (forall j :e Lean_Bool_N 0, Lean_Bool_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) k) 0 a (IndRes
     Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B 0 r) :e C (IndNode Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix
@@ -717,6 +785,12 @@ exact IndRec_type Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Le
     Ht).
 Qed.
 
+Theorem Lean_Bool_rec_In : forall C:set, forall h0 :e C, forall h1 :e C, forall t :e Lean_Bool, Lean_Bool_rec h0 h1 t :e C.
+let C.
+exact Lean_Bool_rec_type (fun _ => C).
+Qed.
+
+
 
 
 Theorem Lean_Bool_ind : forall P:set -> prop, (P Lean_Bool_false_node) -> (P Lean_Bool_true_node) -> forall t :e Lean_Bool, P t.
@@ -739,6 +813,7 @@ apply Lean_Bool_ind.
   - exact H0.
   - exact H1.
 Qed.
+
 
 
 Theorem Lean_Bool_noconf0_1 : Lean_Bool_false_node <> Lean_Bool_true_node.
@@ -1521,6 +1596,7 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) 
 rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R1. rewrite T0. rewrite T1. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
 Qed.
 
+
 Theorem Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_HM0 : forall C:set -> set -> set, forall h0 h1 h2, h0 :e (C (setsum 1 (LeanNum 0))
     Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_zero_b_node) -> forall a :e IndArgs Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_K
     Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_T Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_N Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_R
@@ -2094,6 +2170,9 @@ exact In_fam_eq (fun z:set => C z t) (IndIdx Lean_Mettapedia_Languages_Lean_Decl
     Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_R Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_F Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_Ix
     Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_O Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_B x = i) t Ht)).
 Qed.
+
+
+
 
 
 
@@ -2809,5 +2888,6 @@ Definition Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_Prop : set 
 (** Mettapedia.Languages.Lean.Declarations.Controls.Odd: the member of its mutual block at code 2, over its index. **)
 Definition Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd : set -> set := fun a => Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b (setsum 2 a).
 Definition Lean_Mettapedia_Languages_Lean_Declarations_Controls_Odd_Prop : set -> set := fun a => Lean_Mettapedia_Languages_Lean_Declarations_Controls_Even_b_PropPacked (setsum 2 a).
+
 
 

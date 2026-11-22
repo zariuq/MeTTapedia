@@ -489,7 +489,7 @@ theorem fire_removeAtom_eq_some_iff (location : Location) (atom : Atom)
 
 /-- **Negative**: removing an atom that is not there does not fire. -/
 theorem fire_removeAtom_eq_none (location : Location) (atom : Atom)
-    (source : Network Location Atom) (missing : atom ∉ source location) :
+    (source : Network Location Atom) (absent : atom ∉ source location) :
     (removeAtom location atom).fire source = none := by
   cases fired : (removeAtom location atom).fire source with
   | none => rfl
@@ -497,7 +497,7 @@ theorem fire_removeAtom_eq_none (location : Location) (atom : Atom)
       obtain ⟨rest, atLocation, -⟩ :=
         LocatedStep.consume_iff.mp
           ((fire_removeAtom_eq_some_iff location atom source target).mp fired)
-      exact absurd (by rw [atLocation]; exact Multiset.mem_cons_self atom rest) missing
+      exact absurd (by rw [atLocation]; exact Multiset.mem_cons_self atom rest) absent
 
 /-- Seeing an atom fires exactly when the atom is there, and changes nothing. -/
 theorem fire_observeAtom_eq_some_iff (location : Location) (atom : Atom)

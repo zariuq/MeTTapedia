@@ -123,12 +123,12 @@ theorem holds_image_of_matches {Physical : Type} [DecidableEq Physical]
               (agree pattern occurrence inside).mp matched⟩
       | none =>
           constructor
-          · intro missing occurrence inside matched
-            exact missing (name occurrence) (Finset.mem_image_of_mem name inside)
+          · intro absent occurrence inside matched
+            exact absent (name occurrence) (Finset.mem_image_of_mem name inside)
               ((agree pattern occurrence inside).mp matched)
-          · intro missing physical present matched
+          · intro absent physical present matched
             obtain ⟨occurrence, inside, rfl⟩ := Finset.mem_image.mp present
-            exact missing occurrence inside ((agree pattern occurrence inside).mpr matched)
+            exact absent occurrence inside ((agree pattern occurrence inside).mpr matched)
   | count pattern number =>
       rw [Holds, Holds, region_image_of_matches locals others name candidate rows represented world pattern (agree pattern),
         Finset.card_image_of_injective _ injective]
@@ -225,13 +225,13 @@ theorem holds_after_iff (candidate : Assignment captures next)
             · exact ⟨occurrence, Finset.mem_union.mpr (.inr made), matched⟩
       | none =>
           constructor
-          · intro missing
+          · intro absent
             refine ⟨?_, ?_⟩
             · intro occurrence member outside matched
-              exact missing occurrence (Finset.mem_union.mpr (.inl (Finset.mem_sdiff.mpr ⟨member, outside⟩)))
+              exact absent occurrence (Finset.mem_union.mpr (.inl (Finset.mem_sdiff.mpr ⟨member, outside⟩)))
                 ((agree pattern occurrence member outside).mp matched)
             · intro occurrence made
-              exact missing occurrence (Finset.mem_union.mpr (.inr made))
+              exact absent occurrence (Finset.mem_union.mpr (.inr made))
           · rintro ⟨surviving, made⟩ occurrence member matched
             rcases Finset.mem_union.mp member with old | new
             · obtain ⟨inside, outside⟩ := Finset.mem_sdiff.mp old

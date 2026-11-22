@@ -7,7 +7,7 @@ The interface leaves a firing's guards opaque (`Step.Holds` is any predicate of 
 module gives them a syntax, as a fibre: opaque guards stay the general case, and a step whose guards
 are written in the syntax (`Step.GuardedBy`) has the existing semantics.
 
-* **Guard formulas** (`GuardFormula T O`): equations, none queries and count of a pattern among the labels
+* **Guard formulas** (`GuardFormula T O`): equations, absence and count of a pattern among the labels
   of a finite region of occurrences, `⊤`, `⊥`, `¬`, `∧`, `∨`, `→`. A formula is read at one solution.
   Its truth depends only on which equations hold there: `GuardFormula.Sat R` reads it relative to any
   relation `R` on terms (`sat_congr`), and carrying the terms along a map is reading the relation back
@@ -16,7 +16,7 @@ are written in the syntax (`Step.GuardedBy`) has the existing semantics.
   hold up to the frame equivalence (`Frames.kernel`). Agreeing solutions satisfy the same guards
   (`satisfies_congr`); a guard carried along a morphism is the guard read at the composite
   (`satisfies_carry`). **Positive** guards (equations, `⊤`, `⊥`, `∧`, `∨`) persist along later
-  instantiation (`Satisfies.persist`); none queries and count do not.
+  instantiation (`Satisfies.persist`); absence and count do not.
 * **Asks** (`Ask`, `Frames.Asks`): quantifiers over the solutions of a store: at every solution, at some
   solution, and the same over closed solutions into a designated frame. Solvability is the ask
   `some ⊤` (`solvable_iff_some_top`).

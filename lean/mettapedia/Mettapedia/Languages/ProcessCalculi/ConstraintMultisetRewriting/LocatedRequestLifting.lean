@@ -8,7 +8,7 @@ Explicit metadata routes the actual selected take/read/output occurrences.
 The existing physical locations and complete equation store are retained;
 payload resemblance never supplies a location premise.
 
-This converse is deliberately restricted to equality checks. The none query and
+This converse is deliberately restricted to equality checks. Absence and
 count need their own region-sensitive observation correspondence.
 -/
 

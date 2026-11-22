@@ -104,9 +104,9 @@ theorem distinct_decided :
         run ((family (fun _ => (0 : Nat)) (fun _ => rfl) DispatchControls.tower_normalizes
           DispatchControls.certifyNormal).solver budget) ContextualDependentRigidDecomposition.Controls.distinctStore
           budget ∧
-      ∃ missing, run ((family (fun _ => (0 : Nat)) (fun _ => rfl) DispatchControls.tower_normalizes
+      ∃ absent, run ((family (fun _ => (0 : Nat)) (fun _ => rfl) DispatchControls.tower_normalizes
           DispatchControls.certifyNormal).solver larger) ContextualDependentRigidDecomposition.Controls.distinctStore
-          larger = .refuted missing :=
+          larger = .refuted absent :=
   decided (fun _ => (0 : Nat)) (fun _ => rfl) DispatchControls.tower_normalizes DispatchControls.certifyNormal
     distinct_member
 

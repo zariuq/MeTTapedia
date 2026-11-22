@@ -505,6 +505,52 @@ theorem isObjectPattern_renameFVars
 
 end WellSorted
 
+/-- Renaming ordinary free variables preserves locally nameless scope. -/
+@[simp] theorem isWellScopedAt_renameFVars
+    (rename : String → String) (depth : Nat) (pattern : Pattern) :
+    (Pattern.renameFVars rename pattern).isWellScopedAt depth =
+      pattern.isWellScopedAt depth := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index => simp [Pattern.renameFVars, Pattern.isWellScopedAt]
+  | hfvar name => simp [Pattern.renameFVars, Pattern.isWellScopedAt]
+  | happly constructor arguments inductionHypothesis =>
+      have listEq :
+          Pattern.isWellScopedListAt depth
+              (arguments.map (Pattern.renameFVars rename)) =
+            Pattern.isWellScopedListAt depth arguments := by
+        induction arguments with
+        | nil => rfl
+        | cons argument arguments listInduction =>
+            simp only [List.map_cons, Pattern.isWellScopedListAt]
+            rw [inductionHypothesis argument (by simp)]
+            exact congrArg (Pattern.isWellScopedAt depth argument && ·)
+              (listInduction fun other membership =>
+                inductionHypothesis other (by simp [membership]))
+      simpa [Pattern.renameFVars, Pattern.isWellScopedAt] using listEq
+  | hlambda binder body inductionHypothesis =>
+      simp [Pattern.renameFVars, Pattern.isWellScopedAt,
+        inductionHypothesis]
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp [Pattern.renameFVars, Pattern.isWellScopedAt,
+        inductionHypothesis]
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simp [Pattern.renameFVars, Pattern.isWellScopedAt,
+        bodyInduction, replacementInduction]
+  | hcollection collectionType elements rest inductionHypothesis =>
+      have listEq :
+          Pattern.isWellScopedListAt depth
+              (elements.map (Pattern.renameFVars rename)) =
+            Pattern.isWellScopedListAt depth elements := by
+        induction elements with
+        | nil => rfl
+        | cons element elements listInduction =>
+            simp only [List.map_cons, Pattern.isWellScopedListAt]
+            rw [inductionHypothesis element (by simp)]
+            exact congrArg (Pattern.isWellScopedAt depth element && ·)
+              (listInduction fun other membership =>
+                inductionHypothesis other (by simp [membership]))
+      simpa [Pattern.renameFVars, Pattern.isWellScopedAt] using listEq
+
 @[simp]
 theorem binderSafeAt_renameFVars
     (rename : String -> String) (quoteConstructor : String)
@@ -569,9 +615,9 @@ theorem reflectiveScopeSafeAt_renameFVars
     ReflectiveWellSorted.ReflectiveScopeSafeAt profile depth
         (Pattern.renameFVars rename pattern) <->
       ReflectiveWellSorted.ReflectiveScopeSafeAt profile depth pattern := by
-  constructor <;> intro safe presentation membership
-  · simpa only [binderSafeAt_renameFVars] using safe presentation membership
-  · simpa only [binderSafeAt_renameFVars] using safe presentation membership
+  exact ReflectiveWellSorted.ReflectiveScopeSafeAt.congr
+    (fun quoteConstructor => binderSafeAt_renameFVars rename quoteConstructor depth pattern)
+    (isWellScopedAt_renameFVars rename depth pattern)
 
 end WellSorted
 

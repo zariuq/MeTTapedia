@@ -253,11 +253,11 @@ theorem checkJudgments_eq_check (certificate : Certificate P) (wanted : P.Judgme
   cases decoded : decodeFrom? [] certificate.rows with
   | none =>
       simp only [decoded, Option.map_none, List.map_nil] at projection
-      simp only [checkJudgments, checkJudgmentsWithWork, projection, check, reconstruct?,
+      simp only [checkJudgments, checkJudgmentsWithWork_eq_inspectRows, projection, check, reconstruct?,
         decoded, Bind.bind, Option.bind, Option.isSome_none]
   | some table =>
       simp only [decoded, Option.map_some, List.map_nil] at projection
-      simp only [checkJudgments, checkJudgmentsWithWork, projection, check, reconstruct?,
+      simp only [checkJudgments, checkJudgmentsWithWork_eq_inspectRows, projection, check, reconstruct?,
         decoded, Bind.bind, Option.bind]
       exact judgmentLookup_eq table certificate.root wanted
 
@@ -328,10 +328,10 @@ theorem checkJudgments_work_le (certificate : Certificate P) (wanted : P.Judgmen
   have bounded := inspectRows_work_le ([] : List P.Judgment) certificate.rows
   cases selected : (inspectRows [] certificate.rows).table with
   | none =>
-      simp only [checkJudgmentsWithWork, selected]
+      simp only [checkJudgmentsWithWork_eq_inspectRows, selected]
       exact ⟨bounded.1, bounded.2.trans (Nat.le_add_right _ 1)⟩
   | some table =>
-      simp only [checkJudgmentsWithWork, selected]
+      simp only [checkJudgmentsWithWork_eq_inspectRows, selected]
       exact ⟨bounded.1, Nat.add_le_add_right bounded.2 1⟩
 
 /-- An accepted graph checks every row, every premise slot, and its root. -/
@@ -339,12 +339,12 @@ theorem checkJudgments_work_eq (certificate : Certificate P) (wanted : P.Judgmen
     (accepted : checkJudgments certificate wanted = true) :
     (checkJudgmentsWithWork certificate wanted).2.1 = certificate.rows.length ∧
       (checkJudgmentsWithWork certificate wanted).2.2 = premiseSlots certificate.rows + 1 := by
-  unfold checkJudgments checkJudgmentsWithWork at accepted
+  simp only [checkJudgments, checkJudgmentsWithWork_eq_inspectRows] at accepted
   cases selected : (inspectRows [] certificate.rows).table with
   | none => simp only [selected] at accepted; cases accepted
   | some table =>
       have exactWork := inspectRows_work_eq ([] : List P.Judgment) certificate.rows (by rw [selected]; rfl)
-      simp only [checkJudgmentsWithWork, selected]
+      simp only [checkJudgmentsWithWork_eq_inspectRows, selected]
       exact ⟨exactWork.1, congrArg (fun value => value + 1) exactWork.2⟩
 
 end Mettapedia.OSLF.NativeTypes.Certificates.Shared
@@ -503,16 +503,16 @@ theorem checkJudgments_map (translation : Presentation.Morphism source target)
     checkJudgments (certificate.map translation) (translation.judgment wanted) = true := by
   cases original : (inspectRows [] certificate.rows).table with
   | none =>
-      simp only [checkJudgments, checkJudgmentsWithWork, original] at accepted
+      simp only [checkJudgments, checkJudgmentsWithWork_eq_inspectRows, original] at accepted
       cases accepted
   | some table =>
       have root : table[certificate.root]? = some wanted := by
-        simpa only [checkJudgments, checkJudgmentsWithWork, original, decide_eq_true_eq] using accepted
+        simpa only [checkJudgments, checkJudgmentsWithWork_eq_inspectRows, original, decide_eq_true_eq] using accepted
       have mapped :
           (inspectRows ([] : List target.Judgment) (certificate.rows.map (Row.map translation))).table =
             some (table.map translation.judgment) := by
         simpa only [List.map_nil] using inspectRows_map_of_success translation [] certificate.rows table original
-      simp only [checkJudgments, checkJudgmentsWithWork, Certificate.map, mapped,
+      simp only [checkJudgments, checkJudgmentsWithWork_eq_inspectRows, Certificate.map, mapped,
         List.getElem?_map, root, Option.map_some, decide_true]
 
 theorem checkJudgmentsWithWork_map (translation : Presentation.Morphism source target)
@@ -520,7 +520,7 @@ theorem checkJudgmentsWithWork_map (translation : Presentation.Morphism source t
     (certificate : Certificate source) (wanted : source.Judgment) :
     checkJudgmentsWithWork (certificate.map translation) (translation.judgment wanted) =
       checkJudgmentsWithWork certificate wanted := by
-  unfold checkJudgmentsWithWork Certificate.map
+  simp only [checkJudgmentsWithWork_eq_inspectRows, Certificate.map]
   rw [show ([] : List target.Judgment) = ([] : List source.Judgment).map translation.judgment from rfl,
     inspectRows_map translation injective]
   simp only [JudgmentCheck.map]
@@ -863,8 +863,7 @@ theorem check_projection (coding : Coding P.Judgment) (certificate : Certificate
     let paid := check coding certificate wanted
     (paid.accepted, paid.rows, paid.checks) = checkJudgmentsWithWork certificate wanted := by
   have projection := inspectRows_projection coding [] certificate.rows
-  unfold check checkJudgmentsWithWork
-  dsimp only
+  simp only [check, checkJudgmentsWithWork_eq_inspectRows]
   simp only [codeTable, List.map_nil] at projection
   rw [projection.1, projection.2.1, projection.2.2]
   cases selected : (Shared.inspectRows [] certificate.rows).table with

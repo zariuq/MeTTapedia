@@ -351,8 +351,8 @@ def skeletonSearch {Θ : Context S.R} : (problem : EquationStore (TotalTerm Θ))
       match skeletonShape equation with
       | some shape => some ⟨fun ⟨_, σ, solved⟩ =>
           shape.down.refutes facts rigid complete σ (solved equation List.mem_cons_self)⟩
-      | none => (skeletonSearch rest).map fun missing =>
-          ⟨fun ⟨Δ, σ, solved⟩ => missing.down ⟨Δ, σ, fun other member => solved other (List.mem_cons_of_mem _ member)⟩⟩
+      | none => (skeletonSearch rest).map fun absent =>
+          ⟨fun ⟨Δ, σ, solved⟩ => absent.down ⟨Δ, σ, fun other member => solved other (List.mem_cons_of_mem _ member)⟩⟩
 
 /-- **The skeleton clash rule reads every equation with distinct skeletons.** -/
 theorem skeletonSearch_isSome {Θ : Context S.R} :

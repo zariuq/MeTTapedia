@@ -22,15 +22,15 @@ reads off what each read of a region needs.
 | read | falsified by | correct without a region epoch when | stable over the others' runs when |
 |---|---|---|---|
 | existential (a matched witness) | a take of its witnesses | always: its witnesses validate it | no other subject can reach `receive` |
-| universal (`∀`, none queries) | one make | never: no occurrence validates it | no other subject can reach `send` (owned), or all of theirs were revoked (sealed) |
+| universal (`∀`, absence) | one make | never: no occurrence validates it | no other subject can reach `send` (owned), or all of theirs were revoked (sealed) |
 | exact (count, unique, snapshot) | any write | never | no other subject can reach `send` or `receive` |
 
 The owned condition is a property of the genesis (`Delegation.canHold_iff`), and it is exact for
-none queries (`none_preserved_iff`). Sealing is revocation of a root that every other `send` derives
+absence (`absence_preserved_iff`). Sealing is revocation of a root that every other `send` derives
 from (`revoke_seals`, `stable_after_seal`). Otherwise the read is validated at commit time
 (`Enabled.queries_hold`), which a runtime realizes with an epoch of the region. On the runtime's
 revision protocol, another subject's authorized write makes the reading transaction stale for ever
-(`SharedReads.shared_none_stale_under_revision`), and so does any write outside the region
+(`SharedReads.shared_absence_stale_under_revision`), and so does any write outside the region
 (`SharedReads.write_outside_stales_revision`).
 
 So for any region the trade-off is: many writers and only existential reads (channels, logs), or
@@ -71,7 +71,7 @@ interaction rights.
 
 The kernel's check is revisions, rights per handle, presence and the specification's linearity
 (`check_iff`); what it accepts is enabled under the revision contract (`enabled_of_check`) and formed
-under the handles' rights (`formedUnder_of_check`). The none query of sources escapes `observe`
+under the handles' rights (`formedUnder_of_check`). The absence of sources escapes `observe`
 (`Controls.absence_of_sources_not_formed`), and its printed record is vacuous for the trace checker
 (`Controls.Printed.printed_absence_of_source_vacuous`).
 

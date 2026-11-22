@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.DependentFibre
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.NoneNotCompositional
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.AbsenceNotCompositional
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.CanonicalFirstOrder
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DependentFullControls
 
@@ -15,10 +15,10 @@ explicit hypothesis.
    `crossStore` (`λx. X x ≐ λx. Y x` over `X : U0 → U0, Y : U1 → U1`) is in the dynamic pattern
    fragment and solvable, and has no principal answer. What holds: every exact solver that stops on
    it stops postponed, with an exact nonempty residual (`principal_test_postponed`).
-2. **The none query against framing** (`frameLaw_fails`). On the first-order step, admission is not
+2. **Absence against framing** (`frameLaw_fails`). On the first-order step, admission is not
    preserved by putting a store beside the configuration, even when the made identities are new to
-   it and its knowledge is trivial: `spawn` (make `T` where `U` is not present) is admitted at the empty
-   store and refused beside `U`. What holds: positive admission is monotone, and none-guarded
+   it and its knowledge is trivial: `spawn` (make `T` where `U` is absent) is admitted at the empty
+   store and refused beside `U`. What holds: positive admission is monotone, and absence-guarded
    admission survives exactly when the added store has no match (`frame_test_graded`).
 3. **Pairwise compatibility without a joint wave** (`waveLaw_fails`). On the first-order step, the
    tells `X ≐ Y`, `X ≐ 1`, `Y ≐ 2` are independent in pairs at the empty configuration, and no run
@@ -72,7 +72,7 @@ theorem principal_test_postponed (P : UnificationWithLevels.Solver (frames cross
 
 end Principal
 
-/-! ## 2. The none query against framing -/
+/-! ## 2. Absence against framing -/
 
 section Framing
 
@@ -84,7 +84,7 @@ def FrameLaw : Prop :=
   ∀ (C D : Conf) (f : Fir), base.Admits (s := C) f → (∀ o ∈ f.selection.made, o ∉ D.present) →
     (∀ e ∈ D.equations, e.1 = e.2) → base.Admits (s := union C D) f
 
-/-- **Test 2**: the frame rule fails for the none-guarded `spawn` beside the store `U`. -/
+/-- **Test 2**: the frame rule fails for the absence-guarded `spawn` beside the store `U`. -/
 theorem frameLaw_fails : ¬ FrameLaw := by
   intro law
   have onUnion := law Separations.emptyS.1 Separations.onlyU.1 Separations.spawnAt.1
@@ -94,7 +94,7 @@ theorem frameLaw_fails : ¬ FrameLaw := by
   exact clear (factU, 0) (by decide) rfl
 
 /-- **What holds at the test**: the frame rule holds for take, read, make and tell admission, and a
-none-guarded firing survives framing exactly when the frame has no match. -/
+absence-guarded firing survives framing exactly when the frame has no match. -/
 theorem frame_test_graded {C D : Conf} {f : Fir} {p : Expr}
     (freshInD : ∀ o ∈ f.selection.made, o ∉ D.present) (knowledgeD : ∀ e ∈ D.equations, e.1 = e.2)
     (noQueries : f.queries = []) (admitted : base.Admits (s := C) f) :

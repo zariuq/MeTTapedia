@@ -5,7 +5,7 @@ import Mettapedia.Logic.LinearLogic.KnowledgeTensor
 # Checks that read the residual frame, and where the tensor reading stops
 
 A check reads the knowledge after the tell and the residual frame: the atoms the firing neither
-takes nor reads. The none query and counting are such checks. They are stable under refinement of the
+takes nor reads. Absence and counting are such checks. They are stable under refinement of the
 knowledge (`check_mono`) and need not be stable under growth of the frame.
 
 ## The boundary
@@ -14,7 +14,7 @@ knowledge (`check_mono`) and need not be stable under growth of the frame.
   logic over a knowledge zone, along any translation of knowledge and any additive translation of
   resources, then its reachability is stable under every frame.
 * `HomomorphicReading.false_of_frame_failure`: so one firing that a frame disables excludes every
-  such reading. The controls file gives the none query and the counting instance.
+  such reading. The controls file gives the absence and the counting instance.
 
 ## What restores a reading
 

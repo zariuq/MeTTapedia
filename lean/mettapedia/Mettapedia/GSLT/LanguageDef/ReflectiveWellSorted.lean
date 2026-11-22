@@ -1,13 +1,15 @@
 import Mettapedia.GSLT.LanguageDef.ReflectionExtension
 import Mettapedia.GSLT.LanguageDef.WellSorted
+import Mettapedia.OSLF.MeTTaIL.QuoteScopeSafety
 
 /-!
 # Well-sorted carriers with an explicit reflection profile
 
 The five-field carrier checks ordinary typing, representation, and locally
-nameless scope.  This module attaches the additional quote-sealing obligation
-selected by a reflection profile.  Erasing the profile leaves the core
-carrier literally unchanged.
+nameless scope.  This module attaches the scope obligation selected by a
+reflection profile: each presentation asks what its declared quote scope needs
+(`scopeSafeAt`), quotation sealing for a closed scope and ordinary scope for a
+reaching one.  Erasing the profile leaves the core carrier literally unchanged.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.ReflectiveWellSorted
@@ -19,17 +21,78 @@ open Mettapedia.OSLF.MeTTaIL.Reflection
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-/-- Every quotation constructor selected by a reflection profile seals the
-ambient binder context at the stated depth. -/
+/-- Every presentation selected by a reflection profile asks of the pattern, at
+the stated binder depth, the scope safety its declared quote scope needs:
+a closed scope seals the ambient binder context at its quotations, a reaching
+scope asks ordinary scope. -/
 def ReflectiveScopeSafeAt (profile : ReflectionProfile) (depth : Nat)
     (pattern : Pattern) : Prop :=
   ∀ presentation ∈ profile.presentations,
-    binderSafeAt presentation.quoteConstructor depth pattern = true
+    scopeSafeAt presentation.quoteScope presentation.quoteConstructor depth pattern = true
 
 @[simp]
 theorem reflectiveScopeSafeAt_empty (depth : Nat) (pattern : Pattern) :
     ReflectiveScopeSafeAt .empty depth pattern := by
   simp [ReflectiveScopeSafeAt]
+
+/-- A profile all of whose presentations keep quoted code closed. -/
+def ClosedProfile (profile : ReflectionProfile) : Prop :=
+  ∀ presentation ∈ profile.presentations, presentation.quoteScope = .closed
+
+instance (profile : ReflectionProfile) : Decidable (ClosedProfile profile) :=
+  inferInstanceAs (Decidable (∀ presentation ∈ profile.presentations,
+    presentation.quoteScope = .closed))
+
+@[simp]
+theorem closedProfile_empty : ClosedProfile .empty := by
+  simp [ClosedProfile]
+
+/-- Rho keeps quoted code closed. -/
+theorem rhoReflectionProfile_closed :
+    ClosedProfile ReflectionExtension.rhoReflectionProfile := by
+  decide
+
+/-- Over a closed profile the obligation is quotation sealing. -/
+theorem reflectiveScopeSafeAt_iff_of_closed {profile : ReflectionProfile}
+    (closed : ClosedProfile profile) {depth : Nat} {pattern : Pattern} :
+    ReflectiveScopeSafeAt profile depth pattern ↔
+      ∀ presentation ∈ profile.presentations,
+        binderSafeAt presentation.quoteConstructor depth pattern = true := by
+  refine forall₂_congr fun presentation member => ?_
+  rw [scopeSafeAt_of_closed (closed presentation member)]
+
+/-- A pattern sealed at every selected quotation is safe under every declared
+scope. -/
+theorem ReflectiveScopeSafeAt.of_binderSafeAt {profile : ReflectionProfile}
+    {depth : Nat} {pattern : Pattern}
+    (sealed : ∀ presentation ∈ profile.presentations,
+      binderSafeAt presentation.quoteConstructor depth pattern = true) :
+    ReflectiveScopeSafeAt profile depth pattern :=
+  fun presentation member =>
+    scopeSafeAt_of_binderSafeAt presentation.quoteScope (sealed presentation member)
+
+/-- An operation that keeps quotation sealing for every quotation constructor
+and keeps ordinary scope keeps the obligation of every profile. -/
+theorem ReflectiveScopeSafeAt.map {profile : ReflectionProfile}
+    {depth depth' : Nat} {pattern pattern' : Pattern}
+    (sealing : ∀ quoteConstructor, binderSafeAt quoteConstructor depth pattern = true →
+      binderSafeAt quoteConstructor depth' pattern' = true)
+    (scoping : pattern.isWellScopedAt depth = true → pattern'.isWellScopedAt depth' = true)
+    (safe : ReflectiveScopeSafeAt profile depth pattern) :
+    ReflectiveScopeSafeAt profile depth' pattern' :=
+  fun presentation member =>
+    scopeSafeAt_map (sealing presentation.quoteConstructor) scoping (safe presentation member)
+
+/-- An operation that keeps sealing and ordinary scope in both directions keeps
+the obligation in both directions. -/
+theorem ReflectiveScopeSafeAt.congr {profile : ReflectionProfile}
+    {depth depth' : Nat} {pattern pattern' : Pattern}
+    (sealing : ∀ quoteConstructor, binderSafeAt quoteConstructor depth pattern =
+      binderSafeAt quoteConstructor depth' pattern')
+    (scoping : pattern.isWellScopedAt depth = pattern'.isWellScopedAt depth') :
+    ReflectiveScopeSafeAt profile depth pattern ↔ ReflectiveScopeSafeAt profile depth' pattern' :=
+  forall₂_congr fun presentation _ => by
+    rw [scopeSafeAt_congr (sealing presentation.quoteConstructor) scoping]
 
 /-- The core open carrier together with the independently authored reflection
 obligation. -/
@@ -58,7 +121,7 @@ abbrev OpenTerm (profile : ReflectionProfile) (language : LanguageDef)
       OpenTermWellSorted profile language free bound sort pattern }
 
 /-- Transport a reflective open term between propositionally equal typing
-fibres.  The object pattern and its quote-sealing evidence are unchanged. -/
+fibres.  The object pattern and its scope evidence are unchanged. -/
 def OpenTerm.reindex {profile : ReflectionProfile}
     {language : LanguageDef}
     {sourceFree targetFree : FreeTypeContext}
@@ -179,8 +242,8 @@ private def quoteCanaryPresentation : ReflectivePresentationDecl :=
 private def quoteCanaryProfile : ReflectionProfile :=
   { presentations := [quoteCanaryPresentation] }
 
-/-- Negative canary: ordinary local scope does not imply sealing at a quote
-boundary. -/
+/-- Negative canary: ordinary local scope does not imply sealing at a closed
+quote boundary. -/
 example :
     ScopeSafeAt 1 (.apply "Q" [.bvar 0]) ∧
       ¬ ReflectiveScopeSafeAt quoteCanaryProfile
@@ -189,6 +252,20 @@ example :
   · simp [ScopeSafeAt, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
   · simp [ReflectiveScopeSafeAt, quoteCanaryProfile,
-      quoteCanaryPresentation, binderSafeAt, binderSafeListAt]
+      quoteCanaryPresentation, binderSafeAt]
+
+private def reachingCanaryProfile : ReflectionProfile :=
+  { presentations := [{ quoteCanaryPresentation with quoteScope := .reaching .apply }] }
+
+/-- Positive canary: a presentation whose binders reach into quotations asks
+only ordinary scope, so its quotation may mention the binder around it. -/
+example : ReflectiveScopeSafeAt reachingCanaryProfile 1 (.apply "Q" [.bvar 0]) := by
+  simp [ReflectiveScopeSafeAt, reachingCanaryProfile, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt]
+
+/-- Negative canary: a reaching presentation still asks ordinary scope. -/
+example : ¬ ReflectiveScopeSafeAt reachingCanaryProfile 0 (.apply "Q" [.bvar 0]) := by
+  simp [ReflectiveScopeSafeAt, reachingCanaryProfile, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt]
 
 end Mettapedia.GSLT.LanguageDef.ReflectiveWellSorted

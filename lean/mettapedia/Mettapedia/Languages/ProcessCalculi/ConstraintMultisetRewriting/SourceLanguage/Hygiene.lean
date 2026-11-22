@@ -350,7 +350,7 @@ theorem move_uniform (rhs : ∀ e ∈ P.equations, Uniform e.rhs) (reading : ∀
   | remove K sp t k fs ps h addressed r rest split fits =>
       rw [Multiset.mem_singleton.mp child]
       exact ⟨uFocus, uFrames, uPending⟩
-  | removeMissing K sp t k fs ps h addressed none =>
+  | removeAbsent K sp t k fs ps h addressed none =>
       rw [Multiset.mem_singleton.mp child]
       exact ⟨uFocus, uFrames, uPending⟩
   | new K s x k fs ps =>

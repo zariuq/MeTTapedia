@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Nonbinding guards account for each row's latent equations
 
-Presence, none queries and counts use conditional matching, rather than matching
+Presence, absence and counts use conditional matching, rather than matching
 the displayed value while ignoring its obligations. Admission asks quantify
 over all future solutions at their original joint information cut.
 -/

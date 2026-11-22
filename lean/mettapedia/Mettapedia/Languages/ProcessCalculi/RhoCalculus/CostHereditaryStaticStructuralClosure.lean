@@ -1790,7 +1790,7 @@ noncomputable def stoppedQuoteDropSourceVariablePairElaborationOfCloseSmaller
     exact ⟨⟨WellSorted.HasType.fvar boundaryNameLookup, rfl, rfl, rfl⟩,
       by
         intro presentation membership
-        rfl⟩
+        exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_fvar _ _ _ _⟩
   have boundaryMember : state.certified.typed ∈
       leftView.node.plan.boundaryTable.entries :=
     entryEmbedding.subset (by simp)

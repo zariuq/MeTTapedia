@@ -102,8 +102,7 @@ theorem wrapperFires : RulesFireAtWrapper (Normalized.laws GeneralRho.Standard.p
     · exact ⟨fun _ => trivial, fun member => by simp at member⟩
     · exact ⟨fun _ => trivial, fun member => by simp at member⟩
     · exact ⟨fun notRest => absurd (by simp) notRest, fun _ => .inr ⟨.hashBag, .base "Proc", rfl, trivial⟩⟩
-  · refine ⟨rfl, ?_⟩
-    intro kind law found
+  · intro kind law found
     obtain ⟨rfl, rfl⟩ := laws_found found
     exact ⟨rfl, fun unit => (Option.some.inj unit).symm⟩
 

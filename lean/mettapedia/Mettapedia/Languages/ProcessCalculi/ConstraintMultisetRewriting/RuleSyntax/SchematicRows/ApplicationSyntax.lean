@@ -72,8 +72,8 @@ def interpreter (judgmentTag arrowTag : Nat) : Rule (Terms Tm) :=
 theorem interpreter_propagates (judgmentTag arrowTag : Nat) :
     SetStoreSyntax.Propagates (interpreter judgmentTag arrowTag) := by
   refine ⟨rfl, rfl, ⟨?_, rfl⟩, ?_, ?_⟩
-  · intro check missing
-    cases missing
+  · intro check absent
+    cases absent
   · simp only [interpreter, SetStoreSyntax.varsIn, judgment, arrow, vars_app, vars_symbol]
     decide +kernel
   · simp [interpreter, SetStoreSyntax.varsIn]

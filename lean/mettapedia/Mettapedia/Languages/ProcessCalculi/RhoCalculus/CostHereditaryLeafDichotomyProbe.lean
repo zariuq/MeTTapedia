@@ -138,7 +138,7 @@ def rhoEmptyParallelTerm :
     · exact rho_costBaseParallelConstructor_params
     · exact .nil [] _
   · intro presentation membership
-    rfl
+    simp
 
 /-- The static region node carrying the empty parallel. -/
 def rhoEmptyParallelNode :

@@ -161,17 +161,17 @@ theorem freeGuard_steps {relEnv : RelationEnv} (noEq : ∀ args, relEnv.tuples "
       (storeCode []) := by
     rw [matchPatternForRule_eq_syntactic, matchPattern_iff_matchRel]
     exact .collection (by decide) .nilRest
-  have missing : initial.find? (·.1 == unknownName 0) = none := by
+  have absent : initial.find? (·.1 == unknownName 0) = none := by
     simp [initial, beq_iff_eq, Ne.symm (unknownName_ne_rest 0)]
   let final : Bindings := (unknownName 0, rowCode (.sym 5)) :: initial
   have h1Member : [(unknownName 0, rowCode (.sym 5))] ∈
       Mettapedia.OSLF.MeTTaIL.Engine.matchRelationArgument initial (termCode x) (rowCode (.sym 5)) := by
     show [(unknownName 0, rowCode (.sym 5))] ∈
       Mettapedia.OSLF.MeTTaIL.Engine.matchRelationArgument initial (.fvar (unknownName 0)) (rowCode (.sym 5))
-    rw [matchRelationArgument_fvar_free _ missing]
+    rw [matchRelationArgument_fvar_free _ absent]
     exact List.mem_singleton_self _
   have extMerged : mergeBindings initial [(unknownName 0, rowCode (.sym 5))] = some final := by
-    rw [mergeBindings_cons_none [] missing]
+    rw [mergeBindings_cons_none [] absent]
     rfl
   have h2Member : [] ∈ Mettapedia.OSLF.MeTTaIL.Engine.matchRelationArgument final (termCode (sym 5))
       (rowCode (.sym 5)) := by

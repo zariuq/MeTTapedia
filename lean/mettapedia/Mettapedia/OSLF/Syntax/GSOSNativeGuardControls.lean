@@ -37,8 +37,8 @@ theorem absence_now :
   exact Empty.elim event
 
 theorem native_absence_fails :
-    () ∉ (PresheafEventNone.noneEnabled span.source (⊤ : Subfunctor span.events)).obj spot := by
-  rw [PresheafEventNone.mem_noneEnabled]
+    () ∉ (PresheafEventAbsence.absent span.source (⊤ : Subfunctor span.events)).obj spot := by
+  rw [PresheafEventAbsence.mem_absent]
   intro holds
   exact holds future restriction ⟨(), trivial, rfl⟩
 
@@ -46,12 +46,12 @@ theorem native_absence_fails :
 theorem current_absence_is_not_native_negation :
     ¬ ((¬ ∃ event : span.events.obj spot,
         event ∈ (⊤ : Subfunctor span.events).obj spot ∧ span.source.app spot event = ()) ↔
-      () ∈ (PresheafEventNone.noneEnabled span.source (⊤ : Subfunctor span.events)).obj spot) := by
+      () ∈ (PresheafEventAbsence.absent span.source (⊤ : Subfunctor span.events)).obj spot) := by
   intro same
   exact native_absence_fails (same.mp absence_now)
 
 theorem availability_not_reflected :
-    ¬ PresheafEventNone.ReflectsAvailability span.source (⊤ : Subfunctor span.events) := by
+    ¬ PresheafEventAbsence.ReflectsAvailability span.source (⊤ : Subfunctor span.events) := by
   intro reflection
   obtain ⟨event, _, _⟩ := reflection restriction () () trivial rfl
   exact Empty.elim event
@@ -76,7 +76,7 @@ theorem event_support_empty :
 independently checked operational transition really exists. -/
 theorem false_absence_if_origins_erased :
     firstEvent.source ∈ (noAction law worlds variableSteps Empty () 7).obj world := by
-  apply (PresheafEventNone.mem_noneEnabled (eventSpan law worlds variableSteps Empty ()).source
+  apply (PresheafEventAbsence.mem_absent (eventSpan law worlds variableSteps Empty ()).source
     (labelPredicate law worlds variableSteps Empty () 7) world firstEvent.source).mpr
   intro future change present
   obtain ⟨event, _, _⟩ := present

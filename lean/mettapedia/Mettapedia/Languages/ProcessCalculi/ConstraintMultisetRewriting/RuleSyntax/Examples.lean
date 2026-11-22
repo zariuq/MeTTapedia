@@ -9,10 +9,10 @@ one-frame action with the identity extension. Its rules:
 * `consume` takes a token `1` and makes a `2` (a take and a make);
 * `answer` reads any row `x` and tells `x = 5` (a read and a tell);
 * `guardAt n` reads any row `x` and guards `x = n` (an equation guard);
-* `noNine` asks the none query of `9` (a none query).
+* `absentNine` asks the absence of `9` (an absence query).
 
 Admitted firings: `consume_admitted` (with its result, `consume_result_present`,
-`consume_result_label`), `answer_admitted`, `guardFive_admitted`, `noNine_admitted_when_bound`.
+`consume_result_label`), `answer_admitted`, `guardFive_admitted`, `absent_admitted_when_bound`.
 
 * **A tell that binds a caller unknown** (`answer_binds_caller`): the request row is labelled by the
   caller's unknown `x`; the rule's own `x` is opened fresh as `x₁`, read against the row (two-way: both
@@ -22,8 +22,8 @@ Admitted firings: `consume_admitted` (with its result, `consume_result_present`,
   caller's `x` itself is not fresh, and the firing is refused.
 * **A guard that fails** (`guardSix_refused`): with the caller's `x` bound to `5`, the guard `x₁ = 6`
   fails at the solutions of the firing's own information, which equate `x₁` with the row.
-* **None reads through solutions** (`noNine_admitted_when_bound`, `noNine_refused_when_open`): the
-  same row labelled `x` passes the none query of `9` when the knowledge binds `x` to `5`, and fails it
+* **Absence reads through solutions** (`absent_admitted_when_bound`, `absent_refused_when_open`): the
+  same row labelled `x` passes the absence of `9` when the knowledge binds `x` to `5`, and fails it
   when nothing binds `x`, since a solution may send `x` to `9`.
 -/
 
@@ -86,11 +86,11 @@ def answer : Rule Tm := ⟨PUnit.unit, ⟨[], [x], [(x, c 5)], [], []⟩, []⟩
 /-- Read any row `x`, guard `x = n`. -/
 def guardAt (n : ℕ) : Rule Tm := ⟨PUnit.unit, ⟨[], [x], [], [.equal x (c n)], []⟩, []⟩
 
-/-- Ask the none query of `9`. -/
-def noNine : Rule Tm := ⟨PUnit.unit, ⟨[], [], [], [.predicate .none (c 9)], []⟩, []⟩
+/-- Ask the absence of `9`. -/
+def absentNine : Rule Tm := ⟨PUnit.unit, ⟨[], [], [], [.predicate .none (c 9)], []⟩, []⟩
 
 /-- **The program.** -/
-def demo : Program Tm := {consume, answer, guardAt 5, guardAt 6, noNine}
+def demo : Program Tm := {consume, answer, guardAt 5, guardAt 6, absentNine}
 
 /-- The opening that renames each unknown `n` to `n + 1`. -/
 def shift : Subst atoms := fun v => Term.var (v + 1)
@@ -276,35 +276,35 @@ theorem guardSix_refused :
   have five : (Term.const (5 : ℕ) : Term atoms) = Term.const (6 : ℕ) := holds
   exact absurd (Term.const.inj five) (by decide)
 
-/-! ## The none query that holds and none queries that fails -/
+/-! ## Absence that holds and absence that fails -/
 
-/-- Ask the none query of `9`. -/
-def noNineFiring : Firing ℕ E demo PUnit.unit :=
-  ⟨noNine, Or.inr (Or.inr (Or.inr (Or.inr rfl))), PUnit.unit, Subst.id atoms, ⟨[], [], []⟩, []⟩
+/-- Ask the absence of `9`. -/
+def absentFiring : Firing ℕ E demo PUnit.unit :=
+  ⟨absentNine, Or.inr (Or.inr (Or.inr (Or.inr rfl))), PUnit.unit, Subst.id atoms, ⟨[], [], []⟩, []⟩
 
-theorem noNine_fresh (s : State Tm ℕ) : Firing.Fresh X s noNineFiring := by
-  apply fresh_of_ground action s noNineFiring
+theorem absent_fresh (s : State Tm ℕ) : Firing.Fresh X s absentFiring := by
+  apply fresh_of_ground action s absentFiring
   intro t member σ
-  simp only [noNineFiring, noNine, Rule.terms, checkTerms, List.map_nil, List.flatMap_cons,
+  simp only [absentFiring, absentNine, Rule.terms, checkTerms, List.map_nil, List.flatMap_cons,
     List.flatMap_nil, List.nil_append, List.append_nil, List.mem_singleton] at member
   subst member
   rfl
 
-/-- **The none query holds when the knowledge binds the row away from the pattern.** -/
-theorem noNine_admitted_when_bound : (step X ℕ E demo).Admits (s := boundRequest) noNineFiring := by
-  refine (admits_iff noNineFiring).mpr ⟨noNine_fresh boundRequest,
+/-- **Absence holds when the knowledge binds the row away from the pattern.** -/
+theorem absent_admitted_when_bound : (step X ℕ E demo).Admits (s := boundRequest) absentFiring := by
+  refine (admits_iff absentFiring).mpr ⟨absent_fresh boundRequest,
     ⟨List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, rfl⟩, ?_, ?_, ?_, ?_⟩
-  · refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> simp [noNineFiring, boundRequest, Selection.commit]
+  · refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> simp [absentFiring, boundRequest, Selection.commit]
   · refine ⟨PUnit.unit, everywhere 5, fun e inside => ?_⟩
-    have known : noNineFiring.information X boundRequest = [(x, c 5)] := rfl
+    have known : absentFiring.information X boundRequest = [(x, c 5)] := rfl
     rw [known, List.mem_singleton] at inside
     subst inside
     rfl
   · intro check inside b σ solved
-    have known : noNineFiring.information X boundRequest = [(x, c 5)] := rfl
+    have known : absentFiring.information X boundRequest = [(x, c 5)] := rfl
     rw [known] at solved
     have bound : σ 0 = c 5 := solved (x, c 5) List.mem_cons_self
-    simp only [noNineFiring, noNine, Firing.opened, RuleInstance.map, List.map_cons,
+    simp only [absentFiring, absentNine, Firing.opened, RuleInstance.map, List.map_cons,
       List.map_nil, Check.map, List.mem_singleton] at inside
     subst inside
     intro o _ equated
@@ -312,15 +312,15 @@ theorem noNine_admitted_when_bound : (step X ℕ E demo).Admits (s := boundReque
     rw [bound] at nine
     exact absurd (Term.const.inj nine) (by decide)
   · intro q inside
-    simp [noNineFiring, noNine, Firing.collectOpened] at inside
+    simp [absentFiring, absentNine, Firing.collectOpened] at inside
 
-/-- **The none query fails when nothing binds the row**: a solution may send `x` to `9`. -/
-theorem noNine_refused_when_open : ¬ (step X ℕ E demo).Admits (s := openRequest) noNineFiring := by
+/-- **Absence fails when nothing binds the row**: a solution may send `x` to `9`. -/
+theorem absent_refused_when_open : ¬ (step X ℕ E demo).Admits (s := openRequest) absentFiring := by
   intro admitted
-  obtain ⟨-, -, -, -, checks, -⟩ := (admits_iff noNineFiring).mp admitted
-  have known : noNineFiring.information X openRequest = [] := rfl
+  obtain ⟨-, -, -, -, checks, -⟩ := (admits_iff absentFiring).mp admitted
+  have known : absentFiring.information X openRequest = [] := rfl
   have solved : X.Models (a := PUnit.unit) (b := PUnit.unit) (everywhere 9)
-      (noNineFiring.information X openRequest) := by
+      (absentFiring.information X openRequest) := by
     rw [known]
     intro e inside
     cases inside
@@ -336,7 +336,7 @@ theorem noNine_refused_when_open : ¬ (step X ℕ E demo).Admits (s := openReque
 #print axioms capture_refused
 #print axioms guardFive_admitted
 #print axioms guardSix_refused
-#print axioms noNine_admitted_when_bound
-#print axioms noNine_refused_when_open
+#print axioms absent_admitted_when_bound
+#print axioms absent_refused_when_open
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Examples

@@ -8,7 +8,7 @@ A retained query enumerates its entry view even when a caller removes a
 later row between answers. A current catalyst instead requires that row to
 remain present at admission. These are different promises, not two
 implementations of one unconditional read law. Negative queries and current
-none guards have the analogous distinction.
+absence guards have the analogous distinction.
 
 Both profiles use the same stable occurrence store. Historical offers can
 feed checked linear consumption, but an offer alone is not permission to
@@ -117,15 +117,15 @@ theorem current_remove_other (store : Store Value) (occurrence retired : Nat)
     born.trans (StampedSnapshots.remove_clock store retired)
   simp [current, StampedSnapshots.atTime, slot, found, StampedSnapshots.visible, alive, age]
 
-def noneMatch (predicate : Value → Bool) (rows : List (Offer Value)) : Bool :=
+def absent (predicate : Value → Bool) (rows : List (Offer Value)) : Bool :=
   !(rows.any fun row => predicate row.2)
 
-def currentNoneMatch (predicate : Value → Bool) (store : Store Value) : Bool :=
-  noneMatch predicate (offers store (StampedSnapshots.start store))
+def currentAbsent (predicate : Value → Bool) (store : Store Value) : Bool :=
+  absent predicate (offers store (StampedSnapshots.start store))
 
-def testNone (entry : List (Offer Value)) (predicate : Value → Bool)
+def testAbsence (entry : List (Offer Value)) (predicate : Value → Bool)
     (useEntry : Bool) (value : Answer) : Search (Store Value) Answer := fun store =>
-  if (if useEntry then noneMatch predicate entry else currentNoneMatch predicate store) then
+  if (if useEntry then absent predicate entry else currentAbsent predicate store) then
     .answer value store .done
   else .done store
 
@@ -171,12 +171,12 @@ theorem equal_payloads_at_distinct_occurrences_both_consume :
       [(0, 10), (1, 10)] := by decide
 
 def negativeSource (useEntry : Bool) : Search (Store Nat) Nat :=
-  (Search.superpose [0, 1]).bind (testNone [] (fun value => value == 99) useEntry)
+  (Search.superpose [0, 1]).bind (testAbsence [] (fun value => value == 99) useEntry)
 
 def addAfterFirst (value : Nat) : Search (Store Nat) Nat := fun store =>
   .answer value (if value = 0 then StampedSnapshots.add store 99 else store) .done
 
-theorem historical_none_is_not_current_none :
+theorem historical_absence_is_not_current_absence :
     ((negativeSource true).bind addAfterFirst StampedSnapshots.empty).drain.1 = [0, 1] ∧
       ((negativeSource false).bind addAfterFirst StampedSnapshots.empty).drain.1 = [0] := by decide
 
@@ -225,7 +225,7 @@ def negativeQuery : Search (List Atom) Atom :=
 def blockNext (value : Atom) : Search (List Atom) Atom := fun store =>
   .answer value (store ++ [.symbol "blocked"]) .done
 
-theorem library_none_is_rechecked_after_caller_effect :
+theorem library_absence_is_rechecked_after_caller_effect :
     (negativeQuery.bind blockNext original).drain.1 = [.symbol "a"] := by decide
 
 private def anchor : Atom := .symbol "anchor"

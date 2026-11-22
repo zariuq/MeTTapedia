@@ -1,18 +1,18 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Equivalence.Characterization.Instances
 
 /-!
-# Why minimal enabling contexts fail as labels for none queries
+# Why minimal enabling contexts fail as labels for absence
 
 A labelled semantics whose labels are the *minimal* contexts that enable a firing (relative pushouts;
 the least constraint that enables a move, in concurrent constraint programming) needs, for each firing,
-a least enabling context. For a none query there is none at this instance.
+a least enabling context. For an absence query there is none at this instance.
 
 The guarded spawn ("make `5` where no `9` is present") at one row labelled by the free unknown `x`:
 
 * it does not fire there, since a solution may send `x` to `9`;
 * the tell context `x = k` enables it, for every `k ≠ 9` (`enables_bound`);
 * **every knowledge that both `x = 5` and `x = 6` entail fails to enable it** (`not_enables_of_entailed`):
-  such a knowledge is solved by sending `x` to `9`, so the none query fails there;
+  such a knowledge is solved by sending `x` to `9`, so the absence fails there;
 * hence **no enabling tell context is entailed by every enabling one** (`no_least_enabling_tell`).
 
 The reason is that the weakest enabling condition, "`x` is not `9`", is a disequation, and the knowledge
@@ -104,8 +104,8 @@ theorem enables_bound {k : ℕ} (different : k ≠ 9) : Enables [(x, c k)] := by
       subst isBound
       rfl
     · intro check inside b τ solved
-      have isNone : check = .predicate .none (c 9) := List.mem_singleton.mp inside
-      subst isNone
+      have isAbsent : check = .predicate .none (c 9) := List.mem_singleton.mp inside
+      subst isAbsent
       rw [info] at solved
       have bound : Subst.applyTerm τ (Subst.applyTerm (Subst.id atoms) x) =
           Subst.applyTerm τ (Subst.applyTerm (Subst.id atoms) (c k)) :=

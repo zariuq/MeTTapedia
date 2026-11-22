@@ -190,7 +190,7 @@ theorem source_linear_firing : ∃ ruleTree selectionTree,
   authorized_has_source label before after rule selection valid rfl
 
 /-- A refused rule still has valid syntax. For every retained parse decoding
-to it, the language's none guard prevents execution to every target. -/
+to it, the language's absence guard prevents execution to every target. -/
 theorem parsed_refusal (target : Execution.State) {ruleTree selectionTree : CST}
     (decodedRule : readParsed "TcRule" ruleTree = some refusedRule)
     (decodedSelection : readParsed "TcSelection" selectionTree = some selection) :

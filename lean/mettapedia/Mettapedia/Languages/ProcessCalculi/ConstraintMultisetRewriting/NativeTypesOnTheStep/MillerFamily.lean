@@ -96,7 +96,7 @@ def millerFamily (fuel : Nat) : Family setting.levels := fun I =>
                   (UnificationWithLevels.TreeFibre.Miller.inMillerGlb_of_B I inside) state finished
                   solved).1.covered)
         | none => .undecided
-    | .refuted missing => .refuted missing
+    | .refuted absent => .refuted absent
     | .stuck _ => .undecided
     | .cutoff _ => .undecided
   else .undecided

@@ -568,9 +568,9 @@ theorem comm_one_transition_name [DecidableEq O] (label : O → Pattern) (t u ch
     fun o other₁ other₂ => ?_, ⟨σ, solvedσ⟩, reads⟩
   · show fire C.present ((commSelection first second made₁ made₂).commit (T := Unit)) = _
     simp [fire, Selection.commit, commSelection]
-  · have missing : o ∉ (commAtN ρ first second made₁ made₂).selection.made := by
+  · have absent : o ∉ (commAtN ρ first second made₁ made₂).selection.made := by
       simp [commAtN, commSelection, other₁, other₂]
-    exact (Firing.result_label_other (X := QN) (s := embed label C) _ missing).trans (psubst_none (label o))
+    exact (Firing.result_label_other (X := QN) (s := embed label C) _ absent).trans (psubst_none (label o))
 
 #print axioms nameFiring
 #print axioms fresh_name

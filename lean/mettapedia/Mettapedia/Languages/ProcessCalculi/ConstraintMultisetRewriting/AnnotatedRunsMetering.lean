@@ -10,7 +10,7 @@ firings with guards and predicate queries, provided the fuel lies outside what t
 
 ## Firings blind to the fuel
 
-A firing is **blind to the fuel atom** (`FuelBlind`) when no pattern scanned by a none query or
+A firing is **blind to the fuel atom** (`FuelBlind`) when no pattern scanned by an absence or
 count guard matches the fuel atom, and no space observed by its predicate queries contains it, at any
 solution. An equation guard scans no occurrence. A guard-free firing without predicate queries
 is blind (`fuelBlind_of_plain`).
@@ -325,8 +325,8 @@ theorem metered_present : ((worker.metered fuel [9]).result label start).present
 theorem plain_present : (worker.result label start).present = {9, 6} := by
   decide
 
-/-- A none guard whose pattern is ground holds at a store none of whose labels is it. -/
-theorem none_holds {pattern : Term signature} {store : Finset Nat} (σ : Subst signature)
+/-- An absence guard whose pattern is ground holds at a store none of whose labels is it. -/
+theorem absent_holds {pattern : Term signature} {store : Finset Nat} (σ : Subst signature)
     (ground : ∀ τ : Subst signature, τ.applyTerm pattern = pattern)
     (apart : ∀ o ∈ store, label o ≠ pattern) :
     (Check.predicate .none pattern).Holds A σ label store := by
@@ -348,7 +348,7 @@ theorem metered_then_guard_runs : Executable A label start [worker.metered fuel 
     exact metered_worker_problem _ equation member
   · intro check member σ _
     obtain rfl := List.mem_singleton.mp member
-    refine none_holds σ (fun _ => rfl) ?_
+    refine absent_holds σ (fun _ => rfl) ?_
     rw [metered_present]
     intro o inStore
     obtain rfl := Finset.mem_singleton.mp inStore
@@ -439,7 +439,7 @@ theorem metered_then_blind_runs :
   · intro check member σ _
     simp only [Firing.metered, blindGuard, List.mem_singleton] at member
     subst member
-    refine none_holds σ (fun _ => rfl) ?_
+    refine absent_holds σ (fun _ => rfl) ?_
     rw [metered_present]
     intro o inStore
     obtain rfl := Finset.mem_singleton.mp inStore

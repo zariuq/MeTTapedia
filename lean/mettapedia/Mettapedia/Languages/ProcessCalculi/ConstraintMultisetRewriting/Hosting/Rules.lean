@@ -15,7 +15,7 @@ by `ℕ`.
 ambient context (`Unknown`): a datum `T`, a pattern `P`, computations `C` and `D`, a stack `FS`.
 * `retRule`: `alt(eval(ret T), FS)` ⟶ `alt(value T, FS)`;
 * `unmatchedRule`: `alt(eval(apply T), FS)` ⟶ `alt(value T, FS)` when no equation row matches:
-  the check `none eqn(T)`;
+  the check `absent eqn(T)`;
 * `choiceLeftRule`, `choiceRightRule`: `alt(eval(choice C D), FS)` ⟶ `alt(eval C, FS)`, resp.
   `alt(eval D, FS)`;
 * `bindStartRule`: `alt(eval(bind P C D), FS)` ⟶ `alt(eval C, push(P, D, FS))`;

@@ -150,7 +150,7 @@ theorem anywhereRound_eq_of_inPlace (fuel : Nat) {Θ : Context S.R} {problem : E
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the in-place family decides, the anywhere family decides with the same outcome.** -/
 theorem anywhere_run_of_inPlace (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -183,7 +183,7 @@ theorem anywhereRound_not_stuck_of_rule (fuel : Nat) {Θ : Context S.R} {problem
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-! ## Eventual constancy -/
 
@@ -222,7 +222,7 @@ theorem anywhereRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationSt
       | some found => rfl
       | none => rfl
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 include stable in
 /-- **The anywhere round is eventually constant on every store.** -/

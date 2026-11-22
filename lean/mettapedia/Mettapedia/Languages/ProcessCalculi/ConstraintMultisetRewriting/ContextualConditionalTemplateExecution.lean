@@ -54,13 +54,13 @@ theorem TemplateInstance.recipes_none_of_not_made
     (authored : TemplateInstance locals inners before) (occurrence : O)
     (missing : occurrence ∉ authored.selection.made) :
     authored.recipes locals inners occurrence = none := by
-  have notMem : authored.sourceRule.outputsFor authored.selection.made occurrence = none := by
+  have absent : authored.sourceRule.outputsFor authored.selection.made occurrence = none := by
     cases found : authored.sourceRule.outputsFor authored.selection.made occurrence with
     | none => rfl
     | some description =>
         exact False.elim (missing (ContextualTemplateSource.assign_mem authored.selection.made
           authored.sourceRule.descriptions occurrence description found))
-  simp only [TemplateInstance.recipes, notMem]
+  simp only [TemplateInstance.recipes, absent]
 
 /-- A template instance and the canonical published execution of its code. -/
 abbrev CompiledTemplate (before : ContextualConditionalExecution.State (Expanded locals inners) O Γ sort) :=

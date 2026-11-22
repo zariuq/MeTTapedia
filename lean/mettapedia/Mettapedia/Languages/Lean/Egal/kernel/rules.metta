@@ -1,7 +1,7 @@
 ; The rules and typing lemmas of the reading, taken from the checked document.
 ;
 ; The document is the library.  A theorem the reader generated as a way to
-; compute (an equation theorem F_eq_K, a recursor or case equation X_iotaK,
+; compute (an equation theorem F_eq_K, a recursor or case equation X_iotaK or X_miotaK,
 ; a projection of a constructor P_mk, an application F_ap, an unfolding
 ; F_unfold) is a rule of the set "lean".  A function that Lean defines by
 ; well-founded recursion is read by fuel, and the libraries prove Lean's own
@@ -40,14 +40,14 @@
 ; follower cites it where Lean's proof applies the recursor.
 (= (rules:typing-name $source)
    (if (str:ends-with $source "_rec_proof_ok") False
-       (if (rules:ends-any $source ("_In" "_typed" "_Prop_prop" "_proof_ok" "_proof")) True
+       (if (rules:ends-any $source ("_In" "_typed" "_Prop_prop" "_PropPacked_prop" "_proof_ok" "_proof")) True
            (str:ends-with (rules:strip-digits $source) "_proof_"))))
 (= (rules:class-by-kind $source)
    (if (rules:typing-name $source) typing
        (if (rules:ends-any $source ("_mk" "_ap" "_unfold")) compute
            (let $stem (rules:strip-digits $source)
              (if (== $stem $source) none
-                 (if (rules:ends-any $stem ("_eq_" "_iota")) compute none))))))
+                 (if (rules:ends-any $stem ("_eq_" "_iota" "_miota")) compute none))))))
 (= (rules:names $items)
    (if (== $items ()) ()
        (case (car-atom $items)
@@ -223,12 +223,19 @@
            (((Error $call2 $why2) (Error $call2 $why2))
             ($proved (typ:declare "Lean_Pi_prop"))))))
       ($known (typ:declare "Lean_Pi_prop")))))
+; Lean's formation rule at a computed level: for checking, not for inference.
+(= (rules:checks-only $cs_sources)
+   (if (== $cs_sources ()) done
+       (let* (($cs_id (lean:id (car-atom $cs_sources))) ($cs_kept (add-atom &self (TypChecksOnly $cs_id))))
+         (rules:checks-only (cdr-atom $cs_sources)))))
 (= (rules:fixed $E)
    (let* (($computing (rules:declare-names $E lean ("beta" "LeanNum_add" "LeanNum_mul" "LeanSort_0" "LeanSort_S"
                                                     "Lean_Quot_lift_beta_value" "Lean_DecCanon_rec_true" "Lean_DecCanon_rec_false")))
           ($typing (rules:type-names ("nat_0" "nat_ordsucc" "NumD_p" "LeanNum_In" "lam_Pi" "Lean_ProofField_intro"
-                                       "LeanProp_In_LeanUniv" "LeanUniv_In_S" "LeanPi_LeanUniv")))
+                                       "LeanProp_In_LeanUniv" "LeanUniv_In_S" "LeanPi_LeanUniv"
+                                       "LeanPi_LeanSort_max_In" "LeanPi_LeanSort_In")))
           ($product (rules:product-of-propositions $E))
+          ($checking (rules:checks-only ("LeanPi_LeanSort_max_In" "LeanPi_LeanSort_In")))
           ($strict (rules:strict-names ("Lean_Nat_div" "Lean_Nat_mod" "Lean_Nat_sub" "Lean_Nat_decLe")))
           ($pi (conv:declare-binder (Tm.named (lean:id "Pi")) (lean:id "Pi_family_eq")))
           ($sigma (conv:declare-binder (Tm.named (lean:id "Sigma")) (lean:id "Sigma_family_eq")))

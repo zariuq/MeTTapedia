@@ -166,12 +166,16 @@ structure Slot (definition : ValidatedCalculusLanguageDef)
   left : OpenDerivation definition leftContext goal
   right : OpenDerivation definition rightContext goal
 
+private def Slot.matchesErasure {leftContext rightContext : List Pattern}
+    (slot : Slot definition leftContext rightContext) (left right : RawOpenProof) : Bool :=
+  decide (slot.left.eraseOpen = left ∧ slot.right.eraseOpen = right)
+
 /-- The two sub-plans are the same disagreement when their erasures agree. -/
 def Slot.matches {leftContext rightContext : List Pattern} {goal : Pattern}
     (slot : Slot definition leftContext rightContext)
     (left : OpenDerivation definition leftContext goal)
     (right : OpenDerivation definition rightContext goal) : Bool :=
-  decide (slot.left.eraseOpen = left.eraseOpen ∧ slot.right.eraseOpen = right.eraseOpen)
+  slot.matchesErasure left.eraseOpen right.eraseOpen
 
 abbrev obligationsOf {leftContext rightContext : List Pattern}
     (slots : List (Slot definition leftContext rightContext)) : List Pattern :=
@@ -270,25 +274,28 @@ theorem appendedGoal (seen : List (Slot definition leftContext rightContext))
   simp only [Nat.sub_self]
   rfl
 
+private def citeMatchingSlot {goal : Pattern}
+    (seen : List (Slot definition leftContext rightContext))
+    (left : OpenDerivation definition leftContext goal)
+    (right : OpenDerivation definition rightContext goal)
+    (index : Fin seen.length) (matched : (seen.get index).matches left right = true) :
+    OpenDerivation definition (obligationsOf (seen ++ [])) goal :=
+  let slot := seen.get index
+  have erased : slot.left.eraseOpen = left.eraseOpen ∧ slot.right.eraseOpen = right.eraseOpen :=
+    of_decide_eq_true matched
+  have sameGoal : slot.goal = goal := (eraseOpen_determines slot.left left erased.1).1
+  transportContext (obligations_append_nil seen)
+    (cite (obligationIndex seen index) ((slotGoal_get seen index).trans sameGoal))
+
 /-- Cite the stored slot of an identical erasure pair. -/
 def reusePlan {goal : Pattern} (seen : List (Slot definition leftContext rightContext))
     (left : OpenDerivation definition leftContext goal)
     (right : OpenDerivation definition rightContext goal)
     (found : seen.findIdx (fun slot => slot.matches left right) < seen.length) :
     OpenDerivation definition (obligationsOf (seen ++ [])) goal :=
-  let index : Fin seen.length :=
+  citeMatchingSlot seen left right
     ⟨seen.findIdx (fun slot => slot.matches left right), found⟩
-  let slot := seen.get index
-  have matched : slot.matches left right = true :=
-    List.findIdx_getElem (xs := seen)
-      (p := fun slot => slot.matches left right) (w := found)
-  have erased :
-      slot.left.eraseOpen = left.eraseOpen ∧ slot.right.eraseOpen = right.eraseOpen :=
-    of_decide_eq_true matched
-  have sameGoal : slot.goal = goal :=
-    (eraseOpen_determines slot.left left erased.1).1
-  transportContext (obligations_append_nil seen)
-    (cite (obligationIndex seen index) ((slotGoal_get seen index).trans sameGoal))
+    (List.findIdx_getElem (xs := seen) (p := fun slot => slot.matches left right) (w := found))
 
 /-- Open one obligation, or reuse the obligation of an identical erasure pair. -/
 def share {goal : Pattern} (seen : List (Slot definition leftContext rightContext))
@@ -300,6 +307,24 @@ def share {goal : Pattern} (seen : List (Slot definition leftContext rightContex
     let slot : Slot definition leftContext rightContext := ⟨goal, left, right⟩
     { added := [slot]
       plan := cite (appendedIndex seen slot) (appendedGoal seen slot) }
+
+/-- Share the erased candidate pair and the position of its first matching slot. -/
+private def shareWithErasure {goal : Pattern} (seen : List (Slot definition leftContext rightContext))
+    (left : OpenDerivation definition leftContext goal)
+    (right : OpenDerivation definition rightContext goal) : LeastStep seen goal :=
+  let leftErasure := left.eraseOpen
+  let rightErasure := right.eraseOpen
+  let isCandidate := fun slot : Slot definition leftContext rightContext =>
+    slot.matchesErasure leftErasure rightErasure
+  let position := seen.findIdx isCandidate
+  if found : position < seen.length then
+    { added := [], plan := citeMatchingSlot seen left right ⟨position, found⟩
+        (List.findIdx_getElem (xs := seen) (p := isCandidate) (w := found)) }
+  else
+    let slot : Slot definition leftContext rightContext := ⟨goal, left, right⟩
+    { added := [slot], plan := cite (appendedIndex seen slot) (appendedGoal seen slot) }
+
+@[csimp] theorem share_eq_shareWithErasure : @share = @shareWithErasure := rfl
 
 mutual
 
@@ -354,6 +379,55 @@ def leastGeneral {goal : Pattern}
 def UsesAll {context : List Pattern} {goal : Pattern}
     (plan : OpenDerivation definition context goal) : Prop :=
   ∀ index : Fin context.length, index ∈ holeOccurrences plan
+
+section SubstitutionSupport
+
+variable {context target : List Pattern}
+
+mutual
+
+/-- An instantiated derivation determines exactly the values substituted at its cited slots. -/
+theorem bind_eq_iff_citations {goal : Pattern}
+    (plan : OpenDerivation definition context goal)
+    (left right : OpenDerivationList definition target context) :
+    plan.bind left = plan.bind right ↔
+      ∀ index ∈ holeOccurrences plan, left.get index = right.get index := by
+  cases plan with
+  | assumption index =>
+      simp [OpenDerivation.bind, holeOccurrences]
+  | byRule _ _ premises =>
+      simp only [OpenDerivation.bind, holeOccurrences, OpenDerivation.byRule.injEq,
+        heq_eq_eq, true_and]
+      exact bindList_eq_iff_citations premises left right
+
+theorem bindList_eq_iff_citations {goals : List Pattern}
+    (plans : OpenDerivationList definition context goals)
+    (left right : OpenDerivationList definition target context) :
+    plans.bind left = plans.bind right ↔
+      ∀ index ∈ holeOccurrencesList plans, left.get index = right.get index := by
+  cases plans with
+  | nil => simp [OpenDerivationList.bind, holeOccurrencesList]
+  | cons first rest =>
+      rw [OpenDerivationList.bind, OpenDerivationList.bind, OpenDerivationList.cons.injEq]
+      rw [bind_eq_iff_citations first left right, bindList_eq_iff_citations rest left right]
+      simp only [holeOccurrencesList, List.mem_append]
+      exact ⟨fun ⟨a, b⟩ i h => h.elim (a i) (b i),
+        fun h => ⟨fun i hi => h i (.inl hi), fun i hi => h i (.inr hi)⟩⟩
+
+end
+
+/-- When a plan cites every slot, its instantiated proof determines the whole environment. -/
+theorem UsesAll.bind_injective {goal : Pattern} {plan : OpenDerivation definition context goal}
+    (used : UsesAll plan) :
+    Function.Injective (fun environment : OpenDerivationList definition target context =>
+      plan.bind environment) := by
+  intro left right same
+  have entries : (fun index => left.get index) = fun index => right.get index :=
+    funext fun index => (bind_eq_iff_citations plan left right).mp same index (used index)
+  simpa only [OpenDerivationList.ofFn_get] using
+    congrArg (OpenDerivationList.ofFn context) entries
+
+end SubstitutionSupport
 
 theorem transportGoal_id {context : List Pattern} {goal : Pattern}
     (backup : goal = goal) (derivation : OpenDerivation definition context goal) :
@@ -664,7 +738,7 @@ theorem reuse_left {goal : Pattern} (seen : List (Slot definition leftContext ri
       (seen.get index).left.eraseOpen = left.eraseOpen ∧
         (seen.get index).right.eraseOpen = right.eraseOpen :=
     of_decide_eq_true matched
-  unfold reusePlan
+  unfold reusePlan citeMatchingSlot
   dsimp only
   rw [transportContext_cast, slotLefts_append_nil, cast_context_bind, cite_bind,
     transportGoal_trans (toSecond := slotGoal_get seen index), slotLefts_at]
@@ -684,7 +758,7 @@ theorem reuse_right {goal : Pattern} (seen : List (Slot definition leftContext r
       (seen.get index).left.eraseOpen = left.eraseOpen ∧
         (seen.get index).right.eraseOpen = right.eraseOpen :=
     of_decide_eq_true matched
-  unfold reusePlan
+  unfold reusePlan citeMatchingSlot
   dsimp only
   rw [transportContext_cast, slotRights_append_nil, cast_context_bind, cite_bind,
     transportGoal_trans (toSecond := slotGoal_get seen index), slotRights_at]
@@ -2193,7 +2267,7 @@ theorem slot_matches_self {goal : Pattern}
     (left : OpenDerivation definition leftContext goal)
     (right : OpenDerivation definition rightContext goal) :
     (⟨goal, left, right⟩ : Slot definition leftContext rightContext).matches left right = true := by
-  unfold Slot.matches
+  unfold Slot.matches Slot.matchesErasure
   exact decide_eq_true ⟨rfl, rfl⟩
 
 /-- A second share of the same pair allocates no slot, whether the first share
@@ -2398,6 +2472,26 @@ theorem distinct_slots :
         (leastGeneral AntiUnification.pairOneTwo AntiUnification.pairTwoOne).plan).map Fin.val =
         [0, 1] := by
   decide
+
+/-- The first-slot plan observes changes to that proof and ignores the other slot. -/
+example :
+    let plan : OpenDerivation kernelDefinition [A, A] A := .assumption ⟨0, by decide⟩
+    let one : OpenDerivation kernelDefinition [] A := .ofClosed dA₁
+    let two : OpenDerivation kernelDefinition [] A := .ofClosed dA₂
+    let given : OpenDerivationList kernelDefinition [] [A, A] := .cons one (.cons one .nil)
+    plan.bind given = plan.bind (.cons one (.cons two .nil)) ∧
+      plan.bind given ≠ plan.bind (.cons two (.cons one .nil)) := by
+  dsimp only
+  constructor
+  · apply (bind_eq_iff_citations _ _ _).mpr
+    intro index cited
+    simp only [holeOccurrences, List.mem_singleton] at cited
+    subst cited
+    rfl
+  · intro same
+    have sameWire := congrArg OpenDerivation.eraseOpen same
+    exact (by decide : (OpenDerivation.ofClosed (context := []) dA₁).eraseOpen ≠
+      (OpenDerivation.ofClosed (context := []) dA₂).eraseOpen) sameWire
 
 /-- The two axioms for `A`, read in a context that also assumes `CastCG`. -/
 def axiomLeft : OpenDerivation kernelDefinition [CastCG] A :=

@@ -40,30 +40,12 @@ def authoredSort : Srt → LangSort rhoCalc
   | .nm => rhoName
   | .pr => rhoProc
 
-/-- The closed rho carrier is exactly the apply-view sorted, quote-sealed
-patterns: sealing is what authored rho's closed scope admits. -/
 theorem authored_closed_admission (sort : Srt) (pattern : Pattern) :
     RhoClosedTermWellSorted (authoredSort sort) pattern ↔
       Sorted [] sort pattern ∧ binderSafeAt "NQuote" 0 pattern = true := by
   cases sort with
-  | nm =>
-      change RhoClosedTermWellSorted rhoName pattern ↔ _
-      rw [rhoClosedTermWellSorted_name_iff]
-      constructor
-      · rintro ⟨typed, safe⟩
-        exact ⟨typed.toReaching .apply, safe⟩
-      · rintro ⟨typed, safe⟩
-        exact ⟨MeTTaIL.DerivedPresentationSyntax.NameWellSorted.ofSealed
-          (presentation := rhoReflectivePresentation) (scope := .reaching .apply) typed safe, safe⟩
-  | pr =>
-      change RhoClosedTermWellSorted rhoProc pattern ↔ _
-      rw [rhoClosedTermWellSorted_process_iff]
-      constructor
-      · rintro ⟨typed, safe⟩
-        exact ⟨typed.toReaching .apply, safe⟩
-      · rintro ⟨typed, safe⟩
-        exact ⟨MeTTaIL.DerivedPresentationSyntax.ProcWellSorted.ofSealed
-          (presentation := rhoReflectivePresentation) (scope := .reaching .apply) typed safe, safe⟩
+  | nm => exact rhoClosedTermWellSorted_name_iff pattern
+  | pr => exact rhoClosedTermWellSorted_process_iff pattern
 
 def AuthoredCanonicalCarrier (sort : Srt) :=
   {term : RhoClosedTerm (authoredSort sort) // canonicalize term.val = term.val}

@@ -7,16 +7,16 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 same labels. A firing at `w` is a firing at `restrict w H`, with the same information
 (`information_restrict`) and, row for row, the same result (`result_restrict`).
 
-A rule is **none-only** (`NoneOnly`) when its checks are equations and none checks and it has no
-collect pattern; a positive rule (`RuleSyntax.Scope.Positive`) is one (`noneOnly_of_positive`). For
+A rule is **absence-only** (`AbsenceOnly`) when its checks are equations and absences and it has no
+collect pattern; a positive rule (`RuleSyntax.Scope.Positive`) is one (`absenceOnly_of_positive`). For
 a firing of such a rule that selects rows of `H`:
 
 * `admits_restrict`: **admitted with more rows, admitted with fewer**. Rows it does not select can
-  only refuse it: by a none check, or by being mentioned by the state where its opening must be
+  only refuse it: by an absence check, or by being mentioned by the state where its opening must be
   fresh.
 * `admits_extend`: **admitted with fewer rows, admitted with more**, when its opening is fresh at the
   larger state, the identities it makes are new there, and no row outside `H` matches one of its
-  none patterns at a solution of its information.
+  absence patterns at a solution of its information.
 * `admits_iff_restrict`: the two together: admission at the larger state is exactly admission at the
   smaller one with those three clauses.
 
@@ -37,13 +37,13 @@ universe uO uT uH uE uOcc
 
 variable {Obj : Type uO} {Tm : Obj → Type uT} {Hom : Obj → Obj → Type uH}
 
-/-- **A rule whose guard only asks rows to not be present**: its checks are equations and none checks, and it
+/-- **A rule whose guard only asks rows to be absent**: its checks are equations and absences, and it
 has no collect pattern. -/
-def NoneOnly (r : Rule Tm) : Prop :=
+def AbsenceOnly (r : Rule Tm) : Prop :=
   (∀ c ∈ r.body.checks, (∃ l l', c = Check.equal l l') ∨ ∃ p, c = Check.predicate .none p) ∧ r.collect = []
 
-/-- A positive rule is none-only: it has no none check at all. -/
-theorem noneOnly_of_positive {r : Rule Tm} (positive : RuleSyntax.Scope.Positive r) : NoneOnly r :=
+/-- A positive rule is absence-only: it has no absence check at all. -/
+theorem absenceOnly_of_positive {r : Rule Tm} (positive : RuleSyntax.Scope.Positive r) : AbsenceOnly r :=
   ⟨fun c member => .inl (positive.1 c member), positive.2⟩
 
 variable {O : Type uOcc}
@@ -87,10 +87,10 @@ theorem restrict_result {w : State Tm O} {H H' : Finset O} {f : Firing O E P w.f
   subst same
   rfl
 
-/-- **Admitted with more rows, admitted with fewer**, for a firing of a none-only rule that
+/-- **Admitted with more rows, admitted with fewer**, for a firing of an absence-only rule that
 selects rows of `H`. -/
 theorem admits_restrict {w : State Tm O} {H : Finset O} (sub : H ⊆ w.present) {f : Firing O E P w.frame}
-    (noneOnly : NoneOnly f.rule)
+    (absenceOnly : AbsenceOnly f.rule)
     (selected : ∀ o, o ∈ f.selection.taken ∨ o ∈ f.selection.read → o ∈ H)
     (admitted : Firing.Admits X w f) : Firing.Admits X (restrict w H) f := by
   obtain ⟨⟨fresh, shapes⟩, enabled, solvable, holds⟩ := admitted
@@ -103,16 +103,16 @@ theorem admits_restrict {w : State Tm O} {H : Finset O} (sub : H ⊆ w.present) 
     refine ⟨fun c member => ?_, fun q member => ?_⟩
     · have atW := checks c member
       obtain ⟨c₀, inRule, rfl⟩ := List.mem_map.mp member
-      rcases noneOnly.1 c₀ inRule with ⟨l, l', rfl⟩ | ⟨p, rfl⟩
+      rcases absenceOnly.1 c₀ inRule with ⟨l, l', rfl⟩ | ⟨p, rfl⟩
       · exact atW
       · exact fun o present => atW o (sub present)
-    · simp [Firing.collectOpened, noneOnly.2] at member
+    · simp [Firing.collectOpened, absenceOnly.2] at member
 
-/-- **Admitted with fewer rows, admitted with more**, for a firing of a none-only rule: when its
+/-- **Admitted with fewer rows, admitted with more**, for a firing of an absence-only rule: when its
 opening is fresh at the larger state, the identities it makes are new there, and no row outside `H`
-matches one of its none patterns at a solution of its information. -/
+matches one of its absence patterns at a solution of its information. -/
 theorem admits_extend {w : State Tm O} {H : Finset O} (sub : H ⊆ w.present) {f : Firing O E P w.frame}
-    (noneOnly : NoneOnly f.rule) (fresh : Firing.Fresh X w f)
+    (absenceOnly : AbsenceOnly f.rule) (fresh : Firing.Fresh X w f)
     (madeNew : ∀ o ∈ f.selection.made, o ∉ w.present)
     (others : ∀ p, Check.predicate .none p ∈ f.rule.body.checks → ∀ (b : Obj) (σ : Hom (E.target f.ext) b),
       X.Models σ (Firing.information X w f) → ∀ o ∈ w.present, o ∉ H →
@@ -129,20 +129,20 @@ theorem admits_extend {w : State Tm O} {H : Finset O} (sub : H ⊆ w.present) {f
     refine ⟨fun c member => ?_, fun q member => ?_⟩
     · have atH := checks c member
       obtain ⟨c₀, inRule, rfl⟩ := List.mem_map.mp member
-      rcases noneOnly.1 c₀ inRule with ⟨l, l', rfl⟩ | ⟨p, rfl⟩
+      rcases absenceOnly.1 c₀ inRule with ⟨l, l', rfl⟩ | ⟨p, rfl⟩
       · exact atH
       · intro o present
         by_cases inH : o ∈ H
         · exact atH o inH
         · exact others p inRule b σ solved o present inH
-    · simp [Firing.collectOpened, noneOnly.2] at member
+    · simp [Firing.collectOpened, absenceOnly.2] at member
 
-/-- **Admission with more rows, exactly**: for a firing of a none-only rule that selects rows of
+/-- **Admission with more rows, exactly**: for a firing of an absence-only rule that selects rows of
 `H`, admission at the larger state is admission at the smaller one, a fresh opening at the larger
-state, identities new there, and no row outside `H` matching a none pattern at a solution of the
+state, identities new there, and no row outside `H` matching an absence pattern at a solution of the
 information. -/
 theorem admits_iff_restrict {w : State Tm O} {H : Finset O} (sub : H ⊆ w.present) {f : Firing O E P w.frame}
-    (noneOnly : NoneOnly f.rule)
+    (absenceOnly : AbsenceOnly f.rule)
     (selected : ∀ o, o ∈ f.selection.taken ∨ o ∈ f.selection.read → o ∈ H) :
     Firing.Admits X w f ↔ Firing.Admits X (restrict w H) f ∧ Firing.Fresh X w f ∧
       (∀ o ∈ f.selection.made, o ∉ w.present) ∧
@@ -151,13 +151,13 @@ theorem admits_iff_restrict {w : State Tm O} {H : Finset O} (sub : H ⊆ w.prese
           ¬ X.E (X.act σ (X.act f.opening p)) (X.act σ (Firing.row X w f o)) := by
   constructor
   · intro admitted
-    refine ⟨admits_restrict X sub noneOnly selected admitted, admitted.1.1, ?_, ?_⟩
+    refine ⟨admits_restrict X sub absenceOnly selected admitted, admitted.1.1, ?_, ?_⟩
     · intro o made present
       exact Finset.disjoint_left.mp admitted.2.1.fresh (List.mem_toFinset.mpr made) present
     · intro p inRule b σ solved o present _
       exact (admitted.2.2.2 b σ solved).1 _ (List.mem_map.mpr ⟨_, inRule, rfl⟩) o present
   · rintro ⟨admitted, fresh, madeNew, others⟩
-    exact admits_extend X sub noneOnly fresh madeNew others admitted
+    exact admits_extend X sub absenceOnly fresh madeNew others admitted
 
 /-- **A positive firing asks nothing of the rows it does not select**: admitted with fewer rows, it is
 admitted with more when its opening is fresh there and the identities it makes are new there. -/
@@ -165,7 +165,7 @@ theorem admits_extend_positive {w : State Tm O} {H : Finset O} (sub : H ⊆ w.pr
     {f : Firing O E P w.frame} (positive : RuleSyntax.Scope.Positive f.rule) (fresh : Firing.Fresh X w f)
     (madeNew : ∀ o ∈ f.selection.made, o ∉ w.present) (admitted : Firing.Admits X (restrict w H) f) :
     Firing.Admits X w f := by
-  refine admits_extend X sub (noneOnly_of_positive positive) fresh madeNew ?_ admitted
+  refine admits_extend X sub (absenceOnly_of_positive positive) fresh madeNew ?_ admitted
   intro p inRule
   obtain ⟨l, l', same⟩ := positive.1 _ inRule
   cases same

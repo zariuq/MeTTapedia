@@ -19,7 +19,7 @@ Composed theorem endpoints over the canonical presheaf/subobject modal semantics
 
 namespace Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure
 
-open CategoryTheory
+open Mettapedia.CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Formula
@@ -173,64 +173,15 @@ theorem oslf_ntt_wm_star_sound
     (p q : Pattern)
     (hstar : OSLFTheoryStepStar relEnv p q)
     (φcat : H.query Bobj) :
-    ((CategoryTheory.Subobject.map pi2m).obj
-        ((CategoryTheory.Subobject.pullback pi1m).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred policy.pathLiftPkg)))
-      =
-    (CategoryTheory.Subobject.pullback gm).obj
-        ((CategoryTheory.Subobject.map fm).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred policy.pathLiftPkg))))
-    ∧
-    (langDiamondUsing relEnv lang
-      (commDiPredicateUsing relEnv lang qComm
-        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
-      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-        (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
-        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj lang) relEnv lang).source.app Xmodal e).down = pmodal ∧
-        ∃ u : Pattern,
-          Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u qComm =
-            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-              (C := ConstructorObj lang) relEnv lang).target.app Xmodal e).down ∧
-          PathSemClosedPred lang φpred u)
+    CanonicalModalBaseChange lang s seed qComm φpred policy.pathLiftPkg
+      pi1m pi2m fm gm hfm hpi2m ∧
+    CanonicalCommunicationDiamond lang relEnv qComm φpred hInvariant Xmodal pmodal
     ∧
     EndpointStatement (H := H) pi1 pi2 fcat gcat (semEState relEnv I φf) φcat
     ∧
     WMEvidenceObligation SemEState SemEQuery
       (semEState relEnv I φf) p q := by
-  have hModal :
-      ((CategoryTheory.Subobject.map pi2m).obj
-          ((CategoryTheory.Subobject.pullback pi1m).obj
-            (modalSubobjectOfPatternPred lang s seed
-              (commDi qComm (PathSemClosedPred lang φpred))
-              (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                lang s seed qComm φpred policy.pathLiftPkg)))
-        =
-      (CategoryTheory.Subobject.pullback gm).obj
-          ((CategoryTheory.Subobject.map fm).obj
-            (modalSubobjectOfPatternPred lang s seed
-              (commDi qComm (PathSemClosedPred lang φpred))
-              (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                lang s seed qComm φpred policy.pathLiftPkg))))
-      ∧
-      (langDiamondUsing relEnv lang
-        (commDiPredicateUsing relEnv lang qComm
-          (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
-        ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
-          ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-            (C := ConstructorObj lang) relEnv lang).source.app Xmodal e).down = pmodal ∧
-          ∃ u : Pattern,
-            Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u qComm =
-              ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-                (C := ConstructorObj lang) relEnv lang).target.app Xmodal e).down ∧
-            PathSemClosedPred lang φpred u) :=
+  have hModal :=
     modalSubobject_commDi_bc_graph_endpoint_of_policy
       (lang := lang) (s := s) (seed := seed) (q := qComm)
       (φ := φpred) (relEnv := relEnv) (I := I) (policy := policy)
@@ -283,32 +234,9 @@ theorem oslf_ntt_wm_step_sound
     (p q : Pattern)
     (hstep : OSLFTheoryStep relEnv p q)
     (φcat : H.query Bobj) :
-    ((CategoryTheory.Subobject.map pi2m).obj
-        ((CategoryTheory.Subobject.pullback pi1m).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred policy.pathLiftPkg)))
-      =
-    (CategoryTheory.Subobject.pullback gm).obj
-        ((CategoryTheory.Subobject.map fm).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred policy.pathLiftPkg))))
-    ∧
-    (langDiamondUsing relEnv lang
-      (commDiPredicateUsing relEnv lang qComm
-        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
-      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-        (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
-        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj lang) relEnv lang).source.app Xmodal e).down = pmodal ∧
-        ∃ u : Pattern,
-          Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u qComm =
-            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-              (C := ConstructorObj lang) relEnv lang).target.app Xmodal e).down ∧
-          PathSemClosedPred lang φpred u)
+    CanonicalModalBaseChange lang s seed qComm φpred policy.pathLiftPkg
+      pi1m pi2m fm gm hfm hpi2m ∧
+    CanonicalCommunicationDiamond lang relEnv qComm φpred hInvariant Xmodal pmodal
     ∧
     EndpointStatement (H := H) pi1 pi2 fcat gcat (semEState relEnv I φf) φcat
     ∧
@@ -372,36 +300,10 @@ theorem oslf_ntt_wm_star_sound_of_pathOrder
     (p q : Pattern)
     (hstar : OSLFTheoryStepStar relEnv p q)
     (φcat : H.query Bobj) :
-    ((CategoryTheory.Subobject.map pi2m).obj
-        ((CategoryTheory.Subobject.pullback pi1m).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred
-              (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
-                lang s seed qComm hPathOrder))))
-      =
-    (CategoryTheory.Subobject.pullback gm).obj
-        ((CategoryTheory.Subobject.map fm).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred
-              (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
-                lang s seed qComm hPathOrder)))))
-    ∧
-    (langDiamondUsing relEnv lang
-      (commDiPredicateUsing relEnv lang qComm
-        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
-      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-        (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
-        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj lang) relEnv lang).source.app Xmodal e).down = pmodal ∧
-        ∃ u : Pattern,
-          Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u qComm =
-            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-              (C := ConstructorObj lang) relEnv lang).target.app Xmodal e).down ∧
-          PathSemClosedPred lang φpred u)
+    CanonicalModalBaseChange lang s seed qComm φpred
+      (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order lang s seed qComm hPathOrder)
+      pi1m pi2m fm gm hfm hpi2m ∧
+    CanonicalCommunicationDiamond lang relEnv qComm φpred hInvariant Xmodal pmodal
     ∧
     EndpointStatement (H := H) pi1 pi2 fcat gcat (semEState relEnv I φf) φcat
     ∧
@@ -470,36 +372,10 @@ theorem oslf_ntt_wm_step_sound_of_pathOrder
     (p q : Pattern)
     (hstep : OSLFTheoryStep relEnv p q)
     (φcat : H.query Bobj) :
-    ((CategoryTheory.Subobject.map pi2m).obj
-        ((CategoryTheory.Subobject.pullback pi1m).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred
-              (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
-                lang s seed qComm hPathOrder))))
-      =
-    (CategoryTheory.Subobject.pullback gm).obj
-        ((CategoryTheory.Subobject.map fm).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred
-              (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
-                lang s seed qComm hPathOrder)))))
-    ∧
-    (langDiamondUsing relEnv lang
-      (commDiPredicateUsing relEnv lang qComm
-        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
-      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-        (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
-        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj lang) relEnv lang).source.app Xmodal e).down = pmodal ∧
-        ∃ u : Pattern,
-          Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u qComm =
-            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-              (C := ConstructorObj lang) relEnv lang).target.app Xmodal e).down ∧
-          PathSemClosedPred lang φpred u)
+    CanonicalModalBaseChange lang s seed qComm φpred
+      (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order lang s seed qComm hPathOrder)
+      pi1m pi2m fm gm hfm hpi2m ∧
+    CanonicalCommunicationDiamond lang relEnv qComm φpred hInvariant Xmodal pmodal
     ∧
     EndpointStatement (H := H) pi1 pi2 fcat gcat (semEState relEnv I φf) φcat
     ∧
@@ -571,32 +447,9 @@ theorem oslf_formula_ntt_wm_star_sound
       (queryOfAtom := queryOfAtom)
       (φf := φf) (Xobj := Xobj) (X := Xgr) (p := p)
     ∧
-    (((CategoryTheory.Subobject.map pi2m).obj
-        ((CategoryTheory.Subobject.pullback pi1m).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred policy.pathLiftPkg)))
-      =
-    (CategoryTheory.Subobject.pullback gm).obj
-        ((CategoryTheory.Subobject.map fm).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred policy.pathLiftPkg))))
-    ∧
-    (langDiamondUsing relEnv lang
-      (commDiPredicateUsing relEnv lang qComm
-        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
-      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-        (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
-        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj lang) relEnv lang).source.app Xmodal e).down = pmodal ∧
-        ∃ u : Pattern,
-          Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u qComm =
-            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-              (C := ConstructorObj lang) relEnv lang).target.app Xmodal e).down ∧
-          PathSemClosedPred lang φpred u)
+    (CanonicalModalBaseChange lang s seed qComm φpred policy.pathLiftPkg
+      pi1m pi2m fm gm hfm hpi2m ∧
+    CanonicalCommunicationDiamond lang relEnv qComm φpred hInvariant Xmodal pmodal
     ∧
     EndpointStatement (H := H) pi1 pi2 fcat gcat (semEState relEnv I φf) φcat
     ∧
@@ -677,32 +530,9 @@ theorem oslf_formula_ntt_wm_step_sound
       (queryOfAtom := queryOfAtom)
       (φf := φf) (Xobj := Xobj) (X := Xgr) (p := p)
     ∧
-    (((CategoryTheory.Subobject.map pi2m).obj
-        ((CategoryTheory.Subobject.pullback pi1m).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred policy.pathLiftPkg)))
-      =
-    (CategoryTheory.Subobject.pullback gm).obj
-        ((CategoryTheory.Subobject.map fm).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred policy.pathLiftPkg))))
-    ∧
-    (langDiamondUsing relEnv lang
-      (commDiPredicateUsing relEnv lang qComm
-        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
-      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-        (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
-        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj lang) relEnv lang).source.app Xmodal e).down = pmodal ∧
-        ∃ u : Pattern,
-          Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u qComm =
-            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-              (C := ConstructorObj lang) relEnv lang).target.app Xmodal e).down ∧
-          PathSemClosedPred lang φpred u)
+    (CanonicalModalBaseChange lang s seed qComm φpred policy.pathLiftPkg
+      pi1m pi2m fm gm hfm hpi2m ∧
+    CanonicalCommunicationDiamond lang relEnv qComm φpred hInvariant Xmodal pmodal
     ∧
     EndpointStatement (H := H) pi1 pi2 fcat gcat (semEState relEnv I φf) φcat
     ∧
@@ -787,36 +617,10 @@ theorem oslf_formula_ntt_wm_star_sound_of_pathOrder
       (queryOfAtom := queryOfAtom)
       (φf := φf) (Xobj := Xobj) (X := Xgr) (p := p)
     ∧
-    (((CategoryTheory.Subobject.map pi2m).obj
-        ((CategoryTheory.Subobject.pullback pi1m).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred
-              (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
-                lang s seed qComm hPathOrder))))
-      =
-    (CategoryTheory.Subobject.pullback gm).obj
-        ((CategoryTheory.Subobject.map fm).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred
-              (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
-                lang s seed qComm hPathOrder)))))
-    ∧
-    (langDiamondUsing relEnv lang
-      (commDiPredicateUsing relEnv lang qComm
-        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
-      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-        (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
-        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj lang) relEnv lang).source.app Xmodal e).down = pmodal ∧
-        ∃ u : Pattern,
-          Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u qComm =
-            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-              (C := ConstructorObj lang) relEnv lang).target.app Xmodal e).down ∧
-          PathSemClosedPred lang φpred u)
+    (CanonicalModalBaseChange lang s seed qComm φpred
+      (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order lang s seed qComm hPathOrder)
+      pi1m pi2m fm gm hfm hpi2m ∧
+    CanonicalCommunicationDiamond lang relEnv qComm φpred hInvariant Xmodal pmodal
     ∧
     EndpointStatement (H := H) pi1 pi2 fcat gcat (semEState relEnv I φf) φcat
     ∧
@@ -880,34 +684,9 @@ theorem oslf_formula_ntt_wm_star_sound_ctx
       (queryOfAtom := queryOfAtom)
       (φf := φf) (Xobj := Xobj) (X := Xgr) (p := p)
     ∧
-    (((CategoryTheory.Subobject.map pi2m).obj
-        ((CategoryTheory.Subobject.pullback pi1m).obj
-          (modalSubobjectOfPatternPred ctx.lang ctx.s ctx.seed
-            (commDi ctx.qComm (PathSemClosedPred ctx.lang ctx.φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              ctx.lang ctx.s ctx.seed ctx.qComm ctx.φpred
-              ctx.policy.pathLiftPkg)))
-      =
-    (CategoryTheory.Subobject.pullback gm).obj
-        ((CategoryTheory.Subobject.map fm).obj
-          (modalSubobjectOfPatternPred ctx.lang ctx.s ctx.seed
-            (commDi ctx.qComm (PathSemClosedPred ctx.lang ctx.φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              ctx.lang ctx.s ctx.seed ctx.qComm ctx.φpred
-              ctx.policy.pathLiftPkg))))
-    ∧
-    (langDiamondUsing ctx.relEnv ctx.lang
-      (commDiPredicateUsing ctx.relEnv ctx.lang ctx.qComm
-        (PathSemClosedPred ctx.lang ctx.φpred) ctx.hInvariant) pmodal ↔
-      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-        (C := ConstructorObj ctx.lang) ctx.relEnv ctx.lang).Edge.obj Xmodal,
-        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj ctx.lang) ctx.relEnv ctx.lang).source.app Xmodal e).down = pmodal ∧
-        ∃ u : Pattern,
-          Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u ctx.qComm =
-            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-              (C := ConstructorObj ctx.lang) ctx.relEnv ctx.lang).target.app Xmodal e).down ∧
-          PathSemClosedPred ctx.lang ctx.φpred u)
+    (CanonicalModalBaseChange ctx.lang ctx.s ctx.seed ctx.qComm ctx.φpred ctx.policy.pathLiftPkg
+      pi1m pi2m fm gm hfm hpi2m ∧
+    CanonicalCommunicationDiamond ctx.lang ctx.relEnv ctx.qComm ctx.φpred ctx.hInvariant Xmodal pmodal
     ∧
     EndpointStatement (H := H) pi1 pi2 fcat gcat (semEState ctx.relEnv ctx.I φf) φcat
     ∧
@@ -945,8 +724,8 @@ theorem canonicalEvidenceObligation_compact
     (φcat : cat.H.query cat.Bobj) :
     WMEvidenceObligation SemEState SemEQuery
       (semEState ctx.relEnv ctx.I fa.φf) p q := by
-  letI : CategoryTheory.Mono modal.fm := modal.hfm
-  letI : CategoryTheory.Mono modal.pi2m := modal.hpi2m
+  let _ : CategoryTheory.Mono modal.fm := modal.hfm
+  let _ : CategoryTheory.Mono modal.pi2m := modal.hpi2m
   have hCore :=
     oslf_formula_ntt_wm_star_sound_ctx
       (ctx := ctx)
@@ -1512,36 +1291,10 @@ theorem oslf_formula_ntt_wm_step_sound_of_pathOrder
       (queryOfAtom := queryOfAtom)
       (φf := φf) (Xobj := Xobj) (X := Xgr) (p := p)
     ∧
-    (((CategoryTheory.Subobject.map pi2m).obj
-        ((CategoryTheory.Subobject.pullback pi1m).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred
-              (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
-                lang s seed qComm hPathOrder))))
-      =
-    (CategoryTheory.Subobject.pullback gm).obj
-        ((CategoryTheory.Subobject.map fm).obj
-          (modalSubobjectOfPatternPred lang s seed
-            (commDi qComm (PathSemClosedPred lang φpred))
-            (languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-              lang s seed qComm φpred
-              (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
-                lang s seed qComm hPathOrder)))))
-    ∧
-    (langDiamondUsing relEnv lang
-      (commDiPredicateUsing relEnv lang qComm
-        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
-      ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-        (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
-        ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-          (C := ConstructorObj lang) relEnv lang).source.app Xmodal e).down = pmodal ∧
-        ∃ u : Pattern,
-          Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u qComm =
-            ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
-              (C := ConstructorObj lang) relEnv lang).target.app Xmodal e).down ∧
-          PathSemClosedPred lang φpred u)
+    (CanonicalModalBaseChange lang s seed qComm φpred
+      (commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order lang s seed qComm hPathOrder)
+      pi1m pi2m fm gm hfm hpi2m ∧
+    CanonicalCommunicationDiamond lang relEnv qComm φpred hInvariant Xmodal pmodal
     ∧
     EndpointStatement (H := H) pi1 pi2 fcat gcat (semEState relEnv I φf) φcat
     ∧

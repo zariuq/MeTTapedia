@@ -556,9 +556,9 @@ theorem mixedJoin_decided {Θ : Context S.R} {original : EquationStore (TotalTer
               run (mixedJoinSolver choices facts roots heads algebra rigid complete headTypingUnique declared
                   strengthening join joinSound glb spec) original larger = .solved state finished ∧
                 (frames S.levels).Principal original state.answer) ∨
-          (∃ missing,
+          (∃ absent,
             run (mixedJoinSolver choices facts roots heads algebra rigid complete headTypingUnique declared strengthening
-              join joinSound glb spec) original larger = .refuted missing)) :=
+              join joinSound glb spec) original larger = .refuted absent)) :=
   (mixedJoinFragment choices facts roots heads algebra rigid complete headTypingUnique declared strengthening join
     joinSound glb spec joinTotal glbTotal).decided inside
 

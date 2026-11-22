@@ -89,6 +89,26 @@
 
 (= (wire:all $ts $env)
    (if (== $ts ()) () (cons-atom (wire (car-atom $ts) $env) (wire:all (cdr-atom $ts) $env))))
+; Arguments at the head's declared types: where the head takes a function of sets (the motive
+; of F.below, a family's meta-level minor), Lean's abstraction is that function, one binder per
+; arrow; elsewhere an abstraction is the set function at its domain.
+(= (wire:head-arg-types $c)
+   (case $c
+     (((EgalLibrary $kind) ()) ((EgalLibrary $kind $x) ()) ((EgalLibrary $kind $x $y) ())
+      ($_ (case (lean:declaration (head-text $c)) (((LeanDeclared $id $type) (wire:arg-types $type)) ($other ())))))))
+(= (wire:arg-types $type)
+   (case $type (((Tp.arr $A $B) (cons-atom $A (wire:arg-types $B))) ($other ()))))
+(= (wire:args-at $Ts $args $env)
+   (if (== $args ()) ()
+       (cons-atom (if (== $Ts ()) (wire (car-atom $args) $env) (wire:at-type (car-atom $Ts) (car-atom $args) $env))
+         (wire:args-at (if (== $Ts ()) () (cdr-atom $Ts)) (cdr-atom $args) $env))))
+(= (wire:at-type $T $a $env)
+   (case $T
+     (((Tp.arr $A $B)
+       (case $a
+         (((lam $x $Tx $body) (Tm.lam $A (wire:at-type $B $body (cons-atom $x $env))))
+          ($other (wire $a $env)))))
+      ($other (wire $a $env)))))
 
 ; X.casesOn, as render-cases writes it: the family's case eliminator where it
 ; has one, its recursor at the wrapped minors otherwise.
@@ -122,7 +142,7 @@
       ((app $c $args)
        (if (is-proof-node $c) (wire:literal 0)
        (if (is-cases-on $c) (wire:cases $c $args $env)
-           (wire:apply (wire:head $c) (wire:head-arity $c) (wire:all $args $env)))))
+           (wire:application $c $args $env))))
       ($_ (if (is-sort-term $t) (wire:sort $t $env)
               (Error (LeanTermForm $t) (LeanTerm "a term form with no reading")))))))
 
@@ -172,3 +192,12 @@
       ((Tm.imp $p $q) (format-args "({} -> {})" ((wire:text $p $depth) (wire:text $q $depth))))
       ($_ (Error (LeanTermForm $t) (LeanTerm "a kernel term with no text"))))))
 (= (lean:text $t) (wire:text $t 0))
+
+; An application, a recursor at the arguments the reader gives it (rec-reading).
+(= (wire:application $wa_c $wa_args $wa_env)
+   (case (rec-reading $wa_c $wa_args)
+     ((None (wire:applied $wa_c $wa_args $wa_env))
+      ((RecReading $wa_read) (wire:applied $wa_c $wa_read $wa_env))
+      ($wa_other (Error (LeanTermForm (app $wa_c $wa_args)) (LeanTerm "a recursor without its major premise"))))))
+(= (wire:applied $wd_c $wd_args $wd_env)
+   (wire:apply (wire:head $wd_c) (wire:head-arity $wd_c) (wire:args-at (wire:head-arg-types $wd_c) $wd_args $wd_env)))

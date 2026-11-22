@@ -89,7 +89,7 @@ theorem forward_step {n : Nat} {before after : Tm Head n} {state : State S.R Nat
     DirectedSyntax.source_has_code program.presentation program.table program.same reduction
   let proposal : Proposal program state :=
     ⟨active, configuration.fresh, code, event, parsed, starts⟩
-  have fresh : proposal.target ∉ state.present := configuration.fresh_not_present
+  have fresh : proposal.target ∉ state.present := configuration.fresh_absent
   have present : proposal.source ∈ state.present := configuration.present
   have accepted : (restricted program qualified).Admits (proposal.compile qualified) :=
     ⟨(proposal.admitted_iff qualified).mpr ⟨present, fresh, consistent⟩,

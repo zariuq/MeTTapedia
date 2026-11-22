@@ -141,7 +141,7 @@ def headConst? {n : Nat} : Tower.Tm n → Option DeclName
   | .app g _ => headConst? g
   | _ => none
 
-/-- Whether a constant is missing from a term. -/
+/-- Whether a constant is absent from a term. -/
 def constFreeB (f : DeclName) {n : Nat} : Tower.Tm n → Bool
   | .var _ => true
   | .const c => c != f
@@ -165,11 +165,11 @@ theorem namesDistinct_nodup : ∀ {names : List DeclName}, namesDistinct names =
   | [], _ => List.nodup_nil
   | n :: rest, ok => by
       simp only [namesDistinct, Bool.and_eq_true, Bool.not_eq_true'] at ok
-      obtain ⟨missing, distinct⟩ := ok
+      obtain ⟨absent, distinct⟩ := ok
       refine List.nodup_cons.mpr ⟨fun member => ?_, namesDistinct_nodup distinct⟩
       have present : rest.any (· == n) = true := List.any_eq_true.mpr ⟨n, member, beq_self_eq_true n⟩
-      rw [present] at missing
-      cases missing
+      rw [present] at absent
+      cases absent
 
 /-- **The declaration-time check of a development**: the new names are none of the package's computing
 constants and do not occur in its rows; every new rule is headed by a new constant; the package's rows
@@ -280,7 +280,7 @@ theorem dev_sub {dev : Development} (fresh : devFresh dev = true)
   headEq := id
   constantType := by
     intro name type declared
-    have missing : dev.find? (·.1 == name) = none := by
+    have absent : dev.find? (·.1 == name) = none := by
       rw [List.find?_eq_none]
       intro e member same
       have undeclared := List.all_eq_true.mp fresh e member
@@ -289,7 +289,7 @@ theorem dev_sub {dev : Development} (fresh : devFresh dev = true)
     show (match dev.find? (·.1 == name) with
       | some (_, d) => some d.type
       | none => pkg.constantType name) = some type
-    rw [missing]
+    rw [absent]
     exact declared
   computation := fun step => pkg_step_dev dev rows step
 

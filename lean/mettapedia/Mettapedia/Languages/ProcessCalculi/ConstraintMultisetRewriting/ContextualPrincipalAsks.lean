@@ -68,7 +68,7 @@ theorem Ask.completed_update_iff {Γ : Ctx S} {sort : S.Srt}
 
 end ContextualGuardSemantics
 
-namespace ContextualConjunctiveNone
+namespace ContextualConjunctiveAbsence
 
 variable {Query : Type} (queries : Query → MetaArity S)
 
@@ -112,6 +112,6 @@ theorem Ask.completed_update_iff {Γ : Ctx S} {sort : S.Srt}
   Ask.principal_transport_iff locals queries problem update.answer
     (ContextualComputedFreshFrame.completed_is_principal problem update finished) patterns rows world
 
-end ContextualConjunctiveNone
+end ContextualConjunctiveAbsence
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

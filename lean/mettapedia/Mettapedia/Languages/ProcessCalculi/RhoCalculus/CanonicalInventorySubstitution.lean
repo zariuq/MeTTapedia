@@ -62,7 +62,8 @@ theorem substitute_canonicalize_equationEquiv {language : LanguageDef}
         assignment.assignment available.length (canonicalize pattern)) := by
   simpa only [CanonicalMatch.derivedCanonicalize_eq] using
     substituteAt_canonicalize_equationEquiv_of_resultsQuoted language valid reflectionValid
-      inventory.nameResultsSealed.resultsQuoted inventory.dropCanonicalSupportStable
+      (inventory.nameResultsSealed.resultsQuoted ReflectiveWellSorted.rhoReflectionProfile_closed)
+      inventory.dropCanonicalSupportStable
       assignment rhoReflectivePresentation (by simp [rhoReflectionProfile]) typed safe object
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalInventory

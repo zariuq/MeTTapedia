@@ -280,11 +280,11 @@ theorem OpenPatternWellSorted.renameAmbientBVarsAt
       using sorted.1.2.1
   · simpa only [ContextSubstitution.isObjectPattern_renameAmbientBVarsAt]
       using sorted.1.2.2.1
-  · intro presentation membership
+  · refine sorted.2.map (fun quoteConstructor sealed => ?_) (fun _ => typed.isWellScopedAt)
     have safe := ContextSubstitution.binderSafeAt_renameAmbientBVarsAt
       rename (fun _ member => preserves.index_lt member)
-      presentation.quoteConstructor inner.length pattern
-      (by simpa only [List.length_append] using sorted.2 presentation membership)
+      quoteConstructor inner.length pattern
+      (by simpa only [List.length_append] using sealed)
     simpa only [List.length_append] using safe
 
 end ReflectiveWellSorted

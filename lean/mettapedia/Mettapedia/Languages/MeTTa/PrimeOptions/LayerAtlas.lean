@@ -1,7 +1,7 @@
 import Mettapedia.Languages.MeTTa.WeightedAnswerAlgebra
 import Mettapedia.Languages.MeTTa.LayerEffects
 import Mettapedia.GSLT.Contracts.CoordinationFreedom
-import Mettapedia.GSLT.Contracts.NoneFrontier
+import Mettapedia.GSLT.Contracts.AbsenceFrontier
 import Mettapedia.Machines.Cursor.GapObservation
 import Mettapedia.GSLT.Logic.KnowledgeBasedPrograms
 import Mettapedia.PLN.WorldModel.EvidenceSpaces
@@ -287,40 +287,40 @@ theorem cell_absence_cursors :
     fun _ _ _ _ space program => SeekProgram.valid_self space program,
     ⟨Controls.probe_controls.1, Controls.probe_controls.2.1⟩⟩
 
-open Mettapedia.GSLT.Contracts.NoneFrontier in
+open Mettapedia.GSLT.Contracts.AbsenceFrontier in
 /-- **Absence × self-modification**: in a space whose executables create
 executables, absence at a frontier is final, and a frontier is exactly a
 closed region without matches; a pending producer flips a snapshot absence. -/
 theorem cell_absence_selfModification :
     (∀ (Atom Pattern : Type) (model : SpaceModel Atom Pattern) (pattern : Pattern)
-        (space later : Set Atom), NoneMatch model pattern space → Frontier model pattern space →
+        (space later : Set Atom), Absent model pattern space → Frontier model pattern space →
         Relation.ReflTransGen (Step model) space later →
-          NoneMatch model pattern later ∧ Frontier model pattern later) ∧
+          Absent model pattern later ∧ Frontier model pattern later) ∧
       (∀ (Atom Pattern : Type) (model : SpaceModel Atom Pattern) (pattern : Pattern)
         (space : Set Atom),
-        (NoneMatch model pattern space ∧ Frontier model pattern space) ↔
+        (Absent model pattern space ∧ Frontier model pattern space) ↔
           ∃ region : Set Atom, space ⊆ region ∧ ClosedRegion model region ∧
-            NoneMatch model pattern region) ∧
-      (NoneMatch Controls.items () {.producer, .fact} ∧ ¬ NoneMatch Controls.items () {.fact, .target}) :=
-  ⟨fun _ _ model _ _ _ absent frontier reaches => noneMatch_of_reaches model absent frontier reaches,
+            Absent model pattern region) ∧
+      (Absent Controls.items () {.producer, .fact} ∧ ¬ Absent Controls.items () {.fact, .target}) :=
+  ⟨fun _ _ model _ _ _ absent frontier reaches => absent_of_reaches model absent frontier reaches,
     fun _ _ model pattern space => frontier_iff_closedRegion model pattern space,
-    ⟨Controls.snapshot_none_flips.1, Controls.snapshot_none_flips.2.1⟩⟩
+    ⟨Controls.snapshot_absence_flips.1, Controls.snapshot_absence_flips.2.1⟩⟩
 
-open Mettapedia.GSLT.Contracts.NoneFrontier in
+open Mettapedia.GSLT.Contracts.AbsenceFrontier in
 /-- **Absence × evidence**: negative evidence read at a frontier is never
 contradicted; read from a snapshot it can be. -/
 theorem cell_absence_evidence :
     (∀ (Atom Pattern : Type) (model : SpaceModel Atom Pattern) (pattern : Pattern)
-        (space : Set Atom), NoneMatch model pattern space → Frontier model pattern space →
+        (space : Set Atom), Absent model pattern space → Frontier model pattern space →
         ∀ later, Relation.ReflTransGen (Step model) space later →
           ∀ atom ∈ later, ¬ model.fits pattern atom) ∧
-      (NoneMatch Controls.items () {.producer, .fact} ∧
+      (Absent Controls.items () {.producer, .fact} ∧
         ∃ later, Relation.ReflTransGen (Step Controls.items) {.producer, .fact} later ∧
           ∃ atom ∈ later, Controls.items.fits () atom) :=
   ⟨fun _ _ model _ _ absent frontier => negative_evidence_sound_at_frontier model absent frontier,
     Controls.negative_evidence_unsound_without_frontier⟩
 
-open Mettapedia.GSLT.Contracts.NoneFrontier in
+open Mettapedia.GSLT.Contracts.AbsenceFrontier in
 /-- **Absence × failures × time**: without a delay bound no complete detector
 is accurate; a delay bound is a frontier in time that makes one perfect. -/
 theorem cell_absence_failures :
@@ -639,21 +639,21 @@ theorem cell_pln_deduction :
   ⟨fun _ bag A B C sB sNB hA hB hNB => deduction_exact_of_screening bag A B C sB sNB hA hB hNB,
     Controls.deduction_fails_without_screening.1⟩
 
-open Mettapedia.GSLT.Contracts.NoneFrontier Mettapedia.GSLT.Contracts.FrontierNegation in
+open Mettapedia.GSLT.Contracts.AbsenceFrontier Mettapedia.GSLT.Contracts.FrontierNegation in
 /-- **Absence × intuitionistic negation**: under the over-approximation of
 firing, absence at a frontier is exactly intuitionistic negation over reachable
 states; it is sound for every refinement and not complete for them. -/
 theorem cell_absence_intuitionistic :
     (∀ (Atom Pattern : Type) (model : SpaceModel Atom Pattern) (pattern : Pattern) (space : Set Atom),
-        knot (Step model) (fun later => ¬ NoneMatch model pattern later) space ↔
-          NoneMatch model pattern space ∧ Frontier model pattern space) ∧
-      (knot Mettapedia.GSLT.Contracts.FrontierNegation.Controls.neverFires (fun later => ¬ NoneMatch Mettapedia.GSLT.Contracts.NoneFrontier.Controls.items () later)
+        knot (Step model) (fun later => ¬ Absent model pattern later) space ↔
+          Absent model pattern space ∧ Frontier model pattern space) ∧
+      (knot Mettapedia.GSLT.Contracts.FrontierNegation.Controls.neverFires (fun later => ¬ Absent Mettapedia.GSLT.Contracts.AbsenceFrontier.Controls.items () later)
           {.producer, .fact} ∧
-        ¬ Frontier Mettapedia.GSLT.Contracts.NoneFrontier.Controls.items () {.producer, .fact}) :=
+        ¬ Frontier Mettapedia.GSLT.Contracts.AbsenceFrontier.Controls.items () {.producer, .fact}) :=
   ⟨fun _ _ model pattern space => knot_iff_absent_frontier model pattern space,
     Mettapedia.GSLT.Contracts.FrontierNegation.Controls.refinement_incomplete⟩
 
-open Mettapedia.GSLT.Contracts.NoneFrontier Mettapedia.GSLT.Contracts.FrontierNegation in
+open Mettapedia.GSLT.Contracts.AbsenceFrontier Mettapedia.GSLT.Contracts.FrontierNegation in
 /-- **Absence × ownership**: a module that owns a pattern's head certifies a
 frontier by a check on its own atoms; atoms of other modules never revoke it;
 the owner revokes it by installing a producer. -/
@@ -663,11 +663,11 @@ theorem cell_absence_ownership :
         Disciplined model head owner → OwnedPattern model head owner module pattern →
         FrozenAt model head owner module pattern atoms →
         (∀ atom ∈ space, owner (head atom) = some module → atom ∈ atoms) →
-        NoneMatch model pattern space ∧ Frontier model pattern space) ∧
-      ((NoneMatch Mettapedia.GSLT.Contracts.NoneFrontier.Controls.items () {.fact} ∧
-          Frontier Mettapedia.GSLT.Contracts.NoneFrontier.Controls.items () {.fact}) ∧
-        ∃ later, Reaches (Step Mettapedia.GSLT.Contracts.NoneFrontier.Controls.items) {.producer, .fact} later ∧
-          ¬ NoneMatch Mettapedia.GSLT.Contracts.NoneFrontier.Controls.items () later) :=
+        Absent model pattern space ∧ Frontier model pattern space) ∧
+      ((Absent Mettapedia.GSLT.Contracts.AbsenceFrontier.Controls.items () {.fact} ∧
+          Frontier Mettapedia.GSLT.Contracts.AbsenceFrontier.Controls.items () {.fact}) ∧
+        ∃ later, Reaches (Step Mettapedia.GSLT.Contracts.AbsenceFrontier.Controls.items) {.producer, .fact} later ∧
+          ¬ Absent Mettapedia.GSLT.Contracts.AbsenceFrontier.Controls.items () later) :=
   ⟨fun _ _ _ _ model _ _ _ _ _ _ disciplined owned frozen within =>
       ownership_certifies_frontier model disciplined owned frozen within,
     Mettapedia.GSLT.Contracts.FrontierNegation.Controls.owner_revokes⟩

@@ -61,19 +61,6 @@ theorem isWellScopedListAt_mem {depth : Nat} {patterns : List Pattern}
       · exact all.1
       · exact ih all.2 tailMem
 
-theorem binderSafeListAt_mem {quote : String} {depth : Nat}
-    {patterns : List Pattern}
-    (all : binderSafeListAt quote depth patterns = true)
-    {pattern : Pattern} (membership : pattern ∈ patterns) :
-    binderSafeAt quote depth pattern = true := by
-  induction patterns with
-  | nil => cases membership
-  | cons head tail ih =>
-      simp only [binderSafeListAt, Bool.and_eq_true] at all
-      rcases List.mem_cons.mp membership with rfl | tailMem
-      · exact all.1
-      · exact ih all.2 tailMem
-
 /-- Pointwise relations append. -/
 theorem forall₂_append {α β : Type _} {R : α → β → Prop}
     {l₁ l₂ : List α} {r₁ r₂ : List β}
@@ -155,9 +142,8 @@ theorem childAdmission_of_collectionElement
         admission.wellSorted.1.2.2.1) membership
   · exact isWellScopedListAt_mem elementScope membership
   · intro presentation presentationMembership
-    exact binderSafeListAt_mem
-      (by simpa [binderSafeAt] using
-        admission.wellSorted.2 presentation presentationMembership) membership
+    exact (scopeSafeListAt_eq_true_iff _ _ _ _).mp
+      (by simpa using admission.wellSorted.2 presentation presentationMembership) _ membership
 
 
 /-! ## Frontier evaluation helpers -/
@@ -2565,7 +2551,7 @@ theorem frontierForall2_spine_aux
       true)
     (reflectiveList : ∀ presentation ∈
       rhoCIGSLT.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor sourceAvailable.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor sourceAvailable.length
         elements = true)
     (sealed : List TypeExpr)
     (split : targetBound = sourceAvailable ++ sealed)
@@ -2613,8 +2599,8 @@ theorem frontierForall2_spine_aux
         { wellSorted := ⟨⟨headTyped, metaList.1, objectList.1, scopedList.1⟩,
             fun presentation membership => by
               have safeCons := reflectiveList presentation membership
-              simp only [binderSafeListAt, Bool.and_eq_true] at safeCons
-              simpa [binderSafeAt] using safeCons.1⟩
+              simp only [scopeSafeListAt_cons, Bool.and_eq_true] at safeCons
+              exact safeCons.1⟩
           targetBound_split := ⟨sealed, split⟩ }
       have absCons : (CostStaticElementPlan.cons head tail).abstractPatterns =
           head.abstractPattern :: tail.abstractPatterns := rfl
@@ -2640,7 +2626,7 @@ theorem frontierForall2_spine_aux
         metaList.2 objectList.2 scopedList.2
         (fun presentation membership => by
           have safeCons := reflectiveList presentation membership
-          simp only [binderSafeListAt, Bool.and_eq_true] at safeCons
+          simp only [scopeSafeListAt_cons, Bool.and_eq_true] at safeCons
           exact safeCons.2)
         (beforeAbstracts ++ [head.abstractPattern])
         (by
@@ -2824,7 +2810,7 @@ theorem frontierForall2_plan_fuel
             admission.wellSorted.1.2.2.1
         have reflectiveList : ∀ presentation ∈
             rhoCIGSLT.costWholeReflectionProfile.presentations,
-            binderSafeListAt presentation.quoteConstructor
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
               sourceAvailable.length elements = true := by
           intro presentation membership
           simpa [binderSafeAt] using
@@ -2991,7 +2977,7 @@ theorem frontierForall2_spine
       true)
     (reflectiveList : ∀ presentation ∈
       rhoCIGSLT.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor sourceAvailable.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor sourceAvailable.length
         elements = true)
     (sealed : List TypeExpr)
     (split : targetBound = sourceAvailable ++ sealed)

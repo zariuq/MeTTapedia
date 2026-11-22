@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrde
 
 Henkin completeness needs three things: a syntax, a derivability relation and a model class.
 
-* **Syntax**: the checks of the first-order run layer (equality, none queries, count), read as guard
+* **Syntax**: the checks of the first-order run layer (equality, absence, count), read as guard
   formulas by `checkGuard`.
 * **Derivability** (`CertainChecks.Derives problem label world check`): the certain-check calculus.
   Its rules read the principal answer of the occurs-checked unifier `unifyTotal` and refute

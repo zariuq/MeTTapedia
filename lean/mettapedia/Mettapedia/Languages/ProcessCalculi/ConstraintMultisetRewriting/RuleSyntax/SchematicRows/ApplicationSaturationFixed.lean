@@ -68,8 +68,8 @@ theorem ProtectedRun.new_occurrence_of_reading_growth {caller : Subst rowSig}
   apply Set.Subset.antisymm
   · rintro value ⟨o, present, reading⟩
     have old : o ∈ s.present := by
-      by_contra missing
-      exact none ⟨o, present, missing⟩
+      by_contra absent
+      exact none ⟨o, present, absent⟩
     exact ⟨o, old, (execution.retained_reading_iff o old value).mp reading⟩
   · exact execution.readings_mono
 

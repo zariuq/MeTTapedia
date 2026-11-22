@@ -27,7 +27,7 @@ them are such; exclusive cells are not (`not_allSeparate_excl`).
   step that consumes as of one that adds (`fire_removeKind_add`).  A step whose
   guard no addition disables is positive (`Step.Positive`): an addition, a
   removal, a cell write, a read of a presence are; a guard that asks for an
-  the none query is not (`addKindUnless_not_positive`).
+  absence is not (`addKindUnless_not_positive`).
 * `Proposal.DeltaIndependent.publish_comm`: **two delta proposals that are
   independent by deltas, published from one state on which both publish, commute.**
   `publishAll_of_deltaIndependent`, `publishAll_perm_of_deltaIndependent`: any
@@ -155,7 +155,7 @@ theorem Step.IsAddition.fire_eq_some_iff [AllSeparate Value] {step : Step Locati
 
 /-- **A positive step**: no addition to the state disables its guard.  A step
 without a guard and a read of a presence are such; a guard that asks for an
-the none query is not.  A positive step may consume. -/
+absence is not.  A positive step may consume. -/
 def Step.Positive (step : Step Location Value) : Prop :=
   ∀ state added : Location → Value, step.rule.guard state → step.rule.guard (state + added)
 
@@ -625,7 +625,7 @@ theorem consumeKind_positive (kind : Location) (guard : Readout Location ℕ Pro
     (consumeKind kind guard decideGuard).Positive :=
   stable
 
-/-- **Negative**: the guard that asks for a none query is not positive: the addition
+/-- **Negative**: the guard that asks for an absence is not positive: the addition
 of the kind it watches disables it. -/
 theorem addKindUnless_not_positive (kind watched : Location) :
     ¬ (addKindUnless kind watched).Positive := by
@@ -708,7 +708,7 @@ theorem seeA_stableUnder (added : Kind → ℕ) : seeA.StableUnder added := by
   rw [List.mem_singleton.mp member] at present ⊢
   exact Nat.lt_of_lt_of_le present (Nat.le_add_right _ _)
 
-/-- **Negative, stability**: the guard that asks for the none query of `a` is not
+/-- **Negative, stability**: the guard that asks for the absence of `a` is not
 stable under the addition of an `a`. -/
 theorem addBUnlessA_not_stableUnder : ¬ addBUnlessA.StableUnder (Pi.single Kind.a 1) := by
   intro stable
@@ -746,9 +746,9 @@ theorem same_space_additions :
     rw [List.mem_singleton.mp member]
     trivial
 
-/-- **Negative, independence by deltas**: the guard that asks for the none query of
+/-- **Negative, independence by deltas**: the guard that asks for the absence of
 `a`, and the addition of an `a`. -/
-theorem none_not_deltaIndependent : ¬ addBUnlessA.DeltaIndependent addA := fun independent =>
+theorem absence_not_deltaIndependent : ¬ addBUnlessA.DeltaIndependent addA := fun independent =>
   addBUnlessA_not_stableUnder (addA_added.1 ▸ independent.1)
 
 /-- Add one `b`. -/
@@ -756,7 +756,7 @@ def addB : Proposal Kind ℕ Unit :=
   ⟨[addKind .b], Readout.const ()⟩
 
 /-- **Positive, compatible by deltas**: the addition of a `b` guarded by the
-none queries of `a`, and an addition of a `b`.  Both write the kind `b`, so they are not
+absence of `a`, and an addition of a `b`.  Both write the kind `b`, so they are not
 independent by read and write sets; the guard does not watch what the other
 adds, and neither answer reads.  Both orders are published, to one state. -/
 theorem guarded_and_same_kind :
@@ -766,15 +766,15 @@ theorem guarded_and_same_kind :
       (publishInOrder [((), addB), ((), addBUnlessA)] noKinds).map (fun world => world .b) =
         some 2 := by
   refine ⟨⟨⟨?_, ?_⟩, by decide, by decide⟩, by decide, by decide, by decide⟩
-  · intro step member state missing
-    rw [List.mem_singleton.mp member] at missing ⊢
+  · intro step member state absent
+    rw [List.mem_singleton.mp member] at absent ⊢
     have added : addB.added = Pi.single Kind.b 1 := by
       show marking {Kind.b} + 0 = Pi.single Kind.b 1
       rw [marking_singleton, add_zero]
     rw [added]
     show state Kind.a + (Pi.single Kind.b 1 : Kind → ℕ) Kind.a = 0
     rw [Pi.single_eq_of_ne (by decide), add_zero]
-    exact missing
+    exact absent
   · intro step member state _
     rw [List.mem_singleton.mp member]
     trivial
@@ -892,7 +892,7 @@ end DeltaControls
 #print axioms DeltaControls.removeA_added
 #print axioms DeltaControls.seeA_stableUnder
 #print axioms DeltaControls.addBUnlessA_not_stableUnder
-#print axioms DeltaControls.none_not_deltaIndependent
+#print axioms DeltaControls.absence_not_deltaIndependent
 #print axioms DeltaControls.guarded_and_same_kind
 #print axioms DeltaControls.answer_reads_what_is_added
 #print axioms DeltaControls.same_kind_additions

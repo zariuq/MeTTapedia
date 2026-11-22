@@ -85,13 +85,13 @@ theorem linear_used_up (f : RFiring O R E codes s) (none : codes.MakesNone) (lin
       _ = (s.rules.erase ρ).card := by rw [left]
       _ < s.rules.card := Finset.card_erase_lt_of_mem held
   refine ⟨fewer, fun ρ₀ inside => ?_⟩
-  have missing : ρ₀ ∉ f.madeRules := by
+  have absent : ρ₀ ∉ f.madeRules := by
     rw [made]
     exact List.not_mem_nil
   have inKept : ρ₀ ∈ f.kept := by
     rw [← rules]
     exact inside
-  rw [f.result_held_other missing]
+  rw [f.result_held_other absent]
   exact linear ρ₀ (f.kept_subset inKept)
 
 /-- **So a run has at most as many firings as the state holds rule occurrences.** -/

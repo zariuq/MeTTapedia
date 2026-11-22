@@ -191,7 +191,7 @@ identity fires. -/
 theorem not_bisimilar_reading_uses {rules₁ rules₂ : Finset R} {code₁ code₂ : R → Rule Tm}
     (offers₂ : Offers Q rules₂ code₂) (zone₁ zone₂ : R → Z) {s : State Tm O}
     (g : {g : Firing O E (P ∪ Q) s.frame // g.Admits X s}) {ρ' : R} (held' : ρ' ∈ rules₂)
-    (holds' : code₂ ρ' = g.1.rule) (missing : ρ' ∉ rules₁) :
+    (holds' : code₂ ρ' = g.1.rule) (absent : ρ' ∉ rules₁) :
     ¬ Bisimilar (byUse R Z X E P) (holding s rules₁ code₁ zone₁) (byUse R Z X E P)
       (holding s rules₂ code₂ zone₂) := by
   rintro ⟨related, ⟨b⟩, same⟩
@@ -203,7 +203,7 @@ theorem not_bisimilar_reading_uses {rules₁ rules₂ : Finset R} {code₁ code�
   have admitted : f₁.1.Admits X P := f₁.2
   have available := admitted.1.2.2.available
   rw [used] at available
-  exact missing available
+  exact absent available
 
 /-- **Moving an occurrence to another identity is not observed** by rule and selection: two states
 that each offer each rule once are bisimilar. -/

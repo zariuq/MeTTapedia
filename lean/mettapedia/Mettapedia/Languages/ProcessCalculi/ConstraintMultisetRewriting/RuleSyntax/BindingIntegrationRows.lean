@@ -436,7 +436,7 @@ theorem read_expansion_of_reading
           (readRuleOpening ordinary.frame (closures selected).schema.locals)
           (readDatumOpening ordinary.frame (closures selected).schema.locals) temporary output) =
         LiveObservations.observe ((directRead ordinary rows closures selected output).result (Frames.contextual S)) := by
-  obtain ⟨run, length, endpoint, presence, rules, missing⟩ :=
+  obtain ⟨run, length, endpoint, presence, rules, absent⟩ :=
     HeldReadGenericFirings.execution_of_direct (E := Contextual.declarations S) (Frames.contextual S)
       ordinary rows closures selected (readLocals S (closures selected).schema.locals)
       (readRuleOpening ordinary.frame (closures selected).schema.locals)
@@ -445,7 +445,7 @@ theorem read_expansion_of_reading
       temporaryFresh different
       (directRead_admitted_of_reading ordinary rows closures selected output present outputFresh
         wellFormed caller known value reading)
-  exact ⟨run, length, presence, rules, missing, endpoint,
+  exact ⟨run, length, presence, rules, absent, endpoint,
     HeldReadGenericFirings.public_view_eq (E := Contextual.declarations S)
       (Frames.contextual S) ordinary rows closures selected
       (readLocals S (closures selected).schema.locals)
@@ -510,14 +510,14 @@ def localPoint (n : Nat) : Assignment locals.arity target.arity
 theorem reading (n : Nat) :
     (stored false).ReadsAt (Frames.contextual signature) caller (observe (closedBody 7 n)) := by
   refine ⟨localPoint n, ?_, ?_, ?_⟩
-  · intro equation missing
-    cases missing
+  · intro equation absent
+    cases absent
   · exact .cons rfl .nil
   · rfl
 
 theorem initial_known : (Frames.contextual signature).Models caller initial.knowledge := by
-  intro equation missing
-  cases missing
+  intro equation absent
+  cases absent
 
 def first := activation initial ({false, true} : Finset Bool) stored false 0
 def firstResult := first.result (Frames.contextual signature)
@@ -545,8 +545,8 @@ theorem second_known : (Frames.contextual signature).Models secondCaller firstRe
 theorem later_reading (n : Nat) :
     (laterStored false).ReadsAt (Frames.contextual signature) secondCaller (observe (closedBody 7 n)) := by
   refine ⟨localPoint n, ?_, ?_, ?_⟩
-  · intro equation missing
-    cases missing
+  · intro equation absent
+    cases absent
   · exact .cons rfl .nil
   · rfl
 
@@ -649,11 +649,11 @@ theorem direct_read_executes :
       {Sum.inr (HeldReadGenericFirings.consumeRule schema)}).Run (hosted initial {false, true} stored),
       run.word.length = 2 ∧ run.last.present = initial.present ∪ {0} ∧
         run.last.rules = ({false, true} : Finset Bool) ∧ 3 ∉ run.last.present := by
-  obtain ⟨run, length, present, rules, missing, _, _⟩ :=
+  obtain ⟨run, length, present, rules, absent, _, _⟩ :=
     read_expansion_of_reading initial {false, true} stored false 3 0
       (by decide) (by decide) (by decide) (by decide) rfl
       caller initial_known (observe (closedBody 7 0)) (reading 0)
-  exact ⟨run, length, present, rules, missing⟩
+  exact ⟨run, length, present, rules, absent⟩
 
 end Example
 

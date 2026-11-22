@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 
 The intermediate ordinary occurrence is removed, persistent schema identities
 remain, and every public live label agrees with the independent direct read.
-Missing label slots are not identified with live resources. These laws do not
+Absent label slots are not identified with live resources. These laws do not
 make fresh identities private to arbitrary contexts.
 -/
 
@@ -98,9 +98,9 @@ theorem consumer_present (fresh : temporary ∉ ordinary.present) :
     simp [fresh]
   · simp [same]
 
-theorem private_not_present (different : temporary ≠ output) :
+theorem private_absent (different : temporary ≠ output) :
     temporary ∉ ((consumer ordinary rows closures selected extension ruleOpening datumOpening X temporary output).result X).present :=
-  Materialization.consumed_private_instance_not_present X
+  Materialization.consumed_private_instance_is_absent X
     (consumer ordinary rows closures selected extension ruleOpening datumOpening X temporary output)
     temporary (List.mem_singleton_self _) (by
       change temporary ∉ [output]
@@ -117,7 +117,7 @@ theorem direct_present :
 #print axioms consumer_rules
 #print axioms consumer_held
 #print axioms consumer_present
-#print axioms private_not_present
+#print axioms private_absent
 #print axioms direct_present
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.SchematicRows.HeldReadGenericFirings

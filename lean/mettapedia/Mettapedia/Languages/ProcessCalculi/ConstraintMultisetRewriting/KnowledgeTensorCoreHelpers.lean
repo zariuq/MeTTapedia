@@ -14,7 +14,7 @@ helper identity.
 * `helper_placed_run_iff_fits`: a helper run has a placed native run exactly where it fits.
 
 This is the instance over more than one frame of the reading in `KnowledgeTensorCore`; the
-first-order step is the instance whose none query and counting checks make the grade proper.
+first-order step is the instance whose absence and counting checks make the grade proper.
 -/
 
 set_option autoImplicit false

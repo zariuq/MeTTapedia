@@ -123,16 +123,16 @@ def localsRule (fuel : Nat) {Θ : Context S.R} :
   | [] => none
   | equation :: rest =>
       match localsClash rigid complete facts roots heads algebra declared choices reducer root fuel equation rest with
-      | some missing => some missing
+      | some absent => some absent
       | none =>
-          (localsRule fuel rest).map fun missing => ⟨fun ⟨Δ, solution, modeled⟩ =>
-            missing.down ⟨Δ, solution, fun other member => modeled other (List.mem_cons_of_mem _ member)⟩⟩
+          (localsRule fuel rest).map fun absent => ⟨fun ⟨Δ, solution, modeled⟩ =>
+            absent.down ⟨Δ, solution, fun other member => modeled other (List.mem_cons_of_mem _ member)⟩⟩
 
 /-- **One rigid round**: refute distinct rigid locals, otherwise run the full solver's round. -/
 def rigidRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) :
     Round S.levels ContextualDependentWorklist.size problem :=
   match localsRule rigid complete facts roots heads algebra declared choices reducer root fuel problem with
-  | some missing => .refuted missing.down
+  | some absent => .refuted absent.down
   | none => ContextualDependentPatternSolver.fullRound rigid facts complete roots heads algebra declared choices
       reducer root normalizes certifyNormal headTypingUnique fuel problem
 
@@ -157,16 +157,16 @@ theorem rigidRound_nil (fuel : Nat) {Θ : Context S.R} :
 /-- **Every refutation of the rigid round is certified**: distinct rigid locals, or a certified
 refutation of the full solver's round. -/
 theorem rigidRound_refuted_grounds (fuel : Nat) {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
-    {missing : ¬ (frames S.levels).Solvable problem}
+    {absent : ¬ (frames S.levels).Solvable problem}
     (refuted : rigidRound rigid complete facts roots heads algebra declared choices reducer root normalizes
-      certifyNormal headTypingUnique fuel problem = .refuted missing) :
-    (∃ missing', localsRule rigid complete facts roots heads algebra declared choices reducer root fuel problem =
-        some missing') ∨
+      certifyNormal headTypingUnique fuel problem = .refuted absent) :
+    (∃ absent', localsRule rigid complete facts roots heads algebra declared choices reducer root fuel problem =
+        some absent') ∨
       ContextualDependentPatternSolver.fullRound rigid facts complete roots heads algebra declared choices reducer
-        root normalizes certifyNormal headTypingUnique fuel problem = .refuted missing := by
+        root normalizes certifyNormal headTypingUnique fuel problem = .refuted absent := by
   unfold rigidRound at refuted
   cases found : localsRule rigid complete facts roots heads algebra declared choices reducer root fuel problem with
-  | some missing' => exact .inl ⟨missing', rfl⟩
+  | some absent' => exact .inl ⟨absent', rfl⟩
   | none =>
       rw [found] at refuted
       exact .inr refuted

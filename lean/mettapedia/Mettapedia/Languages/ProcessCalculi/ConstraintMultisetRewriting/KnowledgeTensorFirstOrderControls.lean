@@ -11,11 +11,11 @@ labelled by themselves.
   proof from the resources `{5}` (`a_firing_with_two_reads_of_one_occurrence_is_a_proof`). Its use
   reads one copy (`the_use_reads_one_copy`); one copy for each read position would not fit
   (`one_copy_for_each_read_position_does_not_fit`).
-* **The none query is not a guard on knowledge.** The rule instance `unlessNine` checks the none query of
-  `9`. Its checks are not all equality checks (`none_is_not_a_guard_on_knowledge`). Its firing
+* **Absence is not a guard on knowledge.** The rule instance `unlessNine` checks the absence of
+  `9`. Its checks are not all equality checks (`absence_is_not_a_guard_on_knowledge`). Its firing
   is admitted at `{5}` (`unless_nine_is_admitted`) and refused at `{5, 9}`
   (`unless_nine_is_refused_beside_nine`). Read on labels, the check holds of `{5}` and fails of
-  `{5} + {9}` (`none_reads_the_frame`).
+  `{5} + {9}` (`absence_reads_the_frame`).
 * **A predicate query that saw identities is outside the reading on labels.** It holds of one
   occurrence and fails of another with the same label
   (`a_predicate_query_observes_identities`), whereas the checks of a rule instance read labels
@@ -97,13 +97,13 @@ theorem one_copy_for_each_read_position_does_not_fit :
   intro fits
   exact absurd (Multiset.card_le_card fits) (by decide)
 
-/-! ## The none query is not a guard on knowledge -/
+/-! ## Absence is not a guard on knowledge -/
 
 def unlessNine : RuleInstance Nat := ⟨[], [], [], [Check.predicate .none 9], [7]⟩
 
 def makeSeven : Selection Nat := ⟨[], [], [7]⟩
 
-theorem none_is_not_a_guard_on_knowledge : ¬ GuardsOnly unlessNine := by
+theorem absence_is_not_a_guard_on_knowledge : ¬ GuardsOnly unlessNine := by
   intro guards
   obtain ⟨left, right, same⟩ := guards (Check.predicate .none 9) (List.mem_singleton.mpr rfl)
   cases same
@@ -128,7 +128,7 @@ theorem unless_nine_is_refused_beside_nine : ¬ makeSeven.Valid plain id unlessN
   have holds := valid.checks (Check.predicate .none 9) (List.mem_singleton.mpr rfl) () solved
   exact holds 9 (by decide) rfl
 
-theorem none_reads_the_frame :
+theorem absence_reads_the_frame :
     HoldsOn plain () (Check.predicate .none 9) ({5} : Multiset Nat) ∧
       ¬ HoldsOn plain () (Check.predicate .none 9) (({5} : Multiset Nat) + {9}) := by
   constructor

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.ParallelClosed.Calculi
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.NoneNotCompositional
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.AbsenceNotCompositional
 
 /-!
 # The step under a program, as a calculus with a parallel composition
@@ -27,13 +27,13 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTh
 ## The blocked situation, along every run
 
 `never_succeeds_of_blocker`, over ground terms and for every program: if no rule of the program
-takes a row `u`, and every rule of the program that makes a row `t` asks that `u` not be present, then
+takes a row `u`, and every rule of the program that makes a row `t` asks that `u` be absent, then
 from a store that holds `u` and no `t`, **no run** reaches a store holding `t`
 (`blocked_step`: the invariant is kept by every admitted firing).
 
 ## The example
 
-The program `program`: `spawn` (make `T` where `U` is not present) and `tick` (read `U`, make `W`).
+The program `program`: `spawn` (make `T` where `U` is absent) and `tick` (read `U`, make `W`).
 
 * `alone_succeeds`: from the empty store `spawn` fires and `T` is present.
 * `beside_blocked`: beside the store holding `U` no run ever makes `T`; and such runs exist
@@ -102,7 +102,7 @@ theorem exists_left_of_forall₂ {α β : Type*} {R : α → β → Prop} :
         exact ⟨a, List.mem_cons_of_mem _ inTail, related⟩
 
 /-- **One admitted firing keeps the blocker and keeps success away**, over ground terms: when no rule
-of the program takes `u`, and every rule that makes `t` asks that `u` not be present. -/
+of the program takes `u`, and every rule that makes `t` asks that `u` be absent. -/
 theorem blocked_step {program : RuleInstance Expr → Prop} {u t : Expr}
     (keeps : ∀ r, program r → u ∉ r.take)
     (guards : ∀ r, program r → t ∈ r.produce → Check.predicate .none u ∈ r.checks)
@@ -127,10 +127,10 @@ theorem blocked_step {program : RuleInstance Expr → Prop} {u t : Expr}
     · exact clear o' old isT
     · have produced : o'.1 ∈ f.rule.produce := made_label valid (List.mem_toFinset.mp made)
       rw [isT] at produced
-      exact none_refuted valid (guards _ inProgram produced) present labelled
+      exact absent_refuted valid (guards _ inProgram produced) present labelled
 
 /-- **A persistent blocker keeps success unreachable along every run**, over ground terms: no rule of
-the program takes `u`, every rule that makes `t` asks that `u` not be present, and the store holds `u`
+the program takes `u`, every rule that makes `t` asks that `u` be absent, and the store holds `u`
 and no `t`. -/
 theorem never_succeeds_of_blocker {program : RuleInstance Expr → Prop} {u t : Expr}
     (keeps : ∀ r, program r → u ∉ r.take)
@@ -164,7 +164,7 @@ theorem blocker_stays {program : RuleInstance Expr → Prop} {u t : Expr}
 /-- `tick`: read `U`, make `W`. -/
 def tick : RuleInstance Expr := rule [] [factU] [factW]
 
-/-- **The none-guarded program**: `spawn` (make `T` where `U` is not present) and `tick` (read `U`,
+/-- **The absence-guarded program**: `spawn` (make `T` where `U` is absent) and `tick` (read `U`,
 make `W`). -/
 def program (r : RuleInstance Expr) : Prop := r = Separations.spawn ∨ r = tick
 
@@ -175,7 +175,7 @@ abbrev source : ParallelCalculus := stepCalculus ground (Prod.fst : Occ → Expr
 theorem program_keeps : ∀ r, program r → factU ∉ r.take := by
   rintro r (rfl | rfl) <;> simp [Separations.spawn, tick, rule]
 
-/-- Every rule of the program that makes `T` asks that `U` not be present. -/
+/-- Every rule of the program that makes `T` asks that `U` be absent. -/
 theorem program_guards : ∀ r, program r → factT ∈ r.produce → Check.predicate .none factU ∈ r.checks := by
   rintro r (rfl | rfl) made
   · simp [Separations.spawn, rule]
@@ -206,7 +206,7 @@ theorem beside_blocked : ¬ source.Succeeds (unionOf alone blocker) :=
 def tickAt : Fir := ⟨tick, [], ⟨[], [(factU, 0)], [(factW, 0)]⟩⟩
 
 /-- **Runs exist beside the blocker**: `tick` is admitted there, and after it `U` is still present
-and `T` still missing. -/
+and `T` still absent. -/
 theorem tick_runs_beside :
     ProgramStep ground Prod.fst program (unionOf alone blocker)
         (tickAt.result Prod.fst (unionOf alone blocker)) ∧
@@ -230,14 +230,14 @@ theorem succeeds_beside_clear {D : Conf} (clearU : ∀ o ∈ D.present, o.1 ≠ 
       (fun o made => by
         simp only [Separations.spawnAt, List.mem_singleton] at made
         rw [made]
-        exact fresh) knowledge).mpr (none_holds clearU)
+        exact fresh) knowledge).mpr (absent_holds clearU)
   refine ⟨_, .single ⟨Separations.spawnAt.1, Or.inl rfl, admitted, rfl⟩, (factT, 0), ?_, rfl⟩
   change (factT, 0) ∈ fire (unionOf alone D).present
     (Separations.spawnAt.1.selection.commit (T := Expr))
   rw [mem_fire]
   exact Or.inr (by simp [Separations.spawnAt, Selection.commit])
 
-/-- **The step under the none-guarded program is switchable**: the empty store succeeds, and
+/-- **The step under the absence-guarded program is switchable**: the empty store succeeds, and
 beside the composable store holding `U` it does not. -/
 theorem source_switchable : source.Switchable :=
   ⟨alone, blocker, alone_blocker_composable, alone_succeeds, beside_blocked⟩

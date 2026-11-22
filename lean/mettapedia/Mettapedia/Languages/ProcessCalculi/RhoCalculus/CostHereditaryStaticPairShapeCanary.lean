@@ -50,10 +50,11 @@ def rhoStaticNeutralSingleton :
     ⟨⟨rhoStaticNeutralSingleton_typed, rfl, rfl,
       rhoStaticNeutralSingleton_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
-  simp [rhoStaticNeutralSingletonPattern, rhoBreadthLeftPattern,
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [rhoStaticNeutralSingletonPattern, rhoBreadthLeftPattern,
     rhoBreadthLeftProcess, rhoBreadthOutputName, rhoCutOrderRedex,
     rhoCutOrderBaseQuote, rhoCutOrderBaseDrop, rhoCutOrderWrappedDrop,
-    binderSafeAt, binderSafeListAt]
+    binderSafeAt, binderSafeListAt])
 
 /-- The deterministic compiler retains the bare base collection as a static
 root. -/

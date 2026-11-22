@@ -102,7 +102,7 @@ theorem compiledRhoComm_nil_step :
           (.apply "PZero" []) (.apply "PZero" []) []) ∧
       rhoLanguageDefGSLT.Step source target := by
   apply compiledRhoComm_step
-  · exact .quote (free := FreeSortContext.empty) .unit (by decide)
+  · exact .quote (free := FreeSortContext.empty) .unit
   · decide +kernel
   · exact .unit (free := FreeSortContext.empty)
   · decide +kernel

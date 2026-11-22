@@ -7,7 +7,7 @@ A universal conjunction depends on each guard's reachable observations, not
 on an explicit Cartesian product of complete solutions. Upper covers certify
 positive guards. Reachability of listed observations licenses counterexamples
 and the converse. Correlations between observations need not be discarded or
-assumed missing. A separate solvability witness prevents vacuous admission.
+assumed absent. A separate solvability witness prevents vacuous admission.
 -/
 
 set_option autoImplicit false

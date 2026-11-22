@@ -55,6 +55,6 @@ theorem relabel_transport (rename : Equiv.Perm O) (oldFirst oldSecond : O → A)
       · have different : rename o ≠ rename head := fun h => same (rename.injective h)
         simp only [List.map_cons, relabel, if_neg same, if_neg different]
         exact ih later (Nat.succ.inj length) o
-          (fun missing => agrees (by simpa only [List.mem_cons, not_or] using And.intro same missing))
+          (fun absent => agrees (by simpa only [List.mem_cons, not_or] using And.intro same absent))
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings

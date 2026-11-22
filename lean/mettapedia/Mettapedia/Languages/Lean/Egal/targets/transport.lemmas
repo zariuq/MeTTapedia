@@ -1,0 +1,3 @@
+# The structure projections the transported proofs apply to a proof field (Lean's term `s.2`):
+# read as cited theorems, and proved by the reading from the structure's elimination.
+Finset.nodup

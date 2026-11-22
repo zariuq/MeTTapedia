@@ -15,7 +15,7 @@ whose knowledge is consistent:
   for every label the two coincide (`ruleOffers_bisimilar_iff`), and so for every restriction of the
   step to rule forms that keeps the guards and the takes (`formOffers_bisimilar_iff`). With a fresh
   supply the probe step and the program-free step have the same bisimilarity
-  (`probeBisimilar_iff_ruleBisimilar`): tells, reads, makes, none queries and count checks and queries
+  (`probeBisimilar_iff_ruleBisimilar`): tells, reads, makes, absence and count checks and queries
   tell apart nothing more. Without one, a make can see that a term has run out of fresh identities
   (`ProgramFreeControls.freshSupply_needed`).
 * **All configurations** (`ruleOffers_bisimilar_iff_or`): inconsistent configurations admit no

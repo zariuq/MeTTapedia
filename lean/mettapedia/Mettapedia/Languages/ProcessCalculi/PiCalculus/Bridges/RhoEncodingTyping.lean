@@ -157,6 +157,36 @@ theorem encode_representation {process : Process} (free : RestrictionFree proces
   | output => exact ⟨rfl, rfl⟩
   | nu | replicate => exact False.elim free
 
+/-- The compiler is sorted in the established rho judgment as well as the
+generic signature-generated one. -/
+theorem encode_procWellSorted {process : Process} (free : RestrictionFree process)
+    (namespaceName valueName : String) :
+    ProcWellSorted rhoReflectivePresentation rhoAtomicNameContext []
+      (encode process namespaceName valueName) :=
+  languageDefHasSort_to_procWellSorted (encode_hasSort free namespaceName valueName)
+    (encode_representation free namespaceName valueName).1
+    (encode_representation free namespaceName valueName).2
+
+/-- An encoded listener's body is sorted under the released input binder. -/
+theorem close_encode_procWellSorted {process : Process} (free : RestrictionFree process)
+    (binder namespaceName valueName : String) :
+    ProcWellSorted rhoReflectivePresentation rhoAtomicNameContext ["Name"]
+      (closeFVar 0 binder (encode process namespaceName valueName)) := by
+  apply languageDefHasSort_to_procWellSorted
+  · exact (encode_hasSort free namespaceName valueName).closeFVar binder TypeExpr.name rfl
+  · rw [isObjectPattern_closeFVar]
+    exact (encode_representation free namespaceName valueName).1
+  · rw [hasCanonicalBinderMetadata_closeFVar]
+    exact (encode_representation free namespaceName valueName).2
+
+/-- The source fragment cannot create an extended set inside a rho process. -/
+theorem encode_hashSetFree {process : Process} (free : RestrictionFree process)
+    (namespaceName valueName : String) :
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.HashSetFree
+      (encode process namespaceName valueName) :=
+  Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary.rhoProcWellSorted_hashSetFree
+    (encode_procWellSorted free namespaceName valueName)
+
 private theorem noQuoteList_iff (patterns : List Pattern) :
     rhoNoLiteralQuoteList patterns = true ↔
       ∀ pattern ∈ patterns, rhoNoLiteralQuote pattern = true := by
@@ -218,39 +248,5 @@ theorem close_encode_binderSafe {process : Process} (free : RestrictionFree proc
     exact encode_rf_rhoNoLiteralQuote free n v
   · rw [isWellScopedAt_eq_lc_at]
     exact lc_at_closeFVar (encode_rf_lc free n v)
-
-/-- The compiler is sorted in the established rho judgment as well as the
-generic signature-generated one. -/
-theorem encode_procWellSorted {process : Process} (free : RestrictionFree process)
-    (namespaceName valueName : String) :
-    ProcWellSorted rhoReflectivePresentation rhoAtomicNameContext []
-      (encode process namespaceName valueName) :=
-  languageDefHasSort_to_procWellSorted (encode_hasSort free namespaceName valueName)
-    (encode_representation free namespaceName valueName).1
-    (encode_representation free namespaceName valueName).2
-    (Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission.quotesClosed_of_binderSafeAt
-      (encode_binderSafe free namespaceName valueName))
-
-/-- An encoded listener's body is sorted under the released input binder. -/
-theorem close_encode_procWellSorted {process : Process} (free : RestrictionFree process)
-    (binder namespaceName valueName : String) :
-    ProcWellSorted rhoReflectivePresentation rhoAtomicNameContext ["Name"]
-      (closeFVar 0 binder (encode process namespaceName valueName)) := by
-  apply languageDefHasSort_to_procWellSorted
-  · exact (encode_hasSort free namespaceName valueName).closeFVar binder TypeExpr.name rfl
-  · rw [isObjectPattern_closeFVar]
-    exact (encode_representation free namespaceName valueName).1
-  · rw [hasCanonicalBinderMetadata_closeFVar]
-    exact (encode_representation free namespaceName valueName).2
-  · exact Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission.quotesClosed_of_binderSafeAt
-      (close_encode_binderSafe free binder namespaceName valueName)
-
-/-- The source fragment cannot create an extended set inside a rho process. -/
-theorem encode_hashSetFree {process : Process} (free : RestrictionFree process)
-    (namespaceName valueName : String) :
-    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.HashSetFree
-      (encode process namespaceName valueName) :=
-  Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary.rhoProcWellSorted_hashSetFree
-    (encode_procWellSorted free namespaceName valueName)
 
 end Mettapedia.Languages.ProcessCalculi.PiCalculus.Bridges.RhoEncodingTyping

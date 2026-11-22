@@ -32,7 +32,7 @@ asks that made identities already carry their made rows (`KeepsLabels`), the res
 
 * **`round_image_iff`**: the image of a bag admitted on its own at an embedded state, whose members keep
   labels, is a round exactly when its members ignore each other's writes (`IgnoreEachOther`) at the cut
-  of each pair. Equation guards always do; none queries and count checks and collect queries do when what the
+  of each pair. Equation guards always do; absence and count checks and collect queries do when what the
   other member takes and makes is apart from their patterns at that cut. No hypothesis on the terms of
   the state.
 * **`round_image_of_positive`**: so for positive rules (equation guards, no collect query) the image of such a
@@ -367,11 +367,11 @@ def roundLabel (s : State (Terms T) O) (l : List (OneMember A O P)) : O → T :=
 theorem roundLabel_present {s : State (Terms T) O} {l : List (OneMember A O P)}
     (enabled : Enabled (fun _ : O => ()) s.present ((bagOf A l).selection.commit (T := Unit)))
     {o : O} (present : o ∈ s.present) : roundLabel A s l o = s.label o := by
-  have missing : o ∉ (bagOf A l).selection.made := fun made =>
+  have absent : o ∉ (bagOf A l).selection.made := fun made =>
     Finset.disjoint_left.mp enabled.fresh (List.mem_toFinset.mpr made) present
   have step : roundLabel A s l o = A.apply A.identity (s.label o) :=
     Firing.relabel_of_not_mem (Tm := Terms T) (a := PUnit.unit)
-      (fun o' => A.apply A.identity (s.label o')) _ _ missing
+      (fun o' => A.apply A.identity (s.label o')) _ _ absent
   rw [step, A.apply_identity]
 
 /-- **Under the labels of a round, every member keeps labels.** -/
@@ -470,14 +470,14 @@ theorem admitsOwn_iff_round_canonical {s : State (Terms T) O} {l : List (OneMemb
   · rintro ⟨round, fresh, collect⟩
     have agree : ∀ o ∈ s.present, roundLabel A s l o = s.label o := by
       intro o present
-      have missing : o ∉ (bagOf A l).selection.made := by
+      have absent : o ∉ (bagOf A l).selection.made := by
         intro made
         obtain ⟨m, inM, isMade⟩ := List.mem_flatMap.mp made
         exact Finset.disjoint_left.mp (round.valid _ (List.mem_map_of_mem inM)).firing.occurrences.fresh
           (List.mem_toFinset.mpr isMade) present
       have step : roundLabel A s l o = A.apply A.identity (s.label o) :=
         Firing.relabel_of_not_mem (Tm := Terms T) (a := PUnit.unit)
-          (fun o' => A.apply A.identity (s.label o')) _ _ missing
+          (fun o' => A.apply A.identity (s.label o')) _ _ absent
       rw [step, A.apply_identity]
     have same := congruent_relabel agree
     have freshEmbed :

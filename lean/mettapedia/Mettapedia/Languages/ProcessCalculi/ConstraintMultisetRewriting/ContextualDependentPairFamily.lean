@@ -178,7 +178,7 @@ theorem tower_pair_decided_of_uncovered_exact
       run (pairTower.solver larger) problem larger = run (pairTower.solver budget) problem budget ∧
       ((∃ state finished, run (pairTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (pairTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (pairTower.solver larger) problem larger = .refuted absent)) :=
   (Settled.ofConst pairTower (fun problem => tower_pairRound_const problem)
     (fun problem => PairReached problem)
     (fun {_} {problem} held nonempty => by

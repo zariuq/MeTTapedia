@@ -1,7 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.ModuleSource.BinaryCollectionLowering
 import Mettapedia.GSLT.LanguageDef.ModuleSource.AlgebraInterpretation
 import Mettapedia.OSLF.MeTTaIL.CanonicalBags
-import Mettapedia.GSLT.LanguageDef.BagEquationDecision
+import Mettapedia.GSLT.LanguageDef.BagNormalFormEquivalence
 
 /-!
 # Source binary algebras and their packed collection interpretation

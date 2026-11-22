@@ -10,7 +10,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SourceLan
 determines no address for `$S` (`undetermined`), and its store changes only by its own moves, so it waits
 forever. Both bags of answers are empty (`fail_answers`, `waiting_answers`); the observations differ:
 the waiting alternative shows `address $S` (`fail_and_waiting_differ`). Real HE and the engine's HE lane
-answer this query with an error value; here nothing fails, the none query is shown with its type.
+answer this query with an error value; here nothing fails, the absence is shown with its type.
 
 **A well-formed program whose `run` waits** (the control for the pattern clause of `WellFormed`):
 

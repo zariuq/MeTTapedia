@@ -46,7 +46,7 @@ theorem CostRegionTree.normalize_pattern_isWellScopedAt_zero
   have closedReflective : ReflectiveWellSorted.ReflectiveScopeSafeAt
       rhoCIGSLT.costWholeReflectionProfile 0 pattern := by
     intro presentation membership
-    exact binderSafeAt_of_isWellScopedAt_of_binderSafeAt
+    exact scopeSafeAt_of_isWellScopedAt_of_scopeSafeAt
       presentation.quoteConstructor closed
         (reflective presentation membership) (Nat.zero_le _)
   have closedWellSorted : ReflectiveWellSorted.OpenPatternWellSorted

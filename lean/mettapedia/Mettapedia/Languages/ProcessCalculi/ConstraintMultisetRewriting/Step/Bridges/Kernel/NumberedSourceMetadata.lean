@@ -107,7 +107,7 @@ theorem apply_data (policy : AxiomPolicy) [DecidablePred policy]
   have fresh : event.sourceIds.Nodup ∧ ∀ id ∈ event.sourceIds, before.addresses[id]? = none := by
     simpa [ExportReplay.idsFreshB,List.all_eq_true] using checked.2.2.1
   have unique := fresh.1
-  have missing := fresh.2
+  have absent := fresh.2
   have claimsChecked := (ExportReplay.claimsSame_eq_true_iff _ _).mpr claims
   let actual : ExportReplay.State :=
     ⟨⟨output.context,before.registered.cache ++ output.theorems.toArray,
@@ -118,7 +118,7 @@ theorem apply_data (policy : AxiomPolicy) [DecidablePred policy]
     simp [ExportReplay.apply,checked.2.1,checked.2.2.1,commandChecked,length,claimsChecked,actual]
   have same := Option.some.inj (computes.symm.trans accepted)
   subst after
-  exact ⟨output,commandChecked,unique,missing,length,claims,rfl,rfl⟩
+  exact ⟨output,commandChecked,unique,absent,length,claims,rfl,rfl⟩
 
 private theorem checks_against_outputs (sources : List SourceTerm) (outputs : List Theorem)
     (checked : List.Forall₂ (fun source claim => source.check = some claim.concl)
@@ -137,7 +137,7 @@ theorem apply_preserves_conclusions (policy : AxiomPolicy) [DecidablePred policy
     (sourceChecks : List.Forall₂ (fun source claim => source.check = some claim.concl) sources event.claims)
     (accepted : ExportReplay.apply policy before event = some after) :
     ConclusionsChecked after (ExportCodec.addConclusions oldSources event.sourceIds sources) := by
-  obtain ⟨output,_,unique,missing,length,claims,cacheEq,addressesEq⟩ := apply_data policy before after event accepted
+  obtain ⟨output,_,unique,absent,length,claims,cacheEq,addressesEq⟩ := apply_data policy before after event accepted
   rw [claims] at sourceChecks
   have against := checks_against_outputs sources output.theorems sourceChecks
   intro id source found
@@ -145,7 +145,7 @@ theorem apply_preserves_conclusions (policy : AxiomPolicy) [DecidablePred policy
   · obtain ⟨position,fact,addressAt,factAt,sourceChecked⟩ := beforeChecked id source old
     have outside : id ∉ event.sourceIds := by
       intro inside
-      have impossible := (missing id inside).symm.trans addressAt
+      have impossible := (absent id inside).symm.trans addressAt
       cases impossible
     refine ⟨position,fact,?_,?_,sourceChecked⟩
     · rw [addressesEq,addresses_lookup_other _ _ _ _ outside]

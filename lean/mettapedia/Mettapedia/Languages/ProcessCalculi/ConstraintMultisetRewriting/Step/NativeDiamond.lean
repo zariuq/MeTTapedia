@@ -36,7 +36,7 @@ identity, not with the row the other firing publishes there.
 
 ## Controls
 
-* **Query interference breaks stability** (`NativeDiamondControls.interference_breaks`): a none query
+* **Query interference breaks stability** (`NativeDiamondControls.interference_breaks`): an absence
   query of the occurrence `1` holds at `{0}` and fails after a commit makes `1`.
 * **A port collision blocks both orders** (`NativeDiamondControls.collision_blocks`): two commits
   that make the same port clash, and neither is enabled after the other.
@@ -283,13 +283,13 @@ namespace NativeDiamondControls
 
 open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits (PredicateQuery)
 
-/-- A none query of the occurrence `1`, over native-style labels carrying identities. -/
+/-- An absence query of the occurrence `1`, over native-style labels carrying identities. -/
 def noOne : PredicateQuery ℕ (ℕ × Unit) := ⟨fun label => decide (label.1 = 1), ∅⟩
 
 /-- A commit that makes the occurrence `1`. -/
 def makesOne : Commit ℕ Unit := ⟨∅, ∅, {1}, []⟩
 
-/-- **Query interference breaks stability**: the none query holds at `{0}` and fails after a
+/-- **Query interference breaks stability**: the absence query holds at `{0}` and fails after a
 commit makes `1` inside its region. -/
 theorem interference_breaks :
     noOne.Holds (fun o => (o, ())) {0} ∧ ¬ noOne.Holds (fun o => (o, ())) (fire {0} makesOne) := by

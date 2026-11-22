@@ -309,25 +309,25 @@ def FreshFrom (C : Configuration T O) (schedule : List (ConditionalSchedule.Firi
 def UniqueMakers (schedule : List (ConditionalSchedule.Firing T O)) : Prop :=
   schedule.Pairwise fun x y => ∀ o ∈ x.2.made, o ∉ y.2.made
 
-/-- A missing identity that nothing makes is never read or taken. -/
-theorem none_stays :
+/-- An absent identity that nothing makes is never read or taken. -/
+theorem absent_stays :
     ∀ (schedule : List (ConditionalSchedule.Firing T O)) (D : Configuration T O) (o : O),
       ConditionalSchedule.Executable A label D schedule → o ∉ D.present →
       (∀ z ∈ schedule, o ∉ z.2.made) → ∀ y ∈ schedule, o ∉ y.2.read ∧ o ∉ y.2.taken
   | [], _, _, _, _, _, _, member => absurd member List.not_mem_nil
-  | z :: rest, D, o, executable, missing, unmade, y, member => by
+  | z :: rest, D, o, executable, absent, unmade, y, member => by
       obtain ⟨valid, later⟩ := executable
       rcases List.mem_cons.mp member with same | inRest
       · subst same
         constructor
         · intro read
-          exact missing (valid.occurrences.kept_subset (by simpa [Selection.commit] using read))
+          exact absent (valid.occurrences.kept_subset (by simpa [Selection.commit] using read))
         · intro taken
-          exact missing (valid.occurrences.taken_subset (by simpa [Selection.commit] using taken))
-      · refine none_stays rest _ o later ?_ (fun w hw => unmade w (List.mem_cons_of_mem _ hw)) y inRest
+          exact absent (valid.occurrences.taken_subset (by simpa [Selection.commit] using taken))
+      · refine absent_stays rest _ o later ?_ (fun w hw => unmade w (List.mem_cons_of_mem _ hw)) y inRest
         intro inAfter
         rcases mem_fire.mp inAfter with ⟨present, _⟩ | made
-        · exact missing present
+        · exact absent present
         · exact unmade z List.mem_cons_self (by simpa [Selection.commit] using made)
 
 theorem fresh_after {x : ConditionalSchedule.Firing T O} {rest : List (ConditionalSchedule.Firing T O)}
@@ -369,7 +369,7 @@ theorem runs_respect_order :
           · exact Finset.disjoint_left.mp valid.occurrences.fresh made initial
         have unmade : ∀ z ∈ rest, o ∉ z.2.made := fun z hz made =>
           fresh z (List.mem_cons_of_mem _ hz) o made initial
-        exact (none_stays A label rest _ o later gone unmade y member).1 read
+        exact (absent_stays A label rest _ o later gone unmade y member).1 read
 
 /-- Under the occurrence-net conditions a later firing never makes what an earlier one took. -/
 theorem no_reuse_of_fresh :
@@ -415,7 +415,7 @@ theorem runs_are_exactly_linearizations
 A check-free schedule stays executable after substituting every term by a substitution
 compatible with its final equation store (the instance law) and after adding occurrences it
 neither makes nor finds present (the frame law). These are the two moves of universal schema
-promotion; the none-guard and scope-restriction controls show each hypothesis is needed. -/
+promotion; the absence-guard and scope-restriction controls show each hypothesis is needed. -/
 
 theorem follow_equations_prefix :
     ∀ (schedule : List (ConditionalSchedule.Firing T O)) (C : Configuration T O),

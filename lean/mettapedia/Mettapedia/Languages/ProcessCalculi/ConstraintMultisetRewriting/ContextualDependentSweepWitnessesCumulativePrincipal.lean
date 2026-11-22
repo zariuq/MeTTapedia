@@ -258,10 +258,10 @@ a principal answer or with a refutation. -/
 theorem cross_undecided (family : ContextualDependentDecisiveDriver.Family setting.levels) (fuel rounds : Nat) :
     ¬ ((∃ state finished, run (family.solver fuel) crossStore rounds = .solved state finished ∧
           (frames setting.levels).Principal crossStore state.answer) ∨
-        (∃ missing, run (family.solver fuel) crossStore rounds = .refuted missing)) := by
-  rintro (⟨state, _, _, principal⟩ | ⟨missing, _⟩)
+        (∃ absent, run (family.solver fuel) crossStore rounds = .refuted absent)) := by
+  rintro (⟨state, _, _, principal⟩ | ⟨absent, _⟩)
   · exact cross_no_principal state.answer principal
-  · exact missing cross_identity
+  · exact absent cross_identity
 
 /-- **The conclusion of acceptance is false for every family**, on a store of the fragment. -/
 theorem acceptance_conclusion_false (family : ContextualDependentDecisiveDriver.Family setting.levels) :
@@ -269,7 +269,7 @@ theorem acceptance_conclusion_false (family : ContextualDependentDecisiveDriver.
       run (family.solver larger) crossStore larger = run (family.solver budget) crossStore budget ∧
       ((∃ state finished, run (family.solver larger) crossStore larger = .solved state finished ∧
           (frames setting.levels).Principal crossStore state.answer) ∨
-        (∃ missing, run (family.solver larger) crossStore larger = .refuted missing)) := by
+        (∃ absent, run (family.solver larger) crossStore larger = .refuted absent)) := by
   rintro ⟨budget, decided⟩
   exact cross_undecided family budget budget (decided budget (Nat.le_refl budget)).2
 

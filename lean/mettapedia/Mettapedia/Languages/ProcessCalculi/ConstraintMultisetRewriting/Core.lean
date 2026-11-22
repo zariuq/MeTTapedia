@@ -261,7 +261,7 @@ only its new creation. No core identity type, source numeric atom, space
 handle or query-variable ownership policy is changed. The subsequent native
 program construction joins conditional ordinary/shared rows and guards.
 
-`ContextualOccurrenceRenaming` preserves conditional none queries and occurrence
+`ContextualOccurrenceRenaming` preserves conditional absence and occurrence
 counts under an injective physical renaming with corresponding shared rows.
 `ContextualScheduleCutRenaming` uses each private prefix's own allocation
 map, retaining its information and watched world; all compiled original-cut
@@ -328,7 +328,7 @@ original-world guard views, shapes and resource preconditions preserve and
 reflect source admission. Every actual bounded solver return preserves
 those guard verdicts, including a countermodel to an earlier guard that a
 later caller binding would otherwise erase. The following native views join
-equality, none queries and count to actual entry data; the native program
+equality, absence and count to actual entry data; the native program
 construction then joins them with the actual conditional producer.
 
 `ContextualScheduleInputModels` computes which entry schemas the renamed
@@ -359,11 +359,11 @@ Created identities remain separate from the original input identities.
 `ContextualNativeGuardViews` interprets the captures of actual native input
 labels in the selected saved-cut block. Every original-cut model extends
 through the actual native information, so later bindings cannot remove its
-countermodels. Equality uses the existing native guard. The none query splits into
+countermodels. Equality uses the existing native guard. Absence splits into
 a complete actual-row query for surviving entry inputs and a finite check
 of authored prefix creations. The latter is program data, not a replacement
 for reading the entry inventory. Together they have exactly the compiled
-source none query meaning. The controls distinguish earlier from later cuts,
+source absence meaning. The controls distinguish earlier from later cuts,
 retain a clause's own tell, detect a matching insertion, permit an unrelated
 one, and reject an internal creation missed by an entry-only query.
 These are comparisons at the constructed entry world and fixed selection.
@@ -452,7 +452,7 @@ forbidden entry identities, retaining freshness of intermediate creations
 even when they disappear from the net output. Only port shapes and the
 store-independent possibility flag use a point condition. The finite list
 in `ContextualNativeProgramGuards` additionally checks every equality,
-none queries and conditional count at its original cut.
+absence and conditional count at its original cut.
 
 `ContextualNativeProgramExecution` proves, for every compiled body and
 producer, that source admission is equivalent to one actual query-admitted
@@ -475,7 +475,7 @@ by two correlated reads, incompatible reuse, preservation of an earlier
 schema, refusal of an earlier guard despite a later tell, and a count at
 its clause's own equation cut. An invalid make-then-take prefix has an
 enabled net effect but fails the complete source resource condition and
-the native none query. Starting with an empty entry admits that same
+the native absence query. Starting with an empty entry admits that same
 internal make/take program. Fresh invocation installation, arbitrary raw selections/program observers and full
 active-evaluator/collection composition remain open. No total higher-order
 matching or guard-decision algorithm is supplied by semantic query support.
@@ -485,7 +485,7 @@ body using the existing take operation. The invocation control is appended after
 preserving their opening ordinals and those of the data reads. No output
 recreates the control. The joined `source_iff_completed_invocation` theorem
 retains actual execution and source-world equivalence while proving control
-none queries and a strict drop of the pending indicator. Any next admission
+absence and a strict drop of the pending indicator. Any next admission
 requiring that control is impossible, including after arbitrary data steps
 that do not produce a control. New control production is an explicit
 boundary; global installation, cancellation and retries remain separate
@@ -612,7 +612,7 @@ those uses share the producer's variables instead of freshening them as
 schemas. The complete second problem retains the first event's equations.
 `realize_ordered_pair` recovers the independently available-input profile.
 `realize_two_orders` constructs both orders and preserves and reflects all
-final equality, none queries and occurrence-count questions over the common event
+final equality, absence and occurrence-count questions over the common event
 interface. It retains original and intermediate guard obligations, and is
 restricted to independently available inputs in the structural-pattern
 fragment. Arbitrary surrounding continuations, joined-schema guards,
@@ -640,7 +640,7 @@ sharing from ordinary unrestricted beta reduction.
 paths of the declared intrinsic rho profile with retained occurrence
 firings. Its ordinary substitution and optional free Drop must remain
 distinct from paper-faithful semantic COMM substitution. The profile
-controls show that a public none observer distinguishes communication
+controls show that a public absence observer distinguishes communication
 from a later activation stage. `QuotedLambdaRetained.finite_execution_with_solvers_iff`
 now supplies the mixed lambda/quotation profile: lexical captures survive,
 quotation is inert, and explicit activation runs through the same retained
@@ -724,7 +724,7 @@ theorem independently_ready_commute
   simpa only [result_equations] using jointModels σ
 
 /-- Equal endpoint observations preserve admission of arbitrary fixed
-continuations, including their later equality, none queries and count checks. -/
+continuations, including their later equality, absence and count checks. -/
 theorem continuation_after_commuting
     (first second : ConditionalSchedule.Firing T O) (before : Configuration T O)
     (same : SameUpTo A (second.2.result label second.1 (first.2.result label first.1 before))

@@ -52,7 +52,7 @@ answers.
 * The union is not empty: the token firing is a transition of the demonstration program and of the program of
   its one rule (`Controls.consume_of_rule`).
 * Monotonicity needs the inclusion: that transition is not a transition of the program of another rule
-  (`Controls.consume_not_noNine`).
+  (`Controls.consume_not_absent`).
 -/
 
 set_option autoImplicit false
@@ -238,7 +238,7 @@ end DependentFull
 
 namespace Controls
 
-open Examples (Tm X E demo consume noNine tokenState consumeFiring consume_admitted consume_result_present)
+open Examples (Tm X E demo consume absentNine tokenState consumeFiring consume_admitted consume_result_present)
 
 /-- **The union is not empty**: the token firing is a transition of the demonstration program, hence of the
 program of one of its rules. -/
@@ -249,13 +249,13 @@ theorem consume_of_rule :
     (succ_iff_rule demo _ _).mp ⟨consumeFiring, consume_admitted, rfl⟩⟩
 
 /-- **Monotonicity needs the inclusion**: the token transition of the demonstration program is not a transition
-of the program of the none rule alone, which takes and makes nothing. -/
-theorem consume_not_noNine :
+of the program of the absence rule alone, which takes and makes nothing. -/
+theorem consume_not_absent :
     ∃ t, Succ (step X ℕ E demo).toStep tokenState t ∧
-      ¬ Succ (step X ℕ E ({noNine} : Program Tm)).toStep tokenState t := by
+      ¬ Succ (step X ℕ E ({absentNine} : Program Tm)).toStep tokenState t := by
   refine ⟨consumeFiring.result X tokenState, ⟨consumeFiring, consume_admitted, rfl⟩, ?_⟩
   rintro ⟨f, admitted, reached⟩
-  have isRule : f.rule = noNine := Set.mem_singleton_iff.mp f.member
+  have isRule : f.rule = absentNine := Set.mem_singleton_iff.mp f.member
   obtain ⟨-, ⟨-, -, takeLength, -, produceLength, -⟩, -⟩ := (admits_iff f).mp admitted
   rw [isRule] at takeLength produceLength
   have noneTaken : f.selection.taken = [] := List.eq_nil_of_length_eq_zero takeLength.symm
@@ -283,6 +283,6 @@ end Controls
 #print axioms firstOrder_all
 #print axioms dependent_all
 #print axioms Controls.consume_of_rule
-#print axioms Controls.consume_not_noNine
+#print axioms Controls.consume_not_absent
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Representation

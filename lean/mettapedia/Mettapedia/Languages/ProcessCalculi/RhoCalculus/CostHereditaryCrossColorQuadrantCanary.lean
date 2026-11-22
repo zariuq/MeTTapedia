@@ -46,7 +46,8 @@ theorem endpointWellSorted :
       FreeTypeContext.empty [] nameType rightPattern := by
   refine ⟨checkOpenPatternWellSorted_sound (by decide), ?_⟩
   intro reflected _membership
-  simp [rightPattern, binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [rightPattern, binderSafeAt, binderSafeListAt])
 
 /-- Well-sortedness of the collapsing base pattern. -/
 theorem reachedWellSorted :
@@ -55,7 +56,8 @@ theorem reachedWellSorted :
       FreeTypeContext.empty [] nameType reachedPattern := by
   refine ⟨checkOpenPatternWellSorted_sound (by decide), ?_⟩
   intro reflected _membership
-  simp [reachedPattern, rightPattern, binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [reachedPattern, rightPattern, binderSafeAt, binderSafeListAt])
 
 /-- The canonical equality of the minimal pair, kernel-computed. -/
 theorem pair_canonical :
@@ -550,7 +552,8 @@ theorem partnerBaseWellSorted :
       FreeTypeContext.empty [] nameType partnerBase := by
   refine ⟨checkOpenPatternWellSorted_sound (by decide), ?_⟩
   intro reflected _membership
-  simp [partnerBase, binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [partnerBase, binderSafeAt, binderSafeListAt])
 
 theorem collapsingWrappedWellSorted :
     ReflectiveWellSorted.OpenPatternWellSorted
@@ -558,7 +561,8 @@ theorem collapsingWrappedWellSorted :
       FreeTypeContext.empty [] nameType collapsingWrapped := by
   refine ⟨checkOpenPatternWellSorted_sound (by decide), ?_⟩
   intro reflected _membership
-  simp [collapsingWrapped, partnerBase, binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [collapsingWrapped, partnerBase, binderSafeAt, binderSafeListAt])
 
 /-- The canonical equality of the mirrored pair, kernel-computed. -/
 theorem mirror_canonical :

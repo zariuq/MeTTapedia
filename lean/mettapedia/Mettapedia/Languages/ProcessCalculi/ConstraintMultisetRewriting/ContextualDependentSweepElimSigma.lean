@@ -157,7 +157,7 @@ theorem endingTop_drive (fuel : Nat) : ∀ (rounds : Nat) {Γ : Context setting.
             rw [endingTop_cons fuel rounds notEmpty]
             split at decided
             · cases decided
-            · rename_i missing isRefuted
+            · rename_i absent isRefuted
               cases decided
               rw [(towerElimSigmaRound_eq fuel state.remaining).trans isRefuted]
               rfl

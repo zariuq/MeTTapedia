@@ -22,7 +22,7 @@ carries its theorem and controls just inside and just outside it.
 * **Take and make** (`HeatingBisimulation`): every rule set without reads and checks is, through
   heating, strongly bisimilar to reduction modulo associativity, unit and symmetry of composition, on
   the configurations whose knowledge the chosen solution models. The structural congruence enters
-  only through heating. On those configurations the none-guarded `spawn` has no such
+  only through heating. On those configurations the absence-guarded `spawn` has no such
   bisimulation, while `make T`, the same rule without its guard, has one.
 * **Channel communication** (`RhoChannelFragment`): the rules that take one message and one receiver
   on the same name and make the continuation, one rule instance per redex, are strongly bisimilar to
@@ -34,8 +34,8 @@ carries its theorem and controls just inside and just outside it.
   through the narrowing.
   Lifts are unique up to heating, not on firings, already on rho's own communication
   (`RhoRedexAmbiguity`). On the ground step, among firings without queries whose checks are none or
-  one none guard, exactly those without a check stay admitted beside every store; no theorem links
-  this to the narrowing. The none query is seen by the whole-store view.
+  one absence guard, exactly those without a check stay admitted beside every store; no theorem links
+  this to the narrowing. Absence is seen by the whole-store view.
 * **Read-only queries** (`ReadOnlyQuery`): the store is unchanged and a query is never a cause; both
   orders agree whenever the query's survival of the other firing is entailed, which is discharged
   on ground terms.

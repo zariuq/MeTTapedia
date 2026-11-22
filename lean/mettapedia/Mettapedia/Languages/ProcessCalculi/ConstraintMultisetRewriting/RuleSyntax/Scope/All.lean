@@ -32,7 +32,7 @@ Privacy is a property of reachable states along private steps (`privateFrom_alon
 success persists (`success_persists`). At first-order terms over infinitely many unknowns, privacy
 at the start suffices for every positive run (`StartPrivacy.success_persists_from_start`): the run's
 fresh unknowns are renamed away from the neighbour. Controls (`CompositionControls`): a shared
-unknown refuses and switches success off (a positive program, with no none query involved); none queries and
+unknown refuses and switches success off (a positive program, with no absence involved); absence and
 collect query are refused beside a ground row although everything is independent; an unsolvable neighbour
 refuses; a neighbour mentioning the opened unknown makes the opening not fresh, and opening apart
 repairs it.

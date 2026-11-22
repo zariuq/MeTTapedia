@@ -144,7 +144,7 @@ theorem endingMixed_drive (fuel : Nat) : ∀ (rounds : Nat) {Γ : Context settin
             rw [endingMixed_cons fuel rounds notEmpty]
             split at decided
             · cases decided
-            · rename_i missing isRefuted
+            · rename_i absent isRefuted
               cases decided
               rw [(towerMixedRound_eq fuel state.remaining).trans isRefuted]
               rfl

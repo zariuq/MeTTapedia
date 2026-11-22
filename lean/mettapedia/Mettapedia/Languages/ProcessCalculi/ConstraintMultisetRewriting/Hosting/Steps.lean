@@ -11,7 +11,7 @@ second-order patterns in their left sides):
 * **`reflection`**: every admitted firing from a state that represents an alternative is a source
   step of that alternative, and its result represents one of the alternatives that step makes.
 
-The unmatched call: admission of the fixed rule `unmatchedRule` (`none eqn(T)`) holds exactly when
+The unmatched call: admission of the fixed rule `unmatchedRule` (`absent eqn(T)`) holds exactly when
 no equation of the program matches the call (`unmatched_guard` for the source's condition implying
 the check; `unmatched_none` for the converse).
 -/
@@ -155,11 +155,11 @@ section Unmatched
 
 variable {Ty : Type} {P : SourceLanguage.Program κ Γ star Ty}
 
-/-- The term the none check of `unmatchedRule` reads. -/
+/-- The term the absence check of `unmatchedRule` reads. -/
 abbrev unmatchedCheck : Observation S (unknownArity Γ star) := observe (eqnN N (unk .datum))
 
 /-- **No equation matches, so the check holds**: when no equation of the program matches the call,
-the none check of the canonical unmatched firing holds at every solution of its information. -/
+the absence check of the canonical unmatched firing holds at every solution of its information. -/
 theorem unmatched_guard {n : ℕ} {K : List (Constraint κ Γ star)} {t : Data κ Γ star}
     {fs : List (SourceLanguage.Frame κ Γ star Ty)} {ps : List (Data κ Γ star × Comp κ Γ star Ty)}
     {s : HostState S} {a : ℕ} (rep : Represents N P n ⟨K, .eval (.apply t), fs, ps⟩ s a)
@@ -263,10 +263,10 @@ theorem unmatched_none {n : ℕ} {K : List (Constraint κ Γ star)} {t : Data κ
       (⟨unmatchedRule N, member, ext, opening, selection, seen⟩ :
         RuleSyntax.Firing ℕ (RuleSyntax.Contextual.declarations S) (translate N P) s.frame)).checks =
       [.predicate .none (instantiateObservation opening (unmatchedCheck N))] := rfl
-  have missing := holds _ (by rw [checkMember]; exact List.mem_singleton_self _)
+  have absent := holds _ (by rw [checkMember]; exact List.mem_singleton_self _)
   have iPresent : i.1 ∈ s.present := by
     rw [rep.present]; exact Finset.mem_insert_of_mem (Finset.mem_range.mpr i.2)
-  apply missing i.1 iPresent
+  apply absent i.1 iPresent
   change instantiateObservation u (instantiateObservation opening (unmatchedCheck N)) =
     instantiateObservation u (RuleSyntax.Firing.row (Interface.Frames.contextual S) s _ i.1)
   rw [onTerms _ (by simp [RuleSyntax.Rule.terms, unmatchedRule, RuleSyntax.checkTerms]),

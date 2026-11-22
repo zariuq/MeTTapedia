@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 
 All-future guards are transferred at the original world, using joint model
 coverage and conditional row agreement. Fresh extensions preserve both
-positive matches and their none query, so coverage does not weaken a negative
+positive matches and their absence, so coverage does not weaken a negative
 guard or identify an unfinished search with a negative answer.
 -/
 

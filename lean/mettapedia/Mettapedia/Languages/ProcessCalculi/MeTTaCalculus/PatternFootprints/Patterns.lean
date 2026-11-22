@@ -132,7 +132,7 @@ theorem exists_mem_kinds_of_commonInstance [Nonempty (GroundTerm σ)] {first sec
   · rw [Subst.applyTerm_comp, Grounding.groundTerm_toTerm]
   · rw [Subst.applyTerm_comp, Grounding.groundTerm_toTerm, same]
 
-/-- **Disjointness of two pattern footprints is the none query of a common
+/-- **Disjointness of two pattern footprints is the absence of a common
 instance**, where there is a term without variables. -/
 theorem kinds_disjoint_iff_not_commonInstance [Nonempty (GroundTerm σ)] {first second : Term σ} :
     Disjoint (kinds first) (kinds second) ↔ ¬ CommonInstance first second := by

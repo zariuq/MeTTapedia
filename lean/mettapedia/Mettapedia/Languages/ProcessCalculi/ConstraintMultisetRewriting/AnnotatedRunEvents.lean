@@ -426,7 +426,7 @@ theorem read_present {f : Firing T S O} {C : Configuration T O} (valid : f.Valid
     {o : O} (member : o ∈ f.selection.read) : o ∈ C.present :=
   valid.firing.occurrences.kept_subset (by simpa [Selection.commit] using member)
 
-theorem made_not_present {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
+theorem made_absent {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
     {o : O} (member : o ∈ f.selection.made) : o ∉ C.present :=
   Finset.disjoint_left.mp valid.firing.occurrences.fresh (by simpa [Selection.commit] using member)
 
@@ -468,23 +468,23 @@ theorem valid_of_parts {f : Firing T S O} {C : Configuration T O} (static : f.St
     exact observed query member σ
 
 /-- What a firing takes is gone after it. -/
-theorem taken_not_present_after {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
+theorem taken_absent_after {f : Firing T S O} {C : Configuration T O} (valid : f.Valid A label C)
     {o : O} (taken : o ∈ f.selection.taken) : o ∉ (f.result label C).present := by
   intro present
   have present' : o ∈ fire C.present (f.selection.commit (T := T)) := present
   rcases mem_fire.mp present' with ⟨_, notTaken⟩ | made
   · exact notTaken (by simpa [Selection.commit] using taken)
-  · exact made_not_present A label valid (by simpa [Selection.commit] using made)
+  · exact made_absent A label valid (by simpa [Selection.commit] using made)
       (taken_present A label valid taken)
 
-/-- A missing occurrence that a run never makes is never taken or read in it. -/
-theorem not_present_unused {D : Configuration T O} {w : List (Firing T S O)}
-    (run : Executable A label D w) {o : O} (missing : o ∉ D.present)
+/-- An absent occurrence that a run never makes is never taken or read in it. -/
+theorem absent_unused {D : Configuration T O} {w : List (Firing T S O)}
+    (run : Executable A label D w) {o : O} (absent : o ∉ D.present)
     (unmade : ∀ z ∈ w, o ∉ z.selection.made) :
     ∀ z ∈ w, o ∉ z.selection.read ∧ o ∉ z.selection.taken := by
   intro z member
-  exact GuardFreeProcessOrders.none_stays A label (w.map Firing.plain) D o
-    (Executable.plain A label run) missing (by
+  exact GuardFreeProcessOrders.absent_stays A label (w.map Firing.plain) D o
+    (Executable.plain A label run) absent (by
       intro y inMap
       obtain ⟨x, inW, rfl⟩ := List.mem_map.mp inMap
       exact unmade x inW) z.plain (List.mem_map.mpr ⟨z, member, rfl⟩)
@@ -530,7 +530,7 @@ theorem precedes_of_readBeforeTake : ∀ {C : Configuration T O} {w : List (Firi
         · have unmade : ∀ z ∈ w, o ∉ z.selection.made := fun z member made =>
             fragment.fresh z (List.mem_cons_of_mem _ member) o made (taken_present A label run.1 taken)
           exact absurd read
-            (not_present_unused A label run.2 (taken_not_present_after A label run.1 taken) unmade x hxw).1
+            (absent_unused A label run.2 (taken_absent_after A label run.1 taken) unmade x hxw).1
         · exact precedes_cons.mpr (Or.inr
             (precedes_of_readBeforeTake run.2 (fragment.tail label) hxw hyw ⟨o, read, taken⟩))
 
@@ -542,7 +542,7 @@ theorem not_takeConflict : ∀ {C : Configuration T O} {w : List (Firing T S O)}
   | C, f :: w, run, fragment, x, y, hx, hy, ne, ⟨o, tx, ty⟩ => by
       have later : ∀ {z : Firing T S O}, z ∈ w → o ∈ f.selection.taken → o ∉ z.selection.taken :=
         fun {z} member taken =>
-          (not_present_unused A label run.2 (taken_not_present_after A label run.1 taken)
+          (absent_unused A label run.2 (taken_absent_after A label run.1 taken)
             (fun z' m made => fragment.fresh z' (List.mem_cons_of_mem _ m) o made
               (taken_present A label run.1 taken)) z member).2
       rcases List.mem_cons.mp hx with rfl | hxw
@@ -836,7 +836,7 @@ theorem queries_hold_of_run : ∀ {C : Configuration T O} {w : List (Firing T S 
         have shift : presentAfter (f.result label C) (writersBefore label (configOf label w) q) =
             presentAfter C (insert f (writersBefore label (configOf label w) q)) := by
           refine presentAfter_result label fun o taken => ⟨fun made => ?_, fun g hg made => ?_⟩
-          · exact made_not_present A label run.1 made (taken_present A label run.1 taken)
+          · exact made_absent A label run.1 made (taken_present A label run.1 taken)
           · have gw : g ∈ w := (mem_writersBefore_configOf label |>.mp hg).2.mem_left
             exact fragment.fresh g (List.mem_cons_of_mem _ gw) o made
               (taken_present A label run.1 taken)
@@ -1409,7 +1409,7 @@ theorem follow_present_eq : ∀ {C : Configuration T O} {w : List (Firing T S O)
         ext g
         rw [Finset.mem_insert, mem_configOf_firings, mem_configOf_firings, List.mem_cons]
       · intro o taken
-        refine ⟨fun made => made_not_present A label run.1 made (taken_present A label run.1 taken),
+        refine ⟨fun made => made_absent A label run.1 made (taken_present A label run.1 taken),
           fun g hg made => ?_⟩
         exact fragment.fresh g (List.mem_cons_of_mem _ (mem_configOf_firings.mp hg)) o made
           (taken_present A label run.1 taken)

@@ -205,10 +205,10 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
       isObjectPatternList leftArguments = true →
       isObjectPatternList rightArguments = true →
       (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           leftArguments = true) →
       (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           rightArguments = true) →
       (∀ argument ∈ leftArguments, sizeOf argument < sizeOf leftParent) →
       (∀ argument ∈ rightArguments, sizeOf argument < sizeOf rightParent) →
@@ -264,29 +264,29 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
                   source.costWholeReflectionProfile available.length leftArgument := by
                 intro presentation membership
                 have spine := leftScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.1
               have rightHeadScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
                   source.costWholeReflectionProfile available.length rightArgument := by
                 intro presentation membership
                 have spine := rightScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.1
               have leftTailScope : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length leftArguments = true := by
                 intro presentation membership
                 have spine := leftScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.2
               have rightTailScope : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length rightArguments = true := by
                 intro presentation membership
                 have spine := rightScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.2
               have headAdmissible : recursive.Admissible leftExpected :=
                 parametersAdmissible (by simp) leftParameterType

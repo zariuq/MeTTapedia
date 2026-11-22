@@ -55,16 +55,16 @@ theorem checked_compiles (dev : Definitions.Development) (checked : Definitions.
   rw [RowCompiler.development, native, Option.bind_some] at generated
   unfold compile
   split
-  · rename_i missing
-    rw [native] at missing
-    cases missing
+  · rename_i absent
+    rw [native] at absent
+    cases absent
   · rename_i rows found
     rw [native] at found
     cases found
     split
-    · rename_i missing
-      rw [generated] at missing
-      cases missing
+    · rename_i absent
+      rw [generated] at absent
+      cases absent
     · rename_i result found
       rw [generated] at found
       cases found

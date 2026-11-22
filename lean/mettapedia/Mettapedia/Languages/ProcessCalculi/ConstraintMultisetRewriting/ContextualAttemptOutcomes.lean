@@ -64,7 +64,7 @@ theorem entries_exact (search : Search queries locals captures (O := O) (Γ := �
 Only the converse completeness assertion needs the whole-table certificate. -/
 theorem entry_sound (search : Search queries locals captures (O := O) (Γ := Γ) (sort := sort))
     (chosen : Fin search.patterns.length → O) (member : chosen ∈ search.entries) : search.SourceMatch chosen := by
-  have present := (ContextualConjunctiveNone.mem_candidates search.world chosen).mp
+  have present := (ContextualConjunctiveAbsence.mem_candidates search.world chosen).mp
     (Finset.mem_filter.mp member).1
   obtain ⟨update, _, empty, _⟩ := ContextualQueryAnswers.answer_factors queries locals captures search.equations
     search.patterns search.rows search.world search.budget chosen member
@@ -82,21 +82,21 @@ theorem complete_empty_iff (search : Search queries locals captures (O := O) (Γ
     have member := (search.entries_exact complete chosen).mpr matched
     rw [empty] at member
     simp at member
-  · intro notMem
+  · intro absent
     apply Finset.eq_empty_of_forall_notMem
     intro chosen member
-    exact notMem ⟨chosen, (search.entries_exact complete chosen).mp member⟩
+    exact absent ⟨chosen, (search.entries_exact complete chosen).mp member⟩
 
 /-- Failure of the complete-table check identifies an actual unfinished
 job, rather than a refuted match or an empty successful table. -/
 theorem unfinished_job (search : Search queries locals captures (O := O) (Γ := Γ) (sort := sort))
     (unfinished : search.complete = false) :
-    ∃ chosen ∈ ContextualConjunctiveNone.candidates search.world search.patterns.length,
+    ∃ chosen ∈ ContextualConjunctiveAbsence.candidates search.world search.patterns.length,
       ∃ update : ContextualFrameUpdate.Update
         (ContextualQueryAnswers.problemAt queries locals captures search.equations search.patterns search.rows chosen),
         ContextualQueryAnswers.scan queries locals captures search.equations search.patterns search.rows search.budget chosen =
           .residual update ∧ update.remaining ≠ [] := by
-  have missing : ¬ ∀ chosen ∈ ContextualConjunctiveNone.candidates search.world search.patterns.length,
+  have missing : ¬ ∀ chosen ∈ ContextualConjunctiveAbsence.candidates search.world search.patterns.length,
       ContextualQueryAnswers.closed
         (ContextualQueryAnswers.scan queries locals captures search.equations search.patterns search.rows search.budget chosen) = true := by
     intro all

@@ -520,12 +520,12 @@ private theorem reflectiveScopeSafeAt_cons_head
     {depth : Nat}
     {head : Pattern} {tail : List Pattern}
     (safe : ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor depth (head :: tail) =
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor depth (head :: tail) =
         true) :
     ReflectiveWellSorted.ReflectiveScopeSafeAt profile depth head := by
   intro presentation membership
   have spine := safe presentation membership
-  simp only [binderSafeListAt, Bool.and_eq_true] at spine
+  simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
   exact spine.1
 
 /-- The tail of a reflectively safe pattern list is safe at the same depth. -/
@@ -534,13 +534,13 @@ private theorem binderSafeListAt_cons_tail
     {depth : Nat}
     {head : Pattern} {tail : List Pattern}
     (safe : ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor depth (head :: tail) =
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor depth (head :: tail) =
         true) :
     ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor depth tail = true := by
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor depth tail = true := by
   intro presentation membership
   have spine := safe presentation membership
-  simp only [binderSafeListAt, Bool.and_eq_true] at spine
+  simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
   exact spine.2
 
 set_option maxHeartbeats 12000000 in
@@ -1212,14 +1212,14 @@ mutual
                   rightAdmission.wellSorted.1.2.2.1
               have leftReflectiveElements : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     leftAvailable.length leftElements = true := by
                 intro presentation membership
                 simpa [binderSafeAt] using
                   leftAdmission.wellSorted.2 presentation membership
               have rightReflectiveElements : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     rightAvailable.length rightElements = true := by
                 intro presentation membership
                 simpa [binderSafeAt] using
@@ -1347,11 +1347,11 @@ mutual
       (rightObjects : WellSorted.isObjectPatternList rightArguments = true)
       (leftReflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor leftAvailable.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor leftAvailable.length
           leftArguments = true)
       (rightReflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor rightAvailable.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor rightAvailable.length
           rightArguments = true)
       (leftTargetBoundSplit : ∃ sealed,
         targetBound = leftAvailable ++ sealed)
@@ -1599,11 +1599,11 @@ mutual
       (rightObjects : WellSorted.isObjectPatternList rightArguments = true)
       (leftReflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor leftAvailable.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor leftAvailable.length
           leftArguments = true)
       (rightReflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor rightAvailable.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor rightAvailable.length
           rightArguments = true)
       (leftTargetBoundSplit : ∃ sealed,
         targetBound = leftAvailable ++ sealed)
@@ -1860,11 +1860,11 @@ mutual
       (rightObjects : WellSorted.isObjectPatternList rightElements = true)
       (leftReflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor leftAvailable.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor leftAvailable.length
           leftElements = true)
       (rightReflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor rightAvailable.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor rightAvailable.length
           rightElements = true)
       (leftTargetBoundSplit : ∃ sealed,
         targetBound = leftAvailable ++ sealed)
@@ -2093,11 +2093,11 @@ theorem costStaticElementPlan_canonicalStopAlignedBelow
     (rightObjects : WellSorted.isObjectPatternList rightElements = true)
     (leftReflective : ∀ presentation ∈
       source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor leftAvailable.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor leftAvailable.length
         leftElements = true)
     (rightReflective : ∀ presentation ∈
       source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor rightAvailable.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor rightAvailable.length
         rightElements = true)
     (leftTargetBoundSplit : ∃ sealed,
       targetBound = leftAvailable ++ sealed)

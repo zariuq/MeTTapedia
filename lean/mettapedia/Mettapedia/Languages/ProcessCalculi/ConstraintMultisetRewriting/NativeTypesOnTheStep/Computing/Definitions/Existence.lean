@@ -263,45 +263,45 @@ theorem Shape.answer {m : Nat} {q : Nat} {h : Option (Tower.Tm m)} {t : Tower.Tm
 
 theorem subst_agree : ∀ {k m : Nat} (p : Fin k → Bool) (t : Tower.Tm k) {σ σ' : Sub Tower.Head k m},
     Vectors.Checker.mentions p t = false → (∀ x, p x = false → σ x = σ' x) → subst σ t = subst σ' t
-  | _, _, p, .var i, _, _, missing, agree => agree i missing
+  | _, _, p, .var i, _, _, absent, agree => agree i absent
   | _, _, _, .const _, _, _, _, _ => rfl
   | _, _, _, .head _, _, _, _, _ => rfl
-  | _, _, p, .pi A B, σ, σ', missing, agree => by
-      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at missing
+  | _, _, p, .pi A B, σ, σ', absent, agree => by
+      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at absent
       simp only [subst]
-      rw [subst_agree p A missing.1 agree, subst_agree _ B missing.2 (liftSub_agree agree)]
-  | _, _, p, .sigma A B, σ, σ', missing, agree => by
-      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at missing
+      rw [subst_agree p A absent.1 agree, subst_agree _ B absent.2 (liftSub_agree agree)]
+  | _, _, p, .sigma A B, σ, σ', absent, agree => by
+      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at absent
       simp only [subst]
-      rw [subst_agree p A missing.1 agree, subst_agree _ B missing.2 (liftSub_agree agree)]
-  | _, _, p, .id A a b, σ, σ', missing, agree => by
-      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at missing
+      rw [subst_agree p A absent.1 agree, subst_agree _ B absent.2 (liftSub_agree agree)]
+  | _, _, p, .id A a b, σ, σ', absent, agree => by
+      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at absent
       simp only [subst]
-      rw [subst_agree p A missing.1.1 agree, subst_agree p a missing.1.2 agree, subst_agree p b missing.2 agree]
-  | _, _, p, .lam body, σ, σ', missing, agree => by
-      simp only [Vectors.Checker.mentions] at missing
+      rw [subst_agree p A absent.1.1 agree, subst_agree p a absent.1.2 agree, subst_agree p b absent.2 agree]
+  | _, _, p, .lam body, σ, σ', absent, agree => by
+      simp only [Vectors.Checker.mentions] at absent
       simp only [subst]
-      rw [subst_agree _ body missing (liftSub_agree agree)]
-  | _, _, p, .app g a, σ, σ', missing, agree => by
-      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at missing
+      rw [subst_agree _ body absent (liftSub_agree agree)]
+  | _, _, p, .app g a, σ, σ', absent, agree => by
+      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at absent
       simp only [subst]
-      rw [subst_agree p g missing.1 agree, subst_agree p a missing.2 agree]
-  | _, _, p, .pair a b, σ, σ', missing, agree => by
-      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at missing
+      rw [subst_agree p g absent.1 agree, subst_agree p a absent.2 agree]
+  | _, _, p, .pair a b, σ, σ', absent, agree => by
+      simp only [Vectors.Checker.mentions, Bool.or_eq_false_iff] at absent
       simp only [subst]
-      rw [subst_agree p a missing.1 agree, subst_agree p b missing.2 agree]
-  | _, _, p, .fst t, σ, σ', missing, agree => by
-      simp only [Vectors.Checker.mentions] at missing
+      rw [subst_agree p a absent.1 agree, subst_agree p b absent.2 agree]
+  | _, _, p, .fst t, σ, σ', absent, agree => by
+      simp only [Vectors.Checker.mentions] at absent
       simp only [subst]
-      rw [subst_agree p t missing agree]
-  | _, _, p, .snd t, σ, σ', missing, agree => by
-      simp only [Vectors.Checker.mentions] at missing
+      rw [subst_agree p t absent agree]
+  | _, _, p, .snd t, σ, σ', absent, agree => by
+      simp only [Vectors.Checker.mentions] at absent
       simp only [subst]
-      rw [subst_agree p t missing agree]
-  | _, _, p, .refl t, σ, σ', missing, agree => by
-      simp only [Vectors.Checker.mentions] at missing
+      rw [subst_agree p t absent agree]
+  | _, _, p, .refl t, σ, σ', absent, agree => by
+      simp only [Vectors.Checker.mentions] at absent
       simp only [subst]
-      rw [subst_agree p t missing agree]
+      rw [subst_agree p t absent agree]
 where
   liftSub_agree {k m : Nat} {p : Fin k → Bool} {σ σ' : Sub Tower.Head k m}
       (agree : ∀ x, p x = false → σ x = σ' x) :
@@ -310,10 +310,10 @@ where
     refine Fin.cases ?_ (fun y => ?_) x
     · intro _
       rfl
-    · intro missing
-      simp only [Fin.cases_succ] at missing
+    · intro absent
+      simp only [Fin.cases_succ] at absent
       simp only [liftSub, Fin.cases_succ]
-      rw [agree y missing]
+      rw [agree y absent]
 
 /-! ## The validation of existence -/
 
@@ -461,16 +461,16 @@ theorem inner_answers {fuel : Nat} {c : Tower.Tm 0} {q j : Nat} (check : existen
   unfold existenceCheck at check
   rw [found] at check
   simp only [Bool.and_eq_true, beq_iff_eq] at check
-  obtain ⟨⟨⟨⟨noP, noZ⟩, noneOfS⟩, zeroCase⟩, succCase⟩ := check
+  obtain ⟨⟨⟨⟨absentP, absentZ⟩, absentS⟩, zeroCase⟩, succCase⟩ := check
   split at zeroCase
   · rename_i B₀ h₀
     split at succCase
     · rename_i B₁ h₁
       have shape₀ := shape?_sound fuel zeroCase
       have shape₁ := shape?_sound fuel succCase
-      have sameP := fun σ suf i => subst_agree _ P noP (override_agree σ suf i)
-      have sameZ := fun σ suf i => subst_agree _ Z noZ (override_agree σ suf i)
-      have sameS := fun σ suf i => subst_agree _ S noneOfS (override_agree σ suf i)
+      have sameP := fun σ suf i => subst_agree _ P absentP (override_agree σ suf i)
+      have sameZ := fun σ suf i => subst_agree _ Z absentZ (override_agree σ suf i)
+      have sameS := fun σ suf i => subst_agree _ S absentS (override_agree σ suf i)
       intro N
       induction N with
       | zero =>

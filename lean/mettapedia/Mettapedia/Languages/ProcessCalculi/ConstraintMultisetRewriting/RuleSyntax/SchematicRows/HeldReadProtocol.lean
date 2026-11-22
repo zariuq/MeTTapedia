@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 The equivalence concerns a two-firing run with a private temporary occurrence.
 It compares all final models over a fixed source interpretation, not merely
 the existence of an unconstrained solution. The persistent source, original
-occurrences and their shared terms are retained. The temporary is not present at
+occurrences and their shared terms are retained. The temporary is absent at
 the end. A chronological observer still sees two events; no equivalence for
 arbitrary observations of the intermediate state is asserted.
 
@@ -72,7 +72,7 @@ theorem reading_iff_execution (schema : Schema RowTerms)
   have temporaryPresent : temporary ∈ ((materializer codes s held temporary).result X).present := by
     rw [HeldReadMaterializer.result_present]
     exact Finset.mem_union_right _ (Finset.mem_singleton_self _)
-  have outputNotPresent : output ∉ ((materializer codes s held temporary).result X).present := by
+  have outputAbsent : output ∉ ((materializer codes s held temporary).result X).present := by
     rw [HeldReadMaterializer.result_present]
     simp only [Finset.mem_union, Finset.mem_singleton, not_or]
     exact ⟨outputFresh, different⟩
@@ -83,7 +83,7 @@ theorem reading_iff_execution (schema : Schema RowTerms)
     obtain ⟨middle, middleKnown, sourceAgrees, middleValue⟩ :=
       (reading_iff_models codes s held temporary schema ambient declared heldPresent lengths caller known value).mp reading
     have consumed := HeldReadConsumer.admitted codes ((materializer codes s held temporary).result X)
-      reader temporary output ambient readerDeclared readerAvailable temporaryPresent outputNotPresent middle middleKnown
+      reader temporary output ambient readerDeclared readerAvailable temporaryPresent outputAbsent middle middleKnown
     obtain ⟨point, finalKnown, kept, outputValue⟩ := HeldReadConsumer.extends_model codes
       ((materializer codes s held temporary).result X) reader temporary output readerDeclared
       temporaryPresent middle middleKnown
@@ -102,7 +102,7 @@ theorem reading_iff_execution (schema : Schema RowTerms)
     apply (reading_iff_models codes s held temporary schema ambient declared heldPresent lengths caller known value).mpr
     exact ⟨point, model.1, kept, model.2.symm.trans valueEq⟩
 
-theorem temporary_not_present
+theorem temporary_absent
     (materialized : (materializer codes s held temporary).Admits X ambient)
     (consumed : (consumer codes ((materializer codes s held temporary).result X)
       reader temporary output).Admits X ambient) (different : output ≠ temporary) :
@@ -132,7 +132,7 @@ theorem final_rules
 
 #print axioms execution_length
 #print axioms reading_iff_execution
-#print axioms temporary_not_present
+#print axioms temporary_absent
 #print axioms final_present
 #print axioms final_rules
 

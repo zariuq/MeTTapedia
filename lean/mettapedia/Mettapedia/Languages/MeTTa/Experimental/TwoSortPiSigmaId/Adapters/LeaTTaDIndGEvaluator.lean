@@ -6,6 +6,7 @@ import MettaHyperonFull.Proofs.IndexingComplete
 import MettaHyperonFull.Proofs.Substitution
 import MettaHyperonFull.Proofs.TypeSoundness
 import Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.RuntimeCorrectness
+import Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.StateObservation
 import Std.Data.HashMap.Lemmas
 /-!
 # LeaTTa-backed DIndG artifact evaluator
@@ -31,6 +32,7 @@ open Metta.Minimal
 open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.ContextualStep
 open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.QueryOpBridge
 open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.RuntimeCorrectness
+open Mettapedia.Languages.MeTTa.LeaTTa (resolveStates_init_world)
 open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax
 open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSpec
 open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics
@@ -1160,64 +1162,25 @@ theorem sigAtom_isError_false (sig : DIndGArtifactSig) : (sigAtom sig).isError =
 theorem termAtom_isError_false (raw : DIndGArtifactTerm) : (termAtom raw).isError = false := by
   cases raw <;> simp [termAtom, mExpr, mSym, Metta.Atom.isError]
 
-/- Encoded artifact terms are inert under state dereferencing in the initial empty world. -/
-mutual
-  theorem termAtom_resolveStates_init_world : ∀ raw : DIndGArtifactTerm,
-      resolveStates St.init.world (termAtom raw) = termAtom raw
-    | .var index => by simp [termAtom, mExpr, mSym, mNat, resolveStates]
-    | .srt sort => by cases sort <;> simp [termAtom, sortAtom, mExpr, mSym, resolveStates]
-    | .con name => by simp [termAtom, declNameAtom, mExpr, mSym, resolveStates]
-    | .defn name => by simp [termAtom, declNameAtom, mExpr, mSym, resolveStates]
-    | .pi domain body => by
-        simp [termAtom, mExpr, mSym, resolveStates]
-        constructor
-        · simpa [St.init, World.empty] using termAtom_resolveStates_init_world domain
-        · simpa [St.init, World.empty] using termAtom_resolveStates_init_world body
-    | .lam domain body => by
-        simp [termAtom, mExpr, mSym, resolveStates]
-        constructor
-        · simpa [St.init, World.empty] using termAtom_resolveStates_init_world domain
-        · simpa [St.init, World.empty] using termAtom_resolveStates_init_world body
-    | .app fn arg => by
-        simp [termAtom, mExpr, mSym, resolveStates]
-        constructor
-        · simpa [St.init, World.empty] using termAtom_resolveStates_init_world fn
-        · simpa [St.init, World.empty] using termAtom_resolveStates_init_world arg
-    | .indG familyName params motive cases indices scrutinee => by
-        simp [termAtom, mExpr, mSym, declNameAtom, resolveStates]
-        exact ⟨by simpa [St.init, World.empty] using argsAtom_resolveStates_init_world params,
-          by simpa [St.init, World.empty] using termAtom_resolveStates_init_world motive,
-          by simpa [St.init, World.empty] using casesAtom_resolveStates_init_world cases,
-          by simpa [St.init, World.empty] using argsAtom_resolveStates_init_world indices,
-          by simpa [St.init, World.empty] using termAtom_resolveStates_init_world scrutinee⟩
-    | .bad reason => by simp [termAtom, mExpr, mSym, resolveStates]
+/- The encoding is preserved by state resolution in the initial world. -/
 
-  theorem argsAtom_resolveStates_init_world : ∀ args : List DIndGArtifactTerm,
-      resolveStates St.init.world (argsAtom args) = argsAtom args
-    | [] => by simp [argsAtom, mSym, resolveStates]
-    | arg :: rest => by
-        simp [argsAtom, mExpr, mSym, resolveStates]
-        constructor
-        · simpa [St.init, World.empty] using termAtom_resolveStates_init_world arg
-        · simpa [St.init, World.empty] using argsAtom_resolveStates_init_world rest
+theorem termAtom_resolveStates_init_world : ∀ raw : DIndGArtifactTerm,
+    resolveStates St.init.world (termAtom raw) = termAtom raw :=
+  fun _ => resolveStates_init_world _
 
-  theorem caseAtom_resolveStates_init_world :
-      ∀ c : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName × DIndGArtifactTerm,
-        resolveStates St.init.world (caseAtom c) = caseAtom c
-    | (name, body) => by
-        simp [caseAtom, declNameAtom, mExpr, mSym, resolveStates]
-        simpa [St.init, World.empty] using termAtom_resolveStates_init_world body
+theorem argsAtom_resolveStates_init_world : ∀ args : List DIndGArtifactTerm,
+    resolveStates St.init.world (argsAtom args) = argsAtom args :=
+  fun _ => resolveStates_init_world _
 
-  theorem casesAtom_resolveStates_init_world :
-      ∀ cs : List (Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName × DIndGArtifactTerm),
-        resolveStates St.init.world (casesAtom cs) = casesAtom cs
-    | [] => by simp [casesAtom, mSym, resolveStates]
-    | c :: rest => by
-        simp [casesAtom, mExpr, mSym, resolveStates]
-        constructor
-        · simpa [St.init, World.empty] using caseAtom_resolveStates_init_world c
-        · simpa [St.init, World.empty] using casesAtom_resolveStates_init_world rest
-end
+theorem caseAtom_resolveStates_init_world :
+    ∀ c : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName × DIndGArtifactTerm,
+      resolveStates St.init.world (caseAtom c) = caseAtom c :=
+  fun _ => resolveStates_init_world _
+
+theorem casesAtom_resolveStates_init_world :
+    ∀ cs : List (Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName × DIndGArtifactTerm),
+      resolveStates St.init.world (casesAtom cs) = casesAtom cs :=
+  fun _ => resolveStates_init_world _
 
 /-- Kernel declaration names are encoded as symbols, never runtime error atoms. -/
 theorem declNameAtom_isError_false
@@ -1233,8 +1196,8 @@ theorem declNameAtom_vars_nil
 
 theorem declNameAtom_resolveStates_init_world
     (name : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName) :
-    resolveStates St.init.world (declNameAtom name) = declNameAtom name := by
-  simp [declNameAtom, mSym, resolveStates]
+    resolveStates St.init.world (declNameAtom name) = declNameAtom name :=
+  resolveStates_init_world _
 
 /-- Encoded declaration names compare equal to themselves under LeaTTa's grounded `==`. -/
 theorem declNameAtom_beq_self_true
@@ -1472,67 +1435,32 @@ theorem sigAtom_beq_self_true (sig : DIndGArtifactSig) :
   simpa [sigAtom] using declAtoms_beq_self_true decls
 
 theorem telAtom_resolveStates_init_world : ∀ tel : DIndGArtifactTel,
-    resolveStates St.init.world (telAtom tel) = telAtom tel
-  | [] => by simp [telAtom, mSym, resolveStates]
-  | ty :: rest => by
-      simp [telAtom, mExpr, mSym, resolveStates]
-      constructor
-      · simpa [St.init, World.empty] using termAtom_resolveStates_init_world ty
-      · simpa [St.init, World.empty] using telAtom_resolveStates_init_world rest
+    resolveStates St.init.world (telAtom tel) = telAtom tel :=
+  fun _ => resolveStates_init_world _
 
 theorem ctorAtom_resolveStates_init_world (ctor : DIndGArtifactCtor) :
-    resolveStates St.init.world (ctorAtom ctor) = ctorAtom ctor := by
-  cases ctor with
-  | mk name argTel resultIdx =>
-      simp [ctorAtom, declNameAtom, mExpr, mSym, resolveStates]
-      exact ⟨by simpa [St.init, World.empty] using telAtom_resolveStates_init_world argTel,
-        by simpa [St.init, World.empty] using argsAtom_resolveStates_init_world resultIdx⟩
+    resolveStates St.init.world (ctorAtom ctor) = ctorAtom ctor :=
+  resolveStates_init_world _
 
 theorem ctorsAtom_resolveStates_init_world : ∀ ctors : List DIndGArtifactCtor,
-    resolveStates St.init.world (ctorsAtom ctors) = ctorsAtom ctors
-  | [] => by simp [ctorsAtom, mSym, resolveStates]
-  | ctor :: rest => by
-      simp [ctorsAtom, mExpr, mSym, resolveStates]
-      constructor
-      · simpa [St.init, World.empty] using ctorAtom_resolveStates_init_world ctor
-      · simpa [St.init, World.empty] using ctorsAtom_resolveStates_init_world rest
+    resolveStates St.init.world (ctorsAtom ctors) = ctorsAtom ctors :=
+  fun _ => resolveStates_init_world _
 
 theorem declAtom_resolveStates_init_world : ∀ decl : DIndGArtifactDecl,
-    resolveStates St.init.world (declAtom decl) = declAtom decl
-  | .dconst name ty => by
-      simp [declAtom, declNameAtom, mExpr, mSym, resolveStates]
-      simpa [St.init, World.empty] using termAtom_resolveStates_init_world ty
-  | .ddef name ty body => by
-      simp [declAtom, declNameAtom, mExpr, mSym, resolveStates]
-      exact ⟨by simpa [St.init, World.empty] using termAtom_resolveStates_init_world ty,
-        by simpa [St.init, World.empty] using termAtom_resolveStates_init_world body⟩
-  | .daxiom name ty => by
-      simp [declAtom, declNameAtom, mExpr, mSym, resolveStates]
-      simpa [St.init, World.empty] using termAtom_resolveStates_init_world ty
-  | .dindg familyName paramTel indexTel ctors => by
-      simp [declAtom, declNameAtom, mExpr, mSym, resolveStates]
-      exact ⟨by simpa [St.init, World.empty] using telAtom_resolveStates_init_world paramTel,
-        by simpa [St.init, World.empty] using telAtom_resolveStates_init_world indexTel,
-        by simpa [St.init, World.empty] using ctorsAtom_resolveStates_init_world ctors⟩
+    resolveStates St.init.world (declAtom decl) = declAtom decl :=
+  fun _ => resolveStates_init_world _
 
 theorem declAtoms_resolveStates_init_world : ∀ decls : List DIndGArtifactDecl,
     resolveStates St.init.world
       (decls.foldr (fun decl rest => mExpr "SCons" [declAtom decl, rest])
         (mSym "SNil")) =
       decls.foldr (fun decl rest => mExpr "SCons" [declAtom decl, rest])
-        (mSym "SNil")
-  | [] => by simp [mSym, resolveStates]
-  | decl :: rest => by
-      simp [mExpr, mSym, resolveStates]
-      constructor
-      · simpa [St.init, World.empty] using declAtom_resolveStates_init_world decl
-      · simpa [St.init, World.empty, mExpr, mSym]
-          using declAtoms_resolveStates_init_world rest
+        (mSym "SNil") :=
+  fun _ => resolveStates_init_world _
 
 theorem sigAtom_resolveStates_init_world (sig : DIndGArtifactSig) :
-    resolveStates St.init.world (sigAtom sig) = sigAtom sig := by
-  rcases sig with ⟨decls, _, _, _⟩
-  simpa [sigAtom] using declAtoms_resolveStates_init_world decls
+    resolveStates St.init.world (sigAtom sig) = sigAtom sig :=
+  resolveStates_init_world _
 
 /-- LeaTTa's grounded equality returns `True` when asked to compare a non-error atom with
 itself and that atom's structural `BEq` is true.
@@ -16283,10 +16211,8 @@ theorem nfQuery_not_match_bad_pattern (sig : DIndGArtifactSig)
 
 theorem nfQuery_resolveStates_init_world (sig : DIndGArtifactSig)
     (raw : DIndGArtifactTerm) :
-    resolveStates St.init.world (nfQuery sig raw) = nfQuery sig raw := by
-  simp [nfQuery, mExpr, mSym, resolveStates]
-  exact ⟨by simpa [St.init, World.empty] using sigAtom_resolveStates_init_world sig,
-    by simpa [St.init, World.empty] using termAtom_resolveStates_init_world raw⟩
+    resolveStates St.init.world (nfQuery sig raw) = nfQuery sig raw :=
+  resolveStates_init_world _
 
 private theorem cicStage3NonWitnessDefnStuckReadout_beq_self_true
     (name : DeclName) :
@@ -16312,22 +16238,8 @@ private theorem cicStage3NonWitnessDefnStuckReadout_resolveStates_init_world
     (name : DeclName) :
     resolveStates St.init.world
         (cicStage3NonWitnessDefnStuckReadout name) =
-      cicStage3NonWitnessDefnStuckReadout name := by
-  simp [cicStage3NonWitnessDefnStuckReadout, defBodyOfQueryAtom,
-    mExpr, mSym, resolveStates]
-  exact
-    ⟨by
-      simpa [St.init, World.empty] using
-        sigAtom_resolveStates_init_world
-          cicStage3RawArtifactSigWithPropToType0Witness,
-     by
-      exact
-        ⟨by
-          simpa [St.init, World.empty] using
-            sigAtom_resolveStates_init_world cicStage3RawArtifactSig,
-         by
-          simpa [St.init, World.empty] using
-            declNameAtom_resolveStates_init_world name⟩⟩
+      cicStage3NonWitnessDefnStuckReadout name :=
+  resolveStates_init_world _
 
 theorem CicStage3CanonicalNfRuntimeReadout_beq_self_true
     {raw : DIndGArtifactTerm} {out : Metta.Atom}
@@ -16627,16 +16539,8 @@ theorem cicStage3CanonicalDefnStuckReadoutForSig_resolveStates_init_world
     (sig : DIndGArtifactSig) (name : DeclName) :
     resolveStates St.init.world
         (cicStage3CanonicalDefnStuckReadoutForSig sig name) =
-      cicStage3CanonicalDefnStuckReadoutForSig sig name := by
-  simp [cicStage3CanonicalDefnStuckReadoutForSig, defBodyOfQueryAtom,
-    mExpr, mSym, resolveStates]
-  exact
-    ⟨by
-      simpa [St.init, World.empty] using
-        sigAtom_resolveStates_init_world sig,
-     by
-      simpa [St.init, World.empty] using
-        declNameAtom_resolveStates_init_world name⟩
+      cicStage3CanonicalDefnStuckReadoutForSig sig name :=
+  resolveStates_init_world _
 
 theorem CicStage3CanonicalNfRuntimeReadoutForSig_resolveStates_init_world
     {sig : DIndGArtifactSig} {raw : DIndGArtifactTerm}

@@ -162,7 +162,7 @@ def liftCollapsed {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} (c
     Round S.levels (weightRank facts roots heads algebra rigid complete) problem :=
   match round with
   | .progress update smaller => .progress (collapsedUpdate.then update) (keeps ▸ smaller)
-  | .refuted missing => .refuted fun solvable => missing (collapsedUpdate.solvable_iff.mp solvable)
+  | .refuted absent => .refuted fun solvable => absent (collapsedUpdate.solvable_iff.mp solvable)
   | .stuck => .stuck
 
 /-- The ranked abstraction round on the store with homogeneous twins. -/

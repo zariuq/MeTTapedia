@@ -5,7 +5,7 @@ import Mettapedia.Logic.ReverseMathematics.Omniscience
 # The price of a budget: "every run finishes" against "runs have a bound"
 
 A **binary system** gives each state an optional left and right successor (`BinarySystem`); a run
-follows a binary choice sequence, taking the other branch when the chosen one is not present, and finishes
+follows a binary choice sequence, taking the other branch when the chosen one is absent, and finishes
 when it reaches a state with no successor (`walk`). Three readings of "every run finishes", and the
 bound a budget needs:
 
@@ -100,7 +100,7 @@ namespace BinarySystem
 
 variable {S : Type u} (G : BinarySystem S)
 
-/-- The successor chosen by `b`, or the other one when the chosen one is not present. -/
+/-- The successor chosen by `b`, or the other one when the chosen one is absent. -/
 def choose (t : S) (b : Bool) : Option S :=
   match G.step t b with
   | some next => some next

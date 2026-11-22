@@ -231,8 +231,8 @@ theorem fire_publish_commute (rest : Multiset (System Tm O)) (R : Program Tm) (S
 omit [DecidableEq O] in
 /-- **The firing that uses a published row exists only after the publication**: while the row is
 neither a rule of the world nor a row of the space, no firing of the world has it as its rule. -/
-theorem not_before_publication {P R : Program Tm} {row : Rule Tm} (missing : row ∉ P ∪ R) {a : Obj}
-    (f : Firing O E (P ∪ R) a) : f.rule ≠ row := fun same => missing (same ▸ f.member)
+theorem not_before_publication {P R : Program Tm} {row : Rule Tm} (absent : row ∉ P ∪ R) {a : Obj}
+    (f : Firing O E (P ∪ R) a) : f.rule ≠ row := fun same => absent (same ▸ f.member)
 
 /-- **Firings in two worlds reach one bag in either order.** -/
 theorem fire_fire_commute (rest : Multiset (System Tm O)) (R : Program Tm) (S T : System Tm O)

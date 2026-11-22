@@ -160,7 +160,7 @@ theorem forger_board_mints :
     ∃ Γ' S', AuthorityRun (label := id) (loc := verdictLoc) (carries := inertCarries)
         (fun _ : Bool => boardHolder) ∅ [(false, Commit.makeOne 7)] Γ' S' ∧
       ¬ AllDerivable id verdictLoc EvenDerivable 0 S' := by
-  obtain ⟨h, -, made⟩ := none_falsified_of_other_send (label := id) (loc := verdictLoc)
+  obtain ⟨h, -, made⟩ := absence_falsified_of_other_send (label := id) (loc := verdictLoc)
     (carries := inertCarries) (Γ := fun _ : Bool => boardHolder) (S := ∅) (owner := true) (i := false)
     (by decide) (A := fun n => n == 0) (o := 7) (by simp) (by decide) (by decide)
     (fun _ _ => rfl)
@@ -168,7 +168,7 @@ theorem forger_board_mints :
   have := all 7 (mem_restrict.mp made).1 rfl
   simp [EvenDerivable] at this
 
-/-- **Others' authority, present and missing**: under the `(peek receive)` grant the user holds
+/-- **Others' authority, present and absent**: under the `(peek receive)` grant the user holds
 `receive` at the verdict name; under the board profile nobody but the holder does, and nothing
 carries it. -/
 theorem othersAuthority_controls :

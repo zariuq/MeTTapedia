@@ -223,7 +223,7 @@ theorem result_readout (values : Locals table model profile index) (generation :
       exact List.mem_map.mpr ⟨field, written, rfl⟩
     · exact satisfies
   · rw [NativeFieldExecution.outputRow, if_neg written]
-    have missing : NativeFieldExecution.row generation field ∉
+    have absent : NativeFieldExecution.row generation field ∉
         (NativeFieldExecution.selection (table index) generation).made := by
       intro made
       obtain ⟨other, _, same⟩ := List.mem_map.mp made
@@ -240,7 +240,7 @@ theorem result_readout (values : Locals table model profile index) (generation :
           (member table model domains profile index)
           (snapshot table model domains profile index values generation) NativeFieldExecution.certificate
           (NativeFieldExecution.selection (table index) generation)
-          (NativeFieldExecution.row generation field) missing environment
+          (NativeFieldExecution.row generation field) absent environment
       _ = _ := by
         change Sum.inl (NativeFieldSchema.cell table model (table index).before field values.1) =
           Sum.inl (NativeFieldSchema.cell table model (table index).after field values.1)

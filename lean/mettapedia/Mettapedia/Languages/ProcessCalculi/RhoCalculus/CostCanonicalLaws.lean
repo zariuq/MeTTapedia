@@ -53,6 +53,13 @@ private theorem rhoReflectivePresentation_mem_source :
   rw [rhoCIGSLT_reflectionProfile_eq]
   simp [rhoReflectionProfile]
 
+/-- The Cost transport of rho keeps quoted code closed. -/
+theorem rho_costWholeReflectionProfile_closed :
+    ReflectiveWellSorted.ClosedProfile rhoCIGSLT.costWholeReflectionProfile :=
+  costWholeReflectionProfile_closed rhoCIGSLT (by
+    rw [rhoCIGSLT_reflectionProfile_eq]
+    exact ReflectiveWellSorted.rhoReflectionProfile_closed)
+
 /-! ## Generated reflective substitution boundary -/
 
 /-- Every constructor returning either generated copy of rho's name sort is
@@ -280,7 +287,8 @@ theorem rho_costStatic_quoteDrop_inner_typed
         rhoReflectivePresentation_mem_source
   obtain ⟨argument, argumentTyped, argumentsShape, argumentSafe⟩ :=
     typed.selectedQuoteArgument rhoCIGSLT.costWholeLanguage_validate
-      rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership safe
+      rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership
+      (rho_costWholeReflectionProfile_closed _ declarationMembership) safe
   have argumentEquality :
       .apply declaration.dropConstructor [inner] = argument := by
     simpa [declaration] using (List.cons.inj argumentsShape).1
@@ -391,6 +399,7 @@ private theorem rhoCostMixedColorCanonicalName_not_typed :
   obtain ⟨argument, argumentTyped, argumentsShape, _argumentSafe⟩ :=
     typed'.selectedQuoteArgument rhoCIGSLT.costWholeLanguage_validate
       rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership
+      (rho_costWholeReflectionProfile_closed _ declarationMembership)
       (typed'.reflectiveSupportSafeAt_empty [])
   have argumentEquality :
       .apply (costWrappedConstructorName "PZero") [] = argument := by
@@ -529,8 +538,9 @@ theorem rho_costOpenEquationFiberStable_not :
           rhoCostMixedColorDrop :=
     ⟨checkOpenPatternWellSorted_sound (by decide), by
       intro declaration _membership
-      simp [rhoCostMixedColorDrop, rhoCostMixedColorName,
-        binderSafeAt, binderSafeListAt]⟩
+      exact scopeSafeAt_of_binderSafeAt _ (by
+        simp [rhoCostMixedColorDrop, rhoCostMixedColorName,
+          binderSafeAt, binderSafeListAt])⟩
   have rightWellSorted := (stable generator).mp leftWellSorted
   exact rhoCostMixedColorCanonicalDrop_not_typed rightWellSorted.1.1
 

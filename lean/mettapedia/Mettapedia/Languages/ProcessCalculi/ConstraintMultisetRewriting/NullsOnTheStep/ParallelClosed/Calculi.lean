@@ -1,7 +1,7 @@
 import Mettapedia.GSLT.Coordination.ConsensusNumbers.WholeSpaceConditions
 
 /-!
-# What putting a term beside another keeps, and what a none guard does not
+# What putting a term beside another keeps, and what an absence guard does not
 
 ## The algebra
 
@@ -15,11 +15,11 @@ things can be invariant under putting a term beside another:
   `t ∥ u` (`Persistent.succeeds_par`). Reachable success is then monotone for the preorder
   "is a parallel component of".
 
-A none guard reads the whole store. On the step its claim holds on a union exactly when it
-holds on each part (`Composition.none_union_iff`), so it is antitone in the store, and a
-none-guarded firing admitted at `C` stays admitted beside `D` exactly when `D` holds no
+An absence guard reads the whole store. On the step its claim holds on a union exactly when it
+holds on each part (`Composition.absent_union_iff`), so it is antitone in the store, and an
+absence-guarded firing admitted at `C` stays admitted beside `D` exactly when `D` holds no
 occurrence of the pattern (`Composition.guarded_union_iff`): invariance holds only on that grade.
-Reachable success of a program with a none guard is therefore not monotone: a neighbour can
+Reachable success of a program with an absence guard is therefore not monotone: a neighbour can
 switch it off (`ParallelCalculus.Switchable`).
 
 ## The theorems

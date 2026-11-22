@@ -149,10 +149,10 @@ theorem present_result {edges : List (Edge Key)} (state : State Key) (firing : F
     rcases Finset.mem_union.mp member with old | made
     · obtain ⟨old, untouched⟩ := Finset.mem_sdiff.mp old
       obtain ⟨key, key_mem, rfl⟩ := Finset.mem_image.mp old
-      have missing : key ∉ firing.edge.recipe.writes :=
+      have absent : key ∉ firing.edge.recipe.writes :=
         fun written => untouched (Finset.mem_image.mpr ⟨key, written, rfl⟩)
       refine Finset.mem_image.mpr ⟨key, key_mem, ?_⟩
-      rw [occurrence_result, if_neg missing]
+      rw [occurrence_result, if_neg absent]
     · obtain ⟨key, written, rfl⟩ := Finset.mem_image.mp made
       refine Finset.mem_image.mpr ⟨key, support (Finset.mem_union_left _ written), ?_⟩
       rw [occurrence_result, if_pos written]

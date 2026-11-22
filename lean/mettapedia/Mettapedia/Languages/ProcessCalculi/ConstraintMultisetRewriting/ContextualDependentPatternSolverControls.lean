@@ -158,7 +158,7 @@ theorem twoPatterns_fragment :
       run full twoPatterns larger = run full twoPatterns fuel ∧
       ((∃ state finished, run full twoPatterns larger = .solved state finished ∧
           (frames setting.levels).Principal twoPatterns state.answer) ∨
-        (∃ missing, run full twoPatterns larger = .refuted missing)) :=
+        (∃ absent, run full twoPatterns larger = .refuted absent)) :=
   (fullFragment (S := setting) ContextualDependentPiSpine.Controls.rigid TowerModel.facts TowerModel.complete
     TowerModel.roots TowerModel.heads TowerModel.algebra ContextualDependentInversion.Controls.declarations_formed
     ExecutableTowerChoices.choices ContextualDependentInversion.Controls.reducer (fun _ => none)
@@ -178,7 +178,7 @@ theorem outsideAndInside_fragment :
       run full outsideAndInside larger = run full outsideAndInside fuel ∧
       ((∃ state finished, run full outsideAndInside larger = .solved state finished ∧
           (frames setting.levels).Principal outsideAndInside state.answer) ∨
-        (∃ missing, run full outsideAndInside larger = .refuted missing)) :=
+        (∃ absent, run full outsideAndInside larger = .refuted absent)) :=
   (fullFragment (S := setting) ContextualDependentPiSpine.Controls.rigid TowerModel.facts TowerModel.complete
     TowerModel.roots TowerModel.heads TowerModel.algebra ContextualDependentInversion.Controls.declarations_formed
     ExecutableTowerChoices.choices ContextualDependentInversion.Controls.reducer (fun _ => none)

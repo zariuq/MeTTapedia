@@ -19,7 +19,7 @@ solutions are read syntactically (`nf_subst_of_dropFree`). Consequences:
   exactly when it has a first-order (drop-free, syntactic) solution;
 * `forall_iff_firstOrder`: any property of the equality pattern of finitely many drop-free terms holds
   at every solution in the code algebra exactly when it holds at every first-order solution. Equation
-  guards, none queries and count checks and seen sets at a solution are such properties (of the pattern
+  guards, absence and count checks and census sets at a solution are such properties (of the pattern
   among the checks' terms and the rows).
 
 Controls: a stuck value of the code algebra that is not first-order (`stuck_value_squashes`); squashing

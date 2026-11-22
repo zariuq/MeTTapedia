@@ -30,9 +30,9 @@ present, as in Datalog's set semantics.
 * Negative, just outside: `Controls.choice_not_confluent`: two rules that both take `a`, one making `b`
   and one making `c`. From `{a}` one run reaches `{b}` and another `{c}`; `c` stays reachable from the
   second and never from the first, so `confluent` fails once rules take.
-* Negative, just outside: `Controls.none_not_confluent`: make `left` where `other` is not present, and
-  `other` where `left` is not present. From the empty store the two runs part ways for good: `confluent`
-  fails once rules check none queries, and the two outcomes are two minimal stable stores rather than one
+* Negative, just outside: `Controls.absence_not_confluent`: make `left` where `other` is absent, and
+  `other` where `left` is absent. From the empty store the two runs part ways for good: `confluent`
+  fails once rules check absence, and the two outcomes are two minimal stable stores rather than one
   least model.
 -/
 
@@ -350,12 +350,12 @@ theorem choice_not_confluent :
 
 def other : Expr := .sym 53
 
-/-- Make `left` where `other` is not present. -/
+/-- Make `left` where `other` is absent. -/
 def leftUnlessOther : RuleInstance Expr := rule [] [] [left] [.predicate .none other]
-/-- Make `other` where `left` is not present. -/
+/-- Make `other` where `left` is absent. -/
 def otherUnlessLeft : RuleInstance Expr := rule [] [] [other] [.predicate .none left]
 
-/-- Two rules, each guarded by the none query of what the other makes. -/
+/-- Two rules, each guarded by the absence of what the other makes. -/
 def guarded : RuleSet Expr := fun r => r = leftUnlessOther ∨ r = otherUnlessLeft
 
 def empty : Conf := ⟨[], ∅⟩
@@ -383,7 +383,7 @@ theorem leftOnly_step {C C' : Conf} (before : LeftOnly C) (step : GroundStep gua
       have labelled : o'.1 = left := List.mem_singleton.mp produced
       rw [labelled]
       decide
-  · exact absurd valid (fun refused => none_refuted refused (p := left) (List.mem_singleton.mpr rfl)
+  · exact absurd valid (fun refused => absent_refuted refused (p := left) (List.mem_singleton.mpr rfl)
       present isLeft)
 
 theorem leftOnly_reached {D : Conf} (run : Relation.ReflTransGen (GroundStep guarded) withLeft D) :
@@ -394,10 +394,10 @@ theorem leftOnly_reached {D : Conf} (run : Relation.ReflTransGen (GroundStep gua
         (by simp [makeLeftAt]), rfl⟩, by decide⟩
   | tail _ step earlier => exact leftOnly_step earlier step
 
-/-- **Negative control.** None guards break inference: from the empty store one run makes
+/-- **Negative control.** Absence guards break inference: from the empty store one run makes
 `left` and another `other`; `other` stays reachable after the second and never after the first, and
 neither fact is in every run's eventual facts. -/
-theorem none_not_confluent :
+theorem absence_not_confluent :
     ¬ Monotone guarded ∧
       Relation.ReflTransGen (GroundStep guarded) empty withLeft ∧
       Relation.ReflTransGen (GroundStep guarded) empty withOther ∧
@@ -408,13 +408,13 @@ theorem none_not_confluent :
       intro c member
       simp only [leftUnlessOther, rule, List.mem_singleton] at member
       subst member
-      exact none_holds (by decide))
+      exact absent_holds (by decide))
   have otherValid : makeOtherAt.Valid ground Prod.fst otherUnlessLeft empty :=
     ground_valid (by decide) (by decide) rfl rfl rfl (by decide) (by decide) rfl (by
       intro c member
       simp only [otherUnlessLeft, rule, List.mem_singleton] at member
       subst member
-      exact none_holds (by decide))
+      exact absent_holds (by decide))
   refine ⟨fun monotone => ?_, .single ⟨_, Or.inl rfl, makeLeftAt, leftValid, rfl⟩,
     .single ⟨_, Or.inr rfl, makeOtherAt, otherValid, rfl⟩,
     ⟨withOther, .refl, (other, 0), made_present (r := otherUnlessLeft) (sel := makeOtherAt)
@@ -440,6 +440,6 @@ open MonotoneInference in
 #print axioms reachable_eq_lfp
 #print axioms MonotoneInference.Controls.closure_reaches_path
 #print axioms MonotoneInference.Controls.choice_not_confluent
-#print axioms MonotoneInference.Controls.none_not_confluent
+#print axioms MonotoneInference.Controls.absence_not_confluent
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FragmentsOfTheStep

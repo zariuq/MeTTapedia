@@ -21,7 +21,7 @@ stated with its hypothesis (`AnsweredOn`), and there exact from some budget on (
 
 **Exhausted is never read as no or as empty.** Its existence readout is `suspended`, its answers are `unknown`, the
 bottom of the information order, never `refuted` (`undecided_reads`); only a no reads refuted (`readout_refuted`).
-That it is never read as missing by the step is `Budgets.OnTheStep`. The answers of a procedure grow in the information order as the budget grows
+That it is never read as absent by the step is `Budgets.OnTheStep`. The answers of a procedure grow in the information order as the budget grows
 (`answers_mono`). Reading exhausted as a no, or as a yes, breaks that order on every instance that is later
 answered the other way (`no_reading_breaks`, `yes_reading_breaks`).
 
@@ -123,7 +123,7 @@ end Procedure
 
 end Procedure
 
-/-! ## Readouts: exhausted is never no, empty or missing -/
+/-! ## Readouts: exhausted is never no, empty or absent -/
 
 /-- **The existence readout** of a verdict. -/
 def readout : Budgeted.Verdict → Search.Outcome.Verdict
@@ -218,9 +218,9 @@ theorem firstUpTo_succ_of_some {k : Nat} {a : A q} (found : firstUpTo attempt q 
     firstUpTo attempt q (k + 1) = some a := by
   simp only [firstUpTo, found]
 
-theorem firstUpTo_succ_of_none {k : Nat} (missing : firstUpTo attempt q k = none) :
+theorem firstUpTo_succ_of_none {k : Nat} (absent : firstUpTo attempt q k = none) :
     firstUpTo attempt q (k + 1) = attempt (k + 1) q := by
-  simp only [firstUpTo, missing]
+  simp only [firstUpTo, absent]
 
 /-- **A first answer stays the first answer** at every larger budget. -/
 theorem firstUpTo_mono {k : Nat} {a : A q} (found : firstUpTo attempt q k = some a) {k' : Nat} (le : k ≤ k') :
@@ -235,11 +235,11 @@ theorem firstUpTo_eq_none_iff (k : Nat) :
   induction k with
   | zero =>
       constructor
-      · intro missing j le
+      · intro absent j le
         rw [Nat.le_zero.mp le]
-        exact missing
-      · intro missing
-        exact missing 0 le_rfl
+        exact absent
+      · intro absent
+        exact absent 0 le_rfl
   | succ k ih =>
       cases first : firstUpTo attempt q k with
       | some a =>
@@ -247,8 +247,8 @@ theorem firstUpTo_eq_none_iff (k : Nat) :
           constructor
           · intro h
             cases h
-          · intro missing
-            have none' : firstUpTo attempt q k = none := ih.mpr fun j le => missing j (by omega)
+          · intro absent
+            have none' : firstUpTo attempt q k = none := ih.mpr fun j le => absent j (by omega)
             rw [first] at none'
             cases none'
       | none =>
@@ -259,8 +259,8 @@ theorem firstUpTo_eq_none_iff (k : Nat) :
             · rw [eq]
               exact last
             · exact ih.mp first j (by omega)
-          · intro missing
-            exact missing (k + 1) le_rfl
+          · intro absent
+            exact absent (k + 1) le_rfl
 
 /-- A first answer is an answer of some budget up to `k`. -/
 theorem firstUpTo_spec (k : Nat) {a : A q} (found : firstUpTo attempt q k = some a) :
@@ -378,8 +378,8 @@ theorem answered_iff {q : Q} :
     | some a => exact absurd ⟨j, a, h⟩ none'
   · rintro ⟨k, a, found⟩
     refine ⟨k, fun undecided => ?_⟩
-    have missing := (D.verdict_undecided_iff.mp undecided) k le_rfl
-    rw [missing] at found
+    have absent := (D.verdict_undecided_iff.mp undecided) k le_rfl
+    rw [absent] at found
     cases found
 
 /-- **Law 4 on the class of answered instances.** -/

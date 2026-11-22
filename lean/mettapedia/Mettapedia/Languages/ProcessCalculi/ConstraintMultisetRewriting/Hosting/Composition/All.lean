@@ -19,7 +19,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Hosting.C
 # Composition of hosted programs
 
 A hosted program is its rules **and** its equation rows; the rule for a call that no equation matches
-reads those rows by a none check, the one check of a translation that is not positive.
+reads those rows by an absence check, the one check of a translation that is not positive.
 
 * `Systems`: the hosted system of a program (`hosted`: the translation and the equation rows) and the
   union of hosted systems; **the hosting of a union is the union of the hostings** (`hosted_union`,

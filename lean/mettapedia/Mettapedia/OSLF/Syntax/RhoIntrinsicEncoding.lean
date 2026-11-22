@@ -91,8 +91,8 @@ theorem communication_encoded_closedRho :
       [.apply "POutput" [.apply "NQuote" [.apply "PZero" []], .apply "PZero" []],
        .apply "PInput" [.apply "NQuote" [.apply "PZero" []],
          .lambda none (.apply "PDrop" [.bvar 0])]] none)
-  exact .parallel (.cons (.output (.quote .unit (by decide)) .unit)
-    (.cons (.input (.quote .unit (by decide)) (.drop (.bvar (by decide)))) .nil))
+  exact .parallel (.cons (.output (.quote .unit) .unit)
+    (.cons (.input (.quote .unit) (.drop (.bvar (by decide)))) .nil))
 
 mutual
 /-- Intrinsic quote safety: input binders extend scope, while quotation
@@ -240,13 +240,12 @@ theorem contextLabels_var : ∀ {Γ : Ctx sig} {s : Srt} (v : Var Γ s),
   | _, _, .zero => rfl
   | _, _, .succ v => contextLabels_var v
 
-/-- The canonical sorting judgment for an encoded intrinsic term, under the
-apply view: the intrinsic quotation body lies in the surrounding context. -/
+/-- The actual canonical sorting judgment for an encoded intrinsic term. -/
 def EncodedTermTyped {Γ : Ctx sig} {s : Srt} (t : Term sig Γ s) : Prop :=
   match s with
-  | .nm => NameWellSorted rhoApplyPresentation FreeSortContext.empty
+  | .nm => NameWellSorted rhoReflectivePresentation FreeSortContext.empty
       (contextLabels Γ) (encodeTerm t)
-  | .pr => ProcWellSorted rhoApplyPresentation FreeSortContext.empty
+  | .pr => ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
       (contextLabels Γ) (encodeTerm t)
 
 /-- Recursive sorting invariant for an argument vector. -/
@@ -256,9 +255,8 @@ def EncodedArgsTyped : {as : List (List Srt × Srt)} → {Γ : Ctx sig} →
   | _, _, .cons head tail => EncodedTermTyped head ∧ EncodedArgsTyped tail
 
 mutual
-/-- Every intrinsic rho term is well sorted after encoding under the apply
-view. Authored rho's closed scope additionally admits only sealed quotations:
-`boundCodeQuote` below is sorted here and not admitted there. -/
+/-- Every intrinsic rho term is well sorted after encoding, even before the
+additional quotation restriction is imposed. -/
 theorem encodedTerm_typed : ∀ {Γ : Ctx sig} {s : Srt}
     (t : Term sig Γ s), EncodedTermTyped t
   | _, _, .var (s := s) v => by
@@ -276,7 +274,6 @@ theorem encodedTerm_typed : ∀ {Γ : Ctx sig} {s : Srt}
       exact ProcWellSorted.input (encodedTerm_typed a) (encodedTerm_typed b)
   | _, _, .op .quo (.cons a .nil) => by
       exact NameWellSorted.quote (encodedTerm_typed a)
-        (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits_of_reaching rfl _)
   | _, _, .op .drp (.cons a .nil) => by
       exact ProcWellSorted.drop (encodedTerm_typed a)
 
@@ -295,16 +292,14 @@ def boundCodeQuote : Term sig [] Srt.pr :=
     (.cons (.op Op.out (.cons (.op Op.quo (.cons (.op Op.out (.cons (.var Var.zero)
       (.cons (.op Op.nil .nil) .nil))) .nil)) (.cons (.op Op.nil .nil) .nil))) .nil))
 
-/-- **Counterexample.** The apply view sorts `boundCodeQuote`, while authored
-rho's closed scope does not admit its quotation. -/
+/-- **Counterexample.** `boundCodeQuote` is a sorted rho process, and its
+quoted code is not closed, so it lies outside the fragment that a closed
+substitution scope admits. -/
 theorem boundCodeQuote_not_admitted :
     EncodedTermTyped boundCodeQuote ∧
-      ¬ ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] (encodeTerm boundCodeQuote) := by
-  refine ⟨encodedTerm_typed boundCodeQuote, ?_⟩
-  intro typed
-  have closed := typed.quotesClosed rfl (by decide)
-  revert closed
-  decide +kernel
+      ¬ Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.QuotesClosed
+        rhoReflectivePresentation.toReflectivePresentationDecl (encodeTerm boundCodeQuote) :=
+  ⟨encodedTerm_typed boundCodeQuote, by decide +kernel⟩
 
 /-- The open COMM source passes both parts of the authored admission check:
 its constructor sorts are correct and its literal quotations respect scope. -/
@@ -312,8 +307,8 @@ theorem openCommSource_authored_admitted :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
       (contextLabels [Srt.nm]) (encodeTerm openCommSource) ∧
     binderSafeAt "NQuote" 1 (encodeTerm openCommSource) = true := by
-  have safe := (encodeTerm_quoteSafe openCommSource 1).trans openCommSource_quoteSafe
-  exact ⟨ProcWellSorted.ofSealed (encodedTerm_typed openCommSource) safe, safe⟩
+  exact ⟨encodedTerm_typed openCommSource,
+    (encodeTerm_quoteSafe openCommSource 1).trans openCommSource_quoteSafe⟩
 
 /-- The quote-safe closed intrinsic process fragment maps into the actual
 canonical closed-process carrier, carrying both sort and scope proofs. -/
@@ -324,11 +319,10 @@ def encodeClosedProcess (term : Term sig [] Srt.pr)
   refine ⟨encodeTerm term, ?_⟩
   apply (Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefRewriteSystem.rhoClosedTermWellSorted_process_iff
     (encodeTerm term)).mpr
-  have sealed : binderSafeAt "NQuote" 0 (encodeTerm term) = true := by
-    rw [encodeTerm_quoteSafe]
+  refine ⟨?_, ?_⟩
+  · simpa [EncodedTermTyped, contextLabels] using encodedTerm_typed term
+  · rw [encodeTerm_quoteSafe]
     exact safe
-  refine ⟨?_, sealed⟩
-  simpa [EncodedTermTyped, contextLabels] using (encodedTerm_typed term).ofSealed sealed
 
 /-- The corresponding map on closed intrinsic names uses the same quote
 boundary; names and processes remain distinct canonical fibres. -/
@@ -339,11 +333,10 @@ def encodeClosedName (term : Term sig [] Srt.nm)
   refine ⟨encodeTerm term, ?_⟩
   apply (Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefRewriteSystem.rhoClosedTermWellSorted_name_iff
     (encodeTerm term)).mpr
-  have sealed : binderSafeAt "NQuote" 0 (encodeTerm term) = true := by
-    rw [encodeTerm_quoteSafe]
+  refine ⟨?_, ?_⟩
+  · simpa [EncodedTermTyped, contextLabels] using encodedTerm_typed term
+  · rw [encodeTerm_quoteSafe]
     exact safe
-  refine ⟨?_, sealed⟩
-  simpa [EncodedTermTyped, contextLabels] using (encodedTerm_typed term).ofSealed sealed
 
 /-- For an intrinsically sorted closed process, quote safety is the exact
 additional condition for admission to the canonical closed rho carrier. -/

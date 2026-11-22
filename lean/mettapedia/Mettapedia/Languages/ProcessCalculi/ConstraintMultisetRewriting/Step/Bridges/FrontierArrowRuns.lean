@@ -46,8 +46,8 @@ theorem initial_related (arrowQ : ArrowComp q)
     simp only [Multiset.filter_singleton, if_pos live]
     apply Multiset.Rel.cons _ Multiset.Rel.zero
     exact ⟨start_represents N P q unopened, trivial, .inl ⟨q, rfl, arrowQ⟩⟩
-  · intro leaf missing
-    exact (Multiset.notMem_zero _ missing).elim
+  · intro leaf absent
+    exact (Multiset.notMem_zero _ absent).elim
 
 theorem answers_eq {configuration : Config κ Γ star D.Ty} {frontier : State S}
     (represented : Representation N P supply spaces q configuration frontier) :

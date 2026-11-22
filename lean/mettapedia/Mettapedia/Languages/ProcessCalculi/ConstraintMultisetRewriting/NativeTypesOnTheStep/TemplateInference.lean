@@ -430,7 +430,7 @@ theorem decidedBy_of_firstDecisionAt {Δ : Context setting.R} {I : EquationStore
           exact ⟨G, List.mem_cons_of_mem _ member, d⟩
       | settled M σ initial =>
           exact ⟨F, List.mem_cons_self .., (by rw [first]; trivial : (F I).Decisive)⟩
-      | refuted missing =>
+      | refuted absent =>
           exact ⟨F, List.mem_cons_self .., (by rw [first]; trivial : (F I).Decisive)⟩
 
 /-- **Where the computable templating decision answers, it answers the semantic settler's templating
@@ -444,7 +444,7 @@ theorem templatingAdmits?_ideal (families : List (Family setting.levels)) {s : S
   split at decided
   · cases first : firstDecisionAt setting.levels f.information families with
     | settled M σ initial => exact decidedBy_of_firstDecisionAt (by rw [first]; trivial)
-    | refuted missing => exact decidedBy_of_firstDecisionAt (by rw [first]; trivial)
+    | refuted absent => exact decidedBy_of_firstDecisionAt (by rw [first]; trivial)
     | undecided =>
         rw [first] at decided
         cases decided
@@ -461,7 +461,7 @@ theorem admits?_ideal (families : List (Family setting.levels)) {s : State setti
   split at decided
   · cases first : firstDecisionAt setting.levels f.information families with
     | settled M σ initial => exact decidedBy_of_firstDecisionAt (by rw [first]; trivial)
-    | refuted missing => exact decidedBy_of_firstDecisionAt (by rw [first]; trivial)
+    | refuted absent => exact decidedBy_of_firstDecisionAt (by rw [first]; trivial)
     | undecided =>
         rw [first] at decided
         cases decided

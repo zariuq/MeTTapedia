@@ -10,14 +10,14 @@ differently). This module states it and answers three questions about it. Nothin
 **Is it kept when a neighbour tells?** No. More knowledge can only determine
 (`undetermined_of_more`), and one tell loses it (`lost_by_a_tell`: with no knowledge the unknown `0` is
 undetermined, after `0 ≐ 5` it is determined). What every solution satisfies goes the other way: an ask, a
-none query or a count that holds at every solution still holds under more knowledge (`entailed_more`). So the
-condition is of the kind of none queries (lost by what a neighbour adds), with tells in place of made rows.
+absence or a count that holds at every solution still holds under more knowledge (`entailed_more`). So the
+condition is of the kind of absence (lost by what a neighbour adds), with tells in place of made rows.
 
 **Is it one of the step's conditions?** A firing reads the knowledge in two ways: its information (the
 knowledge with the firing's own equations) must be solvable, and its checks and collect patterns must hold at
 every solution of the information. `holds_where_determined`: whatever the firing's own equations `T` and
 whatever is asked at every solution, if the two hold at a knowledge `K` they hold at `K` with one more
-equation that determines the term. So no choice of tells, asks, none checks, counts and collect patterns holds
+equation that determines the term. So no choice of tells, asks, absences, counts and collect patterns holds
 exactly at the knowledges that leave a term undetermined. (Stated for these two readings of the knowledge;
 `Firing.Admits` also asks that the opening be fresh for the terms the state mentions, which is not treated
 here.)
@@ -34,7 +34,7 @@ fire on such stores is about variables of the hosted language written as data in
 the row, and so a computed condition like the others, with an interpretation that answers `open` at some
 ground arguments (the hypothesis of `TestRules.primOpen_never_fires` excludes exactly these). On stores with
 rows that hold unknowns, the test in this sense is not a table read, not an ask, and not kept by a
-neighbour's tell; a rule that uses it needs what a rule that uses the none query needs, an argument that no
+neighbour's tell; a rule that uses it needs what a rule that uses absence needs, an argument that no
 neighbour can tell the unknown between the test and the use of its answer.
 -/
 

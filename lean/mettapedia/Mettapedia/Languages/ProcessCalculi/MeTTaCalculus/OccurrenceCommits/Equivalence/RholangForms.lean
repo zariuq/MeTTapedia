@@ -35,7 +35,7 @@ that tell a join arm from its first bind.
   encodings of Rholang processes is the encoding of a Rholang rule.
 * **So bisimilarity is preserved and reflected** (`bisimilar_rholang_iff`): two Rholang soups are
   bisimilar over borrowed contexts exactly when their encodings are, relative to environments that
-  are themselves Rholang soups. The transform language has more contexts (none readers,
+  are themselves Rholang soups. The transform language has more contexts (absence readers,
   predicate queries, mixed `read`/`take` receivers); relative to those, the encodings may be told apart where
   Rholang's own contexts cannot, so this is full abstraction for Rholang's environments, not for
   all of MeTTa's.
@@ -893,13 +893,13 @@ def applyStoredRemovals {Row : Type*} : List (Ch × Int) → (Ch → List Row) �
 
 theorem unselected_channel_unchanged {Row : Type*}
     (keys : List (Ch × Int)) (store : Ch → List Row) (channel : Ch)
-    (notMem : channel ∉ keys.map Prod.fst) :
+    (absent : channel ∉ keys.map Prod.fst) :
     applyStoredRemovals keys store channel = store channel := by
   induction keys generalizing store with
   | nil => rfl
   | cons key rest earlier =>
-      have different : channel ≠ key.1 := fun same => notMem (by simp [same])
-      rw [applyStoredRemovals, earlier _ (fun member => notMem (List.mem_cons_of_mem _ member))]
+      have different : channel ≠ key.1 := fun same => absent (by simp [same])
+      rw [applyStoredRemovals, earlier _ (fun member => absent (List.mem_cons_of_mem _ member))]
       unfold eraseStoredAt
       split
       · exact Function.update_of_ne different _ _
@@ -1010,7 +1010,7 @@ def parkedProduceCommit {Wait : Type*} (binds : List (Ch × Pat)) (selected : Li
     data.kept.disjSum (if persistent then {waiting} else ∅), ∅, []⟩
 
 /-- The data cut and the installed receiver form one admitted physical
-commit. No receiver whose key is not present can supply this extra footprint. -/
+commit. No receiver whose key is absent can supply this extra footprint. -/
 theorem parked_produce_admitted {Wait : Type*}
     {binds : List (Ch × Pat)} {selected : List (Match Val Arg)} {waiters : Finset Wait}
     {live : Finset (Ch × Int)} {dataLabel : Ch × Int → Val}
@@ -1475,7 +1475,7 @@ theorem ViewValues.with_offer {cache : Ch → List (Datum Val)} {has : Ch → Va
       · simpa only [withOffer, Function.update_of_ne same] using still
     · exact ⟨⟨offer.2.1, -1, offer.2.2⟩, by simp [withOffer], rfl⟩
 
-/-- A complete value view is needed for none queries, even though a found
+/-- A complete value view is needed for absence, even though a found
 packet can be checked using only its selected witnesses. -/
 theorem packet_isSome_iff_readyOn {binds : List (Ch × Pat)} {cache : Ch → List (Datum Val)}
     {has : Ch → Val → Prop} (distinct : (binds.map Prod.fst).Nodup)
@@ -1498,7 +1498,7 @@ theorem packet_none_iff_not_readyOn {binds : List (Ch × Pat)} {cache : Ch → L
   have reads := packet_isSome_iff_readyOn capture distinct covered
   cases found : packet capture binds cache <;> simp_all
 
-/-- A produce miss is exactly none queries of an eligible installed receive
+/-- A produce miss is exactly absence of an eligible installed receive
 after lending the offered value to the scan. Lookup completeness and
 data-view completeness are independent: neither can replace the other. -/
 theorem offer_search_none_iff_no_wake {Wait : Type*} [DecidableEq Wait]
@@ -1779,8 +1779,8 @@ theorem offerViews_cover {table : JoinIndex Ch Wait} {channels : Wait → List C
   · rintro ⟨installed, route⟩
     have member := (indexed.bucket (channels waiter) waiter).mpr ⟨installed, rfl⟩
     have nonempty : table.waitersAt (channels waiter) ≠ [] := by
-      intro notMem
-      rw [notMem] at member
+      intro absent
+      rw [absent] at member
       cases member
     obtain ⟨entry, located, correct⟩ := key_in_zip.mp (indexed.covered channel _ route nonempty)
     have before : waiter ∈ table.waitersAt entry.1 := correct.symm ▸ member
@@ -1901,9 +1901,9 @@ theorem drop_covers [DecidableEq Wait] {table : JoinIndex Ch Wait}
     by_cases key : ks = keys
     · subst ks
       have prior : table.waitersAt keys ≠ [] := by
-        intro notMem
+        intro absent
         apply nonempty
-        rw [changed, notMem]
+        rw [changed, absent]
         rfl
       rw [drop_nonempty_keeps_index table keys waiter ch nonempty]
       exact before.covered ch keys onKey prior
@@ -2532,8 +2532,8 @@ theorem park_commit_refines {Wait Identity : Type*} [DecidableEq Identity] [Deci
     refine ⟨waiters, ?_, by simp [fire], ?_, fun w recent => .inl recent⟩
     · refine ⟨Finset.empty_subset _, ?_, Finset.disjoint_empty_left _, Finset.disjoint_empty_left _, ?_⟩
       · simpa using member
-      · intro query notMem
-        simp at notMem
+      · intro query absent
+        simp at absent
     · simpa only [found] using after
 
 end JoinIndex

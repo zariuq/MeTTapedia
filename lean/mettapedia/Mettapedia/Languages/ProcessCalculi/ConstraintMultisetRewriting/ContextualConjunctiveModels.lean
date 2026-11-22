@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveNone
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveAbsence
 
 /-!
 # Joint query models recover their caller and shared local witnesses
@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 Every model of the actual tuple equation store decomposes into its caller
 assignment, one shared query assignment and the separately scoped row
 assignments. This is the converse to witness compilation, not a supplied
-completeness predicate. It characterizes the all-future none query contract.
+completeness predicate. It characterizes the all-future absence contract.
 -/
 
 set_option autoImplicit false
@@ -79,19 +79,19 @@ theorem joint_model_gives_caller_and_match (assignment : Assignment (family quer
     rw [reassemble] at rowLaw queryLaw
     exact rowLaw.symm.trans (selected.trans queryLaw)
 
-theorem none_ask_iff_no_joint_model {Γ : Ctx S} {sort : S.Srt}
+theorem absence_ask_iff_no_joint_model {Γ : Ctx S} {sort : S.Srt}
     (problem : EquationStore (Term (signature S captures) Γ sort))
     (patterns : List (Term (signature S (queryFamily queries captures)) Γ sort))
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O) :
-    ContextualConjunctiveNone.Ask queries locals captures problem patterns rows world ↔
+    ContextualConjunctiveAbsence.Ask queries locals captures problem patterns rows world ↔
       ∀ chosen : Fin patterns.length → O, (∀ port, chosen port ∈ world) →
         ∀ (Next : Type) (next : Next → MetaArity S) (assignment : Assignment (family queries locals captures) next),
           ¬ ContextualFrameUnifier.Models assignment (joint queries locals captures problem patterns rows chosen) := by
   constructor
-  · intro missing chosen present Next next assignment models
+  · intro absent chosen present Next next assignment models
     obtain ⟨before, matched⟩ := joint_model_gives_caller_and_match queries locals captures assignment
       problem patterns rows chosen models
-    exact missing Next next (caller queries locals captures assignment) before chosen present matched
+    exact absent Next next (caller queries locals captures assignment) before chosen present matched
   · intro impossible Next next candidate before chosen present matched
     obtain ⟨Later, later, assignment, models⟩ := match_gives_joint_model queries locals captures candidate
       problem patterns rows chosen before matched

@@ -192,7 +192,7 @@ theorem decidedBy_of_first {Δ : Context setting.R} {I : EquationStore (TotalTer
       unfold firstDecisionAt at decisive
       cases h : F I with
       | settled M σ initial => exact ⟨F, List.mem_cons_self, by show (F I).Decisive; rw [h]; trivial⟩
-      | refuted missing => exact ⟨F, List.mem_cons_self, by show (F I).Decisive; rw [h]; trivial⟩
+      | refuted absent => exact ⟨F, List.mem_cons_self, by show (F I).Decisive; rw [h]; trivial⟩
       | undecided =>
           rw [h] at decisive
           obtain ⟨G, member, decisiveG⟩ := decidedBy_of_first decisive
@@ -208,7 +208,7 @@ theorem first_undecided {Δ : Context setting.R} {I : EquationStore (TotalTerm �
       unfold firstDecisionAt
       cases h : F I with
       | settled M σ initial => exact (undecided F (by rw [h]; trivial)).elim
-      | refuted missing => exact (undecided F (by rw [h]; trivial)).elim
+      | refuted absent => exact (undecided F (by rw [h]; trivial)).elim
       | undecided => exact first_undecided undecided rest
 
 /-- An answer of `admits?` comes from a decisive family. -/
@@ -220,7 +220,7 @@ theorem decidedBy_of_admits {families : List (NativeTypesOnTheStep.Family settin
   split at decided
   · cases first : firstDecisionAt setting.levels f.information families with
     | settled M σ initial => trivial
-    | refuted missing => trivial
+    | refuted absent => trivial
     | undecided =>
         rw [first] at decided
         simp at decided
@@ -347,7 +347,7 @@ theorem ofFamilies_postponed {families : List (NativeTypesOnTheStep.Family setti
   | settled M σ initial =>
       rw [h] at unsettled
       cases unsettled
-  | refuted missing => rfl
+  | refuted absent => rfl
   | undecided => rfl
 
 /-- **The computable step reads exhaustion as refusal**: with the families at budget `1` its settler postpones the

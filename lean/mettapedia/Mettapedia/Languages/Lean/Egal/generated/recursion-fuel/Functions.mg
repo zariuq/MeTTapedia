@@ -1708,6 +1708,318 @@ Theorem Lean_instDecidableEqNat_unfold : forall a0 a1, Lean_instDecidableEqNat a
 let a0 a1. reflexivity.
 Qed.
 
+(** List.reverseAux, from its equation theorems **)
+Definition Lean_List_reverseAux_method0_0 : set -> set := fun a0 => (fun a2 :e (Lean_List a0) => a2).
+Theorem Lean_List_reverseAux_method0_0_ap : forall a0, forall a2 :e (Lean_List a0), (Lean_List_reverseAux_method0_0 a0) a2 = a2.
+let a0. let a2. assume H: a2 :e (Lean_List a0).
+exact beta (Lean_List a0) (fun a2 => a2) a2 H.
+Qed.
+Theorem Lean_List_reverseAux_method0_0_In : forall a0, (Lean_List_reverseAux_method0_0 a0) :e (Pi_ a2 :e (Lean_List a0), (Lean_List a0)).
+let a0. exact lam_Pi (Lean_List a0) (fun a2 => (Lean_List a0)) (fun a2 => a2) (fun a2 Ha2 => Ha2).
+Qed.
+Definition Lean_List_reverseAux_method1_3 : set -> set -> set -> set -> set := fun a0 y0 y1 r1 => (fun a2 :e (Lean_List a0) => (r1 (Lean_List_cons_node a0 y0 a2))).
+Theorem Lean_List_reverseAux_method1_3_ap : forall a0 y0 y1 r1, forall a2 :e (Lean_List a0), (Lean_List_reverseAux_method1_3 a0 y0 y1 r1) a2 = (r1 (Lean_List_cons_node a0 y0 a2)).
+let a0. let y0. let y1. let r1. let a2. assume H: a2 :e (Lean_List a0).
+exact beta (Lean_List a0) (fun a2 => (r1 (Lean_List_cons_node a0 y0 a2))) a2 H.
+Qed.
+Theorem Lean_List_reverseAux_method1_3_In : forall a0, forall y0 :e a0, forall y1 :e (Lean_List a0), forall r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Lean_List_reverseAux_method1_3 a0 y0 y1
+    r1) :e (Pi_ a2 :e (Lean_List a0), (Lean_List a0)).
+let a0. let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). let r1. assume Hr1: r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)). exact lam_Pi (Lean_List a0) (fun a2 => (Lean_List
+    a0)) (fun a2 => (r1 (Lean_List_cons_node a0 y0 a2))) (fun a2 Ha2 => (ap_Pi (Lean_List a0) (fun _ => (Lean_List a0)) r1 (Lean_List_cons_node a0 y0 a2) Hr1 (Lean_List_cons_typed a0 y0 Hy0 a2 Ha2))).
+Qed.
+Definition Lean_List_reverseAux_method1_2 : set -> set -> set -> set := fun a0 y0 y1 => (fun r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)) => (Lean_List_reverseAux_method1_3 a0 y0 y1 r1)).
+Theorem Lean_List_reverseAux_method1_2_ap : forall a0 y0 y1, forall r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Lean_List_reverseAux_method1_2 a0 y0 y1) r1 = (Lean_List_reverseAux_method1_3 a0
+    y0 y1 r1).
+let a0. let y0. let y1. let r1. assume H: r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)).
+exact beta (Pi_ ux :e (Lean_List a0), (Lean_List a0)) (fun r1 => (Lean_List_reverseAux_method1_3 a0 y0 y1 r1)) r1 H.
+Qed.
+Theorem Lean_List_reverseAux_method1_2_In : forall a0, forall y0 :e a0, forall y1 :e (Lean_List a0), (Lean_List_reverseAux_method1_2 a0 y0 y1) :e (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List
+    a0)), (Pi_ a2 :e (Lean_List a0), (Lean_List a0))).
+let a0. let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). exact lam_Pi (Pi_ ux :e (Lean_List a0), (Lean_List a0)) (fun r1 => (Pi_ a2 :e (Lean_List a0), (Lean_List a0))) (fun r1
+    => (Lean_List_reverseAux_method1_3 a0 y0 y1 r1)) (fun r1 Hr1 => (Lean_List_reverseAux_method1_3_In a0 y0 Hy0 y1 Hy1 r1 Hr1)).
+Qed.
+Definition Lean_List_reverseAux_method1_1 : set -> set -> set := fun a0 y0 => (fun y1 :e (Lean_List a0) => (Lean_List_reverseAux_method1_2 a0 y0 y1)).
+Theorem Lean_List_reverseAux_method1_1_ap : forall a0 y0, forall y1 :e (Lean_List a0), (Lean_List_reverseAux_method1_1 a0 y0) y1 = (Lean_List_reverseAux_method1_2 a0 y0 y1).
+let a0. let y0. let y1. assume H: y1 :e (Lean_List a0).
+exact beta (Lean_List a0) (fun y1 => (Lean_List_reverseAux_method1_2 a0 y0 y1)) y1 H.
+Qed.
+Theorem Lean_List_reverseAux_method1_1_In : forall a0, forall y0 :e a0, (Lean_List_reverseAux_method1_1 a0 y0) :e (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)),
+    (Pi_ a2 :e (Lean_List a0), (Lean_List a0)))).
+let a0. let y0. assume Hy0: y0 :e a0. exact lam_Pi (Lean_List a0) (fun y1 => (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Pi_ a2 :e (Lean_List a0), (Lean_List a0)))) (fun y1 =>
+    (Lean_List_reverseAux_method1_2 a0 y0 y1)) (fun y1 Hy1 => (Lean_List_reverseAux_method1_2_In a0 y0 Hy0 y1 Hy1)).
+Qed.
+Definition Lean_List_reverseAux_method1_0 : set -> set := fun a0 => (fun y0 :e a0 => (Lean_List_reverseAux_method1_1 a0 y0)).
+Theorem Lean_List_reverseAux_method1_0_ap : forall a0, forall y0 :e a0, (Lean_List_reverseAux_method1_0 a0) y0 = (Lean_List_reverseAux_method1_1 a0 y0).
+let a0. let y0. assume H: y0 :e a0.
+exact beta a0 (fun y0 => (Lean_List_reverseAux_method1_1 a0 y0)) y0 H.
+Qed.
+Theorem Lean_List_reverseAux_method1_0_In : forall a0, (Lean_List_reverseAux_method1_0 a0) :e (Pi_ y0 :e a0, (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Pi_ a2
+    :e (Lean_List a0), (Lean_List a0))))).
+let a0. exact lam_Pi a0 (fun y0 => (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Pi_ a2 :e (Lean_List a0), (Lean_List a0))))) (fun y0 =>
+    (Lean_List_reverseAux_method1_1 a0 y0)) (fun y0 Hy0 => (Lean_List_reverseAux_method1_1_In a0 y0 Hy0)).
+Qed.
+Definition Lean_List_reverseAux : set -> set -> set -> set := fun a0 a1 a2 => (Lean_List_rec a0 (Lean_List_reverseAux_method0_0 a0) (Lean_List_reverseAux_method1_0 a0) a1 a2).
+Theorem Lean_List_reverseAux_recIn : forall a0, forall t :e (Lean_List a0), Lean_List_rec a0 (Lean_List_reverseAux_method0_0 a0) (Lean_List_reverseAux_method1_0 a0) t :e (Pi_ ux :e (Lean_List a0),
+    (Lean_List a0)).
+let a0. let t. assume Ht: t :e (Lean_List a0).
+exact Lean_List_rec_type a0 (fun _ => (Pi_ ux :e (Lean_List a0), (Lean_List a0))) (Lean_List_reverseAux_method0_0 a0) (Lean_List_reverseAux_method0_0_In a0) (Lean_List_reverseAux_method1_0 a0)
+    (Lean_List_reverseAux_method1_0_In a0) t Ht.
+Qed.
+Theorem Lean_List_reverseAux_In : forall a0, forall a1 :e (Lean_List a0), forall a2 :e (Lean_List a0), Lean_List_reverseAux a0 a1 a2 :e (Lean_List a0).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_List a0). exact (ap_Pi (Lean_List a0) (fun _ => (Lean_List a0)) (Lean_List_rec a0 (Lean_List_reverseAux_method0_0 a0)
+    (Lean_List_reverseAux_method1_0 a0) a1) a2 (Lean_List_reverseAux_recIn a0 a1 H1) H2).
+Qed.
+Theorem Lean_List_reverseAux_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_x :e (Lean_List v_u945), (Lean_List_reverseAux v_u945 (Lean_List_nil_node v_u945) v_x) = v_x.
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_x. assume H_v_x: v_x :e (Lean_List v_u945).
+prove ((Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) (Lean_List_nil_node v_u945)) v_x) = v_x.
+rewrite Lean_List_iota0 v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945).
+rewrite Lean_List_reverseAux_method0_0_ap v_u945 v_x H_v_x.
+reflexivity.
+Qed.
+Theorem Lean_List_reverseAux_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_x :e (Lean_List v_u945), forall v_a :e v_u945, forall v_l :e (Lean_List v_u945),
+    (Lean_List_reverseAux v_u945 (Lean_List_cons_node v_u945 v_a v_l) v_x) = (Lean_List_reverseAux v_u945 v_l (Lean_List_cons_node v_u945 v_a v_x)).
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_x. assume H_v_x: v_x :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e v_u945. let v_l. assume H_v_l:
+    v_l :e (Lean_List v_u945).
+prove ((Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) (Lean_List_cons_node v_u945 v_a v_l)) v_x) = ((Lean_List_rec v_u945
+    (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_l) (Lean_List_cons_node v_u945 v_a v_x)).
+rewrite Lean_List_iota1 v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_a H_v_a v_l H_v_l.
+rewrite Lean_List_reverseAux_method1_0_ap v_u945 v_a H_v_a.
+rewrite Lean_List_reverseAux_method1_1_ap v_u945 v_a v_l H_v_l.
+rewrite Lean_List_reverseAux_method1_2_ap v_u945 v_a v_l (Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_l) (Lean_List_reverseAux_recIn v_u945
+    v_l H_v_l).
+rewrite Lean_List_reverseAux_method1_3_ap v_u945 v_a v_l (Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_l) v_x H_v_x.
+reflexivity.
+Qed.
+
+(** List.reverse, from its equation theorem **)
+Definition Lean_List_reverse : set -> set -> set := fun a0 a1 => (Lean_List_reverseAux a0 a1 (Lean_List_nil_node a0)).
+Theorem Lean_List_reverse_In : forall a0, forall a1 :e (Lean_List a0), Lean_List_reverse a0 a1 :e (Lean_List a0).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). exact (Lean_List_reverseAux_In a0 a1 H1 (Lean_List_nil_node a0) (Lean_List_nil_typed a0)).
+Qed.
+Theorem Lean_List_reverse_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_as :e (Lean_List v_u945), (Lean_List_reverse v_u945 v_as) = (Lean_List_reverseAux v_u945 v_as
+    (Lean_List_nil_node v_u945)).
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_as. assume H_v_as: v_as :e (Lean_List v_u945).
+reflexivity.
+Qed.
+Theorem Lean_List_reverse_unfold : forall a0 a1, Lean_List_reverse a0 a1 = (Lean_List_reverseAux a0 a1 (Lean_List_nil_node a0)).
+let a0 a1. reflexivity.
+Qed.
+
+(** List.splitAt.go, from its equation theorems, split at argument 2 **)
+Definition Lean_List_splitAt_go_method0_1 : set -> set -> set -> set := fun a0 a1 a3 => (fun a4 :e (Lean_List a0) => (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) a1 (Lean_List_nil_node a0))).
+Theorem Lean_List_splitAt_go_method0_1_ap : forall a0 a1 a3, forall a4 :e (Lean_List a0), (Lean_List_splitAt_go_method0_1 a0 a1 a3) a4 = (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) a1
+    (Lean_List_nil_node a0)).
+let a0. let a1. let a3. let a4. assume H: a4 :e (Lean_List a0).
+exact beta (Lean_List a0) (fun a4 => (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) a1 (Lean_List_nil_node a0))) a4 H.
+Qed.
+Theorem Lean_List_splitAt_go_method0_1_In : forall a0, forall a1 :e (Lean_List a0), forall a3 :e Lean_Nat, (Lean_List_splitAt_go_method0_1 a0 a1 a3) :e (Pi_ a4 :e (Lean_List a0), (Lean_Prod
+    (Lean_List a0) (Lean_List a0))).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let a3. assume Ha3: a3 :e Lean_Nat. exact lam_Pi (Lean_List a0) (fun a4 => (Lean_Prod (Lean_List a0) (Lean_List a0))) (fun a4 => (Lean_Prod_mk_node
+    (Lean_List a0) (Lean_List a0) a1 (Lean_List_nil_node a0))) (fun a4 Ha4 => (Lean_Prod_mk_typed (Lean_List a0) (Lean_List a0) a1 H1 (Lean_List_nil_node a0) (Lean_List_nil_typed a0))).
+Qed.
+Definition Lean_List_splitAt_go_method0_0 : set -> set -> set := fun a0 a1 => (fun a3 :e Lean_Nat => (Lean_List_splitAt_go_method0_1 a0 a1 a3)).
+Theorem Lean_List_splitAt_go_method0_0_ap : forall a0 a1, forall a3 :e Lean_Nat, (Lean_List_splitAt_go_method0_0 a0 a1) a3 = (Lean_List_splitAt_go_method0_1 a0 a1 a3).
+let a0. let a1. let a3. assume H: a3 :e Lean_Nat.
+exact beta Lean_Nat (fun a3 => (Lean_List_splitAt_go_method0_1 a0 a1 a3)) a3 H.
+Qed.
+Theorem Lean_List_splitAt_go_method0_0_In : forall a0, forall a1 :e (Lean_List a0), (Lean_List_splitAt_go_method0_0 a0 a1) :e (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0)
+    (Lean_List a0)))).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). exact lam_Pi Lean_Nat (fun a3 => (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))) (fun a3 => (Lean_List_splitAt_go_method0_1 a0
+    a1 a3)) (fun a3 Ha3 => (Lean_List_splitAt_go_method0_1_In a0 a1 H1 a3 Ha3)).
+Qed.
+Definition Lean_List_splitAt_go_method1_4 : set -> set -> set -> set -> set -> set -> set := fun a0 a1 y0 y1 r1 a3 => (fun a4 :e (Lean_List a0) => (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List a0)
+    (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1)) (fun c1_1_0 :e Lean_Nat => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) a3)).
+Theorem Lean_List_splitAt_go_method1_4_ap : forall a0 a1 y0 y1 r1 a3, forall a4 :e (Lean_List a0), (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3) a4 = (Lean_Nat_casesOn (Lean_Prod_mk_node
+    (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1)) (fun c1_1_0 :e Lean_Nat => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) a3).
+let a0. let a1. let y0. let y1. let r1. let a3. let a4. assume H: a4 :e (Lean_List a0).
+exact beta (Lean_List a0) (fun a4 => (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1)) (fun c1_1_0 :e Lean_Nat => (r1 c1_1_0
+    (Lean_List_cons_node a0 y0 a4))) a3)) a4 H.
+Qed.
+Theorem Lean_List_splitAt_go_method1_4_In : forall a0, forall a1 :e (Lean_List a0), forall y0 :e a0, forall y1 :e (Lean_List a0), forall r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0),
+    (Lean_Prod (Lean_List a0) (Lean_List a0)))), forall a3 :e Lean_Nat, (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3) :e (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). let r1. assume Hr1: r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0),
+    (Lean_Prod (Lean_List a0) (Lean_List a0)))). let a3. assume Ha3: a3 :e Lean_Nat. exact lam_Pi (Lean_List a0) (fun a4 => (Lean_Prod (Lean_List a0) (Lean_List a0))) (fun a4 => (Lean_Nat_casesOn
+    (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1)) (fun c1_1_0 :e Lean_Nat => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) a3)) (fun a4 Ha4
+    => (Lean_Nat_casesOn_type (fun _ => (Lean_Prod (Lean_List a0) (Lean_List a0))) (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1))
+    (Lean_Prod_mk_typed (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_reverse_In a0 a4 Ha4) (Lean_List_cons_node a0 y0 y1) (Lean_List_cons_typed a0 y0 Hy0 y1 Hy1)) (fun c1_1_0 :e
+    Lean_Nat => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) (lam_Pi Lean_Nat (fun c1_1_0 => (Lean_Prod (Lean_List a0) (Lean_List a0))) (fun c1_1_0 => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) (fun
+    c1_1_0 Hc1_1_0 => (ap_Pi (Lean_List a0) (fun _ => (Lean_Prod (Lean_List a0) (Lean_List a0))) (r1 c1_1_0) (Lean_List_cons_node a0 y0 a4) (ap_Pi Lean_Nat (fun _ => (Pi_ ux :e (Lean_List a0),
+    (Lean_Prod (Lean_List a0) (Lean_List a0)))) r1 c1_1_0 Hr1 Hc1_1_0) (Lean_List_cons_typed a0 y0 Hy0 a4 Ha4)))) a3 Ha3)).
+Qed.
+Definition Lean_List_splitAt_go_method1_3 : set -> set -> set -> set -> set -> set := fun a0 a1 y0 y1 r1 => (fun a3 :e Lean_Nat => (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3)).
+Theorem Lean_List_splitAt_go_method1_3_ap : forall a0 a1 y0 y1 r1, forall a3 :e Lean_Nat, (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1) a3 = (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3).
+let a0. let a1. let y0. let y1. let r1. let a3. assume H: a3 :e Lean_Nat.
+exact beta Lean_Nat (fun a3 => (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3)) a3 H.
+Qed.
+Theorem Lean_List_splitAt_go_method1_3_In : forall a0, forall a1 :e (Lean_List a0), forall y0 :e a0, forall y1 :e (Lean_List a0), forall r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0),
+    (Lean_Prod (Lean_List a0) (Lean_List a0)))), (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1) :e (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). let r1. assume Hr1: r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0),
+    (Lean_Prod (Lean_List a0) (Lean_List a0)))). exact lam_Pi Lean_Nat (fun a3 => (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))) (fun a3 => (Lean_List_splitAt_go_method1_4 a0
+    a1 y0 y1 r1 a3)) (fun a3 Ha3 => (Lean_List_splitAt_go_method1_4_In a0 a1 H1 y0 Hy0 y1 Hy1 r1 Hr1 a3 Ha3)).
+Qed.
+Definition Lean_List_splitAt_go_method1_2 : set -> set -> set -> set -> set := fun a0 a1 y0 y1 => (fun r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List
+    a0)))) => (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1)).
+Theorem Lean_List_splitAt_go_method1_2_ap : forall a0 a1 y0 y1, forall r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))),
+    (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1) r1 = (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1).
+let a0. let a1. let y0. let y1. let r1. assume H: r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))).
+exact beta (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))) (fun r1 => (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1)) r1 H.
+Qed.
+Theorem Lean_List_splitAt_go_method1_2_In : forall a0, forall a1 :e (Lean_List a0), forall y0 :e a0, forall y1 :e (Lean_List a0), (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1) :e (Pi_ r1 :e (Pi_ ux :e
+    Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). exact lam_Pi (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod
+    (Lean_List a0) (Lean_List a0)))) (fun r1 => (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))) (fun r1 => (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1
+    r1)) (fun r1 Hr1 => (Lean_List_splitAt_go_method1_3_In a0 a1 H1 y0 Hy0 y1 Hy1 r1 Hr1)).
+Qed.
+Definition Lean_List_splitAt_go_method1_1 : set -> set -> set -> set := fun a0 a1 y0 => (fun y1 :e (Lean_List a0) => (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1)).
+Theorem Lean_List_splitAt_go_method1_1_ap : forall a0 a1 y0, forall y1 :e (Lean_List a0), (Lean_List_splitAt_go_method1_1 a0 a1 y0) y1 = (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1).
+let a0. let a1. let y0. let y1. assume H: y1 :e (Lean_List a0).
+exact beta (Lean_List a0) (fun y1 => (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1)) y1 H.
+Qed.
+Theorem Lean_List_splitAt_go_method1_1_In : forall a0, forall a1 :e (Lean_List a0), forall y0 :e a0, (Lean_List_splitAt_go_method1_1 a0 a1 y0) :e (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e
+    Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))))).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let y0. assume Hy0: y0 :e a0. exact lam_Pi (Lean_List a0) (fun y1 => (Pi_ r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List
+    a0) (Lean_List a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))))) (fun y1 => (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1)) (fun y1 Hy1 =>
+    (Lean_List_splitAt_go_method1_2_In a0 a1 H1 y0 Hy0 y1 Hy1)).
+Qed.
+Definition Lean_List_splitAt_go_method1_0 : set -> set -> set := fun a0 a1 => (fun y0 :e a0 => (Lean_List_splitAt_go_method1_1 a0 a1 y0)).
+Theorem Lean_List_splitAt_go_method1_0_ap : forall a0 a1, forall y0 :e a0, (Lean_List_splitAt_go_method1_0 a0 a1) y0 = (Lean_List_splitAt_go_method1_1 a0 a1 y0).
+let a0. let a1. let y0. assume H: y0 :e a0.
+exact beta a0 (fun y0 => (Lean_List_splitAt_go_method1_1 a0 a1 y0)) y0 H.
+Qed.
+Theorem Lean_List_splitAt_go_method1_0_In : forall a0, forall a1 :e (Lean_List a0), (Lean_List_splitAt_go_method1_0 a0 a1) :e (Pi_ y0 :e a0, (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e Lean_Nat,
+    (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))))).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). exact lam_Pi a0 (fun y0 => (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List
+    a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))))) (fun y0 => (Lean_List_splitAt_go_method1_1 a0 a1 y0)) (fun y0 Hy0 =>
+    (Lean_List_splitAt_go_method1_1_In a0 a1 H1 y0 Hy0)).
+Qed.
+Definition Lean_List_splitAt_go : set -> set -> set -> set -> set -> set := fun a0 a1 a2 a3 a4 => (Lean_List_rec a0 (Lean_List_splitAt_go_method0_0 a0 a1) (Lean_List_splitAt_go_method1_0 a0 a1) a2 a3
+    a4).
+Theorem Lean_List_splitAt_go_recIn : forall a0, forall a1 :e (Lean_List a0), forall t :e (Lean_List a0), Lean_List_rec a0 (Lean_List_splitAt_go_method0_0 a0 a1) (Lean_List_splitAt_go_method1_0 a0 a1)
+    t :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let t. assume Ht: t :e (Lean_List a0).
+exact Lean_List_rec_type a0 (fun _ => (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))) (Lean_List_splitAt_go_method0_0 a0 a1)
+    (Lean_List_splitAt_go_method0_0_In a0 a1 H1) (Lean_List_splitAt_go_method1_0 a0 a1) (Lean_List_splitAt_go_method1_0_In a0 a1 H1) t Ht.
+Qed.
+Theorem Lean_List_splitAt_go_In : forall a0, forall a1 :e (Lean_List a0), forall a2 :e (Lean_List a0), forall a3 :e Lean_Nat, forall a4 :e (Lean_List a0), Lean_List_splitAt_go a0 a1 a2 a3 a4 :e
+    (Lean_Prod (Lean_List a0) (Lean_List a0)).
+let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_List a0). let a3. assume H3: a3 :e Lean_Nat. let a4. assume H4: a4 :e (Lean_List a0). exact (ap_Pi (Lean_List a0) (fun
+    _ => (Lean_Prod (Lean_List a0) (Lean_List a0))) ((Lean_List_rec a0 (Lean_List_splitAt_go_method0_0 a0 a1) (Lean_List_splitAt_go_method1_0 a0 a1) a2) a3) a4 (ap_Pi Lean_Nat (fun _ => (Pi_ ux :e
+    (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))) (Lean_List_rec a0 (Lean_List_splitAt_go_method0_0 a0 a1) (Lean_List_splitAt_go_method1_0 a0 a1) a2) a3 (Lean_List_splitAt_go_recIn a0
+    a1 H1 a2 H2) H3) H4).
+Qed.
+Theorem Lean_List_splitAt_go_split0 : forall l_u, nat_p l_u -> forall s0 :e LeanUniv l_u, forall s1 :e (Lean_List s0), forall s3 :e Lean_Nat, forall s4 :e (Lean_List s0), (Lean_List_splitAt_go s0 s1
+    (Lean_List_nil_node s0) s3 s4) = (Lean_Prod_mk_node (Lean_List s0) (Lean_List s0) s1 (Lean_List_nil_node s0)).
+let l_u. assume H_l_u: nat_p l_u. let s0. assume H_s0: s0 :e LeanUniv l_u. let s1. assume H_s1: s1 :e (Lean_List s0). let s3. assume H_s3: s3 :e Lean_Nat. let s4. assume H_s4: s4 :e (Lean_List s0).
+prove ((Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) (Lean_List_nil_node s0)) s3 s4) = (Lean_Prod_mk_node (Lean_List s0) (Lean_List s0) s1
+    (Lean_List_nil_node s0)).
+rewrite Lean_List_iota0 s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1).
+rewrite Lean_List_splitAt_go_method0_0_ap s0 s1 s3 H_s3.
+rewrite Lean_List_splitAt_go_method0_1_ap s0 s1 s3 s4 H_s4.
+reflexivity.
+Qed.
+Theorem Lean_List_splitAt_go_split1 : forall l_u, nat_p l_u -> forall s0 :e LeanUniv l_u, forall s1 :e (Lean_List s0), forall t0 :e s0, forall t1 :e (Lean_List s0), forall s3 :e Lean_Nat, forall s4
+    :e (Lean_List s0), (Lean_List_splitAt_go s0 s1 (Lean_List_cons_node s0 t0 t1) s3 s4) = (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List s0) (Lean_List s0) (Lean_List_reverse s0 s4)
+    (Lean_List_cons_node s0 t0 t1)) (fun c1_1_0 :e Lean_Nat => (Lean_List_splitAt_go s0 s1 t1 c1_1_0 (Lean_List_cons_node s0 t0 s4))) s3).
+let l_u. assume H_l_u: nat_p l_u. let s0. assume H_s0: s0 :e LeanUniv l_u. let s1. assume H_s1: s1 :e (Lean_List s0). let t0. assume H_t0: t0 :e s0. let t1. assume H_t1: t1 :e (Lean_List s0). let s3.
+    assume H_s3: s3 :e Lean_Nat. let s4. assume H_s4: s4 :e (Lean_List s0).
+prove ((Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) (Lean_List_cons_node s0 t0 t1)) s3 s4) = (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List s0)
+    (Lean_List s0) (Lean_List_reverse s0 s4) (Lean_List_cons_node s0 t0 t1)) (fun c1_1_0 :e Lean_Nat => ((Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0
+    s1) t1) c1_1_0 (Lean_List_cons_node s0 t0 s4))) s3).
+rewrite Lean_List_iota1 s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) t0 H_t0 t1 H_t1.
+rewrite Lean_List_splitAt_go_method1_0_ap s0 s1 t0 H_t0.
+rewrite Lean_List_splitAt_go_method1_1_ap s0 s1 t0 t1 H_t1.
+rewrite Lean_List_splitAt_go_method1_2_ap s0 s1 t0 t1 (Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) t1) (Lean_List_splitAt_go_recIn s0 s1 H_s1 t1
+    H_t1).
+rewrite Lean_List_splitAt_go_method1_3_ap s0 s1 t0 t1 (Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) t1) s3 H_s3.
+rewrite Lean_List_splitAt_go_method1_4_ap s0 s1 t0 t1 (Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) t1) s3 s4 H_s4.
+reflexivity.
+Qed.
+Theorem Lean_List_splitAt_go_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_l :e (Lean_List v_u945), forall v_a :e Lean_Nat, forall v_x3 :e (Lean_List v_u945),
+    (Lean_List_splitAt_go v_u945 v_l (Lean_List_nil_node v_u945) v_a v_x3) = (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) v_l (Lean_List_nil_node v_u945)).
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_l. assume H_v_l: v_l :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e Lean_Nat. let v_x3. assume
+    H_v_x3: v_x3 :e (Lean_List v_u945).
+rewrite Lean_List_splitAt_go_split0 l_u H_l_u v_u945 H_v_u945 v_l H_v_l v_a H_v_a v_x3 H_v_x3.
+reflexivity.
+Qed.
+Theorem Lean_List_splitAt_go_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_l :e (Lean_List v_u945), forall v_a :e (Lean_List v_u945), forall v_x_3 :e v_u945, forall v_xs :e
+    (Lean_List v_u945), forall v_n :e Lean_Nat, (Lean_List_splitAt_go v_u945 v_l (Lean_List_cons_node v_u945 v_x_3 v_xs) (Lean_Nat_succ_node v_n) v_a) = (Lean_List_splitAt_go v_u945 v_l v_xs v_n
+    (Lean_List_cons_node v_u945 v_x_3 v_a)).
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_l. assume H_v_l: v_l :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e (Lean_List v_u945). let v_x_3.
+    assume H_v_x_3: v_x_3 :e v_u945. let v_xs. assume H_v_xs: v_xs :e (Lean_List v_u945). let v_n. assume H_v_n: v_n :e Lean_Nat.
+rewrite Lean_List_splitAt_go_split1 l_u H_l_u v_u945 H_v_u945 v_l H_v_l v_x_3 H_v_x_3 v_xs H_v_xs (Lean_Nat_succ_node v_n) (Lean_Nat_succ_typed v_n H_v_n) v_a H_v_a.
+rewrite Lean_Nat_casesOn_iota1 (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) (Lean_List_reverse v_u945 v_a) (Lean_List_cons_node v_u945 v_x_3 v_xs)) (fun c1_1_0 :e Lean_Nat =>
+    (Lean_List_splitAt_go v_u945 v_l v_xs c1_1_0 (Lean_List_cons_node v_u945 v_x_3 v_a))) v_n H_v_n.
+rewrite (eq_i_tra ((fun c1_1_0 :e Lean_Nat => (Lean_List_splitAt_go v_u945 v_l v_xs c1_1_0 (Lean_List_cons_node v_u945 v_x_3 v_a))) v_n) (Lean_List_splitAt_go v_u945 v_l v_xs v_n (Lean_List_cons_node
+    v_u945 v_x_3 v_a)) (Lean_List_splitAt_go v_u945 v_l v_xs v_n (Lean_List_cons_node v_u945 v_x_3 v_a)) (beta Lean_Nat (fun c1_1_0 => (Lean_List_splitAt_go v_u945 v_l v_xs c1_1_0
+    (Lean_List_cons_node v_u945 v_x_3 v_a))) v_n H_v_n) (Lean_eq_refl (Lean_List_splitAt_go v_u945 v_l v_xs v_n (Lean_List_cons_node v_u945 v_x_3 v_a)))).
+reflexivity.
+Qed.
+(** List.splitAt.go.eq_3: stated under the hypotheses that earlier patterns do not apply; proved by cases. **)
+Theorem Lean_List_splitAt_go_eq_3 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_l :e (Lean_List v_u945), forall v_a :e (Lean_List v_u945), forall v_x3 :e Lean_Nat, forall v_x4 :e
+    (Lean_List v_u945), ((v_a = (Lean_List_nil_node v_u945)) -> False) -> (forall v_x :e v_u945, forall v_xs :e (Lean_List v_u945), forall v_n :e Lean_Nat, (v_a = (Lean_List_cons_node v_u945 v_x
+    v_xs)) -> (v_x3 = (Lean_Nat_succ_node v_n)) -> False) -> (Lean_List_splitAt_go v_u945 v_l v_a v_x3 v_x4) = (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) (Lean_List_reverse v_u945 v_x4)
+    v_a).
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u.
+let v_l. assume H_v_l: v_l :e (Lean_List v_u945). apply Lean_List_ind v_u945.
+{ let v_x3. assume H_v_x3: v_x3 :e Lean_Nat. let v_x4. assume H_v_x4: v_x4 :e (Lean_List v_u945). assume v_x_4. assume v_x_5. apply FalseE. apply v_x_4.
+reflexivity.
+}
+{ let v_a_0. assume H_v_a_0: v_a_0 :e v_u945. let v_a_1. assume H_v_a_1: v_a_1 :e (Lean_List v_u945). assume IH_v_a_1. apply Lean_Nat_ind.
+{ let v_x4. assume H_v_x4: v_x4 :e (Lean_List v_u945). assume v_x_4. assume v_x_5. rewrite Lean_List_splitAt_go_split1 l_u H_l_u v_u945 H_v_u945 v_l H_v_l v_a_0 H_v_a_0 v_a_1 H_v_a_1
+    Lean_Nat_zero_node Lean_Nat_zero_typed v_x4 H_v_x4.
+rewrite Lean_Nat_casesOn_iota0 (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) (Lean_List_reverse v_u945 v_x4) (Lean_List_cons_node v_u945 v_a_0 v_a_1)) (fun c1_1_0 :e Lean_Nat =>
+    (Lean_List_splitAt_go v_u945 v_l v_a_1 c1_1_0 (Lean_List_cons_node v_u945 v_a_0 v_x4))).
+reflexivity.
+}
+{ let v_x3_0. assume H_v_x3_0: v_x3_0 :e Lean_Nat. assume IH_v_x3_0. let v_x4. assume H_v_x4: v_x4 :e (Lean_List v_u945). assume v_x_4. assume v_x_5. apply FalseE. apply v_x_5 v_a_0 H_v_a_0 v_a_1
+    H_v_a_1 v_x3_0 H_v_x3_0.
+reflexivity.
+reflexivity.
+}
+}
+Qed.
+
+(** List.splitAt, from its equation theorem **)
+Definition Lean_List_splitAt : set -> set -> set -> set := fun a0 a1 a2 => (Lean_List_splitAt_go a0 a2 a2 a1 (Lean_List_nil_node a0)).
+Theorem Lean_List_splitAt_In : forall a0, forall a1 :e Lean_Nat, forall a2 :e (Lean_List a0), Lean_List_splitAt a0 a1 a2 :e (Lean_Prod (Lean_List a0) (Lean_List a0)).
+let a0. let a1. assume H1: a1 :e Lean_Nat. let a2. assume H2: a2 :e (Lean_List a0). exact (Lean_List_splitAt_go_In a0 a2 H2 a2 H2 a1 H1 (Lean_List_nil_node a0) (Lean_List_nil_typed a0)).
+Qed.
+Theorem Lean_List_splitAt_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_n :e Lean_Nat, forall v_l :e (Lean_List v_u945), (Lean_List_splitAt v_u945 v_n v_l) =
+    (Lean_List_splitAt_go v_u945 v_l v_l v_n (Lean_List_nil_node v_u945)).
+let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_n. assume H_v_n: v_n :e Lean_Nat. let v_l. assume H_v_l: v_l :e (Lean_List v_u945).
+reflexivity.
+Qed.
+Theorem Lean_List_splitAt_unfold : forall a0 a1 a2, Lean_List_splitAt a0 a1 a2 = (Lean_List_splitAt_go a0 a2 a2 a1 (Lean_List_nil_node a0)).
+let a0 a1 a2. reflexivity.
+Qed.
+
+(** Not, from its equation theorem **)
+Definition Lean_Not : set -> set := fun a0 => (Pi_ ux :e a0, Lean_False_Prop).
+Theorem Lean_Not_eq_1 : forall v_a :e LeanProp, (Lean_Not v_a) = (Pi_ ux :e v_a, Lean_False_Prop).
+let v_a. assume H_v_a: v_a :e LeanProp.
+reflexivity.
+Qed.
+Theorem Lean_Not_unfold : forall a0, Lean_Not a0 = (Pi_ ux :e a0, Lean_False_Prop).
+let a0. reflexivity.
+Qed.
+
+(** Lean's theorem _private.Init.Data.List.Sort.Basic.0.List.mergeSort._unary._proof_1: its statement as a typing statement, proved in Egal. **)
+Theorem Lean_List_mergeSort__unary__proof_1_proof : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_a :e v_u945, forall v_b :e v_u945, forall v_xs :e (Lean_List v_u945), 0 :e
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a
+    (Lean_List_cons_node v_u945 v_b v_xs)))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_a. assume Ha: v_a :e v_u945. let v_b. assume Hb: v_b :e v_u945. let v_xs. assume Hxs: v_xs :e
+    (Lean_List v_u945).
+apply Lean_Eq_proof_of.
+reflexivity.
+Qed.
+
+(** Lean's theorem Iff.symm: its statement as a typing statement, proved in Egal. **)
+Theorem Lean_Iff_symm_proof : forall v_a :e LeanProp, forall v_b :e LeanProp, 0 :e (Lean_Iff_Prop v_a v_b) -> 0 :e (Lean_Iff_Prop v_b v_a).
+let v_a. assume Ha: v_a :e LeanProp. let v_b. assume Hb: v_b :e LeanProp.
+assume H: 0 :e Lean_Iff_Prop v_a v_b.
+exact LeanIff_symm v_a Ha v_b Hb 0 H.
+Qed.
+
 (** Embedded proof support: Library/NatAdd.mg **)
 (** Natural number operations that CeTTa computes natively.
 
@@ -2565,15 +2877,33 @@ exact LeanIff_intro
   (fun H => Lean_Eq_proof_of Lean_Nat (Lean_Nat_mod n d) (LeanNum 0) (Lean_divides_mod_zero d Hd n Hn H)).
 Qed.
 
+(** Lean's theorem Nat.dvd_iff_mod_eq_zero: its statement as a typing statement, proved in Egal. **)
+Theorem Lean_Nat_dvd_iff_mod_eq_zero_proof : forall v_m :e Lean_Nat, forall v_n :e Lean_Nat, 0 :e (Lean_Iff_Prop (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_n
+    (Lean_Nat_mul v_m v_c)))) (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_n v_m) (LeanNum 0))).
+let v_m. assume Hm: v_m :e Lean_Nat. let v_n. assume Hn: v_n :e Lean_Nat.
+exact LeanIff_symm
+  (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_n v_m) (LeanNum 0))
+  (Lean_Eq_Prop_prop Lean_Nat (Lean_Nat_mod v_n v_m) (LeanNum 0))
+  (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul v_m v_c)))
+  (Lean_Exists_Prop_prop Lean_Nat (fun v_c :e Lean_Nat => Lean_Eq_Prop Lean_Nat v_n (Lean_Nat_mul v_m v_c)))
+  0 (Lean_mod_divisibility_iff v_m Hm v_n Hn).
+Qed.
+
 (** Nat.decidable_dvd, from its equation theorem **)
 Definition Lean_Nat_decidable_dvd : set -> set -> set := fun a0 a1 => (Lean_decidable_of_decidable_of_iff (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Exists_Prop Lean_Nat (fun v_c
     :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c)))) (Lean_instDecidableEqNat (Lean_Nat_mod a1 a0) (LeanNum 0)) 0).
+Theorem Lean_Nat_decidable_dvd_eq_1_proof_0 : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, 0 :e (Lean_Iff_Prop (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Exists_Prop Lean_Nat
+    (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c))))).
+let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lean_Iff_symm_proof (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c))))
+    (Lean_Exists_Prop_prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c)))) (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Eq_Prop_prop Lean_Nat
+    (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Nat_dvd_iff_mod_eq_zero_proof a0 H0 a1 H1)).
+Qed.
 Theorem Lean_Nat_decidable_dvd_In : forall a0 :e Lean_Nat, forall a1 :e Lean_Nat, Lean_Nat_decidable_dvd a0 a1 :e (Lean_Decidable (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop
     Lean_Nat a1 (Lean_Nat_mul a0 v_c))))).
 let a0. assume H0: a0 :e Lean_Nat. let a1. assume H1: a1 :e Lean_Nat. exact (Lean_decidable_of_decidable_of_iff_In (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Eq_Prop_prop Lean_Nat
     (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c)))) (Lean_Exists_Prop_prop Lean_Nat (fun v_c :e Lean_Nat =>
     (Lean_Eq_Prop Lean_Nat a1 (Lean_Nat_mul a0 v_c)))) (Lean_instDecidableEqNat (Lean_Nat_mod a1 a0) (LeanNum 0)) (Lean_instDecidableEqNat_In (Lean_Nat_mod a1 a0) (Lean_Nat_mod_In a1 H1 a0 H0)
-    (LeanNum 0) (LeanNum_In 0 nat_0)) 0 (Lean_mod_divisibility_iff a0 H0 a1 H1)).
+    (LeanNum 0) (LeanNum_In 0 nat_0)) 0 (Lean_Nat_decidable_dvd_eq_1_proof_0 a0 H0 a1 H1)).
 Qed.
 Theorem Lean_Nat_decidable_dvd_eq_1 : forall v_x :e Lean_Nat, forall v_x1 :e Lean_Nat, (Lean_Nat_decidable_dvd v_x v_x1) = (Lean_decidable_of_decidable_of_iff (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod
     v_x1 v_x) (LeanNum 0)) (Lean_Exists_Prop Lean_Nat (fun v_c :e Lean_Nat => (Lean_Eq_Prop Lean_Nat v_x1 (Lean_Nat_mul v_x v_c)))) (Lean_instDecidableEqNat (Lean_Nat_mod v_x1 v_x) (LeanNum 0)) 0).
@@ -3577,291 +3907,6 @@ reflexivity.
 Qed.
 Theorem Lean_Nat_primeFactorsList_unfold : forall a0, Lean_Nat_primeFactorsList a0 = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading a0).
 let a0. reflexivity.
-Qed.
-
-(** List.reverseAux, from its equation theorems **)
-Definition Lean_List_reverseAux_method0_0 : set -> set := fun a0 => (fun a2 :e (Lean_List a0) => a2).
-Theorem Lean_List_reverseAux_method0_0_ap : forall a0, forall a2 :e (Lean_List a0), (Lean_List_reverseAux_method0_0 a0) a2 = a2.
-let a0. let a2. assume H: a2 :e (Lean_List a0).
-exact beta (Lean_List a0) (fun a2 => a2) a2 H.
-Qed.
-Theorem Lean_List_reverseAux_method0_0_In : forall a0, (Lean_List_reverseAux_method0_0 a0) :e (Pi_ a2 :e (Lean_List a0), (Lean_List a0)).
-let a0. exact lam_Pi (Lean_List a0) (fun a2 => (Lean_List a0)) (fun a2 => a2) (fun a2 Ha2 => Ha2).
-Qed.
-Definition Lean_List_reverseAux_method1_3 : set -> set -> set -> set -> set := fun a0 y0 y1 r1 => (fun a2 :e (Lean_List a0) => (r1 (Lean_List_cons_node a0 y0 a2))).
-Theorem Lean_List_reverseAux_method1_3_ap : forall a0 y0 y1 r1, forall a2 :e (Lean_List a0), (Lean_List_reverseAux_method1_3 a0 y0 y1 r1) a2 = (r1 (Lean_List_cons_node a0 y0 a2)).
-let a0. let y0. let y1. let r1. let a2. assume H: a2 :e (Lean_List a0).
-exact beta (Lean_List a0) (fun a2 => (r1 (Lean_List_cons_node a0 y0 a2))) a2 H.
-Qed.
-Theorem Lean_List_reverseAux_method1_3_In : forall a0, forall y0 :e a0, forall y1 :e (Lean_List a0), forall r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Lean_List_reverseAux_method1_3 a0 y0 y1
-    r1) :e (Pi_ a2 :e (Lean_List a0), (Lean_List a0)).
-let a0. let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). let r1. assume Hr1: r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)). exact lam_Pi (Lean_List a0) (fun a2 => (Lean_List
-    a0)) (fun a2 => (r1 (Lean_List_cons_node a0 y0 a2))) (fun a2 Ha2 => (ap_Pi (Lean_List a0) (fun _ => (Lean_List a0)) r1 (Lean_List_cons_node a0 y0 a2) Hr1 (Lean_List_cons_typed a0 y0 Hy0 a2 Ha2))).
-Qed.
-Definition Lean_List_reverseAux_method1_2 : set -> set -> set -> set := fun a0 y0 y1 => (fun r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)) => (Lean_List_reverseAux_method1_3 a0 y0 y1 r1)).
-Theorem Lean_List_reverseAux_method1_2_ap : forall a0 y0 y1, forall r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Lean_List_reverseAux_method1_2 a0 y0 y1) r1 = (Lean_List_reverseAux_method1_3 a0
-    y0 y1 r1).
-let a0. let y0. let y1. let r1. assume H: r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)).
-exact beta (Pi_ ux :e (Lean_List a0), (Lean_List a0)) (fun r1 => (Lean_List_reverseAux_method1_3 a0 y0 y1 r1)) r1 H.
-Qed.
-Theorem Lean_List_reverseAux_method1_2_In : forall a0, forall y0 :e a0, forall y1 :e (Lean_List a0), (Lean_List_reverseAux_method1_2 a0 y0 y1) :e (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List
-    a0)), (Pi_ a2 :e (Lean_List a0), (Lean_List a0))).
-let a0. let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). exact lam_Pi (Pi_ ux :e (Lean_List a0), (Lean_List a0)) (fun r1 => (Pi_ a2 :e (Lean_List a0), (Lean_List a0))) (fun r1
-    => (Lean_List_reverseAux_method1_3 a0 y0 y1 r1)) (fun r1 Hr1 => (Lean_List_reverseAux_method1_3_In a0 y0 Hy0 y1 Hy1 r1 Hr1)).
-Qed.
-Definition Lean_List_reverseAux_method1_1 : set -> set -> set := fun a0 y0 => (fun y1 :e (Lean_List a0) => (Lean_List_reverseAux_method1_2 a0 y0 y1)).
-Theorem Lean_List_reverseAux_method1_1_ap : forall a0 y0, forall y1 :e (Lean_List a0), (Lean_List_reverseAux_method1_1 a0 y0) y1 = (Lean_List_reverseAux_method1_2 a0 y0 y1).
-let a0. let y0. let y1. assume H: y1 :e (Lean_List a0).
-exact beta (Lean_List a0) (fun y1 => (Lean_List_reverseAux_method1_2 a0 y0 y1)) y1 H.
-Qed.
-Theorem Lean_List_reverseAux_method1_1_In : forall a0, forall y0 :e a0, (Lean_List_reverseAux_method1_1 a0 y0) :e (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)),
-    (Pi_ a2 :e (Lean_List a0), (Lean_List a0)))).
-let a0. let y0. assume Hy0: y0 :e a0. exact lam_Pi (Lean_List a0) (fun y1 => (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Pi_ a2 :e (Lean_List a0), (Lean_List a0)))) (fun y1 =>
-    (Lean_List_reverseAux_method1_2 a0 y0 y1)) (fun y1 Hy1 => (Lean_List_reverseAux_method1_2_In a0 y0 Hy0 y1 Hy1)).
-Qed.
-Definition Lean_List_reverseAux_method1_0 : set -> set := fun a0 => (fun y0 :e a0 => (Lean_List_reverseAux_method1_1 a0 y0)).
-Theorem Lean_List_reverseAux_method1_0_ap : forall a0, forall y0 :e a0, (Lean_List_reverseAux_method1_0 a0) y0 = (Lean_List_reverseAux_method1_1 a0 y0).
-let a0. let y0. assume H: y0 :e a0.
-exact beta a0 (fun y0 => (Lean_List_reverseAux_method1_1 a0 y0)) y0 H.
-Qed.
-Theorem Lean_List_reverseAux_method1_0_In : forall a0, (Lean_List_reverseAux_method1_0 a0) :e (Pi_ y0 :e a0, (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Pi_ a2
-    :e (Lean_List a0), (Lean_List a0))))).
-let a0. exact lam_Pi a0 (fun y0 => (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e (Lean_List a0), (Lean_List a0)), (Pi_ a2 :e (Lean_List a0), (Lean_List a0))))) (fun y0 =>
-    (Lean_List_reverseAux_method1_1 a0 y0)) (fun y0 Hy0 => (Lean_List_reverseAux_method1_1_In a0 y0 Hy0)).
-Qed.
-Definition Lean_List_reverseAux : set -> set -> set -> set := fun a0 a1 a2 => (Lean_List_rec a0 (Lean_List_reverseAux_method0_0 a0) (Lean_List_reverseAux_method1_0 a0) a1 a2).
-Theorem Lean_List_reverseAux_recIn : forall a0, forall t :e (Lean_List a0), Lean_List_rec a0 (Lean_List_reverseAux_method0_0 a0) (Lean_List_reverseAux_method1_0 a0) t :e (Pi_ ux :e (Lean_List a0),
-    (Lean_List a0)).
-let a0. let t. assume Ht: t :e (Lean_List a0).
-exact Lean_List_rec_type a0 (fun _ => (Pi_ ux :e (Lean_List a0), (Lean_List a0))) (Lean_List_reverseAux_method0_0 a0) (Lean_List_reverseAux_method0_0_In a0) (Lean_List_reverseAux_method1_0 a0)
-    (Lean_List_reverseAux_method1_0_In a0) t Ht.
-Qed.
-Theorem Lean_List_reverseAux_In : forall a0, forall a1 :e (Lean_List a0), forall a2 :e (Lean_List a0), Lean_List_reverseAux a0 a1 a2 :e (Lean_List a0).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_List a0). exact (ap_Pi (Lean_List a0) (fun _ => (Lean_List a0)) (Lean_List_rec a0 (Lean_List_reverseAux_method0_0 a0)
-    (Lean_List_reverseAux_method1_0 a0) a1) a2 (Lean_List_reverseAux_recIn a0 a1 H1) H2).
-Qed.
-Theorem Lean_List_reverseAux_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_x :e (Lean_List v_u945), (Lean_List_reverseAux v_u945 (Lean_List_nil_node v_u945) v_x) = v_x.
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_x. assume H_v_x: v_x :e (Lean_List v_u945).
-prove ((Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) (Lean_List_nil_node v_u945)) v_x) = v_x.
-rewrite Lean_List_iota0 v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945).
-rewrite Lean_List_reverseAux_method0_0_ap v_u945 v_x H_v_x.
-reflexivity.
-Qed.
-Theorem Lean_List_reverseAux_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_x :e (Lean_List v_u945), forall v_a :e v_u945, forall v_l :e (Lean_List v_u945),
-    (Lean_List_reverseAux v_u945 (Lean_List_cons_node v_u945 v_a v_l) v_x) = (Lean_List_reverseAux v_u945 v_l (Lean_List_cons_node v_u945 v_a v_x)).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_x. assume H_v_x: v_x :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e v_u945. let v_l. assume H_v_l:
-    v_l :e (Lean_List v_u945).
-prove ((Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) (Lean_List_cons_node v_u945 v_a v_l)) v_x) = ((Lean_List_rec v_u945
-    (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_l) (Lean_List_cons_node v_u945 v_a v_x)).
-rewrite Lean_List_iota1 v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_a H_v_a v_l H_v_l.
-rewrite Lean_List_reverseAux_method1_0_ap v_u945 v_a H_v_a.
-rewrite Lean_List_reverseAux_method1_1_ap v_u945 v_a v_l H_v_l.
-rewrite Lean_List_reverseAux_method1_2_ap v_u945 v_a v_l (Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_l) (Lean_List_reverseAux_recIn v_u945
-    v_l H_v_l).
-rewrite Lean_List_reverseAux_method1_3_ap v_u945 v_a v_l (Lean_List_rec v_u945 (Lean_List_reverseAux_method0_0 v_u945) (Lean_List_reverseAux_method1_0 v_u945) v_l) v_x H_v_x.
-reflexivity.
-Qed.
-
-(** List.reverse, from its equation theorem **)
-Definition Lean_List_reverse : set -> set -> set := fun a0 a1 => (Lean_List_reverseAux a0 a1 (Lean_List_nil_node a0)).
-Theorem Lean_List_reverse_In : forall a0, forall a1 :e (Lean_List a0), Lean_List_reverse a0 a1 :e (Lean_List a0).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). exact (Lean_List_reverseAux_In a0 a1 H1 (Lean_List_nil_node a0) (Lean_List_nil_typed a0)).
-Qed.
-Theorem Lean_List_reverse_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_as :e (Lean_List v_u945), (Lean_List_reverse v_u945 v_as) = (Lean_List_reverseAux v_u945 v_as
-    (Lean_List_nil_node v_u945)).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_as. assume H_v_as: v_as :e (Lean_List v_u945).
-reflexivity.
-Qed.
-Theorem Lean_List_reverse_unfold : forall a0 a1, Lean_List_reverse a0 a1 = (Lean_List_reverseAux a0 a1 (Lean_List_nil_node a0)).
-let a0 a1. reflexivity.
-Qed.
-
-(** List.splitAt.go, from its equation theorems, split at argument 2 **)
-Definition Lean_List_splitAt_go_method0_1 : set -> set -> set -> set := fun a0 a1 a3 => (fun a4 :e (Lean_List a0) => (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) a1 (Lean_List_nil_node a0))).
-Theorem Lean_List_splitAt_go_method0_1_ap : forall a0 a1 a3, forall a4 :e (Lean_List a0), (Lean_List_splitAt_go_method0_1 a0 a1 a3) a4 = (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) a1
-    (Lean_List_nil_node a0)).
-let a0. let a1. let a3. let a4. assume H: a4 :e (Lean_List a0).
-exact beta (Lean_List a0) (fun a4 => (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) a1 (Lean_List_nil_node a0))) a4 H.
-Qed.
-Theorem Lean_List_splitAt_go_method0_1_In : forall a0, forall a1 :e (Lean_List a0), forall a3 :e Lean_Nat, (Lean_List_splitAt_go_method0_1 a0 a1 a3) :e (Pi_ a4 :e (Lean_List a0), (Lean_Prod
-    (Lean_List a0) (Lean_List a0))).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let a3. assume Ha3: a3 :e Lean_Nat. exact lam_Pi (Lean_List a0) (fun a4 => (Lean_Prod (Lean_List a0) (Lean_List a0))) (fun a4 => (Lean_Prod_mk_node
-    (Lean_List a0) (Lean_List a0) a1 (Lean_List_nil_node a0))) (fun a4 Ha4 => (Lean_Prod_mk_typed (Lean_List a0) (Lean_List a0) a1 H1 (Lean_List_nil_node a0) (Lean_List_nil_typed a0))).
-Qed.
-Definition Lean_List_splitAt_go_method0_0 : set -> set -> set := fun a0 a1 => (fun a3 :e Lean_Nat => (Lean_List_splitAt_go_method0_1 a0 a1 a3)).
-Theorem Lean_List_splitAt_go_method0_0_ap : forall a0 a1, forall a3 :e Lean_Nat, (Lean_List_splitAt_go_method0_0 a0 a1) a3 = (Lean_List_splitAt_go_method0_1 a0 a1 a3).
-let a0. let a1. let a3. assume H: a3 :e Lean_Nat.
-exact beta Lean_Nat (fun a3 => (Lean_List_splitAt_go_method0_1 a0 a1 a3)) a3 H.
-Qed.
-Theorem Lean_List_splitAt_go_method0_0_In : forall a0, forall a1 :e (Lean_List a0), (Lean_List_splitAt_go_method0_0 a0 a1) :e (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0)
-    (Lean_List a0)))).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). exact lam_Pi Lean_Nat (fun a3 => (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))) (fun a3 => (Lean_List_splitAt_go_method0_1 a0
-    a1 a3)) (fun a3 Ha3 => (Lean_List_splitAt_go_method0_1_In a0 a1 H1 a3 Ha3)).
-Qed.
-Definition Lean_List_splitAt_go_method1_4 : set -> set -> set -> set -> set -> set -> set := fun a0 a1 y0 y1 r1 a3 => (fun a4 :e (Lean_List a0) => (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List a0)
-    (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1)) (fun c1_1_0 :e Lean_Nat => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) a3)).
-Theorem Lean_List_splitAt_go_method1_4_ap : forall a0 a1 y0 y1 r1 a3, forall a4 :e (Lean_List a0), (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3) a4 = (Lean_Nat_casesOn (Lean_Prod_mk_node
-    (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1)) (fun c1_1_0 :e Lean_Nat => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) a3).
-let a0. let a1. let y0. let y1. let r1. let a3. let a4. assume H: a4 :e (Lean_List a0).
-exact beta (Lean_List a0) (fun a4 => (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1)) (fun c1_1_0 :e Lean_Nat => (r1 c1_1_0
-    (Lean_List_cons_node a0 y0 a4))) a3)) a4 H.
-Qed.
-Theorem Lean_List_splitAt_go_method1_4_In : forall a0, forall a1 :e (Lean_List a0), forall y0 :e a0, forall y1 :e (Lean_List a0), forall r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0),
-    (Lean_Prod (Lean_List a0) (Lean_List a0)))), forall a3 :e Lean_Nat, (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3) :e (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). let r1. assume Hr1: r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0),
-    (Lean_Prod (Lean_List a0) (Lean_List a0)))). let a3. assume Ha3: a3 :e Lean_Nat. exact lam_Pi (Lean_List a0) (fun a4 => (Lean_Prod (Lean_List a0) (Lean_List a0))) (fun a4 => (Lean_Nat_casesOn
-    (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1)) (fun c1_1_0 :e Lean_Nat => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) a3)) (fun a4 Ha4
-    => (Lean_Nat_casesOn_type (fun _ => (Lean_Prod (Lean_List a0) (Lean_List a0))) (Lean_Prod_mk_node (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_cons_node a0 y0 y1))
-    (Lean_Prod_mk_typed (Lean_List a0) (Lean_List a0) (Lean_List_reverse a0 a4) (Lean_List_reverse_In a0 a4 Ha4) (Lean_List_cons_node a0 y0 y1) (Lean_List_cons_typed a0 y0 Hy0 y1 Hy1)) (fun c1_1_0 :e
-    Lean_Nat => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) (lam_Pi Lean_Nat (fun c1_1_0 => (Lean_Prod (Lean_List a0) (Lean_List a0))) (fun c1_1_0 => (r1 c1_1_0 (Lean_List_cons_node a0 y0 a4))) (fun
-    c1_1_0 Hc1_1_0 => (ap_Pi (Lean_List a0) (fun _ => (Lean_Prod (Lean_List a0) (Lean_List a0))) (r1 c1_1_0) (Lean_List_cons_node a0 y0 a4) (ap_Pi Lean_Nat (fun _ => (Pi_ ux :e (Lean_List a0),
-    (Lean_Prod (Lean_List a0) (Lean_List a0)))) r1 c1_1_0 Hr1 Hc1_1_0) (Lean_List_cons_typed a0 y0 Hy0 a4 Ha4)))) a3 Ha3)).
-Qed.
-Definition Lean_List_splitAt_go_method1_3 : set -> set -> set -> set -> set -> set := fun a0 a1 y0 y1 r1 => (fun a3 :e Lean_Nat => (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3)).
-Theorem Lean_List_splitAt_go_method1_3_ap : forall a0 a1 y0 y1 r1, forall a3 :e Lean_Nat, (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1) a3 = (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3).
-let a0. let a1. let y0. let y1. let r1. let a3. assume H: a3 :e Lean_Nat.
-exact beta Lean_Nat (fun a3 => (Lean_List_splitAt_go_method1_4 a0 a1 y0 y1 r1 a3)) a3 H.
-Qed.
-Theorem Lean_List_splitAt_go_method1_3_In : forall a0, forall a1 :e (Lean_List a0), forall y0 :e a0, forall y1 :e (Lean_List a0), forall r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0),
-    (Lean_Prod (Lean_List a0) (Lean_List a0)))), (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1) :e (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). let r1. assume Hr1: r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0),
-    (Lean_Prod (Lean_List a0) (Lean_List a0)))). exact lam_Pi Lean_Nat (fun a3 => (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))) (fun a3 => (Lean_List_splitAt_go_method1_4 a0
-    a1 y0 y1 r1 a3)) (fun a3 Ha3 => (Lean_List_splitAt_go_method1_4_In a0 a1 H1 y0 Hy0 y1 Hy1 r1 Hr1 a3 Ha3)).
-Qed.
-Definition Lean_List_splitAt_go_method1_2 : set -> set -> set -> set -> set := fun a0 a1 y0 y1 => (fun r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List
-    a0)))) => (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1)).
-Theorem Lean_List_splitAt_go_method1_2_ap : forall a0 a1 y0 y1, forall r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))),
-    (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1) r1 = (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1).
-let a0. let a1. let y0. let y1. let r1. assume H: r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))).
-exact beta (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))) (fun r1 => (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1 r1)) r1 H.
-Qed.
-Theorem Lean_List_splitAt_go_method1_2_In : forall a0, forall a1 :e (Lean_List a0), forall y0 :e a0, forall y1 :e (Lean_List a0), (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1) :e (Pi_ r1 :e (Pi_ ux :e
-    Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let y0. assume Hy0: y0 :e a0. let y1. assume Hy1: y1 :e (Lean_List a0). exact lam_Pi (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod
-    (Lean_List a0) (Lean_List a0)))) (fun r1 => (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))) (fun r1 => (Lean_List_splitAt_go_method1_3 a0 a1 y0 y1
-    r1)) (fun r1 Hr1 => (Lean_List_splitAt_go_method1_3_In a0 a1 H1 y0 Hy0 y1 Hy1 r1 Hr1)).
-Qed.
-Definition Lean_List_splitAt_go_method1_1 : set -> set -> set -> set := fun a0 a1 y0 => (fun y1 :e (Lean_List a0) => (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1)).
-Theorem Lean_List_splitAt_go_method1_1_ap : forall a0 a1 y0, forall y1 :e (Lean_List a0), (Lean_List_splitAt_go_method1_1 a0 a1 y0) y1 = (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1).
-let a0. let a1. let y0. let y1. assume H: y1 :e (Lean_List a0).
-exact beta (Lean_List a0) (fun y1 => (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1)) y1 H.
-Qed.
-Theorem Lean_List_splitAt_go_method1_1_In : forall a0, forall a1 :e (Lean_List a0), forall y0 :e a0, (Lean_List_splitAt_go_method1_1 a0 a1 y0) :e (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e
-    Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))))).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let y0. assume Hy0: y0 :e a0. exact lam_Pi (Lean_List a0) (fun y1 => (Pi_ r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List
-    a0) (Lean_List a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))))) (fun y1 => (Lean_List_splitAt_go_method1_2 a0 a1 y0 y1)) (fun y1 Hy1 =>
-    (Lean_List_splitAt_go_method1_2_In a0 a1 H1 y0 Hy0 y1 Hy1)).
-Qed.
-Definition Lean_List_splitAt_go_method1_0 : set -> set -> set := fun a0 a1 => (fun y0 :e a0 => (Lean_List_splitAt_go_method1_1 a0 a1 y0)).
-Theorem Lean_List_splitAt_go_method1_0_ap : forall a0 a1, forall y0 :e a0, (Lean_List_splitAt_go_method1_0 a0 a1) y0 = (Lean_List_splitAt_go_method1_1 a0 a1 y0).
-let a0. let a1. let y0. assume H: y0 :e a0.
-exact beta a0 (fun y0 => (Lean_List_splitAt_go_method1_1 a0 a1 y0)) y0 H.
-Qed.
-Theorem Lean_List_splitAt_go_method1_0_In : forall a0, forall a1 :e (Lean_List a0), (Lean_List_splitAt_go_method1_0 a0 a1) :e (Pi_ y0 :e a0, (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e Lean_Nat,
-    (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))))).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). exact lam_Pi a0 (fun y0 => (Pi_ y1 :e (Lean_List a0), (Pi_ r1 :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List
-    a0)))), (Pi_ a3 :e Lean_Nat, (Pi_ a4 :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))))) (fun y0 => (Lean_List_splitAt_go_method1_1 a0 a1 y0)) (fun y0 Hy0 =>
-    (Lean_List_splitAt_go_method1_1_In a0 a1 H1 y0 Hy0)).
-Qed.
-Definition Lean_List_splitAt_go : set -> set -> set -> set -> set -> set := fun a0 a1 a2 a3 a4 => (Lean_List_rec a0 (Lean_List_splitAt_go_method0_0 a0 a1) (Lean_List_splitAt_go_method1_0 a0 a1) a2 a3
-    a4).
-Theorem Lean_List_splitAt_go_recIn : forall a0, forall a1 :e (Lean_List a0), forall t :e (Lean_List a0), Lean_List_rec a0 (Lean_List_splitAt_go_method0_0 a0 a1) (Lean_List_splitAt_go_method1_0 a0 a1)
-    t :e (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let t. assume Ht: t :e (Lean_List a0).
-exact Lean_List_rec_type a0 (fun _ => (Pi_ ux :e Lean_Nat, (Pi_ ux :e (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0))))) (Lean_List_splitAt_go_method0_0 a0 a1)
-    (Lean_List_splitAt_go_method0_0_In a0 a1 H1) (Lean_List_splitAt_go_method1_0 a0 a1) (Lean_List_splitAt_go_method1_0_In a0 a1 H1) t Ht.
-Qed.
-Theorem Lean_List_splitAt_go_In : forall a0, forall a1 :e (Lean_List a0), forall a2 :e (Lean_List a0), forall a3 :e Lean_Nat, forall a4 :e (Lean_List a0), Lean_List_splitAt_go a0 a1 a2 a3 a4 :e
-    (Lean_Prod (Lean_List a0) (Lean_List a0)).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Lean_List a0). let a3. assume H3: a3 :e Lean_Nat. let a4. assume H4: a4 :e (Lean_List a0). exact (ap_Pi (Lean_List a0) (fun
-    _ => (Lean_Prod (Lean_List a0) (Lean_List a0))) ((Lean_List_rec a0 (Lean_List_splitAt_go_method0_0 a0 a1) (Lean_List_splitAt_go_method1_0 a0 a1) a2) a3) a4 (ap_Pi Lean_Nat (fun _ => (Pi_ ux :e
-    (Lean_List a0), (Lean_Prod (Lean_List a0) (Lean_List a0)))) (Lean_List_rec a0 (Lean_List_splitAt_go_method0_0 a0 a1) (Lean_List_splitAt_go_method1_0 a0 a1) a2) a3 (Lean_List_splitAt_go_recIn a0
-    a1 H1 a2 H2) H3) H4).
-Qed.
-Theorem Lean_List_splitAt_go_split0 : forall l_u, nat_p l_u -> forall s0 :e LeanUniv l_u, forall s1 :e (Lean_List s0), forall s3 :e Lean_Nat, forall s4 :e (Lean_List s0), (Lean_List_splitAt_go s0 s1
-    (Lean_List_nil_node s0) s3 s4) = (Lean_Prod_mk_node (Lean_List s0) (Lean_List s0) s1 (Lean_List_nil_node s0)).
-let l_u. assume H_l_u: nat_p l_u. let s0. assume H_s0: s0 :e LeanUniv l_u. let s1. assume H_s1: s1 :e (Lean_List s0). let s3. assume H_s3: s3 :e Lean_Nat. let s4. assume H_s4: s4 :e (Lean_List s0).
-prove ((Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) (Lean_List_nil_node s0)) s3 s4) = (Lean_Prod_mk_node (Lean_List s0) (Lean_List s0) s1
-    (Lean_List_nil_node s0)).
-rewrite Lean_List_iota0 s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1).
-rewrite Lean_List_splitAt_go_method0_0_ap s0 s1 s3 H_s3.
-rewrite Lean_List_splitAt_go_method0_1_ap s0 s1 s3 s4 H_s4.
-reflexivity.
-Qed.
-Theorem Lean_List_splitAt_go_split1 : forall l_u, nat_p l_u -> forall s0 :e LeanUniv l_u, forall s1 :e (Lean_List s0), forall t0 :e s0, forall t1 :e (Lean_List s0), forall s3 :e Lean_Nat, forall s4
-    :e (Lean_List s0), (Lean_List_splitAt_go s0 s1 (Lean_List_cons_node s0 t0 t1) s3 s4) = (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List s0) (Lean_List s0) (Lean_List_reverse s0 s4)
-    (Lean_List_cons_node s0 t0 t1)) (fun c1_1_0 :e Lean_Nat => (Lean_List_splitAt_go s0 s1 t1 c1_1_0 (Lean_List_cons_node s0 t0 s4))) s3).
-let l_u. assume H_l_u: nat_p l_u. let s0. assume H_s0: s0 :e LeanUniv l_u. let s1. assume H_s1: s1 :e (Lean_List s0). let t0. assume H_t0: t0 :e s0. let t1. assume H_t1: t1 :e (Lean_List s0). let s3.
-    assume H_s3: s3 :e Lean_Nat. let s4. assume H_s4: s4 :e (Lean_List s0).
-prove ((Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) (Lean_List_cons_node s0 t0 t1)) s3 s4) = (Lean_Nat_casesOn (Lean_Prod_mk_node (Lean_List s0)
-    (Lean_List s0) (Lean_List_reverse s0 s4) (Lean_List_cons_node s0 t0 t1)) (fun c1_1_0 :e Lean_Nat => ((Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0
-    s1) t1) c1_1_0 (Lean_List_cons_node s0 t0 s4))) s3).
-rewrite Lean_List_iota1 s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) t0 H_t0 t1 H_t1.
-rewrite Lean_List_splitAt_go_method1_0_ap s0 s1 t0 H_t0.
-rewrite Lean_List_splitAt_go_method1_1_ap s0 s1 t0 t1 H_t1.
-rewrite Lean_List_splitAt_go_method1_2_ap s0 s1 t0 t1 (Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) t1) (Lean_List_splitAt_go_recIn s0 s1 H_s1 t1
-    H_t1).
-rewrite Lean_List_splitAt_go_method1_3_ap s0 s1 t0 t1 (Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) t1) s3 H_s3.
-rewrite Lean_List_splitAt_go_method1_4_ap s0 s1 t0 t1 (Lean_List_rec s0 (Lean_List_splitAt_go_method0_0 s0 s1) (Lean_List_splitAt_go_method1_0 s0 s1) t1) s3 s4 H_s4.
-reflexivity.
-Qed.
-Theorem Lean_List_splitAt_go_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_l :e (Lean_List v_u945), forall v_a :e Lean_Nat, forall v_x3 :e (Lean_List v_u945),
-    (Lean_List_splitAt_go v_u945 v_l (Lean_List_nil_node v_u945) v_a v_x3) = (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) v_l (Lean_List_nil_node v_u945)).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_l. assume H_v_l: v_l :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e Lean_Nat. let v_x3. assume
-    H_v_x3: v_x3 :e (Lean_List v_u945).
-rewrite Lean_List_splitAt_go_split0 l_u H_l_u v_u945 H_v_u945 v_l H_v_l v_a H_v_a v_x3 H_v_x3.
-reflexivity.
-Qed.
-Theorem Lean_List_splitAt_go_eq_2 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_l :e (Lean_List v_u945), forall v_a :e (Lean_List v_u945), forall v_x_3 :e v_u945, forall v_xs :e
-    (Lean_List v_u945), forall v_n :e Lean_Nat, (Lean_List_splitAt_go v_u945 v_l (Lean_List_cons_node v_u945 v_x_3 v_xs) (Lean_Nat_succ_node v_n) v_a) = (Lean_List_splitAt_go v_u945 v_l v_xs v_n
-    (Lean_List_cons_node v_u945 v_x_3 v_a)).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_l. assume H_v_l: v_l :e (Lean_List v_u945). let v_a. assume H_v_a: v_a :e (Lean_List v_u945). let v_x_3.
-    assume H_v_x_3: v_x_3 :e v_u945. let v_xs. assume H_v_xs: v_xs :e (Lean_List v_u945). let v_n. assume H_v_n: v_n :e Lean_Nat.
-rewrite Lean_List_splitAt_go_split1 l_u H_l_u v_u945 H_v_u945 v_l H_v_l v_x_3 H_v_x_3 v_xs H_v_xs (Lean_Nat_succ_node v_n) (Lean_Nat_succ_typed v_n H_v_n) v_a H_v_a.
-rewrite Lean_Nat_casesOn_iota1 (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) (Lean_List_reverse v_u945 v_a) (Lean_List_cons_node v_u945 v_x_3 v_xs)) (fun c1_1_0 :e Lean_Nat =>
-    (Lean_List_splitAt_go v_u945 v_l v_xs c1_1_0 (Lean_List_cons_node v_u945 v_x_3 v_a))) v_n H_v_n.
-rewrite (eq_i_tra ((fun c1_1_0 :e Lean_Nat => (Lean_List_splitAt_go v_u945 v_l v_xs c1_1_0 (Lean_List_cons_node v_u945 v_x_3 v_a))) v_n) (Lean_List_splitAt_go v_u945 v_l v_xs v_n (Lean_List_cons_node
-    v_u945 v_x_3 v_a)) (Lean_List_splitAt_go v_u945 v_l v_xs v_n (Lean_List_cons_node v_u945 v_x_3 v_a)) (beta Lean_Nat (fun c1_1_0 => (Lean_List_splitAt_go v_u945 v_l v_xs c1_1_0
-    (Lean_List_cons_node v_u945 v_x_3 v_a))) v_n H_v_n) (Lean_eq_refl (Lean_List_splitAt_go v_u945 v_l v_xs v_n (Lean_List_cons_node v_u945 v_x_3 v_a)))).
-reflexivity.
-Qed.
-(** List.splitAt.go.eq_3: stated under the hypotheses that earlier patterns do not apply; proved by cases. **)
-Theorem Lean_List_splitAt_go_eq_3 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_l :e (Lean_List v_u945), forall v_a :e (Lean_List v_u945), forall v_x3 :e Lean_Nat, forall v_x4 :e
-    (Lean_List v_u945), ((v_a = (Lean_List_nil_node v_u945)) -> False) -> (forall v_x :e v_u945, forall v_xs :e (Lean_List v_u945), forall v_n :e Lean_Nat, (v_a = (Lean_List_cons_node v_u945 v_x
-    v_xs)) -> (v_x3 = (Lean_Nat_succ_node v_n)) -> False) -> (Lean_List_splitAt_go v_u945 v_l v_a v_x3 v_x4) = (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) (Lean_List_reverse v_u945 v_x4)
-    v_a).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u.
-let v_l. assume H_v_l: v_l :e (Lean_List v_u945). apply Lean_List_ind v_u945.
-{ let v_x3. assume H_v_x3: v_x3 :e Lean_Nat. let v_x4. assume H_v_x4: v_x4 :e (Lean_List v_u945). assume v_x_4. assume v_x_5. apply FalseE. apply v_x_4.
-reflexivity.
-}
-{ let v_a_0. assume H_v_a_0: v_a_0 :e v_u945. let v_a_1. assume H_v_a_1: v_a_1 :e (Lean_List v_u945). assume IH_v_a_1. apply Lean_Nat_ind.
-{ let v_x4. assume H_v_x4: v_x4 :e (Lean_List v_u945). assume v_x_4. assume v_x_5. rewrite Lean_List_splitAt_go_split1 l_u H_l_u v_u945 H_v_u945 v_l H_v_l v_a_0 H_v_a_0 v_a_1 H_v_a_1
-    Lean_Nat_zero_node Lean_Nat_zero_typed v_x4 H_v_x4.
-rewrite Lean_Nat_casesOn_iota0 (Lean_Prod_mk_node (Lean_List v_u945) (Lean_List v_u945) (Lean_List_reverse v_u945 v_x4) (Lean_List_cons_node v_u945 v_a_0 v_a_1)) (fun c1_1_0 :e Lean_Nat =>
-    (Lean_List_splitAt_go v_u945 v_l v_a_1 c1_1_0 (Lean_List_cons_node v_u945 v_a_0 v_x4))).
-reflexivity.
-}
-{ let v_x3_0. assume H_v_x3_0: v_x3_0 :e Lean_Nat. assume IH_v_x3_0. let v_x4. assume H_v_x4: v_x4 :e (Lean_List v_u945). assume v_x_4. assume v_x_5. apply FalseE. apply v_x_5 v_a_0 H_v_a_0 v_a_1
-    H_v_a_1 v_x3_0 H_v_x3_0.
-reflexivity.
-reflexivity.
-}
-}
-Qed.
-
-(** List.splitAt, from its equation theorem **)
-Definition Lean_List_splitAt : set -> set -> set -> set := fun a0 a1 a2 => (Lean_List_splitAt_go a0 a2 a2 a1 (Lean_List_nil_node a0)).
-Theorem Lean_List_splitAt_In : forall a0, forall a1 :e Lean_Nat, forall a2 :e (Lean_List a0), Lean_List_splitAt a0 a1 a2 :e (Lean_Prod (Lean_List a0) (Lean_List a0)).
-let a0. let a1. assume H1: a1 :e Lean_Nat. let a2. assume H2: a2 :e (Lean_List a0). exact (Lean_List_splitAt_go_In a0 a2 H2 a2 H2 a1 H1 (Lean_List_nil_node a0) (Lean_List_nil_typed a0)).
-Qed.
-Theorem Lean_List_splitAt_eq_1 : forall l_u, nat_p l_u -> forall v_u945 :e LeanUniv l_u, forall v_n :e Lean_Nat, forall v_l :e (Lean_List v_u945), (Lean_List_splitAt v_u945 v_n v_l) =
-    (Lean_List_splitAt_go v_u945 v_l v_l v_n (Lean_List_nil_node v_u945)).
-let l_u. assume H_l_u: nat_p l_u. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u. let v_n. assume H_v_n: v_n :e Lean_Nat. let v_l. assume H_v_l: v_l :e (Lean_List v_u945).
-reflexivity.
-Qed.
-Theorem Lean_List_splitAt_unfold : forall a0 a1 a2, Lean_List_splitAt a0 a1 a2 = (Lean_List_splitAt_go a0 a2 a2 a1 (Lean_List_nil_node a0)).
-let a0 a1 a2. reflexivity.
 Qed.
 
 (** Embedded proof support: Library/MinFacAuxFuel.mg **)

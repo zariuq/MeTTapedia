@@ -182,7 +182,7 @@ theorem move_preserves_readonly (program : ReadOnlyProgram P)
   | memo K value cell frames pending =>
       have impossible := readonly.frames _ (List.mem_cons_self ..)
       cases impossible
-  | add | remove | removeMissing | new | delay | forcePending | forceDone =>
+  | add | remove | removeAbsent | new | delay | forcePending | forceDone =>
       have impossible := readonly.focus.eval_body
       cases impossible
 

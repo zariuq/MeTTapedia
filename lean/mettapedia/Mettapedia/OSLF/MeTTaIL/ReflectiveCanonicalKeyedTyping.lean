@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalKeyed
-import Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
+import Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
 import Mettapedia.GSLT.LanguageDef.WellSorted
 
 /-!
@@ -122,31 +122,30 @@ name. -/
 theorem finishQuote_nameWellSorted
     {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted presentation free bound process)
-    (admitted : ReflectiveSubstitution.quoteAdmits presentation.toReflectivePresentationDecl process = true) :
+    (typed : ProcWellSorted presentation free bound process) :
     NameWellSorted presentation free bound
       (finishNormalizeReflectiveApply
         presentation.toReflectivePresentationDecl
         presentation.quoteConstructor [process]) := by
   cases typed with
   | bvar lookup => simpa [finishNormalizeReflectiveApply] using
-      (NameWellSorted.quote (ProcWellSorted.bvar lookup) admitted)
+      (NameWellSorted.quote (ProcWellSorted.bvar lookup))
   | fvar lookup => simpa [finishNormalizeReflectiveApply] using
-      (NameWellSorted.quote (ProcWellSorted.fvar lookup) admitted)
+      (NameWellSorted.quote (ProcWellSorted.fvar lookup))
   | unit => simpa [finishNormalizeReflectiveApply] using
       (NameWellSorted.quote
         (ProcWellSorted.unit : ProcWellSorted presentation free bound
-          (.apply presentation.parallelUnitConstructor [])) admitted)
+          (.apply presentation.parallelUnitConstructor [])))
   | drop nameTyped => simpa [finishNormalizeReflectiveApply] using nameTyped
   | output channelTyped payloadTyped =>
       simpa [finishNormalizeReflectiveApply] using
-        (NameWellSorted.quote (ProcWellSorted.output channelTyped payloadTyped) admitted)
+        (NameWellSorted.quote (ProcWellSorted.output channelTyped payloadTyped))
   | input channelTyped bodyTyped =>
       simpa [finishNormalizeReflectiveApply] using
-        (NameWellSorted.quote (ProcWellSorted.input channelTyped bodyTyped) admitted)
+        (NameWellSorted.quote (ProcWellSorted.input channelTyped bodyTyped))
   | parallel processesTyped =>
       simpa [finishNormalizeReflectiveApply] using
-        (NameWellSorted.quote (ProcWellSorted.parallel processesTyped) admitted)
+        (NameWellSorted.quote (ProcWellSorted.parallel processesTyped))
 
 mutual
   /-- Depth-aware keyed canonicalization preserves the derived name fiber. -/
@@ -165,15 +164,12 @@ mutual
     cases typed with
     | bvar lookup => exact .bvar lookup
     | fvar lookup => exact .fvar lookup
-    | quote processTyped admitted =>
+    | quote processTyped =>
         simp only [canonicalizeByAt, beq_self_eq_true, if_true,
           canonicalizeListByAt]
         exact finishQuote_nameWellSorted
           (canonicalizeByAt_procWellSorted key presentation quote_ne_drop
             0 processTyped)
-          ((ReflectiveQuoteAdmission.quoteAdmits_of_canonicalize_eq
-            (canonicalize_canonicalizeByAt key presentation.toReflectivePresentationDecl quote_ne_drop 0 _)).trans
-              admitted)
 
   /-- Depth-aware keyed canonicalization preserves the derived process
   fiber. -/

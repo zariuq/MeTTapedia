@@ -1,0 +1,5 @@
+# Read before the families: quotients and their typing, as the core document has them.
+Library/Quotients.mg
+Library/EquivalenceClosure.mg
+Library/RankedRecursion.mg
+Library/QuotientTyping.mg

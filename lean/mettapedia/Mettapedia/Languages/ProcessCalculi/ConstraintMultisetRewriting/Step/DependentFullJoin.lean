@@ -368,7 +368,7 @@ theorem decidedInFibre_of_decided {M : List (Binding.MetaArity sig)}
         subst same
         exact .inl ⟨N, answer, principal⟩
       exact landing _ state.answer same principal
-  | refuted missing => exact .inr missing
+  | refuted absent => exact .inr absent
   | stuck _ => exact False.elim decided
   | cutoff _ => exact False.elim decided
 

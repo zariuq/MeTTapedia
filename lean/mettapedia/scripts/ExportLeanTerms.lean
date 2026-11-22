@@ -248,6 +248,11 @@ def exportTerms (target : Option String) : TermElabM String := do
   if let some t := target then
     let requestedLemmas ← targetLemmas t
     for c in (← targetRoots t) ++ requestedLemmas do
+      -- A structure's proof field (`Finset.nodup`) is read as a cited theorem: the reading
+      -- proves it from the structure's elimination.
+      if requestedLemmas.contains c && (← getProjectionFnInfo? c).isSome then
+        unless cited.contains c do cited := cited.push c
+        continue
       if let some (.thmInfo info) := (← getEnv).find? c then
         -- A theorem of the development: its statement, to be proved in Egal.
         -- An explicitly requested source equation is an obligation even

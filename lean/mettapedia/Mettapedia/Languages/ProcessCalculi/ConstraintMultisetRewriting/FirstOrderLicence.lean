@@ -121,14 +121,14 @@ theorem equal_iff {problem : EquationStore (Term signature)} {answer : Subst sig
     (by simp) (by simp)
 
 omit [DecidableEq O] in
-theorem none_iff {problem : EquationStore (Term signature)} {answer : Subst signature}
+theorem absent_iff {problem : EquationStore (Term signature)} {answer : Subst signature}
     (accepted : unifyTotal problem = some answer)
     (label : O → Term signature) (world : Finset O) (pattern : Term signature) :
     (FirstOrder.action signature).Entails problem
         (fun assignment => (Check.predicate .none pattern).Holds (FirstOrder.action signature) assignment label world) ↔
       potential answer label world pattern = ∅ := by
   rw [potential_eq_possible accepted]
-  exact none_iff_possible_empty _ _ _ _ _
+  exact absent_iff_possible_empty _ _ _ _ _
 
 omit [DecidableEq O] in
 theorem any_iff {problem : EquationStore (Term signature)} {answer : Subst signature}
@@ -221,7 +221,7 @@ theorem check_correct {problem : EquationStore (Term signature)} {answer : Subst
   | predicate quantifier pattern =>
       cases quantifier with
       | any => simp only [check, decide_eq_true_eq]; exact (any_iff accepted label world pattern).symm
-      | none => simp only [check, decide_eq_true_eq]; exact (none_iff accepted label world pattern).symm
+      | none => simp only [check, decide_eq_true_eq]; exact (absent_iff accepted label world pattern).symm
   | count pattern number => simp only [check, decide_eq_true_eq]; exact (count_iff accepted label world pattern number).symm
 
 theorem collect_correct {problem : EquationStore (Term signature)} {answer : Subst signature}

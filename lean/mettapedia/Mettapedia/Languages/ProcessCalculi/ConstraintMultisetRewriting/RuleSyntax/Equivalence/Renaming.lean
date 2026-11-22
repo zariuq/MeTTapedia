@@ -25,7 +25,7 @@ and every barb family that does not see identities, a system and its renamed cop
 `rename_congruent_mayBarb` is the instance for the chosen barbs. Two different systems are thus
 related (non-vacuity), for instance one row at identity `0` against the same row at identity `1`.
 
-The hypothesis on contexts that matters is that an added row's identity is missing from the system:
+The hypothesis on contexts that matters is that an added row's identity is absent from the system:
 `AtOneFrame.overlap_separates` shows that a context allowed to overwrite a present identity separates a
 state from its renamed copy.
 -/

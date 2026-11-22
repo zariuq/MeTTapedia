@@ -10,11 +10,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 # Nontrivial shared constraints in the guarded transform diamond
 
 One request imposes X = f(Y); another imposes Y = 1. They consume distinct
-occurrences, share a persistent read, retain equality and none guards,
+occurrences, share a persistent read, retain equality and absence guards,
 and publish distinct output occurrences. Both orders are admitted and all
 fixed continuation schedules see the same joint solutions and resources.
 
-The open none query control shows why physical independence alone is weaker:
+The open-absence control shows why physical independence alone is weaker:
 an equation-only change can enable a previously unresolved guard.
 -/
 
@@ -131,17 +131,17 @@ theorem shared_read_and_duplicate_values_keep_physical_identity :
     firstSelection.read = [4, 4] := by decide
 
 theorem physical_independence_does_not_imply_guard_readiness :
-    let rows := FirstOrderChecks.Controls.OpenNone.rows
-    let ask := FirstOrderChecks.Controls.OpenNone.askSelection
-    let bind := FirstOrderChecks.Controls.OpenNone.bindSelection
+    let rows := FirstOrderChecks.Controls.OpenAbsence.rows
+    let ask := FirstOrderChecks.Controls.OpenAbsence.askSelection
+    let bind := FirstOrderChecks.Controls.OpenAbsence.bindSelection
     Independent rows ask.commit bind.commit ∧
-      ¬ ask.Valid A rows FirstOrderChecks.Controls.OpenNone.askRule
-        FirstOrderChecks.Controls.OpenNone.initial ∧
-      ask.Valid A rows FirstOrderChecks.Controls.OpenNone.askRule
-        (FirstOrderChecks.Controls.OpenNone.afterBind 1) :=
+      ¬ ask.Valid A rows FirstOrderChecks.Controls.OpenAbsence.askRule
+        FirstOrderChecks.Controls.OpenAbsence.initial ∧
+      ask.Valid A rows FirstOrderChecks.Controls.OpenAbsence.askRule
+        (FirstOrderChecks.Controls.OpenAbsence.afterBind 1) :=
   ⟨by simp [Independent, Clash, Spoils, WritesInto, Selection.commit,
-      FirstOrderChecks.Controls.OpenNone.askSelection, FirstOrderChecks.Controls.OpenNone.bindSelection],
-    FirstOrderChecks.Controls.OpenNone.the_unbound_guard_does_not_admit_the_step,
-    FirstOrderChecks.Controls.OpenNone.binding_to_one_enables_the_step⟩
+      FirstOrderChecks.Controls.OpenAbsence.askSelection, FirstOrderChecks.Controls.OpenAbsence.bindSelection],
+    FirstOrderChecks.Controls.OpenAbsence.the_unbound_guard_does_not_admit_the_step,
+    FirstOrderChecks.Controls.OpenAbsence.binding_to_one_enables_the_step⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Core.Controls

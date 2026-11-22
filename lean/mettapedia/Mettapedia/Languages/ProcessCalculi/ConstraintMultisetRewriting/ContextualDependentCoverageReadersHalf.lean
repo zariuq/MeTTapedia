@@ -200,7 +200,7 @@ theorem deadRound_not_stuck_of_deadRule (fuel : Nat) {Θ : Context S.R} {problem
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **The dead-binder round moves wherever a reader of an outer round reads.** -/
 theorem deadRound_not_stuck_of_outerReads (fuel : Nat) {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
@@ -335,7 +335,7 @@ theorem tower_dead_decided_of_reads
       run (deadTower.solver larger) problem larger = run (deadTower.solver budget) problem budget ∧
       ((∃ state finished, run (deadTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (deadTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (deadTower.solver larger) problem larger = .refuted absent)) :=
   tower_dead_decided_of_firing
     (fun permuted nonempty => firing_of_reads (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads
       TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete
@@ -371,7 +371,7 @@ theorem tower_dead_decided_of_allReads
       run (deadTower.solver larger) problem larger = run (deadTower.solver budget) problem budget ∧
       ((∃ state finished, run (deadTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (deadTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (deadTower.solver larger) problem larger = .refuted absent)) :=
   tower_dead_decided_of_firing
     (fun permuted nonempty => firing_of_allReads (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads
       TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete

@@ -41,7 +41,7 @@ A map out of `Graded r Unit`, read on whole stores through restriction, is an **
 * **Processes**: the run of a list of commits scoped to rights `r` is an observer of grade `r`,
   both in which runs execute and in the held part of where they end (`run_ofGrade`), which is the
   non-interference theorem of channel addressing read as a typing.
-* **A pattern-addressed reader has the wrong grade** (`Controls.wildcard_not_ofGrade`): the none query
+* **A pattern-addressed reader has the wrong grade** (`Controls.wildcard_not_ofGrade`): the absence
   of messages at every name is not of the grade of the one name its reader holds. Renaming-invariance
   of names would not exclude it; grades do.
 -/
@@ -327,27 +327,27 @@ namespace Controls
 
 open Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.OccurrenceCommits.Controls
 
-/-- The none query of messages at every name, as an observer. -/
-def noMessageAnywhere (S : Finset ℕ) : Prop := NoneHolds chanLabel anywhere S
+/-- The absence of messages at every name, as an observer. -/
+def anywhereAbsent (S : Finset ℕ) : Prop := AbsenceHolds chanLabel anywhere S
 
-/-- The none query of messages at name `0`, as an observer. -/
-def noMessageAtZero (S : Finset ℕ) : Prop := NoneHolds chanLabel atZero S
+/-- The absence of messages at name `0`, as an observer. -/
+def zeroAbsent (S : Finset ℕ) : Prop := AbsenceHolds chanLabel atZero S
 
-/-- **A pattern-addressed reader has the wrong grade**: the none query of messages anywhere is not an
+/-- **A pattern-addressed reader has the wrong grade**: the absence of messages anywhere is not an
 observer of the grade of name `0`. -/
-theorem wildcard_not_ofGrade : ¬ OfGrade chanLabel Prod.fst holdsZero noMessageAnywhere := by
+theorem wildcard_not_ofGrade : ¬ OfGrade chanLabel Prod.fst holdsZero anywhereAbsent := by
   intro grade
-  obtain ⟨agree, -, -, emptyNone, notNone⟩ := wildcard_breaks_noninterference
+  obtain ⟨agree, -, -, emptyAbsent, notAbsent⟩ := wildcard_breaks_noninterference
   have := grade ∅ {51} agree
-  unfold noMessageAnywhere at this
-  rw [this] at emptyNone
-  exact notNone emptyNone
+  unfold anywhereAbsent at this
+  rw [this] at emptyAbsent
+  exact notAbsent emptyAbsent
 
 /-- **The scoped reader has the grade of its name.** -/
-theorem scoped_ofGrade : OfGrade chanLabel Prod.fst holdsZero noMessageAtZero := by
+theorem scoped_ofGrade : OfGrade chanLabel Prod.fst holdsZero zeroAbsent := by
   intro S S' agree
-  unfold noMessageAtZero
-  rw [noneHolds_iff, noneHolds_iff]
+  unfold zeroAbsent
+  rw [absenceHolds_iff, absenceHolds_iff]
   apply propext
   have inside : ∀ r, atZero r = true → holdsZero r.1 = true := by
     intro r h

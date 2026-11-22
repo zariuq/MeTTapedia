@@ -297,7 +297,7 @@ fiber that was not present, the exact observation cannot hold both before and af
 `RegionObservationControls.count_keeps_a_swap_inside_its_region`). -/
 theorem exact_not_both_of_make [DecidableEq O] {region : S → T → Bool} {seen : Finset O} {σ : S}
     {label : O → T} {world : Finset O} {writer : Selection O} {o : O} (made : o ∈ writer.made)
-    (notPresentBefore : o ∉ world) (inside : region σ (label o) = true) :
+    (absentBefore : o ∉ world) (inside : region σ (label o) = true) :
     ¬ ((exact region seen).Holds σ label world ∧
         (exact region seen).Holds σ label (fire world (writer.commit (T := T)))) := by
   rintro ⟨before, after⟩
@@ -307,7 +307,7 @@ theorem exact_not_both_of_make [DecidableEq O] {region : S → T → Bool} {seen
     refine Finset.mem_filter.mpr ⟨mem_fire.mpr (Or.inr ?_), inside⟩
     simp [Selection.commit, made]
   have notBefore : o ∉ regionOf label world (region σ) :=
-    fun member => notPresentBefore (Finset.mem_filter.mp member).1
+    fun member => absentBefore (Finset.mem_filter.mp member).1
   rw [after', ← before'] at inAfter
   exact notBefore inAfter
 

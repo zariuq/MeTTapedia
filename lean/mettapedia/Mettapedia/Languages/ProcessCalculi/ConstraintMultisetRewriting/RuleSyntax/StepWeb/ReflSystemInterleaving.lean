@@ -349,7 +349,7 @@ def ChecksAvoidMade (label : O → Pattern) (C : Configuration Pattern O)
           (psubst σ (psubst f₁.opening t))
 
 omit [DecidableEq O] in
-theorem located_checks_none {r : Rule Tm} (member : r ∈ located) {c : Check Pattern}
+theorem located_checks_absent {r : Rule Tm} (member : r ∈ located) {c : Check Pattern}
     (inside : c ∈ r.body.checks) : ∃ pat, c = .predicate .none pat := by
   rcases located_cases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
     simp [atRule, RuleInstance.map, commRule, heatRule, clearRule, commChild, heatChild, cool,
@@ -406,7 +406,7 @@ theorem commute_disjoint_firings {label : O → Pattern} {C : Configuration Patt
       obtain ⟨s₁, s₂⟩ := (models_after_iff a₁ a₂ σ).mp solved
       have cMap : c ∈ g₂.rule.body.checks.map (Check.map (psubst g₂.opening)) := cMem
       obtain ⟨c₀, c₀In, rfl⟩ := List.mem_map.mp cMap
-      obtain ⟨pat, rfl⟩ := located_checks_none g₂.member c₀In
+      obtain ⟨pat, rfl⟩ := located_checks_absent g₂.member c₀In
       intro o oPres same
       rw [OneFrame.row_eq] at same
       rcases result_row (g := g₁) oPres with m₁ | ⟨old, -, -, labelOld⟩

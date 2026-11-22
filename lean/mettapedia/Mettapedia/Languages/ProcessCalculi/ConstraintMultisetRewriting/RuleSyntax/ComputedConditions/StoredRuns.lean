@@ -10,7 +10,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 
 `runs_points_to_stored` and `runs_stored_to_points` relate two restricted relations, relative to one finite set
 of table identities fixed before the run. **Instance**: the add step is blind to every row headed by the symbol
-of `add` (`addStep_blind`); the machine state `KernelEvaluation.noTable` stores that graph at the missing
+of `add` (`addStep_blind`); the machine state `KernelEvaluation.noTable` stores that graph at the absent
 identity `5`, which its label function labels `add 2 3 5` (`stores`); the admitted point firing is a step of
 the source relation (`one_pointStep`); so the table reads have the run from the state with the row present
 (`stored_run_exists`). **Control** (`graph_fires`, `no_pointStep`): at the empty store the program at a graph
@@ -97,7 +97,7 @@ theorem addStep_blind : Blind Presentation.Schematic.A addRows addStep.rule := b
   · exact absurd (head_apart σ cellSym _ same) (by decide)
   · exact absurd (head_apart σ cellSym _ same) (by decide)
 
-/-- **The machine state without the table row stores the graph at the missing identity `5`**: its label
+/-- **The machine state without the table row stores the graph at the absent identity `5`**: its label
 function labels `5` by `add 2 3 5`. -/
 theorem stores : StoresGraph Presentation.Schematic.A addRows noTable {5} :=
   ⟨by simp [noTable], fun o inside => by

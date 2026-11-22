@@ -187,7 +187,7 @@ theorem occursIn_solved {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : Fl
   · refine ⟨(occursIn_cons e rest i).mpr (.inr ?_), ne⟩
     simp only [occursIn, List.any_eq_true, Bool.or_eq_true, decide_eq_true_eq]
     exact ⟨e', inRest, .inr h⟩
-  · exact ⟨(occursIn_cons e rest i).mpr (.inl (.inr h)), fun same => ok.notMem (same ▸ h)⟩
+  · exact ⟨(occursIn_cons e rest i).mpr (.inl (.inr h)), fun same => ok.absent (same ▸ h)⟩
 
 /-- **Narrowing and solving lowers the rank.** -/
 theorem rank_solved {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexArrow e) (ok : Solvable' v)
@@ -379,8 +379,8 @@ def swapRound {Θ : Context S.R} {e : Equation (TotalTerm Θ)} {rest : EquationS
         change ContextualDependentWorklist.Below (arrowRank update.remaining) (arrowRank (e :: rest))
         rw [← same]
         exact smaller)
-  | .refuted missing =>
-      .refuted (fun ⟨Δ, σ, models⟩ => missing ⟨Δ, σ, (swap_equivalent e rest Δ σ).mp models⟩)
+  | .refuted absent =>
+      .refuted (fun ⟨Δ, σ, models⟩ => absent ⟨Δ, σ, (swap_equivalent e rest Δ σ).mp models⟩)
   | .stuck => .stuck
 
 /-- **The step on two rigid sides**: equal heads, decomposition, or a clash. -/

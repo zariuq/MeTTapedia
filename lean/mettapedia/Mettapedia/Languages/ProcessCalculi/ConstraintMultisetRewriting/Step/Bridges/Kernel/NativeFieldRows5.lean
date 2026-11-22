@@ -41,7 +41,7 @@ def schema25 (ops : Operations) : Syntax ops where
   writes := [.context]
   writes_distinct := by decide
   unchanged := by
-    intro field missing
+    intro field absent
     cases field <;> simp_all
 
 theorem schema25_reconstructs (ops : Operations) :
@@ -77,7 +77,7 @@ def schema26 (ops : Operations) : Syntax ops where
   writes := [.context, .typeRows, .dbRows, .theoremRows]
   writes_distinct := by decide
   unchanged := by
-    intro field missing
+    intro field absent
     cases field <;> simp_all
 
 theorem schema26_reconstructs (ops : Operations) :
@@ -113,7 +113,7 @@ def schema27 (ops : Operations) : Syntax ops where
   writes := [.context, .typeRows, .dbRows, .theoremRows]
   writes_distinct := by decide
   unchanged := by
-    intro field missing
+    intro field absent
     cases field <;> simp_all
 
 theorem schema27_reconstructs (ops : Operations) :
@@ -149,7 +149,7 @@ def schema28 (ops : Operations) : Syntax ops where
   writes := [.context, .typeRows, .dbRows, .theoremRows]
   writes_distinct := by decide
   unchanged := by
-    intro field missing
+    intro field absent
     cases field <;> simp_all
 
 theorem schema28_reconstructs (ops : Operations) :

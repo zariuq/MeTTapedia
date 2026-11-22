@@ -608,10 +608,10 @@ theorem nested_collectors_refuse_equal_older_frame :
   have kept := (keepsReady oldestLive oldestSlot (by decide)).2.trans oldestStamp
   have retained := (keepsLast oldestLive oldestSlot (by decide)).2.trans oldestStamp
   have forgotten : last.2.mark reply = none := by
-    have missing : ¬ (last.2.mark reply).isSome := fun marked => replyGone ((lastCover.2 _).mpr marked)
+    have absent : ¬ (last.2.mark reply).isSome := fun marked => replyGone ((lastCover.2 _).mpr marked)
     cases tag : last.2.mark reply with
     | none => rfl
-    | some mark => simp [tag] at missing
+    | some mark => simp [tag] at absent
   have opened : CustodyStep (CollectorCustody.machine env .unmarked true)
       (first, Ledger.root first.present) (opening.result, opening.after) := ⟨opening, rfl⟩
   have toReady := Relation.ReflTransGen.head opened trail
@@ -852,7 +852,7 @@ private def pettaWritten : Atom :=
   app "let" [.var "picked", app "add-atom" [.symbol "&self", marker],
     app "match" [.symbol "&self", app "let-marker" [.var "tag"], app "reached" [.var "picked", .var "tag"]]]
 private def pettaNoAnswer : Atom :=
-  app "let" [.var "none", app "match" [.symbol "&self", app "let-marker" [.symbol "missing"], .symbol "ignored"],
+  app "let" [.var "none", app "match" [.symbol "&self", app "let-marker" [.symbol "absent"], .symbol "ignored"],
     app "add-atom" [.symbol "&self", .symbol "wrong-body"]]
 private def pettaAckAsKey : Atom :=
   app "let" [.var "picked", app "add-atom" [.symbol "&self", Atom.unit],

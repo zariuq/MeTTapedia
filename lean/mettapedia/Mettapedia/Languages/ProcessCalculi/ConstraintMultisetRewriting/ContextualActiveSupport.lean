@@ -59,7 +59,7 @@ omit [DecidableEq W] in
 theorem binding_images_erase (chosen : V)
     (body : Term (signature S source) (source chosen).1 (source chosen).2)
     (roster : Finset V) (bodyCovered : Bounded (fun name => name ∈ roster) body)
-    (missing : chosen ∉ support body) :
+    (absent : chosen ∉ support body) :
     ∀ identity ∈ roster,
       Bounded (fun name => name ∈ roster.erase chosen) (ContextualBinding.answer chosen body identity) := by
   intro identity present
@@ -67,7 +67,7 @@ theorem binding_images_erase (chosen : V)
   · subst identity
     rw [ContextualBinding.answer_same]
     intro name named
-    exact Finset.mem_erase.mpr ⟨fun equal => missing (equal ▸ named), bodyCovered name named⟩
+    exact Finset.mem_erase.mpr ⟨fun equal => absent (equal ▸ named), bodyCovered name named⟩
   · rw [ContextualBinding.answer_other chosen identity same body]
     intro name named
     rw [support_generator, List.mem_singleton] at named
@@ -78,10 +78,10 @@ omit [DecidableEq W] in
 theorem binding_removes_selected_name (chosen : V)
     (body : Term (signature S source) (source chosen).1 (source chosen).2)
     (problem : Problem source) (roster : Finset V) (covered : active problem ⊆ roster)
-    (bodyCovered : Bounded (fun name => name ∈ roster) body) (missing : chosen ∉ support body) :
+    (bodyCovered : Bounded (fun name => name ∈ roster) body) (absent : chosen ∉ support body) :
     active (mapProblem (ContextualBinding.answer chosen body) problem) ⊆ roster.erase chosen :=
   map_active_subset _ problem roster (roster.erase chosen) covered
-    (binding_images_erase chosen body roster bodyCovered missing)
+    (binding_images_erase chosen body roster bodyCovered absent)
 
 def potential (candidate : Assignment source target) (roster : Finset V) : Nat :=
   ∑ identity ∈ roster, termSize (candidate identity)
@@ -105,12 +105,12 @@ theorem binding_active_potential_decreases (chosen : V)
     (body : Term (signature S source) (source chosen).1 (source chosen).2)
     (problem : Problem source) (roster : Finset V) (covered : active problem ⊆ roster)
     (bodyCovered : Bounded (fun name => name ∈ roster) body)
-    (missing : chosen ∉ support body) (present : chosen ∈ roster)
+    (absent : chosen ∉ support body) (present : chosen ∈ roster)
     (candidate : Assignment source target) :
     potential candidate (active (mapProblem (ContextualBinding.answer chosen body) problem)) <
       potential candidate roster :=
   lt_of_le_of_lt (potential_monotone candidate
-    (binding_removes_selected_name chosen body problem roster covered bodyCovered missing))
+    (binding_removes_selected_name chosen body problem roster covered bodyCovered absent))
     (potential_erase_lt candidate roster chosen present)
 
 omit [DecidableEq W] in
@@ -123,7 +123,7 @@ theorem active_tail_subset (equation : Equation (Observation S source)) (rest : 
 omit [DecidableEq W] in
 theorem binding_prefix_progress (chosen : V)
     (body : Term (signature S source) (source chosen).1 (source chosen).2)
-    (rest : Problem source) (missing : chosen ∉ support body)
+    (rest : Problem source) (absent : chosen ∉ support body)
     (candidate : Assignment source target)
     (solved : Models candidate ((observe (generator source chosen), observe body) :: rest)) :
     ∃ residual : Assignment source target,
@@ -141,7 +141,7 @@ theorem binding_prefix_progress (chosen : V)
     (models_of_components candidate _ candidate (fun identity => congrFun components identity) rest).mp restSolved,
     (fun identity => congrFun components identity), ?_⟩
   apply binding_active_potential_decreases chosen body rest (active full)
-    (active_tail_subset _ rest) ?_ missing ?_ candidate
+    (active_tail_subset _ rest) ?_ absent ?_ candidate
   · intro identity named
     exact (mem_active identity full).mpr ⟨_, List.mem_cons_self, .inr named⟩
   · apply (mem_active chosen full).mpr

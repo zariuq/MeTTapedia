@@ -39,8 +39,7 @@ open _root_.Mettapedia.OSLF.MeTTaIL.Syntax GeneralExecutionAdmission CanonicalBa
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus (StructuralCongruence semanticCommSubst)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical (HashSetFree HashSetFreeList)
-open Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary (rhoProcWellSorted_hashSetFree
-  rhoProcWellSorted_hashSetFree_at)
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary (rhoProcWellSorted_hashSetFree)
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction (Reduces)
 open Mettapedia.GSLT.LanguageDef.GeneralTypedOccurrence GeneralTypedSites DerivedPresentationSyntax
 
@@ -246,14 +245,13 @@ theorem modelEquiv_sc {bound : List TypeExpr} {expected : TypeExpr} {left right 
 
 /-! ## Steps -/
 
-/-- A well-sorted closed process of the plan is sorted by rho's derived judgment when binders
-reach into quotations (the apply view): the plan's typing places no restriction on quoted code. -/
+/-- A well-sorted closed process of the plan is well-sorted in rho's own sorting. -/
 theorem procWellSorted_of_sorted {pattern : Pattern}
     (sorted : OpenPatternWellSorted (GeneralPlanEnvironment.environment GeneralRho.Standard.plan).language
       GeneralRho.Standard.plan.snapshot.free [] (.base "Proc") pattern) :
-    ProcWellSorted rhoApplyPresentation FreeSortContext.empty [] pattern := by
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] pattern := by
   obtain ⟨typed, metadata, object, _⟩ := sorted
-  apply Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefTypingAgreement.languageDefHasSort_to_procWellSorted_apply
+  apply Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefTypingAgreement.languageDefHasSort_to_procWellSorted
     _ object metadata
   have freeEq : GeneralRho.Standard.plan.snapshot.free =
       Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefTypingAgreement.liftFreeSortContext
@@ -389,7 +387,7 @@ theorem primitive_reduces {source : Pattern} {receipt : GeneralRuleJobs.Receipt}
 theorem primitive_target_hashSetFree {source : Pattern} {receipt : GeneralRuleJobs.Receipt}
     (fired : GeneralOccurrenceSemantics.Primitive GeneralRho.Standard.plan [] (.base "Proc") source receipt) :
     HashSetFree receipt.target :=
-  rhoProcWellSorted_hashSetFree_at (.reaching .apply) (procWellSorted_of_sorted fired.2.2.2.2)
+  rhoProcWellSorted_hashSetFree (procWellSorted_of_sorted fired.2.2.2.2)
 
 /-- **Every step modulo rho's model with the name equation is a reference reduction**, from an
 object term. -/

@@ -242,7 +242,7 @@ def depDecide {Θ : Context S.R} (e : Equation (TotalTerm Θ)) : Option (Decided
                 if fit : headsFitB choices v.u (codHeads e.2.2.code) = true then
                   some (.solved (depNarrowSolveUpdate glb spec facts roots heads algebra rigid complete
                     headTypingUnique declared v
-                    { notMem := occurs
+                    { absent := occurs
                       heads := headsFit_of_B choices fit
                       occurring := atUniverses_of_B occurring
                       apart := apart

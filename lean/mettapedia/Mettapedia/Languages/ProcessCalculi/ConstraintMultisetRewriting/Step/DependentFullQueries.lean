@@ -12,7 +12,7 @@ region at a solution `τ` is the test on the patterns and the row, both read alo
 
 **Natural queries move along substitutions** (`NaturalQuery.move`): the patterns are read along the
 substitution, the test and the answer stay. Moving is functorial (`move_id`, `move_comp`), and a
-moved query at a solution is the query at the composite (`region_move`, `holds_move`). The none query and
+moved query at a solution is the query at the composite (`region_move`, `holds_move`). Absence and
 counting of a pattern are natural (`absent`, `count`), with the regions and answers of R91's
 `Query.predicate` and `Query.count` (`predicate_holds_iff`, `count_holds_iff`).
 
@@ -135,7 +135,7 @@ theorem holds_move (σ : Δ' ⟶ Δ) (q : NaturalQuery levels O Δ) (present : F
   · rintro ⟨seen, members, answer⟩
     exact ⟨seen, fun o => (members o).trans (and_congr Iff.rfl (region_move σ q τ (row o)).symm), answer⟩
 
-/-! ### The none query and counting are natural -/
+/-! ### Absence and counting are natural -/
 
 variable (levels) in
 /-- A row matches one of the patterns. -/

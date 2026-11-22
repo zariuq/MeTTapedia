@@ -6,11 +6,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 At the one-frame action of the code algebra (`X`, with the identity extension `Ext`):
 
 * **The fragment** (`Fragment`): rules whose terms have no `drop`. Every feature of the rule syntax is
-  allowed: takes, reads, tells, equation guards, none queries and count queries, made rows and collect query
+  allowed: takes, reads, tells, equation guards, absence and count queries, made rows and collect query
   patterns, with any number of the rule's own unknowns at any depth.
 * **The code of a rule** (`ruleCode`): a closed row `code [takes, reads, makes, left and right sides of
   the tells, first and second terms of the checks, kinds of the checks, collect patterns]`, each part a
-  list of quotations (`parts`, `partsAt`). The kind of a check (`Kind`: an equation, a none query, a count
+  list of quotations (`parts`, `partsAt`). The kind of a check (`Kind`: an equation, an absence, a count
   with its number) is a closed constant of the code, so the order of the checks is kept.
 * **The stored-rule program** (`Stored F`): every rule `r` of `F`, with one more read: its own code
   (`stored`). A rule of `Stored F` fires only while a row holding its code is present. This is the

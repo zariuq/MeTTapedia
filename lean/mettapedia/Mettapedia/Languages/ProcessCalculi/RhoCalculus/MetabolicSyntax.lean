@@ -76,19 +76,19 @@ def acquisition : Pattern := .apply "NQuote" [output spent zero]
 def trigger : Pattern := output pop zero
 
 theorem metabolic_typed (bound : List String) :
-    NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound metabolic := .quote .unit (by decide)
+    NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound metabolic := .quote .unit
 
 theorem pop_typed (bound : List String) :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound pop :=
-  .quote (.output (metabolic_typed _) .unit) (by decide)
+  .quote (.output (metabolic_typed _) .unit)
 
 theorem spent_typed (bound : List String) :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound spent :=
-  .quote (.output (pop_typed _) .unit) (by decide)
+  .quote (.output (pop_typed _) .unit)
 
 theorem acquisition_typed (bound : List String) :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound acquisition :=
-  .quote (.output (spent_typed _) .unit) (by decide)
+  .quote (.output (spent_typed _) .unit)
 
 theorem names_safe (depth : Nat) :
     binderSafeAt "NQuote" depth metabolic = true ∧

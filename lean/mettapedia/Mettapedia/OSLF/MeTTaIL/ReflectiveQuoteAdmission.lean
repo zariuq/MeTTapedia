@@ -4,18 +4,18 @@ import Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
 /-!
 # Admission of quotations under a closed quote scope
 
-A presentation whose binders do not reach into quotations (quote scope
+A substitution policy whose binders do not reach into quotations (quote scope
 `closed`) admits only quotations whose code is closed with respect to object
-binders: names inside a quotation are global, as in the reflective higher-order
-calculus of Meredith and Radestock (2005), and code is closed as under the
-`box` of contextual modal type theory (Nanevski, Pfenning and Pientka, 2008),
-whose body is typed in the empty object context. A quotation whose payload
-exposes a drop denotes that name, by the quote-drop equation, and is not code.
+binders, as under the `box` of contextual modal type theory (Nanevski, Pfenning
+and Pientka, 2008), whose body is typed in the empty object context. A quotation
+whose payload exposes a drop denotes that name, by the quote-drop equation, and
+is not code.
 
-`QuotesClosed` states the condition on the resolved form of a term; the derived
-sorting judgment imposes it at every quotation
-(`DerivedPresentationSyntax.NameWellSorted.quote`), and its sorted terms satisfy
-it (`ProcWellSorted.quotesClosed`).
+Admission is a judgment about substitution, separate from sorting
+(`DerivedPresentationSyntax`). The reflective higher-order calculus of Meredith
+and Radestock (2005) forms a name from any process and lets substitution pass a
+quotation by; its grammar has no admission premise. `QuotesClosed` is therefore
+a hypothesis of the theorems about substitution that need it.
 
 * The equations never move an index (`mentions_canonicalize`) and never change
   the scope of a term (`isWellScopedAt_canonicalize`); on a resolved term,
@@ -24,6 +24,9 @@ it (`ProcWellSorted.quotesClosed`).
 * **Substitution of admitted names**: eliminating a binder by an admitted closed
   name in an admitted body gives an admitted term (`quotesClosed_instantiate`,
   `quotesClosed_substituteReflective`).
+* **Sorting does not read the quote scope** (`nameWellSorted_withQuoteScope_iff`,
+  `procWellSorted_withQuoteScope_iff`); admission does
+  (`quoteAdmits_reads_quoteScope`).
 -/
 
 set_option autoImplicit false
@@ -196,10 +199,8 @@ Under a closed scope no genuine quotation mentions an object binder bound
 outside it, at any depth: quoted code is closed, as contextual modal type theory
 types the body of `box` in the empty object context. `QuotesClosed` states this
 on the resolved term; it generalizes `Sealed` from the eliminated binder to
-every binder (`ReflectiveContextualQuote.sealed_of_quotesClosed`). The derived
-sorting judgment admits a quotation under the same condition
-(`DerivedPresentationSyntax.NameWellSorted.quote`), and its sorted terms satisfy
-it (`ProcWellSorted.quotesClosed`).
+every binder (`ReflectiveContextualQuote.sealed_of_quotesClosed`). A sorted
+term need not satisfy it (`sorted_not_admitted`).
 
 The condition respects the declared equations (`quotesClosed_respects`), and
 eliminating a binder by an admitted closed name in an admitted body gives an
@@ -753,13 +754,9 @@ theorem quotesClosed_of_binderSafeAt {pattern : Pattern} {depth : Nat}
 
 end Admission
 
-/-! ### The derived sorting judgment admits exactly closed code -/
+/-! ### Admission of a quotation -/
 
-section Judgment
-
-open DerivedPresentationSyntax
-
-variable {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
+section QuotationAdmission
 
 /-- A quotation of closed, admitted code is admitted. -/
 theorem quoteAdmits_of_quotesClosed (declaration : ReflectivePresentationDecl) {payload : Pattern}
@@ -777,71 +774,6 @@ theorem quoteAdmits_of_quotesClosed (declaration : ReflectivePresentationDecl) {
           Bool.and_self]
   · rfl
 
-mutual
-  /-- **A derived name of a closed presentation has closed quotations.** -/
-  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.NameWellSorted.quotesClosed
-      (closed : presentation.quoteScope = .closed)
-      {bound : List String} {name : Pattern}
-      (typed : NameWellSorted presentation free bound name) :
-      QuotesClosed presentation.toReflectivePresentationDecl name := by
-    cases typed with
-    | bvar _ => rfl
-    | fvar _ => rfl
-    | quote _ admitted => exact (quoteAdmits_of_closed closed _).mp admitted
-
-  /-- **A derived process of a closed presentation has closed quotations.** -/
-  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.ProcWellSorted.quotesClosed
-      (closed : presentation.quoteScope = .closed)
-      (distinct : presentation.dropConstructor ≠ presentation.quoteConstructor)
-      {bound : List String} {process : Pattern}
-      (typed : ProcWellSorted presentation free bound process) :
-      QuotesClosed presentation.toReflectivePresentationDecl process := by
-    cases typed with
-    | bvar _ => rfl
-    | fvar _ => rfl
-    | unit => simp [QuotesClosed, resolveQuotes, resolveQuotesList, finishResolveApply, closedCode]
-    | drop nameTyped =>
-        have inner := nameTyped.quotesClosed closed
-        unfold QuotesClosed at inner ⊢
-        rw [resolveQuotes_unary_of_ne distinct, closedCode_unary_of_ne distinct]
-        exact inner
-    | output channelTyped payloadTyped =>
-        have channelClosed := channelTyped.quotesClosed closed
-        have payloadClosed := payloadTyped.quotesClosed closed distinct
-        unfold QuotesClosed at channelClosed payloadClosed ⊢
-        simp [resolveQuotes, resolveQuotesList, finishResolveApply, closedCode, closedCodeList,
-          channelClosed, payloadClosed]
-    | input channelTyped bodyTyped =>
-        have channelClosed := channelTyped.quotesClosed closed
-        have bodyClosed := bodyTyped.quotesClosed closed distinct
-        unfold QuotesClosed at channelClosed bodyClosed ⊢
-        simp [resolveQuotes, resolveQuotesList, finishResolveApply, closedCode, closedCodeList,
-          channelClosed, bodyClosed]
-    | parallel processesTyped =>
-        have each := processesTyped.quotesClosed closed distinct
-        unfold QuotesClosed
-        simp only [resolveQuotes, resolveQuotesList_eq_map, closedCode, closedCodeList_eq_all, List.all_map,
-          List.all_eq_true, Function.comp_apply]
-        exact each
-
-  /-- List form. -/
-  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.ProcListWellSorted.quotesClosed
-      (closed : presentation.quoteScope = .closed)
-      (distinct : presentation.dropConstructor ≠ presentation.quoteConstructor)
-      {bound : List String} {processes : List Pattern}
-      (typed : ProcListWellSorted presentation free bound processes) :
-      ∀ process ∈ processes, QuotesClosed presentation.toReflectivePresentationDecl process := by
-    cases typed with
-    | nil => intro _ member; cases member
-    | cons processTyped processesTyped =>
-        have head := processTyped.quotesClosed closed distinct
-        have tail := processesTyped.quotesClosed closed distinct
-        intro process member
-        cases member with
-        | head => exact head
-        | tail _ member => exact tail process member
-end
-
 /-- A quotation of quote-sealed code is admitted, whatever the scope. -/
 theorem quoteAdmits_of_binderSafeAt (declaration : ReflectivePresentationDecl) {payload : Pattern}
     (safe : binderSafeAt declaration.quoteConstructor 0 payload = true) :
@@ -849,181 +781,128 @@ theorem quoteAdmits_of_binderSafeAt (declaration : ReflectivePresentationDecl) {
   quoteAdmits_of_quotesClosed declaration (isWellScopedAt_of_binderSafeAt _ safe)
     (quotesClosed_of_binderSafeAt safe)
 
-/-- **A quotation of quote-sealed sorted code is a name.** -/
-theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.NameWellSorted.quoteOfSafe
-    {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted presentation free bound process)
-    (safe : binderSafeAt presentation.quoteConstructor 0 process = true) :
-    NameWellSorted presentation free bound (.apply presentation.quoteConstructor [process]) :=
-  .quote typed (quoteAdmits_of_binderSafeAt presentation.toReflectivePresentationDecl safe)
+end QuotationAdmission
 
-/-- **A quotation of closed sorted code is a name in every sort context.** -/
-theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.NameWellSorted.quoteOfClosed
-    (distinct : presentation.dropConstructor ≠ presentation.quoteConstructor)
-    {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted presentation free [] process) :
-    NameWellSorted presentation free bound (.apply presentation.quoteConstructor [process]) := by
-  have admitted : quoteAdmits presentation.toReflectivePresentationDecl process = true := by
-    cases scope : presentation.quoteScope with
-    | closed =>
-        exact quoteAdmits_of_quotesClosed _ (by simpa using typed.isWellScopedAt)
-          (typed.quotesClosed scope distinct)
-    | reaching view => exact quoteAdmits_of_reaching scope process
-  simpa using NameWellSorted.quote (typed.weakenBoundRight bound) admitted
+/-! ## Sorting does not read the quote scope
 
-end Judgment
+The quote scope selects a substitution policy. Two policies on one signature
+sort the same terms and may admit different ones. -/
 
-/-! ## Changing the declared quote scope
-
-A presentation's constructors do not depend on its quote scope; only the
-admission premise of a quotation does. A reaching scope admits every
-quotation, so forgetting admission moves a judgment to any reaching scope; a
-quote-sealed term is admitted under every scope, so sealing moves a judgment
-back. -/
-
-/-- The same presentation under another quote scope. -/
+/-- The same signature under another quote scope. -/
 def _root_.Mettapedia.OSLF.MeTTaIL.Syntax.ReflectiveProcessSignature.withQuoteScope
     (presentation : ReflectiveProcessSignature) (scope : QuoteScope) : ReflectiveProcessSignature :=
   { presentation with quoteScope := scope }
 
-/-- Rho's constructors read with input binders reaching into quotations (the
-apply view): the reading of a syntax whose quotation body lies in the
-surrounding binder context. Authored rho declares the closed scope; the
-quote-sealed terms are those it admits (`ProcWellSorted.ofSealed`). -/
-abbrev _root_.Mettapedia.OSLF.MeTTaIL.Syntax.rhoApplyPresentation : ReflectiveProcessSignature :=
-  rhoReflectivePresentation.withQuoteScope (.reaching .apply)
-
-section ScopeChange
+section Independence
 
 open DerivedPresentationSyntax
 
 variable {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
 
-@[simp] theorem withQuoteScope_quoteScope (scope : QuoteScope) :
-    (presentation.withQuoteScope scope).quoteScope = scope := rfl
-@[simp] theorem withQuoteScope_quoteConstructor (scope : QuoteScope) :
-    (presentation.withQuoteScope scope).quoteConstructor = presentation.quoteConstructor := rfl
-@[simp] theorem withQuoteScope_dropConstructor (scope : QuoteScope) :
-    (presentation.withQuoteScope scope).dropConstructor = presentation.dropConstructor := rfl
-@[simp] theorem withQuoteScope_parallelUnitConstructor (scope : QuoteScope) :
-    (presentation.withQuoteScope scope).parallelUnitConstructor = presentation.parallelUnitConstructor := rfl
-@[simp] theorem withQuoteScope_parallelCollection (scope : QuoteScope) :
-    (presentation.withQuoteScope scope).parallelCollection = presentation.parallelCollection := rfl
-@[simp] theorem withQuoteScope_inputConstructor (scope : QuoteScope) :
-    (presentation.withQuoteScope scope).inputConstructor = presentation.inputConstructor := rfl
-@[simp] theorem withQuoteScope_outputConstructor (scope : QuoteScope) :
-    (presentation.withQuoteScope scope).outputConstructor = presentation.outputConstructor := rfl
-@[simp] theorem withQuoteScope_nameSort (scope : QuoteScope) :
-    (presentation.withQuoteScope scope).nameSort = presentation.nameSort := rfl
-@[simp] theorem withQuoteScope_processSort (scope : QuoteScope) :
-    (presentation.withQuoteScope scope).processSort = presentation.processSort := rfl
-
 mutual
-  /-- A name keeps its sort under any reaching scope. -/
-  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.NameWellSorted.toReaching
-      (view : QuoteView) {bound : List String} {name : Pattern}
+  /-- A name keeps its sort under every quote scope. -/
+  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.NameWellSorted.toQuoteScope
+      (scope : QuoteScope) {bound : List String} {name : Pattern}
       (typed : NameWellSorted presentation free bound name) :
-      NameWellSorted (presentation.withQuoteScope (.reaching view)) free bound name := by
+      NameWellSorted (presentation.withQuoteScope scope) free bound name := by
     cases typed with
     | bvar lookup => exact .bvar lookup
     | fvar lookup => exact .fvar lookup
-    | quote processTyped _ =>
-        exact .quote (processTyped.toReaching view) (quoteAdmits_of_reaching rfl _)
+    | quote processTyped => exact .quote (processTyped.toQuoteScope scope)
 
-  /-- A process keeps its sort under any reaching scope. -/
-  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.ProcWellSorted.toReaching
-      (view : QuoteView) {bound : List String} {process : Pattern}
+  /-- A process keeps its sort under every quote scope. -/
+  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.ProcWellSorted.toQuoteScope
+      (scope : QuoteScope) {bound : List String} {process : Pattern}
       (typed : ProcWellSorted presentation free bound process) :
-      ProcWellSorted (presentation.withQuoteScope (.reaching view)) free bound process := by
+      ProcWellSorted (presentation.withQuoteScope scope) free bound process := by
     cases typed with
     | bvar lookup => exact .bvar lookup
     | fvar lookup => exact .fvar lookup
     | unit => exact .unit
-    | drop nameTyped => exact .drop (nameTyped.toReaching view)
+    | drop nameTyped => exact .drop (nameTyped.toQuoteScope scope)
     | output channelTyped payloadTyped =>
-        exact .output (channelTyped.toReaching view) (payloadTyped.toReaching view)
+        exact .output (channelTyped.toQuoteScope scope) (payloadTyped.toQuoteScope scope)
     | input channelTyped bodyTyped =>
-        exact .input (channelTyped.toReaching view) (bodyTyped.toReaching view)
-    | parallel processesTyped => exact .parallel (processesTyped.toReaching view)
+        exact .input (channelTyped.toQuoteScope scope) (bodyTyped.toQuoteScope scope)
+    | parallel processesTyped => exact .parallel (processesTyped.toQuoteScope scope)
 
   /-- List form. -/
-  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.ProcListWellSorted.toReaching
-      (view : QuoteView) {bound : List String} {processes : List Pattern}
+  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.ProcListWellSorted.toQuoteScope
+      (scope : QuoteScope) {bound : List String} {processes : List Pattern}
       (typed : ProcListWellSorted presentation free bound processes) :
-      ProcListWellSorted (presentation.withQuoteScope (.reaching view)) free bound processes := by
+      ProcListWellSorted (presentation.withQuoteScope scope) free bound processes := by
     cases typed with
     | nil => exact .nil
     | cons processTyped processesTyped =>
-        exact .cons (processTyped.toReaching view) (processesTyped.toReaching view)
+        exact .cons (processTyped.toQuoteScope scope) (processesTyped.toQuoteScope scope)
 end
 
-mutual
-  /-- A quote-sealed name is admitted under the presentation's own scope,
-  whatever scope it was sorted under. -/
-  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.NameWellSorted.ofSealed
-      {scope : QuoteScope} : ∀ {depth : Nat} {bound : List String} {name : Pattern},
-      NameWellSorted (presentation.withQuoteScope scope) free bound name →
-      binderSafeAt presentation.quoteConstructor depth name = true →
-      NameWellSorted presentation free bound name
-    | _, _, _, .bvar lookup, _ => .bvar lookup
-    | _, _, _, .fvar lookup, _ => .fvar lookup
-    | _, _, _, .quote (process := process) processTyped _, safe => by
-        have inner : binderSafeAt presentation.quoteConstructor 0 process = true := by
-          simpa [binderSafeAt] using safe
-        exact .quote (processTyped.ofSealed inner)
-          (quoteAdmits_of_binderSafeAt presentation.toReflectivePresentationDecl inner)
+/-- **Sorting of names is independent of the quote scope.** -/
+theorem nameWellSorted_withQuoteScope_iff (scope : QuoteScope) {bound : List String} {name : Pattern} :
+    NameWellSorted (presentation.withQuoteScope scope) free bound name ↔
+      NameWellSorted presentation free bound name :=
+  ⟨fun typed => typed.toQuoteScope presentation.quoteScope, fun typed => typed.toQuoteScope scope⟩
 
-  /-- A quote-sealed process is admitted under the presentation's own scope. -/
-  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.ProcWellSorted.ofSealed
-      {scope : QuoteScope} : ∀ {depth : Nat} {bound : List String} {process : Pattern},
-      ProcWellSorted (presentation.withQuoteScope scope) free bound process →
-      binderSafeAt presentation.quoteConstructor depth process = true →
-      ProcWellSorted presentation free bound process
-    | _, _, _, .bvar lookup, _ => .bvar lookup
-    | _, _, _, .fvar lookup, _ => .fvar lookup
-    | _, _, _, .unit, _ => .unit
-    | depth, _, _, .drop (name := name) nameTyped, safe => by
-        have inner : binderSafeAt presentation.quoteConstructor depth name = true := by
-          by_cases quoted : presentation.dropConstructor = presentation.quoteConstructor
-          · have sealed : binderSafeAt presentation.quoteConstructor 0 name = true := by
-              simpa [binderSafeAt, quoted] using safe
-            exact binderSafeAt_mono _ sealed (Nat.zero_le depth)
-          · simpa [binderSafeAt, quoted, binderSafeListAt] using safe
-        exact .drop (nameTyped.ofSealed inner)
-    | depth, _, _, .output (channel := channel) (payload := payload) channelTyped payloadTyped, safe => by
-        have both : binderSafeAt presentation.quoteConstructor depth channel = true ∧
-            binderSafeAt presentation.quoteConstructor depth payload = true := by
-          simpa [binderSafeAt, binderSafeListAt] using safe
-        exact .output (channelTyped.ofSealed both.1)
-          (payloadTyped.ofSealed both.2)
-    | depth, _, _, .input (channel := channel) (body := body) channelTyped bodyTyped, safe => by
-        have both : binderSafeAt presentation.quoteConstructor depth channel = true ∧
-            binderSafeAt presentation.quoteConstructor (depth + 1) body = true := by
-          simpa [binderSafeAt, binderSafeListAt] using safe
-        exact .input (channelTyped.ofSealed both.1)
-          (bodyTyped.ofSealed both.2)
-    | depth, _, _, .parallel (processes := processes) processesTyped, safe => by
-        have each : binderSafeListAt presentation.quoteConstructor depth processes = true := by
-          simpa [binderSafeAt] using safe
-        exact .parallel (processesTyped.ofSealed each)
+/-- **Sorting of processes is independent of the quote scope.** -/
+theorem procWellSorted_withQuoteScope_iff (scope : QuoteScope) {bound : List String} {process : Pattern} :
+    ProcWellSorted (presentation.withQuoteScope scope) free bound process ↔
+      ProcWellSorted presentation free bound process :=
+  ⟨fun typed => typed.toQuoteScope presentation.quoteScope, fun typed => typed.toQuoteScope scope⟩
 
-  /-- List form. -/
-  theorem _root_.Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax.ProcListWellSorted.ofSealed
-      {scope : QuoteScope} : ∀ {depth : Nat} {bound : List String} {processes : List Pattern},
-      ProcListWellSorted (presentation.withQuoteScope scope) free bound processes →
-      binderSafeListAt presentation.quoteConstructor depth processes = true →
-      ProcListWellSorted presentation free bound processes
-    | _, _, _, .nil, _ => .nil
-    | depth, _, _, .cons (process := process) (processes := processes) processTyped processesTyped, safe => by
-        have both : binderSafeAt presentation.quoteConstructor depth process = true ∧
-            binderSafeListAt presentation.quoteConstructor depth processes = true := by
-          simpa [binderSafeListAt] using safe
-        exact .cons (processTyped.ofSealed both.1)
-          (processesTyped.ofSealed both.2)
-end
+end Independence
 
-end ScopeChange
+/-! ### Controls in rho -/
 
+section Controls
 
+open DerivedPresentationSyntax
+
+/-- `y!(0)`, where `y` is the enclosing binder. -/
+private def openCode : Pattern := .apply "POutput" [.bvar 0, .apply "PZero" []]
+
+/-- `*y`, where `y` is the enclosing binder. -/
+private def exposedCode : Pattern := .apply "PDrop" [.bvar 0]
+
+/-- `@(y!(0))` under the binder of `y` is a rho name, and its code is not closed. -/
+theorem sorted_not_admitted :
+    NameWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"]
+        (.apply "NQuote" [openCode]) ∧
+      ¬ QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl
+        (.apply "NQuote" [openCode]) :=
+  ⟨.quote (.output (.bvar rfl) .unit), by decide +kernel⟩
+
+/-- `@(*y)` under the binder of `y` is admitted, since it denotes `y`, although
+its spelling is not quote-sealed. -/
+theorem admitted_not_sealed :
+    NameWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"]
+        (.apply "NQuote" [exposedCode]) ∧
+      QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl
+        (.apply "NQuote" [exposedCode]) ∧
+      binderSafeAt "NQuote" 1 (.apply "NQuote" [exposedCode]) = false :=
+  ⟨.quote (.drop (.bvar rfl)), by decide +kernel, by decide +kernel⟩
+
+/-- Admission reads the quote scope: one signature, two policies. -/
+theorem quoteAdmits_reads_quoteScope :
+    quoteAdmits (rhoReflectivePresentation.withQuoteScope .closed).toReflectivePresentationDecl
+        openCode = false ∧
+      quoteAdmits (rhoReflectivePresentation.withQuoteScope (.reaching .apply)).toReflectivePresentationDecl
+        openCode = true := by
+  decide +kernel
+
+/-- Why substitution asks for admission: eliminating the binder of a sorted
+body that is not admitted leaves an unbound index in the quoted code; for the
+admitted body the same elimination gives a closed term. -/
+theorem instantiate_scope_needs_admission :
+    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty ["Name"]
+        (.apply "PDrop" [.apply "NQuote" [openCode]]) ∧
+      (instantiate rhoReflectivePresentation.toReflectivePresentationDecl 0
+          (.apply "NQuote" [.apply "PZero" []])
+          (.apply "PDrop" [.apply "NQuote" [openCode]])).isWellScopedAt 0 = false ∧
+      (instantiate rhoReflectivePresentation.toReflectivePresentationDecl 0
+          (.apply "NQuote" [.apply "PZero" []])
+          (.apply "PDrop" [.apply "NQuote" [exposedCode]])).isWellScopedAt 0 = true :=
+  ⟨.drop (.quote (.output (.bvar rfl) .unit)), by decide +kernel, by decide +kernel⟩
+
+end Controls
 
 end Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission

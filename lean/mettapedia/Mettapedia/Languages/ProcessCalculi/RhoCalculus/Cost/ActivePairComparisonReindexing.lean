@@ -115,8 +115,8 @@ theorem open_names_typed_not_sealed :
   refine ⟨checkHasType_sound (by decide +kernel), checkHasType_sound (by decide +kernel), ?_⟩
   intro sealed
   have checked := sealed declaration (by decide +kernel)
-  have rejected : ScopedPattern.binderSafeAt declaration.quoteConstructor 2 (openName 0 1) = false :=
-    by decide +kernel
+  have rejected : ScopedPattern.scopeSafeAt declaration.quoteScope declaration.quoteConstructor 2
+      (openName 0 1) = false := by decide +kernel
   rw [rejected] at checked
   contradiction
 

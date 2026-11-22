@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 Three facts used by the examples and controls of this folder.
 
 * `enabled_of`: a selection is enabled when its taken and read rows are present, no row is both
-  taken and read, and its made identities are not present.
+  taken and read, and its made identities are absent.
 * `holds_of_none`: a firing whose spec has no checks, no collect patterns, no rule queries and no
   installed or removed rules passes its guard predicate at every solution.
 * `fresh_of_ground`: at one frame, with the identity extension, a firing whose spec's terms every
@@ -26,7 +26,7 @@ open OneFrame (Terms frames ext)
 universe uO uT uH uE uOcc uR uC uZ uS
 
 /-- **A selection is enabled** when its taken and read rows are present, no row is both taken and
-read, and its made identities are not present. -/
+read, and its made identities are absent. -/
 theorem enabled_of {O : Type uOcc} [DecidableEq O] {present : Finset O} {selection : Selection O}
     (taken : ∀ o ∈ selection.taken, o ∈ present) (read : ∀ o ∈ selection.read, o ∈ present)
     (apart : ∀ o ∈ selection.taken, o ∉ selection.read)

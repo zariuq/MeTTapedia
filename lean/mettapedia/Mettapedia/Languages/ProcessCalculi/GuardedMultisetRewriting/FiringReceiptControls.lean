@@ -1,6 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.FiringReceipts
 
-/-! # Actual read selections, equal-valued occurrences and retained none checks -/
+/-! # Actual read selections, equal-valued occurrences and retained absence checks -/
 
 set_option autoImplicit false
 
@@ -55,14 +55,14 @@ theorem duplicate_consumption_refused (rule : Rule Nat (Tm Sig) (Pat Nat Sig)) (
   simp [duplicateTake] at impossible
 
 def guarded : Rule Nat (Tm Sig) (Pat Nat Sig) :=
-  ⟨[], [.leaf .tok], [Check.noneMatch (.leaf .lock)], [.leaf .out]⟩
+  ⟨[], [.leaf .tok], [Check.absent (.leaf .lock)], [.leaf .out]⟩
 
 def guardedLabel (occurrence : Nat) : Tm Sig :=
   if occurrence = 1 then k .lock else label occurrence
 
-def observedNone : FiringReceipt Nat Nat (Tm Sig) := ⟨empty, [], [0], [2], [∅]⟩
+def observedAbsent : FiringReceipt Nat Nat (Tm Sig) := ⟨empty, [], [0], [2], [∅]⟩
 
-theorem none_receipt_valid : observedNone.ValidAt Ls guarded guardedLabel {0} := by
+theorem absence_receipt_valid : observedAbsent.ValidAt Ls guarded guardedLabel {0} := by
   refine ⟨by decide, by decide, by decide, by decide, by decide, by decide,
     fun _ _ => rfl, .nil, .cons Examples.solves_tok .nil, rfl, .cons ⟨?_, rfl⟩ .nil⟩
   change regionOf guardedLabel {0} (semRegion Ls empty (.leaf .lock)) = ∅
@@ -74,16 +74,16 @@ theorem none_receipt_valid : observedNone.ValidAt Ls guarded guardedLabel {0} :=
   have equal := Examples.covers_leaf_iff.mp ((semRegion_eq_true _).mp matchesLock)
   simp [guardedLabel, label, k] at equal
 
-theorem added_blocker_refuses_receipt : ¬observedNone.ValidAt Ls guarded guardedLabel {0, 1} := by
+theorem added_blocker_refuses_receipt : ¬observedAbsent.ValidAt Ls guarded guardedLabel {0, 1} := by
   intro valid
-  have missing := valid.checks_hold (Check.noneMatch (.leaf .lock)) (by simp [guarded])
-  change matchesIn Ls empty (.leaf .lock) (labels guardedLabel {0, 1}) = 0 at missing
+  have absent := valid.checks_hold (Check.absent (.leaf .lock)) (by simp [guarded])
+  change matchesIn Ls empty (.leaf .lock) (labels guardedLabel {0, 1}) = 0 at absent
   have member : k .lock ∈ matchesIn Ls empty (.leaf .lock) (labels guardedLabel {0, 1}) := by
     apply mem_matchesIn.mpr
     refine ⟨?_, Examples.covers_leaf_iff.mpr rfl⟩
     apply Multiset.mem_map.mpr
     exact ⟨1, by simp, rfl⟩
-  rw [missing] at member
+  rw [absent] at member
   exact Multiset.notMem_zero _ member
 
 end Mettapedia.Languages.ProcessCalculi.GuardedMultisetRewriting.FiringReceiptControls

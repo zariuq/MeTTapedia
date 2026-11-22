@@ -42,7 +42,7 @@ solution, the same mentioned unknowns: `static_iff_clauses`).
   the first.
 * `programs_iff` (one frame, bounded programs): exactly when each answers the other's firings with
   statically equivalent results; `congruent_of_answersStatic` is the sound direction for every pair.
-  The none query and count queries are allowed.
+  Absence and count queries are allowed.
 * `congruent_iff_static_and_same`: two systems are congruent exactly when their states are statically
   equivalent and the two programs are congruent at the first state; `answers_of_congruent` is the
   per-state necessary condition used to separate programs.
@@ -62,7 +62,7 @@ the rules a context added, answer each other's firings statically at every confi
 from the first state by contexts and joint firings (`Reachable`); `congruent_of_reachable` is the
 sound direction for every pair of programs.
 
-**Labels** (`Labels`): a none-guarded firing has no least enabling tell context
+**Labels** (`Labels`): an absence-guarded firing has no least enabling tell context
 (`no_least_enabling_tell`), because "an unknown is not `9`" is not an equation; with an equation guard
 instead, the least enabling tell context exists (`least_enabling_tell_read`).
 

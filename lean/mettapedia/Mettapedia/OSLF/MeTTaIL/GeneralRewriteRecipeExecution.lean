@@ -75,7 +75,7 @@ theorem verdict_exact (graph : Graph) (wanted : Claim) :
   cases prepared : prepare? plan bound type graph.nodes with
   | none => rfl
   | some rows =>
-      simp only [Option.bind_some, Shared.checkJudgments, Shared.checkJudgmentsWithWork]
+      simp only [Option.bind_some, Shared.checkJudgments, Shared.checkJudgmentsWithWork_eq_inspectRows]
       cases (Shared.inspectRows [] rows).table <;> rfl
 
 theorem verdict_valid (graph : Graph) (wanted : Claim) :
@@ -136,7 +136,7 @@ theorem finished_verdict (graph : Graph) (wanted : Claim) {fuel : Nat}
   cases prepare? plan bound type graph.nodes with
   | none => rfl
   | some rows =>
-      simp only [Option.bind_some, Shared.checkJudgments, Shared.checkJudgmentsWithWork]
+      simp only [Option.bind_some, Shared.checkJudgments, Shared.checkJudgmentsWithWork_eq_inspectRows]
       cases (Shared.inspectRows [] rows).table <;> rfl
 
 /-- Exact correspondence of actual terminated checking and the existing

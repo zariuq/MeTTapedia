@@ -1,6 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.AtomicFragment
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.AuthoredSemantics
-import Mettapedia.GSLT.LanguageDef.BagEquationDecision
+import Mettapedia.GSLT.LanguageDef.BagNormalFormEquivalence
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.StructuralCongruence
 
 /-!

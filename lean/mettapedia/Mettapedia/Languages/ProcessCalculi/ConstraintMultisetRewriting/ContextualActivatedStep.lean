@@ -11,7 +11,7 @@ transports its captures into that frame. The physical occurrence selection
 and its consume/read/produce conditions are the existing ones.
 
 This profile requires the rule's check list to be empty. Local-instantiation
-semantics for none queries and counts, logical admission of published schemas and
+semantics for absence and counts, logical admission of published schemas and
 the runtime occupied-ledger invariant are separate obligations.
 -/
 

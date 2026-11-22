@@ -990,7 +990,7 @@ theorem rho_planFrames_commonRestorationApex_of_keyEq
       (isQuoteConstructor_costStaticReflectivePresentationDecl color _ (by
         change rhoReflectivePresentation.toReflectivePresentationDecl ∈
           ReflectionExtension.rhoReflectionProfile.presentations
-        simp [ReflectionExtension.rhoReflectionProfile]))
+        simp [ReflectionExtension.rhoReflectionProfile]) rfl)
       (fun name _ =>
         rhoNode_commonAssignment_rigidOrFixedQuote leftNode rightNode leftTrees
           rightTrees leftInventory rightInventory name)
@@ -1389,7 +1389,7 @@ theorem rho_quotePlanStops_commonRestorationApex_of_below
       (isQuoteConstructor_costStaticReflectivePresentationDecl color _ (by
         change rhoReflectivePresentation.toReflectivePresentationDecl ∈
           ReflectionExtension.rhoReflectionProfile.presentations
-        simp [ReflectionExtension.rhoReflectionProfile]))
+        simp [ReflectionExtension.rhoReflectionProfile]) rfl)
       (rho_currentStaticHead_reflectiveConstructorsAllowed color).drop
       (declC_dropNeQuote color)
       (CostCanonicalLaws.rho_costStatic_drop_isOrdinary color)

@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.MeTTaIL.Engine
-import Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
+import Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalSpec
 import Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
@@ -38,10 +38,6 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent (quotesLiteral)
-open Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission (withQuoteScope_quoteConstructor
-  withQuoteScope_dropConstructor withQuoteScope_parallelUnitConstructor withQuoteScope_parallelCollection
-  withQuoteScope_inputConstructor withQuoteScope_outputConstructor withQuoteScope_nameSort
-  withQuoteScope_processSort)
 
 /-- The authored COMM rule has exactly one selected matching presentation. -/
 theorem rhoComm_matchingPresentation_selected :
@@ -127,19 +123,11 @@ theorem applyBindingsForRule_rhoComm
     applyBindingsReflectiveList, normalizeReflectiveReplacement,
     rhoReflectivePresentation]
 
-section ScopeGeneral
-
-/-! The agreement theorems below hold for rho's constructors under every quote
-scope: the operations are rho's own, and only the admission premise of a
-quotation depends on the scope. -/
-
-variable {scope : QuoteScope}
-
 /-! ## Derived-syntax agreement -/
 
 private theorem rhoDrop_normalization_congr
     {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name)
+    (typed : NameWellSorted rhoReflectivePresentation free bound name)
     (nameIH : normalizeReflective rhoReflectivePresentation name =
       semanticNormalizeName name) :
     normalizeReflective rhoReflectivePresentation (.apply "PDrop" [name]) =
@@ -152,7 +140,7 @@ private theorem rhoDrop_normalization_congr
 
 private theorem rhoQuote_normalization_congr
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process)
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process)
     (processIH : normalizeReflective rhoReflectivePresentation process =
       semanticNormalizeProc process) :
     normalizeReflective rhoReflectivePresentation (.apply "NQuote" [process]) =
@@ -167,11 +155,11 @@ private theorem rhoQuote_normalization_congr
 exactly with the existing paper-facing name normalizer on derived names. -/
 theorem normalizeReflective_rhoName_agrees
     {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) :
+    (typed : NameWellSorted rhoReflectivePresentation free bound name) :
     normalizeReflective rhoReflectivePresentation name =
       semanticNormalizeName name := by
   apply NameWellSorted.rec
-    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
     (motive_1 := fun _ name _ =>
       normalizeReflective rhoReflectivePresentation name =
         semanticNormalizeName name)
@@ -181,12 +169,8 @@ theorem normalizeReflective_rhoName_agrees
     (motive_3 := fun _ processes _ =>
       normalizeReflectiveList rhoReflectivePresentation processes =
         semanticNormalizeProcList processes)
-  all_goals try simp only [withQuoteScope_quoteConstructor, withQuoteScope_dropConstructor,
-    withQuoteScope_parallelUnitConstructor, withQuoteScope_parallelCollection,
-    withQuoteScope_inputConstructor, withQuoteScope_outputConstructor, withQuoteScope_nameSort,
-    withQuoteScope_processSort] at *
   case quote =>
-    intro bound process processTyped _ processIH
+    intro bound process processTyped processIH
     exact rhoQuote_normalization_congr processTyped processIH
   case drop =>
     intro bound name nameTyped nameIH
@@ -202,11 +186,11 @@ theorem normalizeReflective_rhoName_agrees
 agrees exactly with the existing normalizer on derived processes. -/
 theorem normalizeReflective_rhoProc_agrees
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
     normalizeReflective rhoReflectivePresentation process =
       semanticNormalizeProc process := by
   apply ProcWellSorted.rec
-    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
     (motive_1 := fun _ name _ =>
       normalizeReflective rhoReflectivePresentation name =
         semanticNormalizeName name)
@@ -216,12 +200,8 @@ theorem normalizeReflective_rhoProc_agrees
     (motive_3 := fun _ processes _ =>
       normalizeReflectiveList rhoReflectivePresentation processes =
         semanticNormalizeProcList processes)
-  all_goals try simp only [withQuoteScope_quoteConstructor, withQuoteScope_dropConstructor,
-    withQuoteScope_parallelUnitConstructor, withQuoteScope_parallelCollection,
-    withQuoteScope_inputConstructor, withQuoteScope_outputConstructor, withQuoteScope_nameSort,
-    withQuoteScope_processSort] at *
   case quote =>
-    intro bound process processTyped _ processIH
+    intro bound process processTyped processIH
     exact rhoQuote_normalization_congr processTyped processIH
   case drop =>
     intro bound name nameTyped nameIH
@@ -236,11 +216,11 @@ theorem normalizeReflective_rhoProc_agrees
 /-- List form of derived process-normalization agreement. -/
 theorem normalizeReflective_rhoProcList_agrees
     {free : FreeSortContext} {bound : List String} {processes : List Pattern}
-    (typed : ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound processes) :
+    (typed : ProcListWellSorted rhoReflectivePresentation free bound processes) :
     normalizeReflectiveList rhoReflectivePresentation processes =
       semanticNormalizeProcList processes := by
   apply ProcListWellSorted.rec
-    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
     (motive_1 := fun _ name _ =>
       normalizeReflective rhoReflectivePresentation name =
         semanticNormalizeName name)
@@ -250,12 +230,8 @@ theorem normalizeReflective_rhoProcList_agrees
     (motive_3 := fun _ processes _ =>
       normalizeReflectiveList rhoReflectivePresentation processes =
         semanticNormalizeProcList processes)
-  all_goals try simp only [withQuoteScope_quoteConstructor, withQuoteScope_dropConstructor,
-    withQuoteScope_parallelUnitConstructor, withQuoteScope_parallelCollection,
-    withQuoteScope_inputConstructor, withQuoteScope_outputConstructor, withQuoteScope_nameSort,
-    withQuoteScope_processSort] at *
   case quote =>
-    intro bound process processTyped _ processIH
+    intro bound process processTyped processIH
     exact rhoQuote_normalization_congr processTyped processIH
   case drop =>
     intro bound name nameTyped nameIH
@@ -284,7 +260,7 @@ private theorem rho_distinct :
 
 private theorem rhoName_isName
     {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) :
+    (typed : NameWellSorted rhoReflectivePresentation free bound name) :
     Mettapedia.OSLF.MeTTaIL.QuoteDrop.isName rhoReflectivePresentation name = true := by
   cases typed <;> simp [Mettapedia.OSLF.MeTTaIL.QuoteDrop.isName, rhoReflectivePresentation]
 
@@ -292,20 +268,16 @@ open Mettapedia.OSLF.MeTTaIL.QuoteDrop in
 /-- Every drop of a derived rho process receives a name. -/
 theorem rhoProc_dropsNamed
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
     dropsNamed rhoReflectivePresentation process = true := by
   apply ProcWellSorted.rec
-    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
     (motive_1 := fun _ name _ => dropsNamed rhoReflectivePresentation name = true)
     (motive_2 := fun _ process _ => dropsNamed rhoReflectivePresentation process = true)
     (motive_3 := fun _ processes _ =>
       ∀ process ∈ processes, dropsNamed rhoReflectivePresentation process = true)
-  all_goals try simp only [withQuoteScope_quoteConstructor, withQuoteScope_dropConstructor,
-    withQuoteScope_parallelUnitConstructor, withQuoteScope_parallelCollection,
-    withQuoteScope_inputConstructor, withQuoteScope_outputConstructor, withQuoteScope_nameSort,
-    withQuoteScope_processSort] at *
   case quote =>
-    intro bound process _ admitted processIH
+    intro bound process _ processIH
     apply dropsNamed_of_apply
     · intro argument member; rw [List.mem_singleton] at member; subst member; exact processIH
     · intro same; simp [rhoReflectivePresentation] at same
@@ -351,7 +323,7 @@ theorem rhoProc_dropsNamed
 
 theorem rhoName_dropsNamed
     {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name) :
+    (typed : NameWellSorted rhoReflectivePresentation free bound name) :
     Mettapedia.OSLF.MeTTaIL.QuoteDrop.dropsNamed rhoReflectivePresentation name = true := by
   cases typed with
   | bvar _ => rw [Mettapedia.OSLF.MeTTaIL.QuoteDrop.dropsNamed]
@@ -373,7 +345,7 @@ substitution, and is recognized as the bound name exactly when the
 paper-facing comparison recognizes it. -/
 private theorem rhoName_fiber_agrees
     {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name)
+    (typed : NameWellSorted rhoReflectivePresentation free bound name)
     (fiber : quotesLiteral rhoReflectivePresentation name = true)
     (depth : Nat) (replacementName : Pattern) :
     matchesBinder rhoReflectivePresentation depth (normalizeReflective rhoReflectivePresentation name) =
@@ -453,13 +425,13 @@ private theorem rho_receive (replacementName : Pattern) :
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent in
 private theorem rhoProc_fiber_agrees
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
     ∀ depth replacementName, quotesLiteral rhoReflectivePresentation process = true →
       substituteResolved rhoReflectivePresentation (preserving replacementName) depth
           (normalizeReflective rhoReflectivePresentation process) =
         semanticSubstProc depth replacementName process := by
   apply ProcWellSorted.rec
-    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
     (motive_1 := fun _ _ _ => True)
     (motive_2 := fun _ process _ =>
       ∀ depth replacementName, quotesLiteral rhoReflectivePresentation process = true →
@@ -471,9 +443,6 @@ private theorem rhoProc_fiber_agrees
         (normalizeReflectiveList rhoReflectivePresentation processes).map
             (substituteResolved rhoReflectivePresentation (preserving replacementName) depth) =
           semanticSubstProcList depth replacementName processes)
-  all_goals try simp only [withQuoteScope_dropConstructor, withQuoteScope_parallelUnitConstructor,
-    withQuoteScope_parallelCollection, withQuoteScope_inputConstructor,
-    withQuoteScope_outputConstructor, withQuoteScope_nameSort, withQuoteScope_processSort] at *
   case drop =>
     intro bound name nameTyped _ depth replacementName fiber
     have nameFiber := quotesLiteral_args fiber name (by simp)
@@ -546,7 +515,7 @@ paper-facing operation keeps it as written; `hiddenQuoteDrop_comm_differs`
 is the negative example. -/
 theorem substituteReflective_rhoProc_agrees
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process)
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process)
     (fiber : quotesLiteral rhoReflectivePresentation process = true)
     (depth : Nat) (replacementName : Pattern) :
     substituteReflective rhoReflectivePresentation depth replacementName process =
@@ -562,10 +531,10 @@ exactly the established semantic COMM result. The fiber hypothesis is needed
 for exact agreement: see `hiddenQuoteDrop_comm_differs`. -/
 theorem applyBindingsForRule_rhoComm_agrees_derived
     {free : FreeSortContext} {bound : List String} {body payload : Pattern}
-    (bodyTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free
+    (bodyTyped : ProcWellSorted rhoReflectivePresentation free
       (rhoReflectivePresentation.nameSort :: bound) body)
     (fiber : quotesLiteral rhoReflectivePresentation body = true)
-    (payloadTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound payload)
+    (payloadTyped : ProcWellSorted rhoReflectivePresentation free bound payload)
     (channel : Pattern) (rest : List Pattern) :
     applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel body payload rest) =
@@ -578,7 +547,7 @@ theorem applyBindingsForRule_rhoComm_agrees_derived
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent Mettapedia.OSLF.MeTTaIL.QuoteDrop in
 private theorem rhoName_canonical_agrees
     {free : FreeSortContext} {bound : List String} {name : Pattern}
-    (typed : NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound name)
+    (typed : NameWellSorted rhoReflectivePresentation free bound name)
     (depth : Nat) (replacementName : Pattern) :
     canonicalize rhoReflectivePresentation (semanticSubstName depth replacementName name) =
       canonicalize rhoReflectivePresentation (substituteResolved rhoReflectivePresentation
@@ -628,13 +597,13 @@ declared name equations on every derived process: both canonical forms are
 computed from the canonical form of the body. -/
 theorem canonicalize_semanticSubstProc
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
     ∀ depth replacementName,
       canonicalize rhoReflectivePresentation (semanticSubstProc depth replacementName process) =
         canonicalize rhoReflectivePresentation (substituteResolved rhoReflectivePresentation
           (preserving replacementName) depth (canonicalize rhoReflectivePresentation process)) := by
   apply ProcWellSorted.rec
-    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
     (motive_1 := fun _ _ _ => True)
     (motive_2 := fun _ process _ => ∀ depth replacementName,
       canonicalize rhoReflectivePresentation (semanticSubstProc depth replacementName process) =
@@ -646,9 +615,6 @@ theorem canonicalize_semanticSubstProc
         processes.map (fun process => canonicalize rhoReflectivePresentation
           (substituteResolved rhoReflectivePresentation (preserving replacementName) depth
             (canonicalize rhoReflectivePresentation process))))
-  all_goals try simp only [withQuoteScope_dropConstructor, withQuoteScope_parallelUnitConstructor,
-    withQuoteScope_parallelCollection, withQuoteScope_inputConstructor,
-    withQuoteScope_outputConstructor, withQuoteScope_nameSort, withQuoteScope_processSort] at *
   case drop =>
     intro bound name nameTyped _ depth replacementName
     show canonicalize _ (semanticSubstProc depth replacementName (.apply "PDrop" [name])) =
@@ -732,7 +698,7 @@ theorem canonicalize_semanticSubstProc
 to the declared name equations on every derived process. -/
 theorem substituteReflective_rhoProc_equivalent
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process)
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process)
     (depth : Nat) (replacementName : Pattern) :
     rhoCanonicalEquivalent (substituteReflective rhoReflectivePresentation depth replacementName process)
       (semanticSubstProc depth replacementName process) = true := by
@@ -748,20 +714,17 @@ theorem substituteReflective_rhoProc_equivalent
 
 private theorem rho_member_typed
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
     ∀ member ∈ parallelLeaves rhoReflectivePresentation process,
-      ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound member := by
+      ProcWellSorted rhoReflectivePresentation free bound member := by
   apply ProcWellSorted.rec
-    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
     (motive_1 := fun _ _ _ => True)
     (motive_2 := fun bound process _ => ∀ member ∈ parallelLeaves rhoReflectivePresentation process,
-      ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound member)
+      ProcWellSorted rhoReflectivePresentation free bound member)
     (motive_3 := fun bound processes _ => ∀ process ∈ processes,
       ∀ member ∈ parallelLeaves rhoReflectivePresentation process,
-        ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound member)
-  all_goals try simp only [withQuoteScope_dropConstructor, withQuoteScope_parallelUnitConstructor,
-    withQuoteScope_parallelCollection, withQuoteScope_inputConstructor,
-    withQuoteScope_outputConstructor, withQuoteScope_nameSort, withQuoteScope_processSort] at *
+        ProcWellSorted rhoReflectivePresentation free bound member)
   case unit =>
     intro bound member membership
     simp [parallelLeaves] at membership
@@ -797,23 +760,19 @@ private theorem rho_member_typed
 /-- Resolving quotations of drops keeps derived rho syntax. -/
 theorem rhoProc_resolveQuotes_typed
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process) :
-    ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound (resolveQuotes rhoReflectivePresentation process) := by
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process) :
+    ProcWellSorted rhoReflectivePresentation free bound (resolveQuotes rhoReflectivePresentation process) := by
   apply ProcWellSorted.rec
-    (presentation := rhoReflectivePresentation.withQuoteScope scope) (free := free) (t := typed)
+    (presentation := rhoReflectivePresentation) (free := free) (t := typed)
     (motive_1 := fun bound name _ =>
-      NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound (resolveQuotes rhoReflectivePresentation name))
+      NameWellSorted rhoReflectivePresentation free bound (resolveQuotes rhoReflectivePresentation name))
     (motive_2 := fun bound process _ =>
-      ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound (resolveQuotes rhoReflectivePresentation process))
+      ProcWellSorted rhoReflectivePresentation free bound (resolveQuotes rhoReflectivePresentation process))
     (motive_3 := fun bound processes _ =>
-      ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
+      ProcListWellSorted rhoReflectivePresentation free bound
         (resolveQuotesList rhoReflectivePresentation processes))
-  all_goals try simp only [withQuoteScope_quoteConstructor, withQuoteScope_dropConstructor,
-    withQuoteScope_parallelUnitConstructor, withQuoteScope_parallelCollection,
-    withQuoteScope_inputConstructor, withQuoteScope_outputConstructor, withQuoteScope_nameSort,
-    withQuoteScope_processSort] at *
   case quote =>
-    intro bound process _ admitted processIH
+    intro bound process _ processIH
     simp only [resolveQuotes, resolveQuotesList, finishResolveApply, if_true]
     split
     · rename_i name exposed
@@ -827,16 +786,7 @@ theorem rhoProc_resolveQuotes_typed
       rename_i nameTyped
       subst patternEq
       exact nameTyped
-    · refine .quote processIH ?_
-      cases scope with
-      | closed =>
-          change quoteAdmits rhoReflectivePresentation.toReflectivePresentationDecl process = true at admitted
-          change quoteAdmits rhoReflectivePresentation.toReflectivePresentationDecl
-            (resolveQuotes rhoReflectivePresentation process) = true
-          rw [Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission.quoteAdmits_of_canonicalize_eq
-            (Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.canonicalize_resolveQuotes process)]
-          exact admitted
-      | reaching view => exact quoteAdmits_of_reaching rfl _
+    · exact .quote processIH
   case drop =>
     intro bound name _ nameIH
     simp only [resolveQuotes, resolveQuotesList, finishResolveApply,
@@ -872,7 +822,7 @@ paper-facing substitution applied to the resolved process, which lies in the
 literal-quotation fiber. -/
 theorem substituteReflective_rhoProc_eq_resolved
     {free : FreeSortContext} {bound : List String} {process : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound process)
+    (typed : ProcWellSorted rhoReflectivePresentation free bound process)
     (depth : Nat) (replacementName : Pattern) :
     substituteReflective rhoReflectivePresentation depth replacementName process =
       semanticSubstProc depth replacementName (resolveQuotes rhoReflectivePresentation process) := by
@@ -887,9 +837,9 @@ theorem substituteReflective_rhoProc_eq_resolved
 resolved body, on all derived rho syntax. -/
 theorem applyBindingsForRule_rhoComm_eq_resolved
     {free : FreeSortContext} {bound : List String} {body payload : Pattern}
-    (bodyTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free
+    (bodyTyped : ProcWellSorted rhoReflectivePresentation free
       (rhoReflectivePresentation.nameSort :: bound) body)
-    (payloadTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound payload)
+    (payloadTyped : ProcWellSorted rhoReflectivePresentation free bound payload)
     (channel : Pattern) (rest : List Pattern) :
     applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel body payload rest) =
@@ -903,10 +853,10 @@ theorem applyBindingsForRule_rhoComm_eq_resolved
 paper-facing COMM result. -/
 theorem semanticCommSubst_resolveQuotes_of_fiber
     {free : FreeSortContext} {bound : List String} {body payload : Pattern}
-    (bodyTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free
+    (bodyTyped : ProcWellSorted rhoReflectivePresentation free
       (rhoReflectivePresentation.nameSort :: bound) body)
     (fiber : quotesLiteral rhoReflectivePresentation body = true)
-    (payloadTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound payload) :
+    (payloadTyped : ProcWellSorted rhoReflectivePresentation free bound payload) :
     semanticCommSubst (resolveQuotes rhoReflectivePresentation body) payload =
       semanticCommSubst body payload := by
   have resolved := applyBindingsForRule_rhoComm_eq_resolved bodyTyped payloadTyped (.fvar "c") []
@@ -923,8 +873,6 @@ theorem resolveQuotes_structuralCongruence (process : Pattern) :
   rw [← derivedCanonicalize_eq, ← derivedCanonicalize_eq,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCoherent.canonicalize_resolveQuotes]
 
-end ScopeGeneral
-
 /-- `@(*x | 0)!(0)`: a well-sorted body whose channel is a quotation exposing a
 drop only through the parallel unit. -/
 def hiddenQuoteDropBody : Pattern :=
@@ -936,7 +884,8 @@ theorem hiddenQuoteDropBody_typed :
     ProcWellSorted rhoReflectivePresentation
       (fun name => if name = "x" then some rhoReflectivePresentation.nameSort else none)
       [rhoReflectivePresentation.nameSort] hiddenQuoteDropBody := by
-  exact .output (.quote (.parallel (.cons (.drop (.fvar rfl)) (.cons .unit .nil))) (by decide)) .unit
+  refine .output (.quote (.parallel (.cons (.drop (.fvar ?_)) (.cons .unit .nil)))) .unit
+  rfl
 
 /-- Negative example of exact agreement outside the fiber: the compiled COMM
 right-hand side resolves the channel `@(*x | 0)` to `x`, while the
@@ -979,16 +928,18 @@ theorem rhoComm_bound_drop_agrees_derived
   exact applyBindingsForRule_rhoComm_agrees_derived (.drop (.bvar rfl)) (by decide)
     payloadTyped channel rest
 
-/-- Quoted code that mentions the received name is not admitted: rho's
-binders do not reach into quotations. -/
-theorem rhoComm_quoted_binder_not_admitted :
-    ¬ QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl
-      (.apply "NQuote" [.apply "POutput" [.bvar 0, .apply "PZero" []]]) := by
-  decide
-
-/-- Admitted quoted code, whose only binder is its own, is untouched by the
-received-name substitution. -/
+/-- Literal quoted code remains opaque to the received-name substitution. -/
 theorem rhoComm_quoted_code_agrees (channel : Pattern) (rest : List Pattern) :
+    let quotedBody :=
+      .apply "NQuote" [.apply "POutput" [.bvar 0, .apply "PZero" []]]
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
+        (rhoCommBindings channel quotedBody (.apply "PZero" []) rest) =
+      .collection .hashBag
+        (semanticCommSubst quotedBody (.apply "PZero" []) :: rest) none := by
+  rfl
+
+/-- Quoted code whose only binder is its own is untouched as well. -/
+theorem rhoComm_quoted_closed_code_agrees (channel : Pattern) (rest : List Pattern) :
     let quotedBody :=
       .apply "NQuote" [.apply "PInput" [.apply "NQuote" [.apply "PZero" []],
         .lambda none (.apply "PDrop" [.bvar 0])]]

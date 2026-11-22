@@ -38,10 +38,10 @@ theorem equality_is_not_merely_unifiability :
     check baseline unresolvedRows {0} (.equal x (c 4)) = false ∧
       (unifyTotal [(x, c 4)]).isSome = true := by cbv
 
-theorem unresolved_none_is_not_certain :
+theorem unresolved_absence_is_not_certain :
     check baseline unresolvedRows {0} (.predicate .none (c 4)) = false := by cbv
 
-theorem unrelated_constant_certainly_matches_none :
+theorem unrelated_constant_is_certainly_absent :
     check baseline (fun _ : Nat => c 7) {0} (.predicate .none (c 4)) = true := by cbv
 
 theorem possible_extra_row_blocks_a_count :

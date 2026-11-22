@@ -1,11 +1,11 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardedStep
 
 /-!
-# Selected schema instances justify exact none query transport
+# Selected schema instances justify exact absence transport
 
 A model of an actual opening supplies a local guard witness without changing
 its captures. If a selected equation guarantees a row matches, asking for
-none queries after that physical row is erased is exactly asking for count one
+absence after that physical row is erased is exactly asking for count one
 before its consumption. The equation store remains in both conditions.
 -/
 
@@ -85,12 +85,12 @@ theorem ask_after_erase_iff_exact_count [DecidableEq O]
       Ask locals problem (ContextualGuardedStep.guardRows locals captures rows) world (.count pattern 1) := by
   constructor
   · intro admitted Later later candidate solved
-    exact (none_after_erase_iff_count_one locals candidate
+    exact (absent_after_erase_iff_count_one locals candidate
       (ContextualGuardedStep.guardRows locals captures rows) world pattern occurrence present
       (selected_equation_matches locals captures scope candidate problem (rows occurrence) pattern selected solved)).mp
       (admitted Later later candidate solved)
   · intro admitted Later later candidate solved
-    exact (none_after_erase_iff_count_one locals candidate
+    exact (absent_after_erase_iff_count_one locals candidate
       (ContextualGuardedStep.guardRows locals captures rows) world pattern occurrence present
       (selected_equation_matches locals captures scope candidate problem (rows occurrence) pattern selected solved)).mpr
       (admitted Later later candidate solved)

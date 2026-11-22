@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Inte
 /-!
 # Emptinesses on the step, each with its scope
 
-Each emptiness is a claim that something is not present, and each has its own scope. On any step of the
+Each emptiness is a claim that something is absent, and each has its own scope. On any step of the
 core:
 
 | emptiness | definition | scope |
@@ -16,9 +16,9 @@ core:
 | no solution | `Unsolvable`: the firing's information has no solution | the frames the step reads |
 | refusal of permission | `Forbidden`: prepared, not admitted | permission, past preparation |
 
-The none query of an occurrence (a guard) is a condition admission asks, scoped to the whole store at every
+Absence of an occurrence (a guard) is a condition admission asks, scoped to the whole store at every
 solution; "no verdict" is the third outcome of a guard whose evaluation is undecided
-(`SchemaGuards`). Neither is a refusal: none queries can permit a firing, and no verdict is neither
+(`SchemaGuards`). Neither is a refusal: absence can permit a firing, and no verdict is neither
 outcome.
 
 ## Laws between them

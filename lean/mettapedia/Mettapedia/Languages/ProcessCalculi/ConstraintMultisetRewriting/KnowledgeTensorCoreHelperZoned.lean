@@ -143,14 +143,14 @@ noncomputable abbrev helperZoned :
 variable {S O}
 
 /-- The present occurrences after a helper firing. -/
-theorem after_present_val {s : State S O} (f : Firing s) (missing : f.made ∉ s.present) :
+theorem after_present_val {s : State S O} (f : Firing s) (absent : f.made ∉ s.present) :
     f.after.present.val = {f.made} + s.present.val := by
   have same : fire s.present (f.selection.commit (T := Unit)) = insert f.made s.present := by
     ext occurrence
     rw [mem_fire]
     simp [Firing.selection, Selection.commit, or_comm]
   show (fire s.present (f.selection.commit (T := Unit))).val = _
-  rw [same, Finset.insert_val_of_notMem missing, Multiset.singleton_add]
+  rw [same, Finset.insert_val_of_notMem absent, Multiset.singleton_add]
 
 omit [DecidableEq O] in
 /-- The knowledge a helper firing reaches, on the zones. -/
@@ -168,7 +168,7 @@ theorem firesUnder_of_admits {s : State S O} (f : Firing s) (allowed : helperSte
     (helperZoned S O).FiresUnder (a := s.frame) 0 (ruleOf f)
       (solutions (Frames.contextual S) s.knowledge) s.present.val
       (solutions (Frames.contextual S) f.information) f.after.present.val := by
-  have missing : f.made ∉ s.present := (Helpers.enabled_iff f).mp allowed.2.1
+  have absent : f.made ∉ s.present := (Helpers.enabled_iff f).mp allowed.2.1
   refine ⟨s.present.val, (zero_add _).symm, Multiset.zero_le _, ?_, ?_,
     solutions_information f, ?_⟩
   · intro solution member
@@ -180,12 +180,12 @@ theorem firesUnder_of_admits {s : State S O} (f : Firing s) (allowed : helperSte
   · intro member
     have present : f.made ∈ s.present.val + 0 := member
     rw [add_zero] at present
-    exact missing (Finset.mem_val.mp present)
+    exact absent (Finset.mem_val.mp present)
   · have carried : Multiset.map (fun occurrence : O => occurrence) s.present.val = s.present.val :=
       Multiset.map_id' _
     show f.after.present.val =
       {f.made} + Multiset.map (fun occurrence : O => occurrence) s.present.val
-    rw [carried, after_present_val f missing]
+    rw [carried, after_present_val f absent]
 
 /-- **A firing of the zoned transition that reaches consistent knowledge is an admitted helper
 firing.** -/
@@ -202,7 +202,7 @@ theorem admits_of_firesUnder (s : State S O) (rule : Rule S O s.frame)
   have whole : frame = s.present.val := (zero_add frame).symm.trans sourced.symm
   subst whole
   have fresh : rule.made ∉ s.present.val + 0 := checked
-  have missing : (firingOf s rule).made ∉ s.present := fun present =>
+  have absent : (firingOf s rule).made ∉ s.present := fun present =>
     fresh ((add_zero s.present.val).symm ▸ Finset.mem_val.mpr present)
   have known : reached = pull (Frames.contextual S) (incl s.frame rule.helper)
       (solutions (Frames.contextual S) s.knowledge) ⊓
@@ -212,7 +212,7 @@ theorem admits_of_firesUnder (s : State S O) (rule : Rule S O s.frame)
   have guarded : ∀ solution ∈ reached,
       (Frames.contextual S).Models (Assignment.compose solution.2 (incl s.frame rule.helper))
         rule.guards := known ▸ asked
-  refine ⟨⟨List.nodup_singleton _, (Helpers.enabled_iff (firingOf s rule)).mpr missing, ?_, ?_⟩,
+  refine ⟨⟨List.nodup_singleton _, (Helpers.enabled_iff (firingOf s rule)).mpr absent, ?_, ?_⟩,
     reaches, ?_⟩
   · exact (solvable_iff_nonempty _).mpr (reaches ▸ consistent)
   · intro later σ solved
@@ -224,7 +224,7 @@ theorem admits_of_firesUnder (s : State S O) (rule : Rule S O s.frame)
       Multiset.map_id' _
     have made : left = {rule.made} + Multiset.map (fun occurrence : O => occurrence) s.present.val :=
       target
-    rw [made, carried, after_present_val (firingOf s rule) missing]
+    rw [made, carried, after_present_val (firingOf s rule) absent]
     rfl
 
 /-- The uses of a helper run: its firings as declared transitions at their frames. -/

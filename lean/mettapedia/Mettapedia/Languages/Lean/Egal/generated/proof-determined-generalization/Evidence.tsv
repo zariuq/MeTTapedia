@@ -80,7 +80,7 @@ Nat.rec	generated-helper	recursor	interpretation	Lean_Nat_rec	the family's recur
 Nat.succ	dependency	constructor	interpretation	Lean_Nat_succ_node	constructor
 Nat.zero	dependency	constructor	interpretation	Lean_Nat_zero_node	constructor
 Ne	dependency	definition	unfolded		reducible definition: Lean unfolds it where it is used, and the reading reads the result
-Not	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
+Not	dependency	definition	interpretation	Lean_Not	function read from its equation theorems; Lean's equations proved
 OfNat	dependency	inductive	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
 OfNat.mk	dependency	constructor	not-needed		no read definition, equation, theorem or test uses it; Lean reaches it through type classes whose instances are unfolded, or through display and panic messages
 OfNat.ofNat	dependency	definition	not-needed		no read definition, equation, theorem or test uses it
@@ -126,6 +126,19 @@ Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize.eq_1	reading	t
 Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize.eq_2	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_eq_2	Lean's equation theorem, proved from the reading
 Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize_sound.eq_1	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound_eq_1	Lean's equation theorem, proved from the reading
 Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.generalize_sound.eq_2	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_generalize_sound_eq_2	Lean's equation theorem, proved from the reading
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_1	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_10	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_11	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_12	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_13	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_2	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_3	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_4	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_5	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_6	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_7	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_8	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
+Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq._proof_9	reading	theorem	not-needed		a proof inside a definition; proofs are irrelevant in the interpretation (0)
 Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_1	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_1	Lean's equation theorem, proved from the reading
 Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_2	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_2	Lean's equation theorem, proved from the reading
 Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization.instDecidableEqTm.decEq.eq_3	reading	theorem	interpretation	Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_instDecidableEqTm_decEq_eq_3	Lean's equation theorem, proved from the reading
@@ -141,6 +154,7 @@ Nat.beq.eq_2	reading	theorem	interpretation	Lean_Nat_beq_eq_2	Lean's equation th
 Nat.beq.eq_3	reading	theorem	interpretation	Lean_Nat_beq_eq_3	Lean's equation theorem, proved from the reading
 Nat.beq.eq_4	reading	theorem	interpretation	Lean_Nat_beq_eq_4	Lean's equation theorem, proved from the reading
 Nat.decEq.eq_1	reading	theorem	interpretation	Lean_Nat_decEq_eq_1	Lean's equation theorem, proved from the reading
+Not.eq_1	reading	theorem	interpretation	Lean_Not_eq_1	Lean's equation theorem, proved from the reading
 Prod.casesOn	reading	definition	interpretation	Lean_Prod_rec	case analysis read as the recursor with the minors as methods
 dite.eq_1	reading	theorem	interpretation	Lean_dite_eq_1	Lean's equation theorem, proved from the reading
 instDecidableEqNat.eq_1	reading	theorem	interpretation	Lean_instDecidableEqNat_eq_1	Lean's equation theorem, proved from the reading

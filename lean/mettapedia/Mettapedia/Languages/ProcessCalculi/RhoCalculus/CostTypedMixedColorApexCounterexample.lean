@@ -43,7 +43,8 @@ def typedApexShiftingAtom :
     · simp [Pattern.hasCanonicalBinderMetadata]
     · simp [isObjectPattern]
     · intro presentation membership
-      simp [Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt]
+      exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+        simp [Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt])
 
 /-- A typed process atom whose restored value is independent of depth. -/
 def typedApexStableAtom :
@@ -60,7 +61,8 @@ def typedApexStableAtom :
     · simp [Pattern.hasCanonicalBinderMetadata]
     · simp [isObjectPattern]
     · intro presentation membership
-      simp [Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt]
+      exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+        simp [Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt])
 
 /-- The two proof-relevant typed keys, exposed as a finite endpoint family. -/
 def typedApexEndpointKey (slot : Fin 2) : CostStaticAtomKey :=

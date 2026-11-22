@@ -370,9 +370,9 @@ theorem arrows_decided {Θ : Context S.R} {original : EquationStore (TotalTerm �
         ((∃ state finished,
               run (arrowSolver choices facts roots heads algebra rigid complete headTypingUnique) original larger =
                 .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ missing,
+          (∃ absent,
             run (arrowSolver choices facts roots heads algebra rigid complete headTypingUnique) original larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (arrowFragment choices facts roots heads algebra rigid complete headTypingUnique).decided inside
 
 end Solver

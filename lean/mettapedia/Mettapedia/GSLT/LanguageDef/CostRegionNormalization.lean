@@ -132,10 +132,8 @@ def OpenPattern.weakenRoot
   · exact (pattern.2.1.1.liftBVars_insert
       (inner := []) (outer := bound) (inserted := inner)).isWellScopedAt
   · intro presentation membership
-    have lifted := ContextSubstitution.binderSafeAt_liftBVars
-      presentation.quoteConstructor
-      (ambient := bound.length) (cutoff := 0) (shift := inner.length)
-      (pattern.2.2 presentation membership)
+    have lifted := scopeSafeAt_liftBVars (ambient := bound.length) (cutoff := 0)
+      (shift := inner.length) (pattern.2.2 presentation membership)
     simpa [List.length_append, Nat.add_comm] using lifted
 
 @[simp]
@@ -459,7 +457,7 @@ def originalAvailable {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true) :
     WellSorted.AvailableOpenArguments source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer parameters :=
@@ -478,7 +476,7 @@ def normalizedAvailable {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true)
     (normalizeStatic : CostStaticRegionNormalizer source :=
       fun node values => node.normalizeWithReflective values) :
@@ -503,7 +501,7 @@ theorem originalAvailable_patterns {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true) :
     (trees.originalAvailable canonical objects scope).patterns = arguments :=
   rfl
@@ -519,7 +517,7 @@ theorem normalizedAvailable_patterns {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true)
     (normalizeStatic : CostStaticRegionNormalizer source :=
       fun node values => node.normalizeWithReflective values) :
@@ -543,7 +541,7 @@ def originalAvailable {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true) :
     WellSorted.AvailableOpenElements source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer elementType :=
@@ -561,7 +559,7 @@ def normalizedAvailable {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true)
     (normalizeStatic : CostStaticRegionNormalizer source :=
       fun node values => node.normalizeWithReflective values) :
@@ -586,7 +584,7 @@ theorem originalAvailable_patterns {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true) :
     (trees.originalAvailable canonical objects scope).patterns = elements :=
   rfl
@@ -602,7 +600,7 @@ theorem normalizedAvailable_patterns {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true)
     (normalizeStatic : CostStaticRegionNormalizer source :=
       fun node values => node.normalizeWithReflective values) :
@@ -953,23 +951,12 @@ mutual
           simpa [WellSorted.isObjectPattern] using object
         have argumentScope : ∀ presentation ∈
             source.costWholeReflectionProfile.presentations,
-            binderSafeListAt presentation.quoteConstructor available.length
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               arguments = true := by
           intro presentation presentationMembership
-          have notThisQuote :
-              rule.label ≠ presentation.quoteConstructor := by
-            intro labelEquality
-            have detected : ReflectiveContextSupport.isQuoteConstructor
-                source.costWholeReflectionProfile rule.label = true := by
-              unfold ReflectiveContextSupport.isQuoteConstructor
-              rw [List.any_eq_true]
-              exact ⟨presentation, presentationMembership,
-                by simp [labelEquality]⟩
-            rw [detected] at ordinary
-            contradiction
-          exact binderSafeListAt_of_binderSafeAt_apply_of_ne
-            presentation.quoteConstructor rule.label available.length
-              arguments notThisQuote (scope presentation
+          have notThisQuote :=
+            ReflectiveContextSupport.not_sealing_of_ordinary presentationMembership ordinary
+          exact scopeSafeListAt_of_apply notThisQuote (scope presentation
                 presentationMembership)
         have argumentsStep := children.normalizeWithStatic_equationForall₂ normalizeStatic laws
           argumentCanonical argumentObjects argumentScope
@@ -1014,7 +1001,7 @@ mutual
               source.costWholeReflectionProfile
               (available ++ outer).length (.apply rule.label arguments) := by
           intro presentation presentationMembership
-          exact binderSafeAt_mono presentation.quoteConstructor
+          exact scopeSafeAt_mono
             (scope presentation presentationMembership) (by simp)
         have argumentsTyped :
             WellSorted.ArgumentsHaveTypes source.costWholeLanguage targetFree
@@ -1149,7 +1136,7 @@ mutual
               simpa [WellSorted.isObjectPattern] using object
             have elementScope : ∀ presentation ∈
                 source.costWholeReflectionProfile.presentations,
-                binderSafeListAt presentation.quoteConstructor available.length
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
                   elements = true := by
               intro presentation presentationMembership
               simpa [binderSafeAt] using
@@ -1485,7 +1472,7 @@ mutual
       (objects : WellSorted.isObjectPatternList arguments = true)
       (scope : ∀ presentation ∈
           source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           arguments = true),
       WellSorted.AvailableOpenArguments.EquationForall₂
         source.costWholeReflectionProfile source.costWholeLanguage targetFree
@@ -1531,22 +1518,22 @@ mutual
               source.costWholeReflectionProfile available.length argument := by
           intro presentation presentationMembership
           have parts :
-              binderSafeAt presentation.quoteConstructor available.length
+              scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
                     argument = true ∧
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length arguments = true := by
             simpa [binderSafeListAt] using
               scope presentation presentationMembership
           exact parts.1
         have tailScope : ∀ presentation ∈
             source.costWholeReflectionProfile.presentations,
-            binderSafeListAt presentation.quoteConstructor available.length
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               arguments = true := by
           intro presentation presentationMembership
           have parts :
-              binderSafeAt presentation.quoteConstructor available.length
+              scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
                     argument = true ∧
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length arguments = true := by
             simpa [binderSafeListAt] using
               scope presentation presentationMembership
@@ -1604,7 +1591,7 @@ mutual
       (objects : WellSorted.isObjectPatternList elements = true)
       (scope : ∀ presentation ∈
           source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           elements = true),
       WellSorted.AvailableOpenElements.EquationForall₂
         source.costWholeReflectionProfile source.costWholeLanguage targetFree
@@ -1650,22 +1637,22 @@ mutual
               source.costWholeReflectionProfile available.length element := by
           intro presentation presentationMembership
           have parts :
-              binderSafeAt presentation.quoteConstructor available.length
+              scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
                     element = true ∧
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length elements = true := by
             simpa [binderSafeListAt] using
               scope presentation presentationMembership
           exact parts.1
         have tailScope : ∀ presentation ∈
             source.costWholeReflectionProfile.presentations,
-            binderSafeListAt presentation.quoteConstructor available.length
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               elements = true := by
           intro presentation presentationMembership
           have parts :
-              binderSafeAt presentation.quoteConstructor available.length
+              scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
                     element = true ∧
-                binderSafeListAt presentation.quoteConstructor
+                scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length elements = true := by
             simpa [binderSafeListAt] using
               scope presentation presentationMembership
@@ -1883,7 +1870,7 @@ theorem CostRegionArgumentTrees.normalize_equationForall₂
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true) :
     WellSorted.AvailableOpenArguments.EquationForall₂
       source.costWholeReflectionProfile source.costWholeLanguage targetFree
@@ -1905,7 +1892,7 @@ theorem CostRegionElementTrees.normalize_equationForall₂
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true) :
     WellSorted.AvailableOpenElements.EquationForall₂
       source.costWholeReflectionProfile source.costWholeLanguage targetFree

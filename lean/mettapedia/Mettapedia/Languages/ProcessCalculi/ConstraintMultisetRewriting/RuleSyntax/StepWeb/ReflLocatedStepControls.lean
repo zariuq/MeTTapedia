@@ -9,8 +9,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
   child's bag after both steps, `0 | 0 | 0 | 0`, is no bag after one step, even under the quote
   (`two_step_bag_differs`), so REFL would quote a two-step reduct. With the token the second step is refused
   (`ReflLocatedStep.done_phase_step`).
-* **Without the none guard a partially cooled child is quoted** (`unguarded_close_quotes_partial`): a close
-  that takes the reflection and the child's `Done` token without asking for the none query of the child's rows is
+* **Without the absence guard a partially cooled child is quoted** (`unguarded_close_quotes_partial`): a close
+  that takes the reflection and the child's `Done` token without asking for the absence of the child's rows is
   admitted while a row is left at the child, and quotes the accumulator `0` instead of the child's bag
   (`partial_quote_differs`). The located program's close is refused there (`guarded_close_refused`).
 -/
@@ -191,9 +191,9 @@ theorem two_step_bag_differs :
       ¬ NameLaws (tProc (pPar [pZero, pZero, pZero, pZero])) (tProc (pPar [inputA, inputA, pZero, pZero])) := by
   constructor <;> decide +kernel
 
-/-! ## Without the none guard a partially cooled child is quoted -/
+/-! ## Without the absence guard a partially cooled child is quoted -/
 
-/-- **The close without the none guard.** -/
+/-- **The close without the absence guard.** -/
 def closeUnguarded : Rule Tm :=
   ⟨PUnit.unit, ⟨[atLoc (pReflect channelUnknown reflP) rootLoc,
       doneTok (childLoc rootLoc channelUnknown reflP) rootLoc accC], [], [], [],

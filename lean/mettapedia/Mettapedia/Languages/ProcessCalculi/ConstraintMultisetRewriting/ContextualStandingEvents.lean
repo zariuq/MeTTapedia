@@ -167,9 +167,9 @@ theorem Action.consumed_removed {before : World S atom O Γ} (action : Action be
   · exact Finset.disjoint_left.mp action.made_fresh made
       (action.taken_present (List.mem_toFinset.mpr taken))
 
-theorem Action.not_present_stays_not_present {before : World S atom O Γ} (action : Action before)
+theorem Action.absent_stays_absent {before : World S atom O Γ} (action : Action before)
     (admissible : action.Admissible) {occurrence : O}
-    (born : occurrence ∈ before.born) (missing : occurrence ∉ before.current.present) :
+    (born : occurrence ∈ before.born) (absent : occurrence ∉ before.current.present) :
     occurrence ∉ action.target.current.present := by
   have fresh : Disjoint action.made.toFinset before.born := by
     cases action with
@@ -178,7 +178,7 @@ theorem Action.not_present_stays_not_present {before : World S atom O Γ} (actio
   rw [action.physical_result]
   intro present
   rcases Finset.mem_union.mp present with kept | made
-  · exact missing (Finset.mem_sdiff.mp kept).1
+  · exact absent (Finset.mem_sdiff.mp kept).1
   · exact Finset.disjoint_left.mp fresh made born
 
 def Ready (before : World S atom O Γ) (installation : O) : Prop :=

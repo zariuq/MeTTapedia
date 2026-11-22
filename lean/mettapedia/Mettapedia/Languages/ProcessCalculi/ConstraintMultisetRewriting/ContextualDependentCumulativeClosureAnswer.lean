@@ -163,7 +163,7 @@ theorem solvedDrops_keepLeft {Θ : Context S.R} {rest : EquationStore (TotalTerm
   | solved moved movedSmaller =>
       cases same
       exact (drops moved movedSmaller computed).keepLeft equation
-  | refuted missing => cases same
+  | refuted absent => cases same
 
 /-- **Drops survive the transport to the newest declaration.** -/
 theorem throughNewest_drops {Θ : Context S.R} (view : Newest Θ) (problem : EquationStore (TotalTerm Θ))

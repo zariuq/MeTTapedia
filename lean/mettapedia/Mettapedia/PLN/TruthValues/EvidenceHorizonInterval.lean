@@ -1,4 +1,5 @@
-import Mettapedia.PLN.TruthValues.PLNTruthTower
+import Mettapedia.PLN.TruthValues.PLNBinaryCounts
+import Mettapedia.PLN.TruthValues.PLNIndefiniteTruth
 
 /-!
 # Finite evidence with a future horizon

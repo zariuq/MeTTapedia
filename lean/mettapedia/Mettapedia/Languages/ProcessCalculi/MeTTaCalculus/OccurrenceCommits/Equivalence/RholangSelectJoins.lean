@@ -331,7 +331,7 @@ theorem park_store_and_wake_at_refreshed_indices :
 
 /-- Hiding a registered bucket changes the decision with the same
 data. A missing index entry does not prove a missing match. -/
-theorem omitted_join_is_not_none :
+theorem omitted_join_is_not_absence :
     let offer : ProduceRequest Nat Nat := (0, 7, false)
     let live : Finset (Nat × Int) := {(1, 0)}
     let installed : Finset Nat := {13}

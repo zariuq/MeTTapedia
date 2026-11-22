@@ -29,7 +29,7 @@ before the run, on states that read as bags: `StoredRuns.stored_run_to_evaluated
 * **Stored tables** (`withTables s tables`): the state `s` with the identities `tables` present as well,
   labelled by `s.label`; the stored rows are fixed points of the graph at identities `s` does not have
   (`StoresGraph`).
-* **Blind rules** (`Blind`): no substitution equates a take, read, none queries, count or collect pattern of the
+* **Blind rules** (`Blind`): no substitution equates a take, read, absence, count or collect pattern of the
   rule with a point of the graph. The table rows are then seen only by the conditions.
 * `points_to_stored`: **a firing of the program at the graph at `s`**, whose points are stored and
   whose made identities avoid the stored ones, **is a firing of the program of table reads at the state
@@ -71,7 +71,7 @@ def StoresGraph (A : SubstitutionAction T S) (G : Set T) (s : State (Terms T) O)
     Prop :=
   Disjoint tables s.present ∧ ∀ o ∈ tables, s.label o ∈ G ∧ Fixed A (s.label o)
 
-/-- **A rule blind to the graph**: no substitution equates one of its take, read, none queries, count or
+/-- **A rule blind to the graph**: no substitution equates one of its take, read, absence, count or
 collect patterns with a point of the graph. -/
 def Blind (A : SubstitutionAction T S) (G : Set T) (r : Rule (Terms T)) : Prop :=
   ∀ σ : S, ∀ g ∈ G, ∀ p ∈ r.body.take ++ r.body.read ++ r.body.checks.filterMap checkRegion ++ r.collect,

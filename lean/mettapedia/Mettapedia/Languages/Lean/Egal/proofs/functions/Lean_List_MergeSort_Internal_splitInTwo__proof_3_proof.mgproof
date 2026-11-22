@@ -1,5 +1,4 @@
-let v_u945. let v_n. assume Hn: v_n :e Lean_Nat. let v_l.
-assume Hl: v_l :e (Lean_Subtype (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_n. assume Hn: v_n :e Lean_Nat. let v_l. assume Hl: v_l :e (Lean_Subtype (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n))).
 apply Lean_Eq_proof_of.
 apply LeanListSplitAt_halves v_u945 v_n Hn (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l)
   (Lean_Subtype_val_In (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l Hl)

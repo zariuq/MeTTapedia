@@ -103,16 +103,12 @@ theorem constructor_argument_scopes
     (typed : ArgumentsHaveTypes language free bound arguments rule.params)
     (sealed : ReflectiveScopeSafeAt profile bound.length (.apply rule.label arguments)) :
     ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor bound.length arguments = true := by
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor bound.length arguments = true := by
   by_cases quoted : ReflectiveContextSupport.isQuoteConstructor profile rule.label = true
   · have zero := reflectiveScopeSafeListAt_zero_of_typed_quote
       ActivePair.language_valid ActivePair.presentation.reflection.2 member typed quoted sealed
     intro presentation membership
-    rw [binderSafeListAt_eq_true_iff] at ⊢
-    intro argument argumentMember
-    exact binderSafeAt_mono _
-      ((binderSafeListAt_eq_true_iff _ _ _).mp (zero presentation membership) argument argumentMember)
-      (Nat.zero_le _)
+    exact scopeSafeListAt_mono (zero presentation membership) (Nat.zero_le _)
   · exact reflectiveScopeSafeListAt_of_nonquote (Bool.eq_false_iff.mpr quoted) sealed
 
 mutual
@@ -147,7 +143,8 @@ mutual
                       simpa only [isObjectPattern, isObjectPatternList, Bool.and_true] using object
                     have firstScope : ReflectiveScopeSafeAt profile bound.length first := by
                       intro presentation membership
-                      simpa only [binderSafeListAt, Bool.and_true] using argumentScopes presentation membership
+                      simpa only [scopeSafeListAt_cons, scopeSafeListAt_nil, Bool.and_true] using
+                        argumentScopes presentation membership
                     have admitted := typed_name_atomicOrClosed nameTyped firstObject firstScope
                     simpa only [namesAdmitted, beq_iff_eq, if_neg quoted, if_pos dropped] using admitted
                   · simpa only [namesAdmitted, beq_iff_eq, if_neg quoted, if_neg dropped,
@@ -156,19 +153,21 @@ mutual
     | lambda bodyTyped =>
         apply typed_namesAdmitted bodyTyped object
         intro presentation membership
-        simpa [binderSafeAt, List.length_cons, Nat.add_comm] using sealed presentation membership
+        simpa [List.length_cons, Nat.add_comm] using sealed presentation membership
     | multiLambda bodyTyped =>
         apply typed_namesAdmitted bodyTyped object
         intro presentation membership
-        simpa [binderSafeAt, List.length_append, List.length_replicate, Nat.add_comm] using
+        simpa [List.length_append, List.length_replicate, Nat.add_comm] using
           sealed presentation membership
     | subst _ _ => simp [isObjectPattern] at object
     | collection elementsTyped =>
         have objects := (show _ ∧ _ from Bool.and_eq_true_iff.mp object).2
-        exact typed_elements_namesAdmitted elementsTyped objects sealed
+        exact typed_elements_namesAdmitted elementsTyped objects fun presentation membership => by
+          simpa using sealed presentation membership
     | collectionConstructor _ _ elementsTyped =>
         have objects := (show _ ∧ _ from Bool.and_eq_true_iff.mp object).2
-        exact typed_elements_namesAdmitted elementsTyped objects sealed
+        exact typed_elements_namesAdmitted elementsTyped objects fun presentation membership => by
+          simpa using sealed presentation membership
 
   theorem typed_arguments_namesAdmitted
       {free : FreeTypeContext} {bound : List TypeExpr}
@@ -176,7 +175,7 @@ mutual
       (typed : ArgumentsHaveTypes language free bound patterns parameters)
       (object : isObjectPatternList patterns = true)
       (sealed : ∀ presentation ∈ profile.presentations,
-        binderSafeListAt presentation.quoteConstructor bound.length patterns = true) :
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor bound.length patterns = true) :
       namesAdmittedList declaration patterns = true := by
     cases typed with
     | nil => rfl
@@ -187,12 +186,12 @@ mutual
         · apply typed_namesAdmitted headTyped object.1
           intro presentation membership
           have pair := sealed presentation membership
-          simp only [binderSafeListAt, Bool.and_eq_true] at pair
+          simp only [scopeSafeListAt_cons, Bool.and_eq_true] at pair
           exact pair.1
         · apply typed_arguments_namesAdmitted tailTyped object.2
           intro presentation membership
           have pair := sealed presentation membership
-          simp only [binderSafeListAt, Bool.and_eq_true] at pair
+          simp only [scopeSafeListAt_cons, Bool.and_eq_true] at pair
           exact pair.2
 
   theorem typed_elements_namesAdmitted
@@ -201,7 +200,7 @@ mutual
       (typed : ElementsHaveType language free bound patterns type)
       (object : isObjectPatternList patterns = true)
       (sealed : ∀ presentation ∈ profile.presentations,
-        binderSafeListAt presentation.quoteConstructor bound.length patterns = true) :
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor bound.length patterns = true) :
       namesAdmittedList declaration patterns = true := by
     cases typed with
     | nil => rfl
@@ -212,12 +211,12 @@ mutual
         · apply typed_namesAdmitted headTyped object.1
           intro presentation membership
           have pair := sealed presentation membership
-          simp only [binderSafeListAt, Bool.and_eq_true] at pair
+          simp only [scopeSafeListAt_cons, Bool.and_eq_true] at pair
           exact pair.1
         · apply typed_elements_namesAdmitted tailTyped object.2
           intro presentation membership
           have pair := sealed presentation membership
-          simp only [binderSafeListAt, Bool.and_eq_true] at pair
+          simp only [scopeSafeListAt_cons, Bool.and_eq_true] at pair
           exact pair.2
 end
 

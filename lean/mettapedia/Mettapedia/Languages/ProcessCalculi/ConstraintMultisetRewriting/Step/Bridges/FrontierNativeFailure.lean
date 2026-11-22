@@ -43,7 +43,7 @@ def chosen : Expansion (D := D) N P1 leaf := fromProbes (D := D) N P1 probe read
 theorem names_empty : chosen.names = ∅ := by
   ext name
   rw [chosen.complete]
-  exact ⟨fun enabled => (disabled name enabled).elim, fun missing => by simp at missing⟩
+  exact ⟨fun enabled => (disabled name enabled).elim, fun absent => by simp at absent⟩
 
 theorem children_empty : chosen.children = 0 := by
   apply Multiset.card_eq_zero.mp

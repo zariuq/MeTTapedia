@@ -232,17 +232,12 @@ noncomputable def predicateSugenoCountingOneCalibration
     {T : ClosedTheorySet (WithParams Const)}
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
     (hNonempty :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         Nonempty (PredicateObject
           (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau)) :
+    (hMeasurable : PredicateDomainMeasurability T tau) :
     PredicateSugenoOneCalibration
       (Base := Base) (Const := Const) T tau p where
   fintype := hObj
@@ -273,17 +268,12 @@ noncomputable def predicateSugenoCountingCrispEndpointGeOneCut
     {T : ClosedTheorySet (WithParams Const)}
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
     (hNonempty :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         Nonempty (PredicateObject
           (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (hφ0 : ∀ (ρ : Ty Base) (k : Nat), NoConstOccurrence (param ρ k)
       (predicateForAllFormula (Base := Base) (Const := WithParams Const) tau p)) :
     ExtensionalDefinableCut (Base := Base) (Const := Const) T :=
@@ -357,17 +347,12 @@ theorem predicateSugenoCountingCrispEndpointGeOneCut_intervalOfConsistent
     {T : ClosedTheorySet (WithParams Const)}
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
     (hNonempty :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         Nonempty (PredicateObject
           (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (hφ0 : ∀ (ρ : Ty Base) (k : Nat), NoConstOccurrence (param ρ k)
       (predicateForAllFormula (Base := Base) (Const := WithParams Const) tau p))
     (enum : Nat → Body Const)
@@ -392,17 +377,12 @@ theorem predicateSugenoCountingCrispEndpointGeOneCut_lower_eq_one_iff_provable
     {T : ClosedTheorySet (WithParams Const)}
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
     (hNonempty :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         Nonempty (PredicateObject
           (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (hφ0 : ∀ (ρ : Ty Base) (k : Nat), NoConstOccurrence (param ρ k)
       (predicateForAllFormula (Base := Base) (Const := WithParams Const) tau p))
     (enum : Nat → Body Const)
@@ -433,17 +413,12 @@ theorem predicateSugenoCountingCrispEndpointGeOneCut_upper_eq_zero_iff_provable_
     {T : ClosedTheorySet (WithParams Const)}
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
     (hNonempty :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         Nonempty (PredicateObject
           (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (hφ0 : ∀ (ρ : Ty Base) (k : Nat), NoConstOccurrence (param ρ k)
       (predicateForAllFormula (Base := Base) (Const := WithParams Const) tau p))
     (enum : Nat → Body Const)
@@ -475,17 +450,12 @@ theorem predicateSugenoCountingCrispEndpointGeOneCut_width_eq_zero_iff_decides
     {T : ClosedTheorySet (WithParams Const)}
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
     (hNonempty :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         Nonempty (PredicateObject
           (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (hφ0 : ∀ (ρ : Ty Base) (k : Nat), NoConstOccurrence (param ρ k)
       (predicateForAllFormula (Base := Base) (Const := WithParams Const) tau p))
     (enum : Nat → Body Const)
@@ -527,18 +497,10 @@ noncomputable def predicateSugenoCountingCardinalityThresholdCut
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (χ : ClosedFormula (WithParams Const))
     (hχ0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) χ)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (k N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (hχRep :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         HenkinModel.models M.1 χ ↔
@@ -631,18 +593,10 @@ theorem predicateSugenoCountingCardinalityThresholdCut_intervalOfConsistent
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (χ : ClosedFormula (WithParams Const))
     (hχ0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) χ)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (k N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (hχRep :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         HenkinModel.models M.1 χ ↔
@@ -672,18 +626,10 @@ theorem predicateSugenoCountingCardinalityThresholdCut_lower_eq_one_iff_provable
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (χ : ClosedFormula (WithParams Const))
     (hχ0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) χ)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (k N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (hχRep :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         HenkinModel.models M.1 χ ↔
@@ -719,18 +665,10 @@ theorem predicateSugenoCountingCardinalityThresholdCut_upper_eq_zero_iff_provabl
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (χ : ClosedFormula (WithParams Const))
     (hχ0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) χ)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (k N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (hχRep :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         HenkinModel.models M.1 χ ↔
@@ -766,18 +704,10 @@ theorem predicateSugenoCountingCardinalityThresholdCut_lower_eq_zero_iff_not_pro
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (χ : ClosedFormula (WithParams Const))
     (hχ0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) χ)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (k N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (hχRep :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         HenkinModel.models M.1 χ ↔
@@ -813,18 +743,10 @@ theorem predicateSugenoCountingCardinalityThresholdCut_upper_eq_one_iff_not_prov
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (χ : ClosedFormula (WithParams Const))
     (hχ0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) χ)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (k N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (hχRep :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         HenkinModel.models M.1 χ ↔
@@ -860,18 +782,10 @@ theorem predicateSugenoCountingCardinalityThresholdCut_width_eq_zero_iff_decides
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (χ : ClosedFormula (WithParams Const))
     (hχ0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) χ)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (k N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (hχRep :
       ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
         HenkinModel.models M.1 χ ↔
@@ -911,18 +825,10 @@ noncomputable def predicateSugenoCountingExistsExactThresholdCut
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N) :
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N) :
     ExtensionalDefinableCut (Base := Base) (Const := Const) T :=
   predicateSugenoCountingCardinalityThresholdCut
     (Base := Base) (Const := Const) (T := T)
@@ -945,18 +851,10 @@ theorem predicateSugenoCountingExistsExactThresholdCut_intervalOfConsistent
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -980,18 +878,10 @@ theorem predicateSugenoCountingExistsExactThresholdCut_lower_eq_one_iff_provable
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1021,18 +911,10 @@ theorem predicateSugenoCountingExistsExactThresholdCut_upper_eq_zero_iff_provabl
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1062,18 +944,10 @@ theorem predicateSugenoCountingExistsExactThresholdCut_lower_eq_zero_iff_not_pro
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1104,18 +978,10 @@ theorem predicateSugenoCountingExistsExactThresholdCut_upper_eq_one_iff_not_prov
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1146,18 +1012,10 @@ theorem predicateSugenoCountingExistsExactThresholdCut_width_eq_zero_iff_decides
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1194,18 +1052,10 @@ noncomputable def predicateSugenoCountingUniversalExactThresholdCut
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N) :
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N) :
     ExtensionalDefinableCut (Base := Base) (Const := Const) T :=
   predicateSugenoCountingCardinalityThresholdCut
     (Base := Base) (Const := Const) (T := T)
@@ -1228,18 +1078,10 @@ theorem predicateSugenoCountingUniversalExactThresholdCut_intervalOfConsistent
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1263,18 +1105,10 @@ theorem predicateSugenoCountingUniversalExactThresholdCut_lower_eq_one_iff_prova
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1304,18 +1138,10 @@ theorem predicateSugenoCountingUniversalExactThresholdCut_upper_eq_zero_iff_prov
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1345,18 +1171,10 @@ theorem predicateSugenoCountingUniversalExactThresholdCut_lower_eq_zero_iff_not_
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1387,18 +1205,10 @@ theorem predicateSugenoCountingUniversalExactThresholdCut_upper_eq_one_iff_not_p
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
@@ -1429,18 +1239,10 @@ theorem predicateSugenoCountingUniversalExactThresholdCut_width_eq_zero_iff_deci
     (tau : Ty Base)
     (p : UnaryPredicate (Base := Base) (Const := WithParams Const) tau)
     (hp0 : ∀ (ρ : Ty Base) (i : Nat), NoConstOccurrence (param ρ i) p)
-    (hObj : ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-      Fintype (PredicateObject
-        (Base := Base) (Const := WithParams Const) M.1 tau))
-    (hMeasurable :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        MeasurableSpace (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau))
+    (hObj : PredicateDomainFintypes T tau)
+    (hMeasurable : PredicateDomainMeasurability T tau)
     (N : Nat) (hNpos : 0 < N)
-    (hCardEq :
-      ∀ M : ExtensionalTheoryModel (Base := Base) (Const := Const) T,
-        Fintype.card (PredicateObject
-          (Base := Base) (Const := WithParams Const) M.1 tau) = N)
+    (hCardEq : PredicateDomainCardinalityEq T tau hObj N)
     (enum : Nat → Body Const)
     (henum : ∀ bdy : Body Const, ∃ n, enum n = bdy)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)

@@ -1123,8 +1123,8 @@ theorem nested_collector_completed_return (environment : WorldEnvironment Contex
   have stillRetired := (custody_path_no_reissue through).2 child.key childIssued childRetired
   have noReissue := custody_path_no_reissue tail
   have spent (occ : ReceiptId Context World) (live : occ ∈ ready.1.present)
-      (notMem : occ ∉ landing.result.present) : occ ∉ last.1.present :=
-    noReissue.2 occ (Ledger.issued_mono _ _ _ _ (readyCover.1 live)) notMem
+      (absent : occ ∉ landing.result.present) : occ ∉ last.1.present :=
+    noReissue.2 occ (Ledger.issued_mono _ _ _ _ (readyCover.1 live)) absent
   have replyLive : reply ∈ ready.1.present := (readyCover.2 _).mpr (by rw [stamp]; rfl)
   have keptReady : RetainsLowerFrames stack.length (S, book) ready :=
     RetainsLowerFrames.trans keepsOpening

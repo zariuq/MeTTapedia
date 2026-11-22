@@ -42,7 +42,7 @@ claimed by this entry.
 knowledge has a ground solution; every present row has a closed process value;
 and every ground solution determines that value up to `Similar`. It assumes
 neither a source process nor an execution correspondence. Unused declarations,
-missing occurrence labels and other consistent knowledge are not restricted.
+absent occurrence labels and other consistent knowledge are not restricted.
 
 The finite occurrence inventory constructs a canonical rho readback. The
 theorem `clean_iff_representable` identifies this local domain with the whole

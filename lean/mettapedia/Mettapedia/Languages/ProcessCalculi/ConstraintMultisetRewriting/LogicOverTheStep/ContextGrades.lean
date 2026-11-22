@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.NoneNotCompositional
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.AbsenceNotCompositional
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FragmentsOfTheStep.TransitionMaps
 
 /-!
@@ -17,20 +17,20 @@ contexts (`grade_and`, `grade_or`, `grade_union`).
 
 * **Positive predicates survive every context**: presence of a label (`present_grade`) and counts
   from below (`countAtLeast_grade`).
-* **The none query survives exactly where the added store lacks the pattern** (`noneMatch_grade_iff`).
+* **Absence survives exactly where the added store lacks the pattern** (`absent_grade_iff`).
 * **Exact counts survive exactly beside the stores without the pattern** (`count_grade_iff`, from
-  `count_grade_of_noneMatch`; the count zero is the none query, `count_zero_grade_iff`).
+  `count_grade_of_absent`; the count zero is absence, `count_zero_grade_iff`).
 
 ## Which firings and modalities survive
 
-* **The grade of a firing** whose checks are none checks is the conjunction of their grades
-  (`noneChecks_union_iff`, generalizing `Composition.guarded_union_iff` from one none query to any list).
+* **The grade of a firing** whose checks are absences is the conjunction of their grades
+  (`absences_union_iff`, generalizing `Composition.guarded_union_iff` from one absence to any list).
 * **Possibility through a positive firing survives** every fresh context with trivial knowledge
   (`positive_possible_beside`).
-* **The none query invalidated by an added context, modally** (`none_invalidated_beside`): on the
+* **Absence invalidated by an added context, modally** (`absence_invalidated_beside`): on the
   four-rule theory of `NullsOnTheStep.Separations`, a successor is possible at the empty store
-  (`spawn` makes `T` where `U` is not present) and impossible beside the store holding `U`.
-* **Successor necessity does not survive an added context, even with no none query anywhere**
+  (`spawn` makes `T` where `U` is absent) and impossible beside the store holding `U`.
+* **Successor necessity does not survive an added context, even with no absence anywhere**
   (`successorBox_not_kept`): "no successor" holds of the store holding `U` and fails beside the store
   holding `T`, where `drop` fires.
 -/
@@ -98,7 +98,7 @@ theorem grade_empty (φ : Conf → Prop) : Grade φ emptyContext := by
 def Present (p : Expr) (C : Conf) : Prop := ∃ o ∈ C.present, o.1 = p
 
 /-- No occurrence is labelled `p`. -/
-def NoneMatch (p : Expr) (C : Conf) : Prop := (Check.predicate .none p).Holds ground () Prod.fst C.present
+def Absent (p : Expr) (C : Conf) : Prop := (Check.predicate .none p).Holds ground () Prod.fst C.present
 
 /-- Exactly `n` occurrences are labelled `p`. -/
 def CountIs (p : Expr) (n : ℕ) (C : Conf) : Prop :=
@@ -121,17 +121,17 @@ theorem countAtLeast_grade (p : Expr) (n : ℕ) (D : Conf) : Grade (CountAtLeast
   simp only [Check.«matches», Finset.mem_filter, beside, union, Finset.mem_union] at member ⊢
   exact ⟨Or.inl member.1, member.2⟩
 
-/-- **The grade of the none query is exactly the stores without the pattern.** -/
-theorem noneMatch_grade_iff (p : Expr) (D : Conf) : Grade (NoneMatch p) D ↔ NoneMatch p D := by
+/-- **The grade of absence is exactly the stores without the pattern.** -/
+theorem absent_grade_iff (p : Expr) (D : Conf) : Grade (Absent p) D ↔ Absent p D := by
   constructor
   · intro grade
     have onUnion := grade emptyContext (fun o member => by simp [emptyContext] at member)
-    exact (none_union_iff.mp onUnion).2
+    exact (absent_union_iff.mp onUnion).2
   · intro onD C onC
-    exact none_union_iff.mpr ⟨onC, onD⟩
+    exact absent_union_iff.mpr ⟨onC, onD⟩
 
 /-- **Exact counts survive beside every store without the pattern.** -/
-theorem count_grade_of_noneMatch {p : Expr} {D : Conf} (clear : NoneMatch p D) (n : ℕ) :
+theorem count_grade_of_absent {p : Expr} {D : Conf} (clear : Absent p D) (n : ℕ) :
     Grade (CountIs p n) D := by
   intro C counted
   show (Check.«matches» ground () Prod.fst (C.present ∪ D.present) p).card = n
@@ -148,8 +148,8 @@ theorem count_grade_of_noneMatch {p : Expr} {D : Conf} (clear : NoneMatch p D) (
   rw [same]
   exact counted
 
-/-- The count zero is the none query. -/
-theorem countIs_zero_iff (p : Expr) (C : Conf) : CountIs p 0 C ↔ NoneMatch p C := by
+/-- The count zero is absence. -/
+theorem countIs_zero_iff (p : Expr) (C : Conf) : CountIs p 0 C ↔ Absent p C := by
   constructor
   · intro zero o member matched
     have empty : Check.«matches» ground () Prod.fst C.present p = ∅ := Finset.card_eq_zero.mp zero
@@ -170,15 +170,15 @@ theorem countIs_zero_iff (p : Expr) (C : Conf) : CountIs p 0 C ↔ NoneMatch p C
       simp at inEmpty
 
 /-- **For the count zero the grade is exact.** -/
-theorem count_zero_grade_iff (p : Expr) (D : Conf) : Grade (CountIs p 0) D ↔ NoneMatch p D := by
-  have same : CountIs p 0 = NoneMatch p := funext fun C => propext (countIs_zero_iff p C)
+theorem count_zero_grade_iff (p : Expr) (D : Conf) : Grade (CountIs p 0) D ↔ Absent p D := by
+  have same : CountIs p 0 = Absent p := funext fun C => propext (countIs_zero_iff p C)
   rw [same]
-  exact noneMatch_grade_iff p D
+  exact absent_grade_iff p D
 
 /-- **The grade of every exact count is exactly the stores without the pattern**: beside a store
 holding an occurrence of `p`, a store with `n` fresh occurrences of `p` counts more than `n`. -/
-theorem count_grade_iff (p : Expr) (n : ℕ) (D : Conf) : Grade (CountIs p n) D ↔ NoneMatch p D := by
-  refine ⟨fun grade => ?_, fun clear => count_grade_of_noneMatch clear n⟩
+theorem count_grade_iff (p : Expr) (n : ℕ) (D : Conf) : Grade (CountIs p n) D ↔ Absent p D := by
+  refine ⟨fun grade => ?_, fun clear => count_grade_of_absent clear n⟩
   intro o member labelled
   have isP : p = o.1 := labelled
   let C : Conf := ⟨[], (Finset.range n).image (fun k => (p, k + o.2 + 1))⟩
@@ -227,22 +227,22 @@ theorem check_holds {C : Conf} {f : Fir} (admitted : base.Admits (s := C) f) {c 
   obtain ⟨u, solved⟩ := valid.firing.consistent
   exact valid.firing.checks c member u solved
 
-/-- **The grade of a firing is the conjunction of its none grades.** -/
-theorem noneChecks_union_iff {C D : Conf} {f : Fir} {ps : List Expr}
+/-- **The grade of a firing is the conjunction of its absence grades.** -/
+theorem absences_union_iff {C D : Conf} {f : Fir} {ps : List Expr}
     (checks : f.rule.checks = ps.map (Check.predicate .none)) (noQueries : f.queries = [])
     (admitted : base.Admits (s := C) f)
     (freshInD : ∀ o ∈ f.selection.made, o ∉ D.present) (knowledgeD : ∀ e ∈ D.equations, e.1 = e.2) :
-    base.Admits (s := union C D) f ↔ ∀ p ∈ ps, NoneMatch p D := by
+    base.Admits (s := union C D) f ↔ ∀ p ∈ ps, Absent p D := by
   constructor
   · intro onUnion p member
     have holds := check_holds onUnion (c := .predicate .none p) (by rw [checks]; exact List.mem_map_of_mem member)
-    exact (none_union_iff.mp holds).2
+    exact (absent_union_iff.mp holds).2
   · intro onD
     refine valid_union admitted freshInD knowledgeD ?_ noQueries
     intro c member
     rw [checks] at member
     obtain ⟨p, inPs, rfl⟩ := List.mem_map.mp member
-    exact none_union_iff.mpr
+    exact absent_union_iff.mpr
       ⟨check_holds admitted (by rw [checks]; exact List.mem_map_of_mem inPs), onD p inPs⟩
 
 /-- The successors of the first-order step. -/
@@ -267,9 +267,9 @@ def besideL (D : Conf × Set ℕ) (s : Conf × Set ℕ) : Conf × Set ℕ := (un
 theorem besideL_onlyU_emptyS : besideL Separations.onlyU Separations.emptyS = Separations.onlyU := by
   simp [besideL, union, Separations.onlyU, Separations.emptyS]
 
-/-- **The none query invalidated by an added context, modally.** At the empty store a successor is
-possible (`spawn` makes `T` where `U` is not present); beside the store holding `U` none is. -/
-theorem none_invalidated_beside :
+/-- **Absence invalidated by an added context, modally.** At the empty store a successor is
+possible (`spawn` makes `T` where `U` is absent); beside the store holding `U` none is. -/
+theorem absence_invalidated_beside :
     derivedDiamond (span spSucc) (fun _ => True) Separations.emptyS ∧
       ¬ derivedDiamond (span spSucc) (fun _ => True) (besideL Separations.onlyU Separations.emptyS) := by
   refine ⟨(diamond_iff _ _ _).mpr ⟨_, ⟨Separations.spawnAt, Separations.spawn_admitted, rfl⟩, trivial⟩,
@@ -279,7 +279,7 @@ theorem none_invalidated_beside :
   obtain ⟨_, ⟨f, a, _⟩, _⟩ := (diamond_iff _ _ _).mp possible
   exact Separations.onlyU_no_successor f a
 
-/-- **Successor necessity does not survive an added context, even with no none query anywhere**:
+/-- **Successor necessity does not survive an added context, even with no absence anywhere**:
 "no successor" holds of the store holding `U`, and beside the store holding `T` the firing of
 `drop` appears. -/
 theorem successorBox_not_kept :
@@ -301,13 +301,13 @@ theorem successorBox_not_kept :
 #print axioms grade_union
 #print axioms present_grade
 #print axioms countAtLeast_grade
-#print axioms noneMatch_grade_iff
-#print axioms count_grade_of_noneMatch
+#print axioms absent_grade_iff
+#print axioms count_grade_of_absent
 #print axioms count_zero_grade_iff
 #print axioms count_grade_iff
-#print axioms noneChecks_union_iff
+#print axioms absences_union_iff
 #print axioms positive_possible_beside
-#print axioms none_invalidated_beside
+#print axioms absence_invalidated_beside
 #print axioms successorBox_not_kept
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LogicOverTheStep.ContextGrades

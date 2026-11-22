@@ -5,7 +5,7 @@ import Mathlib.Data.Finset.Lattice.Fold
 # Finite acceptance support is separate from a query's physical footprint
 
 Support data records an actual finite set and the existing `SupportedBy`
-licence. Exact observations have their supplied names; counts and none queries
+licence. Exact observations have their supplied names; counts and absence
 name no occurrence in their acceptance test. Arbitrary region observations
 remain admissible without finite support. In particular, an effective
 acceptance test need not have a finite nominal support.

@@ -11,11 +11,11 @@ the first-order step: a configuration beside another.
   stable (`reads_is_stable`), it is admitted beside the occurrence `9`
   (`reads_is_admitted_beside_nine`), and its one-firing run has a placed native run there
   (`reads_has_a_placed_run`).
-* **The none query is graded.** The firing `unlessNine` is admitted alone, its placed candidate beside
+* **Absence is graded.** The firing `unlessNine` is admitted alone, its placed candidate beside
   the occurrence `9` is prepared and leaves the context unchanged
   (`unless_nine_fits_beside_nine`), and it is refused there (`unless_nine_refused_beside_nine`).
-  So admission is not stable (`none_is_not_stable`, `admission_is_not_stable`), the grade of
-  its run is strictly inside the structural part (`none_grade_is_not_structural`), and no
+  So admission is not stable (`absence_is_not_stable`, `admission_is_not_stable`), the grade of
+  its run is strictly inside the structural part (`absence_grade_is_not_structural`), and no
   placed run exists (`unless_nine_has_no_placed_run`).
 * **Counting is graded, in both directions.** With every occurrence labelled `5`, the firing
   `counts n` is admitted exactly at stores of `n` occurrences (`counts_valid_iff`). `counts 1` is
@@ -86,7 +86,7 @@ theorem reads_has_a_placed_run :
     ⟨⟨reads_frames_nine, (valid_tensor_iff plain id reads reads_admitted).mp
       reads_is_admitted_beside_nine⟩, trivial⟩
 
-/-! ## The none query is graded -/
+/-! ## Absence is graded -/
 
 def unlessNineFiring : Firing Nat Unit Nat := ⟨unlessNine, [], makeSeven⟩
 
@@ -123,16 +123,16 @@ theorem unless_nine_fits_beside_nine :
       unlessNineRun :=
   ⟨⟨unless_nine_frames_nine, unless_nine_prepared_beside_nine⟩, trivial⟩
 
-theorem none_is_not_stable :
+theorem absence_is_not_stable :
     ¬ StableAt (contextualRunInterpretation plain id) (left := one) (right := nine) PUnit.unit
       unlessNineFiring :=
   fun stable => unless_nine_refused_beside_nine
     (stable unless_nine_admitted unless_nine_frames_nine unless_nine_prepared_beside_nine)
 
 theorem admission_is_not_stable : ¬ Stable (contextualRunInterpretation plain id) :=
-  fun stable => none_is_not_stable (stable (left := one) (right := nine) PUnit.unit unlessNineFiring)
+  fun stable => absence_is_not_stable (stable (left := one) (right := nine) PUnit.unit unlessNineFiring)
 
-theorem none_grade_is_not_structural :
+theorem absence_grade_is_not_structural :
     Fits (contextualRunInterpretation plain id) (left := one) (right := nine) PUnit.unit
         unlessNineRun ∧
       ¬ (contextualRunInterpretation plain id).Checks (left := one) (right := nine) PUnit.unit
@@ -144,7 +144,7 @@ theorem unless_nine_has_no_placed_run :
     ¬ ∃ native : (firstOrder plain id).toStep.Run (AnnotatedRuns.tensor one nine),
       Places (contextualRunInterpretation plain id) (left := one) (right := nine) PUnit.unit
         unlessNineRun native :=
-  fun placed => none_grade_is_not_structural.2
+  fun placed => absence_grade_is_not_structural.2
     ((exists_places_iff_checks (contextualRunInterpretation plain id) (left := one) (right := nine)
       PUnit.unit unlessNineRun).mp placed)
 

@@ -697,9 +697,9 @@ theorem heatAt_label₂ (ρ : PSubst) (o : ℕ) {m₁ m₂ : ℕ} (madeDistinct 
   show (if m₂ = m₁ then _ else if m₂ = m₂ then psubst ρ rightPart else _) = _
   rw [if_neg (Ne.symm madeDistinct), if_pos rfl]
 
-theorem result_label_kept {f : Firing ℕ E program s.frame} {o : ℕ} (missing : o ∉ f.selection.made) :
+theorem result_label_kept {f : Firing ℕ E program s.frame} {o : ℕ} (absent : o ∉ f.selection.made) :
     (f.result X s).label o = s.label o :=
-  (Firing.result_label_other (X := X) (s := s) f missing).trans (psubst_none (s.label o))
+  (Firing.result_label_other (X := X) (s := s) f absent).trans (psubst_none (s.label o))
 
 end Information
 

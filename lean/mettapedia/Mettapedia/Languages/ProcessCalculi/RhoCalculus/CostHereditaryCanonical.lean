@@ -410,12 +410,14 @@ def canonicalizeReifiedTargetFrame_openTerm
       (by simpa only [CostStaticRegionNode.reifiedTargetFrame_pattern] using
         (node.reifiedTargetFrame environment).2.1.2.2.1)
   · intro presentation membership
+    have closed := CostCanonicalLaws.rho_costWholeReflectionProfile_closed presentation membership
+    have sealed := (node.reifiedTargetFrame environment).2.2 presentation membership
+    rw [Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_closed closed] at sealed ⊢
     exact canonicalizeByAt_binderSafeAt
       (CostStaticRegionNode.semanticPatternKeyAt environment) declaration
       presentation.quoteConstructor node.targetBound.length
       node.targetBound.length (node.reifyTargetFrame environment)
-      (by simpa only [CostStaticRegionNode.reifiedTargetFrame_pattern] using
-        (node.reifiedTargetFrame environment).2.2 presentation membership)
+      (by simpa only [CostStaticRegionNode.reifiedTargetFrame_pattern] using sealed)
 
 /-- The full open target frame retains the restoration-support certificate
 proved by the rho source action. -/
@@ -948,10 +950,13 @@ def semanticCanonicalizedSourceTerm
   have normalizedScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
       rhoCIGSLT.reflection.1 node.sourceBound.length normalizedPattern := by
     intro declaration membership
+    have closed : declaration.quoteScope = .closed :=
+      ReflectiveWellSorted.rhoReflectionProfile_closed declaration membership
+    have sealed := sourceFrame.2.2 declaration membership
+    rw [Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_closed closed] at sealed ⊢
     exact canonicalizeByDepths_binderSafeAt sourceKey
       rhoReflectivePresentation declaration.quoteConstructor
-      node.targetBound.length 0 node.sourceBound.length sourceFrame.1
-        (sourceFrame.2.2 declaration membership)
+      node.targetBound.length 0 node.sourceBound.length sourceFrame.1 sealed
   let normalizedTerm : ReflectiveWellSorted.OpenTerm rhoCIGSLT.reflection.1
       rhoCalc environment.sourceAtomFreeContext node.sourceBound
       node.sourceSort :=

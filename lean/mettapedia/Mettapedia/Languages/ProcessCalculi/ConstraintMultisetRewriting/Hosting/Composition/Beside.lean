@@ -165,19 +165,19 @@ theorem noMatchingRow_of_neverReads {w : HostState S} {a : ℕ} {others : Finset
 
 end Invariant
 
-/-! ## Every rule of a translation is none-only -/
+/-! ## Every rule of a translation is absence-only -/
 
 section Rules
 
 variable {Ty : Type} {P : SourceLanguage.Program κ Γ star Ty}
 
-theorem translate_noneOnly {r : RuleSyntax.Rule (RuleSyntax.Contextual.Terms S)}
-    (member : r ∈ translate N P) : NoneOnly r := by
+theorem translate_absenceOnly {r : RuleSyntax.Rule (RuleSyntax.Contextual.Terms S)}
+    (member : r ∈ translate N P) : AbsenceOnly r := by
   classical
   by_cases unmatched : r = unmatchedRule N
   · subst unmatched
     exact ⟨fun c inside => .inr ⟨_, List.mem_singleton.mp inside⟩, rfl⟩
-  · exact noneOnly_of_positive (positive_of_ne_unmatched N member unmatched)
+  · exact absenceOnly_of_positive (positive_of_ne_unmatched N member unmatched)
 
 /-- **Every firing of the translated program beside other rows takes the alternative's row**, when the
 other rows never read as `alt(…)`: the equation rows read as `eqn(…)`. -/
@@ -319,7 +319,7 @@ theorem fire_beside {r : RuleSyntax.Rule (RuleSyntax.Contextual.Terms S)} (membe
   exact freshId_not_mem w (by rw [beside.present]; exact Finset.mem_union_right _ inside)
 
 /-- **The guard of the unmatched call beside other rows**: when no equation of the program matches the
-call and no other row matches it, the none check of the canonical unmatched firing holds at every
+call and no other row matches it, the absence check of the canonical unmatched firing holds at every
 solution of its information. -/
 theorem unmatched_guard_beside {n : ℕ} {K : List (Constraint κ Γ star)} {t : Data κ Γ star}
     {fs : List (SourceLanguage.Frame κ Γ star Ty)} {ps : List (Data κ Γ star × Comp κ Γ star Ty)}
@@ -441,7 +441,7 @@ theorem unmatched_beside_iff {n : ℕ} {K : List (Constraint κ Γ star)} {t : D
         exact Finset.mem_insert_self _ _
       · cases none'
     have admittedH := admits_restrict (Interface.Frames.contextual S) (beside.rows_sub N)
-      (translate_noneOnly N f.member) selected admitted
+      (translate_absenceOnly N f.member) selected admitted
     have ruleEq := unmatched_rule_of_admitted N beside.hosted none admittedH
     obtain ⟨rule, member, ext, opening, selection, seen⟩ := f
     simp only at ruleEq taken read made
@@ -467,8 +467,8 @@ theorem unmatched_beside_iff {n : ℕ} {K : List (Constraint κ Γ star)} {t : D
         (⟨unmatchedRule N, member, ext, opening, selection, seen⟩ :
           RuleSyntax.Firing ℕ (RuleSyntax.Contextual.declarations S) (translate N P) w.frame)).checks =
         [.predicate .none (instantiateObservation opening (unmatchedCheck N))] := rfl
-    have missing := holds _ (by rw [checkMember]; exact List.mem_singleton_self _)
-    apply missing o oPresent
+    have absent := holds _ (by rw [checkMember]; exact List.mem_singleton_self _)
+    apply absent o oPresent
     change instantiateObservation u (instantiateObservation opening (unmatchedCheck N)) =
       instantiateObservation u (RuleSyntax.Firing.row (Interface.Frames.contextual S) w _ o)
     rw [onTerms _ (by simp [RuleSyntax.Rule.terms, unmatchedRule, RuleSyntax.checkTerms]),
@@ -590,7 +590,7 @@ theorem reflection_beside (arrowP : ArrowProgram P) {v : World κ Γ star} {b : 
       exact Finset.mem_insert_self _ _
     · cases none
   have admittedH := admits_restrict (Interface.Frames.contextual S) (beside.rows_sub N)
-    (translate_noneOnly N f.member) selected admitted
+    (translate_absenceOnly N f.member) selected admitted
   obtain ⟨v', bs, b', a', move, child, rep', arrow'⟩ :=
     reflection_arrows N (supply := supply) arrowP beside.hosted arrow hygienic ⟨f, admittedH, rfl⟩
   have sameRow : a' = a₁ := by
@@ -622,7 +622,7 @@ end Steps
 
 #print axioms neverReads_after
 #print axioms beside_empty
-#print axioms translate_noneOnly
+#print axioms translate_absenceOnly
 #print axioms beside_takes
 #print axioms beside_after
 #print axioms fire_beside

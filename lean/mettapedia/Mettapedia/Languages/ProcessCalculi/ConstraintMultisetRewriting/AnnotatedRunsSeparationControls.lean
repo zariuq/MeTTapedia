@@ -22,7 +22,7 @@ On the control signature of `AnnotatedRuns.Controls` (natural-number identities;
 * `knowledge_frame_refused`: the taker binds `X = 0`; a frame with disjoint occurrences that knows
   `X = 1` is separable from the taker's start, and the framed taker is refused.
 * `name_frame_refused`: the run that makes and takes `9`, framed by `9`, is refused.
-* `none_frame_refused`, `count_frame_refused`: a frame that inserts into a none query's or a
+* `absence_frame_refused`, `count_frame_refused`: a frame that inserts into an absence query's or a
   count query's region refuses it.
 * `evidence_is_not_permission`: knowledge is duplicable and grants no take; one occurrence cannot be
   owned twice. `read_is_not_take`: a shared read is compatible with another read, not with a take.
@@ -37,8 +37,8 @@ On the control signature of `AnnotatedRuns.Controls` (natural-number identities;
 * `program_frame_fails`: a program run consumes the frame; the frame rule is a law of single runs.
 * `shared_read_compatible`: two readers of one occurrence have compatible footprints and form a
   round; no split makes them separated runs.
-* `completeness_fails_with_none`, `soundness_fails_with_count_guard`, `multi_step_frame_unsound`.
-* `authority_admits_outside`, `authority_refuses_inside`: owning the persistent region, the none query
+* `completeness_fails_with_absence`, `soundness_fails_with_count_guard`, `multi_step_frame_unsound`.
+* `authority_admits_outside`, `authority_refuses_inside`: owning the persistent region, the absence
   query is local beside a frame outside it, and a frame inside it is not separable.
   `authority_admits_a_count_outside` (positive count control): owning that region, a count of one
   persistent atom is local beside the same frame.
@@ -225,8 +225,8 @@ theorem name_frame_refused :
       ¬ Executable A label (tensor none₀ nineSpace) [maker, takerNine] :=
   ⟨ends_separable_not_tensor.1, ends_separable_not_tensor.2.1, ends_separable_not_tensor.2.2.2⟩
 
-/-- **A frame inserting into a none query's region refuses it.** -/
-theorem none_frame_refused :
+/-- **A frame inserting into an absence query's region refuses it.** -/
+theorem absence_frame_refused :
     observer.Valid A label none₀ ∧ Separable A (observer.result label none₀) nineSpace ∧
       ¬ observer.Valid A label (tensor none₀ nineSpace) := by
   refine ⟨observer_valid, ⟨by decide, Subst.id signature, ?_⟩, fun valid => ?_⟩
@@ -511,9 +511,9 @@ theorem unlessNine_valid : unlessNine.Valid A label none₀ := by
   obtain rfl := List.mem_singleton.mp member
   decide
 
-/-- **Completeness fails with a none query.** The framed small step of the none query beside
+/-- **Completeness fails with an absence query.** The framed small step of the absence query beside
 `9` is a derivation; no run of the program reaches its end. -/
-theorem completeness_fails_with_none :
+theorem completeness_fails_with_absence :
     Derives A label {unlessNine} nineSpace (tensor (unlessNine.result label none₀) nineSpace) ∧
       ¬ ProgramReaches A label {unlessNine} nineSpace
         (tensor (unlessNine.result label none₀) nineSpace) := by
@@ -644,8 +644,8 @@ theorem multi_step_frame_unsound :
 /-- The empty configuration, owning the persistent region. -/
 def owner : Owned (Term signature) Nat := ⟨none₀, [persistent]⟩
 
-/-- **Owning the region makes the none query local**: beside the occurrence `0`, outside the
-persistent region, the owner's none query is still admitted. -/
+/-- **Owning the region makes the absence query local**: beside the occurrence `0`, outside the
+persistent region, the owner's absence query is still admitted. -/
 theorem authority_admits_outside :
     OwnedSeparable A label owner ⟨TensorControls.takerSide, []⟩ ∧
       observer.Valid A label (tensor none₀ TensorControls.takerSide) := by
@@ -715,7 +715,7 @@ open SeparationRuns.SeparationControls
 #print axioms tell_splits_two_ways
 #print axioms knowledge_frame_refused
 #print axioms name_frame_refused
-#print axioms none_frame_refused
+#print axioms absence_frame_refused
 #print axioms counter_valid
 #print axioms count_frame_refused
 #print axioms evidence_is_not_permission
@@ -731,7 +731,7 @@ open SeparationRuns.SeparationControls
 #print axioms shared_read_compatible
 #print axioms read_is_not_take
 #print axioms unlessNine_valid
-#print axioms completeness_fails_with_none
+#print axioms completeness_fails_with_absence
 #print axioms countNine_valid
 #print axioms soundness_fails_with_count_guard
 #print axioms makerPair_valid

@@ -44,33 +44,33 @@ variable {S : Setting Head L}
 /-- **A decided store, as data**: a finished update, or no solution. -/
 inductive Decided {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Type
   | solved (update : Update S.levels problem) (finished : update.remaining = [])
-  | refuted (missing : ¬ (frames S.levels).Solvable problem)
+  | refuted (absent : ¬ (frames S.levels).Solvable problem)
 
 /-- A decided store is settled. -/
 theorem Decided.settles {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} :
     Decided problem → Settles problem
   | .solved update finished => .inl ⟨update, finished⟩
-  | .refuted missing => .inr missing
+  | .refuted absent => .inr absent
 
 /-- A run of a solver that finishes, as a decided store. -/
 def Decided.ofRun (solver : ContextualDependentWorklist.Solver S.levels) (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) :
     Option (Decided problem) :=
   match run solver problem fuel with
   | .solved state finished => some (.solved state finished)
-  | .refuted missing => some (.refuted missing)
+  | .refuted absent => some (.refuted absent)
   | _ => none
 
 /-- A store is decided after an update when the update's residual store is. -/
 def Decided.after {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} (first : Update S.levels problem) :
     Decided first.remaining → Decided problem
   | .solved update finished => .solved (first.then update) finished
-  | .refuted missing => .refuted fun solvable => missing (first.solvable_iff.mp solvable)
+  | .refuted absent => .refuted fun solvable => absent (first.solvable_iff.mp solvable)
 
 /-- A store is decided when an equivalent store is. -/
 def Decided.equivalent {Θ : Context S.R} {problem other : EquationStore (TotalTerm Θ)}
     (same : (frames S.levels).Equivalent problem other) : Decided other → Decided problem
   | .solved update finished => .solved (update.rephrase same) finished
-  | .refuted missing => .refuted fun ⟨Δ, σ, models⟩ => missing ⟨Δ, σ, (same Δ σ).mp models⟩
+  | .refuted absent => .refuted fun ⟨Δ, σ, models⟩ => absent ⟨Δ, σ, (same Δ σ).mp models⟩
 
 /-- Decide at the newest declaration of a context. -/
 def decideNewest {Θ : Context S.R} (view : Newest Θ) (problem : EquationStore (TotalTerm Θ))
@@ -114,8 +114,8 @@ def phaseAt (fuel : Nat) {Γ : Context S.R} (type : TypeOver Γ) (stored : Equat
   let parts := ContextualDependentInPlace.separation facts roots heads algebra declared choices reducer fuel type stored
   match decide parts.val.1 with
   | none => none
-  | some (.refuted missing) => some (.refuted fun ⟨Δ, σ, models⟩ =>
-      missing ⟨Δ, σ ≫ projectionHom Γ type,
+  | some (.refuted absent) => some (.refuted fun ⟨Δ, σ, models⟩ =>
+      absent ⟨Δ, σ ≫ projectionHom Γ type,
         (Frames.models_applyStore (X := frames S.levels) (projectionHom Γ type) σ parts.val.1).mp
           ((Frames.models_append (X := frames S.levels) σ parts.val.2 _).mp ((parts.property Δ σ).mp models)).2⟩)
   | some (.solved update _) =>

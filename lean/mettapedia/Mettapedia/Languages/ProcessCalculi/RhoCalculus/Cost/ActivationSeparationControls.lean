@@ -39,7 +39,7 @@ def target : CostConfig String :=
 /-- The sending endpoint is also an actual nonempty authored compiler image. -/
 theorem sender_authored_image :
     AuthoredCodeImage exampleEncoding exampleSeal FreeSortContext.empty [] authoredSender sender := by
-  refine ⟨.output (.quote .unit (by decide)) authored_nonempty_payload_sorted, 12, ?_⟩
+  refine ⟨.output (.quote .unit) authored_nonempty_payload_sorted, 12, ?_⟩
   decide +kernel
 
 /-- Authored compiler-image endpoints plus separate located funding inhabit

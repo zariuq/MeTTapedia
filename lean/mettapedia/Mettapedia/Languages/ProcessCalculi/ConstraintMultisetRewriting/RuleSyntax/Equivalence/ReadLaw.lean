@@ -19,7 +19,7 @@ state (`readTakeMake_congruent`).
 
 Where the hypotheses come from:
 
-* **Infinitely many identities.** The made row needs an identity missing from the store; with every
+* **Infinitely many identities.** The made row needs an identity absent from the store; with every
   identity present the read fires and the take-and-make cannot. With one identity the two rules are
   not congruent (`AtOneFrame.read_needs_infinite`); an instance with identities `ℕ` is
   `AtOneFrame.read_example`.
@@ -27,7 +27,7 @@ Where the hypotheses come from:
   (`Enabled.apart`), so the law is stated for a rule with one read; rules with two reads are not
   covered here.
 * **One firing.** The law relates a read to a take and a make in the same firing. A take in one
-  firing and a make in a later one pass through a state without the row, which a count or a none query
+  firing and a make in a later one pass through a state without the row, which a count or an absence
   of another firing can read; that comparison is not made here.
 -/
 
@@ -75,9 +75,9 @@ theorem relabel_append_last {a : Obj} (old : O → Tm a) (m : O) (t : Tm a) :
   | [], [], _, _ => by simp [relabel]
   | [], _ :: _, lengths, _ => by simp at lengths
   | _ :: _, [], lengths, _ => by simp at lengths
-  | n :: rest, u :: us, lengths, missing => by
-      have other : m ≠ n := fun same => missing (same ▸ List.mem_cons_self)
-      have later : m ∉ rest := fun inside => missing (List.mem_cons_of_mem _ inside)
+  | n :: rest, u :: us, lengths, absent => by
+      have other : m ≠ n := fun same => absent (same ▸ List.mem_cons_self)
+      have later : m ∉ rest := fun inside => absent (List.mem_cons_of_mem _ inside)
       simp only [List.cons_append, relabel, if_neg other]
       exact relabel_append_last old m t rest us (Nat.succ.inj lengths) later
 

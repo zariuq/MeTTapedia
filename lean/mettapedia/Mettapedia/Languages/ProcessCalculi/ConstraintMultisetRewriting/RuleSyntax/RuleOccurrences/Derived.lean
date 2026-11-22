@@ -11,9 +11,9 @@ to `b` is **derived** from the links from `a` to `m` and from `m` to `b`.
 * **`derived_firing`**: in a program that contains the two links, at **every** state, every admitted
   firing of the derived link is matched by an admitted firing of the first link at that state and an
   admitted firing of the second at its result, passing through one row `m` at an identity that was
-  missing, and ending in a state that **agrees** with the result of the derived firing (`Agree`): the
+  absent, and ending in a state that **agrees** with the result of the derived firing (`Agree`): the
   same rows are present with the same labels, and the knowledge has the same solutions. The two
-  results differ only in the label of the missing identity the run passed through and in one equation
+  results differ only in the label of the absent identity the run passed through and in one equation
   `m ≐ m` of the knowledge, which is stated as the last conjunct.
 
 Every firing of a program is a firing of every larger program, so the program with the derived link
@@ -58,7 +58,7 @@ theorem derived_firing {P : Program (Terms T)} {a m b : T} (groundA : ∀ σ : S
     (groundM : ∀ σ : S, A.apply σ m = m) (groundB : ∀ σ : S, A.apply σ b = b)
     (first : link a m ∈ P) (second : link m b ∈ P) (s : State (Terms T) O)
     (g : Firing O (ext A) P s.frame) (fires : g.rule = link a b) (admitted : g.Admits (frames A) s)
-    {via : O} (missing : via ∉ s.present) (other : via ∉ g.selection.made) :
+    {via : O} (absent : via ∉ s.present) (other : via ∉ g.selection.made) :
     ∃ (g₁ : Firing O (ext A) P s.frame) (g₂ : Firing O (ext A) P (g₁.result (frames A) s).frame),
       g₁.rule = link a m ∧ g₁.Admits (frames A) s ∧ g₂.rule = link m b ∧
         g₂.Admits (frames A) (g₁.result (frames A) s) ∧
@@ -76,7 +76,7 @@ theorem derived_firing {P : Program (Terms T)} {a m b : T} (groundA : ∀ σ : S
   have viaNe : via ≠ o' := fun same => other (List.mem_singleton.mpr same)
   have oPresent : o ∈ s.present :=
     enabled.taken_subset (List.mem_toFinset.mpr (List.mem_singleton_self o))
-  have newNotPresent : o' ∉ s.present := fun inside =>
+  have newAbsent : o' ∉ s.present := fun inside =>
     Finset.disjoint_left.mp enabled.fresh (List.mem_toFinset.mpr (List.mem_singleton_self o')) inside
   -- the first firing
   let g₁ : Firing O (ext A) P s.frame := ⟨link a m, first, e, ι, ⟨[o], [], [via]⟩, []⟩
@@ -100,7 +100,7 @@ theorem derived_firing {P : Program (Terms T)} {a m b : T} (groundA : ∀ σ : S
         exact absurd inside List.not_mem_nil
       · intro x inside
         obtain rfl := List.mem_singleton.mp inside
-        exact missing
+        exact absent
     · intro _ σ _
       exact ⟨fun check inside => absurd inside List.not_mem_nil,
         fun q inside => absurd inside List.not_mem_nil⟩
@@ -161,7 +161,7 @@ theorem derived_firing {P : Program (Terms T)} {a m b : T} (groundA : ∀ σ : S
         obtain rfl := List.mem_singleton.mp inside
         intro isPresent
         rcases (present₁ x).mp isPresent with ⟨old, -⟩ | isVia
-        · exact newNotPresent old
+        · exact newAbsent old
         · exact viaNe isVia.symm
     · obtain ⟨target, σ, solved⟩ := solvable
       exact ⟨target, σ, (models₂ target σ).mpr solved⟩
@@ -180,7 +180,7 @@ theorem derived_firing {P : Program (Terms T)} {a m b : T} (groundA : ∀ σ : S
       · exact absurd isVia notVia
       · exact Or.inr isMade
     · rintro (⟨inside, notTaken⟩ | isMade)
-      · exact Or.inl ⟨Or.inl ⟨inside, notTaken⟩, fun isVia => missing (isVia ▸ inside)⟩
+      · exact Or.inl ⟨Or.inl ⟨inside, notTaken⟩, fun isVia => absent (isVia ▸ inside)⟩
       · exact Or.inr isMade
   · intro x notVia
     by_cases isMade : x = o'
@@ -253,7 +253,7 @@ theorem derived_admitted :
     (tokenFiring (P := withDerived) 3 (Or.inr rfl)).Admits X Examples.tokenState :=
   token_admitted 3 _
 
-/-- **Its firing is a run of the chain**: `derived_firing` at the token, through the missing identity
+/-- **Its firing is a run of the chain**: `derived_firing` at the token, through the absent identity
 `2`. -/
 theorem derived_is_run :
     ∃ (g₁ : Firing ℕ E withDerived Examples.tokenState.frame)

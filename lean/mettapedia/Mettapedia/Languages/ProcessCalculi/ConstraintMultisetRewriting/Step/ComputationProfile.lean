@@ -70,7 +70,7 @@ theorem Instruction.admitted_iff {configuration : Configuration (S := S)}
 def Configuration.fresh (configuration : Configuration (S := S)) : Nat :=
   configuration.state.present.sup id + 1
 
-theorem Configuration.fresh_not_present (configuration : Configuration (S := S)) :
+theorem Configuration.fresh_absent (configuration : Configuration (S := S)) :
     configuration.fresh ∉ configuration.state.present := by
   intro member
   have bound : configuration.fresh ≤ configuration.state.present.sup id := Finset.le_sup (f := id) member
@@ -89,7 +89,7 @@ theorem source_realized {configuration : Configuration (S := S)} {result : Tm He
       instruction.event.target = result ∧
       (step S.levels Nat).Admits (instruction.compile qualified configuration.fresh) := by
   obtain ⟨instruction, target⟩ := source_complete (presentation := presentation) reduction
-  exact ⟨instruction, target, (instruction.admitted_iff qualified _).mpr configuration.fresh_not_present⟩
+  exact ⟨instruction, target, (instruction.admitted_iff qualified _).mpr configuration.fresh_absent⟩
 
 theorem instruction_reflects {configuration : Configuration (S := S)}
     (instruction : Instruction presentation configuration) (target : Nat)

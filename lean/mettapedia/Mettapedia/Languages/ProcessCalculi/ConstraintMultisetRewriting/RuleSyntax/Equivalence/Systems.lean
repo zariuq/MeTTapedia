@@ -21,7 +21,7 @@ A **basic context** (`Basic`) is one of four kinds:
 Labels, equations and extensions are given at every frame, so that one context applies to every
 system, at whatever frame its state is. At the one-frame instance they are plain values.
 
-A context **applies** to a system (`Basic.Applies`) when the identities it adds are missing from it; no
+A context **applies** to a system (`Basic.Applies`) when the identities it adds are absent from it; no
 other side condition is asked. In particular a tell may make the knowledge unsolvable: the system is
 then inert, which the barbs see.
 
@@ -139,7 +139,7 @@ def ids : Basic Tm O E → Finset O
   | .rows ids _ => ids
   | _ => ∅
 
-/-- **A context applies** to a system when the identities it adds are missing from the system. -/
+/-- **A context applies** to a system when the identities it adds are absent from the system. -/
 def Applies (c : Basic Tm O E) (S : System Tm O) : Prop := Disjoint c.ids S.state.present
 
 /-- **The same context with its added identities renamed**: the same labels at the renamed

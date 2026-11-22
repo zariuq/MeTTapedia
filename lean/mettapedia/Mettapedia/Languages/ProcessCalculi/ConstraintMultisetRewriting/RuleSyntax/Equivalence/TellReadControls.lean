@@ -30,7 +30,7 @@ renaming of identities nor a change modulo the knowledge.
   syntax and are congruent beside every program, at every state, with identities `ℕ`.
 * **The identities must be infinite** (`read_needs_infinite`): with one identity, at one row `7`,
   the rule that reads `7` moves and the rule that takes `7` and makes it again does not, since its
-  made row has no identity missing from the store. The may-barbs keep the other two hypotheses.
+  made row has no identity absent from the store. The may-barbs keep the other two hypotheses.
 -/
 
 set_option autoImplicit false
@@ -142,7 +142,7 @@ theorem read_moves_unit : ∃ T, Reduces X Unit E ⟨∅ ∪ {withRead idle (c 7
   exact ⟨_, reduces_of_admits f admitted⟩
 
 /-- **With one identity, taking the row `7` to make it again does not move**: the made row needs an
-identity missing from the store, and there is none. -/
+identity absent from the store, and there is none. -/
 theorem takeMake_stuck_unit :
     ¬ ∃ T, Reduces X Unit E ⟨∅ ∪ {withTakeMake idle (c 7)}, sevenAtUnit⟩ T := by
   rintro ⟨T, -, ⟨rule, member, ext, ι, selection, seen⟩, admitted, -⟩

@@ -102,8 +102,8 @@ theorem sidesApart_of_B {n : Nat} {Γ : Ctx Head n} {l r : Tm Head n} (h : sides
   have hj := List.all_eq_true.mp hi j (List.mem_finRange j)
   simp only [Bool.or_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not, Bool.and_eq_true]
     at hj
-  rcases hj with missing | ⟨hl, hr⟩
-  · exact absurd member missing
+  rcases hj with absent | ⟨hl, hr⟩
+  · exact absurd member absent
   · exact ⟨hl, hr⟩
 
 theorem sidesApartB_of {n : Nat} {Γ : Ctx Head n} {l r : Tm Head n} (h : SidesApart Γ l r) :
@@ -146,8 +146,8 @@ theorem atUniverses_of_B [∀ head, Decidable (S.R.isUniverse head)] {n : Nat} {
   intro Y member
   have hY := List.all_eq_true.mp h Y (List.mem_finRange Y)
   simp only [Bool.or_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not] at hY
-  rcases hY with missing | found
-  · exact absurd member missing
+  rcases hY with absent | found
+  · exact absurd member absent
   · cases hw : headOf (Ctx.lookup Γ Y) with
     | none => rw [hw] at found; cases found
     | some w =>
@@ -388,10 +388,10 @@ def codSolvableB {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexCod e
 
 omit [DecidableEq Head] in
 theorem codSolvable_of_B {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexCod e)
-    (h : codSolvableB choices glb v = true) (missing : v.X ∉ e.2.2.code.support) : CodSolvable glb v := by
+    (h : codSolvableB choices glb v = true) (absent : v.X ∉ e.2.2.code.support) : CodSolvable glb v := by
   simp only [codSolvableB, Bool.and_eq_true] at h
   obtain ⟨⟨⟨hHeads, hMeets⟩, hOcc⟩, hApart⟩ := h
-  refine ⟨missing, ?_, atUniverses_of_B hOcc, codApart_of_sides v (sidesApart_of_B hApart), ?_⟩
+  refine ⟨absent, ?_, atUniverses_of_B hOcc, codApart_of_sides v (sidesApart_of_B hApart), ?_⟩
   · intro h member
     have fit := List.all_eq_true.mp hHeads h member
     unfold fitPred at fit
@@ -577,9 +577,9 @@ theorem flexCod_decided {Θ : Context S.R} {original : EquationStore (TotalTerm 
               run (flexCodSolver choices glb spec facts roots heads algebra rigid complete headTypingUnique declared)
                   original larger = .solved state finished ∧
                 (frames S.levels).Principal original state.answer) ∨
-          (∃ missing,
+          (∃ absent,
             run (flexCodSolver choices glb spec facts roots heads algebra rigid complete headTypingUnique declared)
-              original larger = .refuted missing)) :=
+              original larger = .refuted absent)) :=
   (flexCodFragment choices glb spec facts roots heads algebra rigid complete headTypingUnique declared total).decided
     inside
 

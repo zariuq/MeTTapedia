@@ -615,7 +615,7 @@ theorem ReflectiveWellSorted.OpenPatternWellSorted.extendOuter
       (bound ++ outer) type pattern := by
   refine ⟨wellSorted.1.extendOuter outer, ?_⟩
   intro presentation membership
-  exact binderSafeAt_mono presentation.quoteConstructor
+  exact scopeSafeAt_mono
     (wellSorted.2 presentation membership) (by simp)
 
 /-- Executable typing cannot observe an unused outer binder suffix on an
@@ -4947,7 +4947,7 @@ def supportedOpenAssignment {source : CIGSLT} {color : CostStaticColor}
         intro presentation membership
         simp only [restorationSupport, restorationAssignment, decodedName,
           List.length_nil]
-        rfl
+        exact scopeSafeAt_fvar _ _ _ _
     | none =>
         cases resolved : table.resolve name with
         | none =>
@@ -5087,7 +5087,7 @@ def supportedOpenAssignment {source : CIGSLT} {color : CostStaticColor}
     | some sourceName =>
         intro presentation membership
         simp only [restorationSupport, assignment, decodedName, List.length_nil]
-        rfl
+        exact scopeSafeAt_fvar _ _ _ _
     | none =>
         cases valueResolved : values.resolve table name with
         | none =>
@@ -7876,7 +7876,7 @@ theorem exists_buildCostStaticArgumentPlan?_of_typed
     (objects : WellSorted.isObjectPatternList arguments = true)
     (reflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true) :
     ∃ plan,
       buildCostStaticArgumentPlan? source color targetFree
@@ -7932,15 +7932,15 @@ theorem exists_buildCostStaticArgumentPlan?_of_typed
                         available.length argument := by
                     intro presentation membership
                     have spine := reflective presentation membership
-                    simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                    simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                     exact spine.1
                   have tailReflective : ∀ presentation ∈
                         source.costWholeReflectionProfile.presentations,
-                      binderSafeListAt presentation.quoteConstructor
+                      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                         available.length arguments = true := by
                     intro presentation membership
                     have spine := reflective presentation membership
-                    simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                    simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                     exact spine.2
                   have argumentCoreWellSorted :
                       WellSorted.OpenPatternWellSorted source.costWholeLanguage
@@ -8221,7 +8221,7 @@ theorem exists_buildCostStaticElementPlan?_of_typed
     (objects : WellSorted.isObjectPatternList elements = true)
     (reflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true) :
     ∃ plan,
       buildCostStaticElementPlan? source color targetFree
@@ -8252,15 +8252,15 @@ theorem exists_buildCostStaticElementPlan?_of_typed
                 available.length element := by
             intro presentation membership
             have spine := reflective presentation membership
-            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
             exact spine.1
           have tailReflective : ∀ presentation ∈
                 source.costWholeReflectionProfile.presentations,
-              binderSafeListAt presentation.quoteConstructor available.length
+              scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
                 elements = true := by
             intro presentation membership
             have spine := reflective presentation membership
-            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
             exact spine.2
           have elementCoreWellSorted :
               WellSorted.OpenPatternWellSorted source.costWholeLanguage
@@ -8354,7 +8354,7 @@ theorem exists_buildCostStaticRegionPlan?_collection_of_selected
     exact parts.2
   have reflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true := by
     intro presentation membership
     simpa [binderSafeAt] using wellSorted.2 presentation membership
@@ -9316,111 +9316,6 @@ theorem CostStaticRegionPlan.matchesParameterRepresentation
       cases parameter <;>
         simp_all [WellSorted.MatchesParameterRepresentation]
 
-/-- Pointwise scope monotonicity for an ordered pattern spine. -/
-theorem binderSafeListAt_mono (quoteConstructor : String)
-    {small large : Nat} {patterns : List Pattern}
-    (safe : binderSafeListAt quoteConstructor small patterns = true)
-    (scope : small ≤ large) :
-    binderSafeListAt quoteConstructor large patterns = true := by
-  rw [binderSafeListAt_eq_true_iff] at safe ⊢
-  intro pattern membership
-  exact binderSafeAt_mono quoteConstructor (safe pattern membership) scope
-
-/-- An application is reflectively safe when its ordinary argument spine is
-safe and its singleton quote case is safe at the reset depth. -/
-theorem binderSafeAt_apply_of_spines (quoteConstructor constructor : String)
-    (depth : Nat) (arguments : List Pattern)
-    (resetSafe : constructor = quoteConstructor →
-      binderSafeListAt quoteConstructor 0 arguments = true)
-    (ordinarySafe : binderSafeListAt quoteConstructor depth arguments =
-      true) :
-    binderSafeAt quoteConstructor depth
-      (.apply constructor arguments) = true := by
-  cases arguments with
-  | nil => simp [binderSafeAt, binderSafeListAt]
-  | cons argument arguments =>
-      cases arguments with
-      | nil =>
-          by_cases quoted : constructor = quoteConstructor
-          · have reset := resetSafe quoted
-            simpa [binderSafeAt, binderSafeListAt, quoted] using
-              reset
-          · simpa [binderSafeAt, binderSafeListAt, quoted]
-              using ordinarySafe
-      | cons second remainder =>
-          simpa [binderSafeAt] using ordinarySafe
-
-/-- Away from the distinguished quotation constructor, application scope is
-exactly pointwise scope of its argument spine. -/
-theorem binderSafeListAt_of_binderSafeAt_apply_of_ne
-    (quoteConstructor constructor : String) (depth : Nat)
-    (arguments : List Pattern) (different : constructor ≠ quoteConstructor)
-    (safe : binderSafeAt quoteConstructor depth
-      (.apply constructor arguments) = true) :
-    binderSafeListAt quoteConstructor depth arguments = true := by
-  cases arguments with
-  | nil => simp [binderSafeListAt]
-  | cons argument remainder =>
-      cases remainder with
-      | nil => simpa [binderSafeAt, different] using safe
-      | cons second remainder => simpa [binderSafeAt] using safe
-
-/-- Replacing an application spine by a length-preserving, pointwise
-scope-safe spine preserves the quotation boundary of the application.  The
-singleton quotation case is checked at depth zero; every other application
-shape is checked at the ambient depth. -/
-theorem binderSafeAt_apply_of_length_eq_of_list_preserving
-    (quoteConstructor constructor : String) (depth : Nat)
-    {source target : List Pattern}
-    (length_eq : target.length = source.length)
-    (preserves : ∀ localDepth,
-      binderSafeListAt quoteConstructor localDepth source = true →
-        binderSafeListAt quoteConstructor localDepth target = true)
-    (safe : binderSafeAt quoteConstructor depth
-      (.apply constructor source) = true) :
-    binderSafeAt quoteConstructor depth (.apply constructor target) = true := by
-  cases source with
-  | nil =>
-      have targetEmpty : target = [] :=
-        List.eq_nil_of_length_eq_zero (by simpa using length_eq)
-      simp [targetEmpty, binderSafeAt, binderSafeListAt]
-  | cons argument remainder =>
-      cases remainder with
-      | nil =>
-          obtain ⟨targetArgument, targetShape⟩ :=
-            List.length_eq_one_iff.mp (by simpa using length_eq)
-          by_cases quoted : constructor = quoteConstructor
-          · have inputHead : binderSafeAt quoteConstructor 0 argument = true := by
-              simpa [binderSafeAt, quoted] using safe
-            have outputList := preserves 0 (by
-              simpa [binderSafeListAt] using inputHead)
-            have outputHead :
-                binderSafeAt quoteConstructor 0 targetArgument = true := by
-              simpa [targetShape, binderSafeListAt] using outputList
-            simpa [targetShape, binderSafeAt, quoted] using outputHead
-          · have inputList : binderSafeListAt quoteConstructor depth
-                [argument] = true := by
-              simpa [binderSafeAt, quoted] using safe
-            have outputList := preserves depth inputList
-            simpa [targetShape, binderSafeAt, quoted] using outputList
-      | cons second remainder =>
-          have targetAtLeastTwo : 2 ≤ target.length := by
-            rw [length_eq]
-            simp
-          obtain ⟨targetFirst, targetSecond, targetRemainder, targetShape⟩ :
-              ∃ first second rest, target = first :: second :: rest := by
-            cases target with
-            | nil => simp at targetAtLeastTwo
-            | cons first rest =>
-                cases rest with
-                | nil => simp at targetAtLeastTwo
-                | cons second tail => exact ⟨first, second, tail, rfl⟩
-          have inputList : binderSafeListAt quoteConstructor depth
-              (argument :: second :: remainder) = true := by
-            simpa [binderSafeAt] using safe
-          have outputList := preserves depth inputList
-          simpa [targetShape, binderSafeAt] using outputList
-
 mutual
   /-- Structural abstraction can only improve canonical binder metadata:
   rigid boundaries become free variables, while every retained binder keeps
@@ -9622,16 +9517,15 @@ mutual
     intro presentation membership
     cases plan with
     | bvar sourceIndex lookup correspondence availableScope =>
-        simpa [CostStaticRegionPlan.abstractPattern, binderSafeAt] using
-          availableScope
+        simpa [CostStaticRegionPlan.abstractPattern] using availableScope
     | fvar lookup =>
-        simp [CostStaticRegionPlan.abstractPattern, binderSafeAt]
+        simp [CostStaticRegionPlan.abstractPattern]
     | boundaryApplication constructor rendered outsideCurrent certified
         certifies =>
-        simp [CostStaticRegionPlan.abstractPattern, binderSafeAt]
+        simp [CostStaticRegionPlan.abstractPattern]
     | boundaryCollection currentRejected oppositeChoice oppositeSelected
         certified certifies =>
-        simp [CostStaticRegionPlan.abstractPattern, binderSafeAt]
+        simp [CostStaticRegionPlan.abstractPattern]
     | application constructor rendered current preimage notBare children =>
         have childSafe := children.abstractPatterns_binderSafeListAt
           presentation membership
@@ -9639,45 +9533,33 @@ mutual
             ReflectiveContextSupport.isQuoteConstructor
                 source.reflection.1
                 preimage.sourceConstructor.1.label = true
-        · have resetSafe : binderSafeListAt
+        · have resetSafe : scopeSafeListAt presentation.quoteScope
               presentation.quoteConstructor 0 children.abstractPatterns =
                 true := by
             simpa [globallyQuoted,
               CostStaticTypeThinning.sourceContextOfTarget] using childSafe
-          have ordinarySafe : binderSafeListAt
+          have ordinarySafe : scopeSafeListAt presentation.quoteScope
               presentation.quoteConstructor
                 (CostStaticTypeThinning.sourceContextOfTarget source.theory color
                   sourceAvailable).length
                 children.abstractPatterns = true :=
-            binderSafeListAt_mono presentation.quoteConstructor resetSafe
-              (Nat.zero_le _)
-          exact binderSafeAt_apply_of_spines presentation.quoteConstructor
-            preimage.sourceConstructor.1.label
-            (CostStaticTypeThinning.sourceContextOfTarget source.theory color
-              sourceAvailable).length
-            children.abstractPatterns (fun _ => resetSafe) ordinarySafe
-        · have ordinarySafe : binderSafeListAt
+            scopeSafeListAt_mono resetSafe (Nat.zero_le _)
+          exact scopeSafeAt_apply_of_arguments (fun _ _ => resetSafe) ordinarySafe
+        · have ordinarySafe : scopeSafeListAt presentation.quoteScope
               presentation.quoteConstructor
                 (CostStaticTypeThinning.sourceContextOfTarget source.theory color
                   sourceAvailable).length
                 children.abstractPatterns = true := by
             simpa [globallyQuoted] using childSafe
-          apply binderSafeAt_apply_of_spines presentation.quoteConstructor
-            preimage.sourceConstructor.1.label
-            (CostStaticTypeThinning.sourceContextOfTarget source.theory color
-              sourceAvailable).length
-            children.abstractPatterns
-          · intro labelEquality
-            have quoteDetected : ReflectiveContextSupport.isQuoteConstructor
-                source.reflection.1
-                preimage.sourceConstructor.1.label = true := by
-              unfold ReflectiveContextSupport.isQuoteConstructor
-              rw [List.any_eq_true]
-              exact ⟨presentation, membership, by simp [labelEquality]⟩
-            exact (globallyQuoted quoteDetected).elim
-          · exact ordinarySafe
+          refine scopeSafeAt_apply_of_arguments (fun closed labelEquality => ?_) ordinarySafe
+          have quoteDetected : ReflectiveContextSupport.isQuoteConstructor
+              source.reflection.1
+              preimage.sourceConstructor.1.label = true := by
+            rw [labelEquality]
+            exact ReflectiveContextSupport.isQuoteConstructor_of_mem membership closed
+          exact (globallyQuoted quoteDetected).elim
     | lambda bodyPlan =>
-        simpa [CostStaticRegionPlan.abstractPattern, binderSafeAt,
+        simpa [CostStaticRegionPlan.abstractPattern,
           CostStaticTypeThinning.sourceContextOfTarget,
           Nat.add_comm] using
           bodyPlan.abstractPattern_reflectiveScopeSafeAt presentation membership
@@ -9707,12 +9589,12 @@ mutual
         have bodySafe :=
           bodyPlan.abstractPattern_reflectiveScopeSafeAt presentation membership
         rw [depthEquality] at bodySafe
-        simpa only [CostStaticRegionPlan.abstractPattern, binderSafeAt,
+        simpa only [CostStaticRegionPlan.abstractPattern, scopeSafeAt_multiLambda,
           Nat.add_comm] using
           bodySafe
     | collection choice selected children =>
         simpa only [CostStaticRegionPlan.abstractPattern,
-          binderSafeAt] using
+          scopeSafeAt_collection] using
             children.abstractPatterns_binderSafeListAt presentation membership
 
   theorem CostStaticArgumentPlan.abstractPatterns_binderSafeListAt
@@ -9729,13 +9611,13 @@ mutual
       (presentation : ReflectivePresentationDecl)
       (membership : presentation ∈
         source.reflection.1.presentations) :
-      binderSafeListAt presentation.quoteConstructor
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
         (CostStaticTypeThinning.sourceContextOfTarget source.theory color
           sourceAvailable).length plan.abstractPatterns = true := by
     cases plan with
-    | nil => rfl
+    | nil => simp [CostStaticArgumentPlan.abstractPatterns]
     | cons representation parameterType head tail =>
-        simp only [CostStaticArgumentPlan.abstractPatterns, binderSafeListAt,
+        simp only [CostStaticArgumentPlan.abstractPatterns, scopeSafeListAt_cons,
           Bool.and_eq_true]
         exact ⟨head.abstractPattern_reflectiveScopeSafeAt presentation
             membership,
@@ -9756,13 +9638,13 @@ mutual
       (presentation : ReflectivePresentationDecl)
       (membership : presentation ∈
         source.reflection.1.presentations) :
-      binderSafeListAt presentation.quoteConstructor
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
         (CostStaticTypeThinning.sourceContextOfTarget source.theory color
           sourceAvailable).length plan.abstractPatterns = true := by
     cases plan with
-    | nil => rfl
+    | nil => simp [CostStaticElementPlan.abstractPatterns]
     | cons head tail =>
-        simp only [CostStaticElementPlan.abstractPatterns, binderSafeListAt,
+        simp only [CostStaticElementPlan.abstractPatterns, scopeSafeListAt_cons,
           Bool.and_eq_true]
         exact ⟨head.abstractPattern_reflectiveScopeSafeAt presentation
             membership,
@@ -12551,10 +12433,16 @@ def mappedThickenedReflectiveSkeleton {source : CIGSLT}
   refine ⟨node.mappedThickenedSkeleton.1,
     node.mappedThickenedSkeleton.2, ?_⟩
   intro declaration membership
+  have sealed := mappedScope declaration membership
+  cases scopeEq : declaration.quoteScope with
+  | reaching view => exact node.mappedThickenedSkeleton.2.2.2.2
+  | closed =>
+  rw [scopeEq, scopeSafeAt_closed] at sealed
+  rw [scopeSafeAt_closed]
   have thickenedScope := node.thinning.binderSafeAt_thickenAmbientBVars
     declaration.quoteConstructor 0
       (mapPattern (color.symbols source) node.skeleton.toCore.1) (by
-        simpa only [zero_add] using mappedScope declaration membership)
+        simpa only [zero_add] using sealed)
   rw [node.mappedThickenedSkeleton_pattern]
   simpa only [zero_add] using thickenedScope
 
@@ -12694,10 +12582,16 @@ def normalizedThickenedReflectiveSkeleton {source : CIGSLT}
   refine ⟨node.normalizedThickenedSkeleton.1,
     node.normalizedThickenedSkeleton.2, ?_⟩
   intro declaration membership
+  have sealed := mappedScope declaration membership
+  cases scopeEq : declaration.quoteScope with
+  | reaching view => exact node.normalizedThickenedSkeleton.2.2.2.2
+  | closed =>
+  rw [scopeEq, scopeSafeAt_closed] at sealed
+  rw [scopeSafeAt_closed]
   have thickenedScope := node.thinning.binderSafeAt_thickenAmbientBVars
     declaration.quoteConstructor 0
       (mapPattern (color.symbols source) normalizedSource.toCore.1) (by
-        simpa only [zero_add] using mappedScope declaration membership)
+        simpa only [zero_add] using sealed)
   rw [node.normalizedThickenedSkeleton_pattern]
   change binderSafeAt declaration.quoteConstructor node.targetBound.length
     (node.thinning.thickenAmbientBVars 0
@@ -14943,7 +14837,7 @@ theorem CostRegionArgumentTrees.exists_build?_eq_some_of_wellSorted
     (objects : WellSorted.isObjectPatternList arguments = true)
     (reflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true)
     (enough : costRegionPatternListWeight arguments < fuelBound) :
     ∃ built,
@@ -14968,15 +14862,15 @@ theorem CostRegionArgumentTrees.exists_build?_eq_some_of_wellSorted
               source.costWholeReflectionProfile available.length argument := by
             intro presentation membership
             have spine := reflective presentation membership
-            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
             exact spine.1
           have reflectiveTail : ∀ presentation ∈
                 source.costWholeReflectionProfile.presentations,
-              binderSafeListAt presentation.quoteConstructor available.length
+              scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
                 arguments = true := by
             intro presentation membership
             have spine := reflective presentation membership
-            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
             exact spine.2
           have argumentCoreWellSorted : WellSorted.OpenPatternWellSorted
               source.costWholeLanguage targetFree available expected argument :=
@@ -15028,7 +14922,7 @@ theorem CostRegionElementTrees.exists_build?_eq_some_of_wellSorted
     (objects : WellSorted.isObjectPatternList elements = true)
     (reflective : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true)
     (enough : costRegionPatternListWeight elements < fuelBound) :
     ∃ built,
@@ -15051,15 +14945,15 @@ theorem CostRegionElementTrees.exists_build?_eq_some_of_wellSorted
               source.costWholeReflectionProfile available.length element := by
             intro presentation membership
             have spine := reflective presentation membership
-            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
             exact spine.1
           have reflectiveTail : ∀ presentation ∈
                 source.costWholeReflectionProfile.presentations,
-              binderSafeListAt presentation.quoteConstructor available.length
+              scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
                 elements = true := by
             intro presentation membership
             have spine := reflective presentation membership
-            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
             exact spine.2
           have elementCoreWellSorted : WellSorted.OpenPatternWellSorted
               source.costWholeLanguage targetFree available elementType
@@ -16003,7 +15897,7 @@ theorem CostRegionTree.buildFuel?_isSome_of_wellSorted
                       wellSorted.1.2.2.1
                   have reflectiveElements : ∀ presentation ∈
                         source.costWholeReflectionProfile.presentations,
-                      binderSafeListAt presentation.quoteConstructor
+                      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                         available.length elements = true := by
                     intro presentation membership
                     simpa [binderSafeAt] using
@@ -16856,8 +16750,8 @@ structure NormalizedCostRegionPattern (source : CIGSLT)
   reflectiveScope : ∀ (presentation : ReflectivePresentationDecl),
     presentation ∈ source.costWholeReflectionProfile.presentations →
     ∀ {depth : Nat}, available.length ≤ depth →
-      binderSafeAt presentation.quoteConstructor depth original = true →
-        binderSafeAt presentation.quoteConstructor depth pattern = true
+      scopeSafeAt presentation.quoteScope presentation.quoteConstructor depth original = true →
+        scopeSafeAt presentation.quoteScope presentation.quoteConstructor depth pattern = true
   matchesParameterRepresentation : ∀ parameter,
     WellSorted.MatchesParameterRepresentation parameter original →
       WellSorted.MatchesParameterRepresentation parameter pattern
@@ -16920,7 +16814,7 @@ def toOpenPattern {source : CIGSLT}
       normalized.objectPattern object,
       normalized.typed.isWellScopedAt⟩, by
       intro presentation membership
-      exact binderSafeAt_mono presentation.quoteConstructor
+      exact scopeSafeAt_mono
         (normalized.reflectiveScope presentation membership
           (Nat.le_refl available.length) (scope presentation membership))
         (by simp)⟩⟩
@@ -16945,8 +16839,8 @@ structure NormalizedCostRegionArguments (source : CIGSLT)
   reflectiveScope : ∀ (presentation : ReflectivePresentationDecl),
     presentation ∈ source.costWholeReflectionProfile.presentations →
     ∀ {depth : Nat}, available.length ≤ depth →
-      binderSafeListAt presentation.quoteConstructor depth original = true →
-        binderSafeListAt presentation.quoteConstructor depth patterns = true
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor depth original = true →
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor depth patterns = true
 
 /-- Normalized homogeneous elements with the same proof boundary as
 constructor arguments. -/
@@ -16966,8 +16860,8 @@ structure NormalizedCostRegionElements (source : CIGSLT)
   reflectiveScope : ∀ (presentation : ReflectivePresentationDecl),
     presentation ∈ source.costWholeReflectionProfile.presentations →
     ∀ {depth : Nat}, available.length ≤ depth →
-      binderSafeListAt presentation.quoteConstructor depth original = true →
-        binderSafeListAt presentation.quoteConstructor depth patterns = true
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor depth original = true →
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor depth patterns = true
 
 /-- The only semantic choice made by child-first region-tree normalization.
 Every non-static frame is rebuilt structurally; a kernel supplies the typed
@@ -17034,7 +16928,7 @@ mutual
           objectPattern := fun _ => normalized.2.1.2.2.1
           reflectiveScope := by
             intro presentation membership depth availableWithin safe
-            exact binderSafeAt_mono presentation.quoteConstructor
+            exact scopeSafeAt_mono
               (normalized.2.2 presentation membership)
               (by simpa using availableWithin)
           matchesParameterRepresentation := by
@@ -17058,28 +16952,15 @@ mutual
               simpa [WellSorted.isObjectPattern] using objects)
           reflectiveScope := by
             intro presentation presentationMembership depth availableWithin safe
-            have notThisQuote :
-                rule.label ≠ presentation.quoteConstructor := by
-              intro labelEquality
-              have detected : ReflectiveContextSupport.isQuoteConstructor
-                  source.costWholeReflectionProfile rule.label = true := by
-                unfold ReflectiveContextSupport.isQuoteConstructor
-                rw [List.any_eq_true]
-                exact ⟨presentation, presentationMembership,
-                  by simp [labelEquality]⟩
-              rw [detected] at ordinary
-              contradiction
-            have inputList : binderSafeListAt presentation.quoteConstructor
+            have notThisQuote :=
+              ReflectiveContextSupport.not_sealing_of_ordinary presentationMembership ordinary
+            have inputList : scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                 depth arguments = true :=
-              binderSafeListAt_of_binderSafeAt_apply_of_ne
-                presentation.quoteConstructor rule.label depth arguments
-                notThisQuote safe
+              scopeSafeListAt_of_apply notThisQuote safe
             have outputList := normalized.reflectiveScope presentation
               presentationMembership availableWithin inputList
-            exact binderSafeAt_apply_of_spines
-              presentation.quoteConstructor rule.label depth
-              normalized.patterns
-              (fun equality => (notThisQuote equality).elim)
+            exact scopeSafeAt_apply_of_arguments
+                (fun closed equality => (notThisQuote closed equality).elim)
               outputList
           matchesParameterRepresentation := by
             intro parameter representation
@@ -17104,8 +16985,7 @@ mutual
               simpa [WellSorted.isObjectPattern] using objects)
           reflectiveScope := by
             intro presentation presentationMembership depth _ safe
-            exact binderSafeAt_apply_of_length_eq_of_list_preserving
-              presentation.quoteConstructor rule.label depth
+            exact scopeSafeAt_apply_of_length_eq_of_list_preserving
               normalized.length_eq
               (fun localDepth inputList =>
                 normalized.reflectiveScope presentation
@@ -17133,7 +17013,7 @@ mutual
               normalized.objectPattern object
           reflectiveScope := by
             intro presentation presentationMembership depth availableWithin safe
-            simp only [binderSafeAt] at safe ⊢
+            simp only [scopeSafeAt_lambda] at safe ⊢
             exact normalized.reflectiveScope presentation
               presentationMembership (by simp; omega) safe
           matchesParameterRepresentation := by
@@ -17159,7 +17039,7 @@ mutual
               normalized.objectPattern object
           reflectiveScope := by
             intro presentation presentationMembership depth availableWithin safe
-            simp only [binderSafeAt] at safe ⊢
+            simp only [scopeSafeAt_multiLambda] at safe ⊢
             exact normalized.reflectiveScope presentation
               presentationMembership (by
                 simp [List.length_append, List.length_replicate]
@@ -17187,7 +17067,7 @@ mutual
             simp [WellSorted.isObjectPattern] at object
           reflectiveScope := by
             intro presentation presentationMembership depth availableWithin safe
-            simp only [binderSafeAt, Bool.and_eq_true] at safe ⊢
+            simp only [scopeSafeAt_subst, Bool.and_eq_true] at safe ⊢
             exact ⟨normalizedBody.reflectiveScope presentation
                 presentationMembership (by simp; omega) safe.1,
               normalizedReplacement.reflectiveScope presentation
@@ -17215,7 +17095,7 @@ mutual
               normalized.objectPatterns sourceParts.2
           reflectiveScope := by
             intro presentation presentationMembership depth availableWithin safe
-            have inputList : binderSafeListAt presentation.quoteConstructor
+            have inputList : scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                 depth elements = true := by
               simpa [binderSafeAt] using safe
             simpa [binderSafeAt] using
@@ -17251,7 +17131,7 @@ mutual
           canonicalBinderMetadata := by simp [Pattern.hasCanonicalBinderMetadataList]
           objectPatterns := by simp [WellSorted.isObjectPatternList]
           reflectiveScope := by
-            simp [binderSafeListAt] }
+            simp }
     | @CostRegionArgumentTrees.cons _ _ available outer argument arguments
         parameter parameters expected representation parameterType head tail =>
         let normalizedHead := head.normalize (normalizeStatic := normalizeStatic)
@@ -17278,7 +17158,7 @@ mutual
               normalizedTail.objectPatterns objects.2⟩
           reflectiveScope := by
             intro presentation presentationMembership depth availableWithin safe
-            simp only [binderSafeListAt, Bool.and_eq_true] at safe ⊢
+            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at safe ⊢
             exact ⟨normalizedHead.reflectiveScope presentation
                 presentationMembership availableWithin safe.1,
               normalizedTail.reflectiveScope presentation
@@ -17308,7 +17188,7 @@ mutual
           canonicalBinderMetadata := by simp [Pattern.hasCanonicalBinderMetadataList]
           objectPatterns := by simp [WellSorted.isObjectPatternList]
           reflectiveScope := by
-            simp [binderSafeListAt] }
+            simp }
     | @CostRegionElementTrees.cons _ _ available outer element elements
         elementType head tail =>
         let normalizedHead := head.normalize (normalizeStatic := normalizeStatic)
@@ -17332,7 +17212,7 @@ mutual
               normalizedTail.objectPatterns objects.2⟩
           reflectiveScope := by
             intro presentation presentationMembership depth availableWithin safe
-            simp only [binderSafeListAt, Bool.and_eq_true] at safe ⊢
+            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at safe ⊢
             exact ⟨normalizedHead.reflectiveScope presentation
                 presentationMembership availableWithin safe.1,
               normalizedTail.reflectiveScope presentation

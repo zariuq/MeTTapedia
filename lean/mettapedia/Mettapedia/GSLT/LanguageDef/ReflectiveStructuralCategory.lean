@@ -1,6 +1,7 @@
 import Mathlib.CategoryTheory.Category.Basic
 import Mettapedia.GSLT.LanguageDef.ReflectionExtension
 import Mettapedia.GSLT.LanguageDef.StructuralCategory
+import Mettapedia.OSLF.MeTTaIL.QuoteScopeSafety
 
 /-!
 # Structural maps of reflective language extensions
@@ -110,6 +111,24 @@ def mapQuoteScope (symbols : ReflectiveSymbols) : QuoteScope → QuoteScope
 @[simp] theorem mapQuoteScope_contextConstructor? (symbols : ReflectiveSymbols) (scope : QuoteScope) :
     (mapQuoteScope symbols scope).contextConstructor? = scope.contextConstructor?.map symbols.constructor := by
   rcases scope with _ | (_ | frozen | context) <;> rfl
+
+@[simp] theorem mapQuoteScope_eq_closed_iff (symbols : ReflectiveSymbols) (scope : QuoteScope) :
+    mapQuoteScope symbols scope = .closed ↔ scope = .closed := by
+  rcases scope with _ | (_ | frozen | context) <;> simp [mapQuoteScope]
+
+/-- A structural map keeps the scope safety a declared quote scope asks, given
+that it keeps sealing under a closed scope and ordinary scope of the image. -/
+theorem scopeSafeAt_mapQuoteScope {symbols : ReflectiveSymbols} {scope : QuoteScope}
+    {quote quote' : String} {depth : Nat} {pattern pattern' : Pattern}
+    (sealing : scope = .closed → Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt quote depth pattern = true →
+      Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt quote' depth pattern' = true)
+    (scoping : pattern'.isWellScopedAt depth = true)
+    (safe : Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt scope quote depth pattern = true) :
+    Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt (mapQuoteScope symbols scope) quote' depth
+      pattern' = true := by
+  rcases scope with _ | (_ | frozen | context)
+  · exact sealing rfl safe
+  all_goals exact scoping
 
 @[simp] theorem mapQuoteScope_id (scope : QuoteScope) : mapQuoteScope ReflectiveSymbols.id scope = scope := by
   rcases scope with _ | (_ | frozen | context)

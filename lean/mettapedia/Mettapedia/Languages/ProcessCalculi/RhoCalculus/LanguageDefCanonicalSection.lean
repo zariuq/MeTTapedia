@@ -962,7 +962,7 @@ def closedQuoteDropShell : RhoClosedTerm rhoProc :=
       [.apply "NQuote"
         [.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]]],
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.drop (.quote (.drop (.quote .unit (by decide))) (by decide)), by decide⟩⟩
+      ⟨.drop (.quote (.drop (.quote .unit))), by decide⟩⟩
 
 /-- Positive control: canonicalization removes the static quote/drop shell
 without granting free Drop an executable step. -/

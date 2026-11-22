@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersNone
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersAbsence
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersCached
 
 /-!
@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Prog
 
 MeTTa returns a call that no equation matches as itself (`metta_call`: when `(= atom $X)` has no
 answer, the result is the atom). On the binder-bearing core this is one firing of the guarded
-contextual step: the unmatched rule of `ProgramBindersNone`, whose none checks ask, over every
+contextual step: the unmatched rule of `ProgramBindersAbsence`, whose absence checks ask, over every
 future solution, that no equation's left-hand side is the call.
 
 **The reference semantics** is defined from the equations alone (`ProgramBinders.Rewrites`,
@@ -81,8 +81,8 @@ theorem returns_iff [Fintype ι] (state : State (withReturn program)) (call : Te
   obtain ⟨value, holds, _, _⟩ := reads
   rw [unmatched_admitted_iff state value holds]
   constructor
-  · rintro ⟨_, missing⟩
-    exact missing future solution call ⟨value, holds, by assumption, by assumption⟩
+  · rintro ⟨_, absent⟩
+    exact absent future solution call ⟨value, holds, by assumption, by assumption⟩
   · intro unmatched
     refine ⟨⟨call, Future, future, solution, ⟨value, holds, by assumption, by assumption⟩⟩, ?_⟩
     intro Later later other otherCall readsOther
@@ -106,7 +106,7 @@ theorem unmatched_reads_iff [Fintype ι] (state : State (withReturn program)) (c
     exact ⟨Future, future, solution, value, holds, solved, observed⟩
 
 /-- **A returned call is final.** After the unmatched firing, no equation of the program fires on the
-returned call, at any solution: the none query observed at the cut persists. -/
+returned call, at any solution: the absence observed at the cut persists. -/
 theorem returned_is_final [Fintype ι] (state : State (withReturn program))
     (value : Term (signature S state.1.declarations) Γ sort) (holds : Holds (withReturn program) state value)
     (valid : UnmatchedAdmitted program state) (index : ι) :

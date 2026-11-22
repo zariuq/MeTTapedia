@@ -116,7 +116,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} {A : SubstitutionAction T S} 
 /-- **Equivariance modulo the knowledge for guarded firings.** Guards are predicates of the solution
 and read no label. At equivalent states, along a renaming supported on the present occurrences, a
 guarded firing whose queries read through solutions and its renaming are admitted together in the
-guarded step, and their results are equivalent, when the made identities are missing from both
+guarded step, and their results are equivalent, when the made identities are absent from both
 states. -/
 theorem ModuloEquivalent.guarded_firing [DecidableEq O] {C D : Configuration T O}
     (h : ModuloEquivalent A label E C D) (f : GuardedFiring T S O)

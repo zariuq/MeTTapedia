@@ -14,9 +14,9 @@ sees by adding a row to the shared space. Its knowledge stays at its own world.
   made identities are not among the new rows. Nothing is asked of any other world's knowledge.
 * `consume_beside_a_row`: an instance of every hypothesis, on first-order atoms.
 
-The control for positivity is `Worlds.Controls.shared_row_blocks`: a none check passes before a
+The control for positivity is `Worlds.Controls.shared_row_blocks`: an absence check passes before a
 row is shared and is refused after. So with located rows that checks read, a positive firing is
-switched off by no row that arrives, and a firing with a none check can be.
+switched off by no row that arrives, and a firing with an absence check can be.
 -/
 
 set_option autoImplicit false

@@ -60,7 +60,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SourceLan
   captures), `ExampleCaptureRepaired` (the same program and choices under the elaboration's reading:
   no capture, the two choices agree).
 * **What a configuration shows**: `Observation` (answers, refusals, and waiting with its reason, a
-  typed none query; exactly three ways to wait), `ExampleWaiting` (failing and waiting told apart; a
+  typed absence; exactly three ways to wait), `ExampleWaiting` (failing and waiting told apart; a
   well-formed program whose `run` waits), `ObservationRenaming` (the renaming law for observations).
 * **Alternatives and shared spaces**: `Outcomes` (the set of bags of a program; races; moves that
   leave the world as it is commute), `Worlds` (the design not taken: alternatives as worlds, the

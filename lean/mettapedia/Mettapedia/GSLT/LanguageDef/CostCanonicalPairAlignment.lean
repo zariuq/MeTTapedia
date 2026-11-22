@@ -379,10 +379,10 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
       isObjectPatternList leftArguments = true →
       isObjectPatternList rightArguments = true →
       (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           leftArguments = true) →
       (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           rightArguments = true) →
       (∀ argument ∈ leftArguments, sizeOf argument < sizeOf parent) →
       List.Forall₂ (fun leftPattern rightPattern =>
@@ -433,29 +433,29 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
                   source.costWholeReflectionProfile available.length leftArgument := by
                 intro presentation membership
                 have spine := leftScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.1
               have rightHeadScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
                   source.costWholeReflectionProfile available.length rightArgument := by
                 intro presentation membership
                 have spine := rightScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.1
               have leftTailScope : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length leftArguments = true := by
                 intro presentation membership
                 have spine := leftScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.2
               have rightTailScope : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length rightArguments = true := by
                 intro presentation membership
                 have spine := rightScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.2
               obtain ⟨headPair⟩ := alignChild
                 ⟨⟨leftHeadTyped, leftCanonicalParts.1, leftObjectParts.1,
@@ -504,10 +504,10 @@ theorem CostCanonicalElementPairElaboration.nonempty_of_wellSorted
       isObjectPatternList leftElements = true →
       isObjectPatternList rightElements = true →
       (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           leftElements = true) →
       (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           rightElements = true) →
       (∀ element ∈ leftElements, sizeOf element < sizeOf parent) →
       List.Forall₂ (fun leftPattern rightPattern =>
@@ -551,29 +551,29 @@ theorem CostCanonicalElementPairElaboration.nonempty_of_wellSorted
                   source.costWholeReflectionProfile available.length leftElement := by
                 intro presentation membership
                 have spine := leftScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.1
               have rightHeadScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
                   source.costWholeReflectionProfile available.length rightElement := by
                 intro presentation membership
                 have spine := rightScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.1
               have leftTailScope : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length leftElements = true := by
                 intro presentation membership
                 have spine := leftScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.2
               have rightTailScope : ∀ presentation ∈
                   source.costWholeReflectionProfile.presentations,
-                  binderSafeListAt presentation.quoteConstructor
+                  scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                     available.length rightElements = true := by
                 intro presentation membership
                 have spine := rightScope presentation membership
-                simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
                 exact spine.2
               obtain ⟨headPair⟩ := alignChild
                 ⟨⟨leftHeadTyped, leftCanonicalParts.1, leftObjectParts.1,
@@ -977,14 +977,14 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                     simpa [isObjectPattern] using rightWellSorted.1.2.2.1
                   have reflectiveLeft : ∀ presentation ∈
                       source.costWholeReflectionProfile.presentations,
-                      binderSafeListAt presentation.quoteConstructor
+                      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                         available.length leftElements = true := by
                     intro presentation membership
                     simpa [binderSafeAt] using
                       leftWellSorted.2 presentation membership
                   have reflectiveRight : ∀ presentation ∈
                       source.costWholeReflectionProfile.presentations,
-                      binderSafeListAt presentation.quoteConstructor
+                      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
                         available.length rightElements = true := by
                     intro presentation membership
                     simpa [binderSafeAt] using

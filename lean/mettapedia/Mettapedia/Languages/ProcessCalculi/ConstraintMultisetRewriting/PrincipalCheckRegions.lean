@@ -97,18 +97,18 @@ theorem count_iff_regions (A : SubstitutionAction T S)
     rw [equalRegions]
     exact baseline
 
-theorem none_iff_possible_empty (A : SubstitutionAction T S) (problem : EquationStore T)
+theorem absent_iff_possible_empty (A : SubstitutionAction T S) (problem : EquationStore T)
     (label : O → T) (world : Finset O) (pattern : T) :
     A.Entails problem (fun assignment => (Check.predicate .none pattern).Holds A assignment label world) ↔
       possibleRegion A problem label world pattern = ∅ := by
   classical
   constructor
-  · intro missing
+  · intro absent
     apply Finset.eq_empty_iff_forall_notMem.mpr
     intro occurrence member
     obtain ⟨present, assignment, solved, same⟩ :=
       (possible_member_iff A problem label world pattern occurrence).mp member
-    exact missing assignment solved occurrence present same
+    exact absent assignment solved occurrence present same
   · intro empty assignment solved occurrence present same
     have member := (possible_member_iff A problem label world pattern occurrence).mpr
       ⟨present, assignment, solved, same⟩

@@ -433,9 +433,9 @@ def joinMeetSolverK : ContextualDependentWorklist.Solver S.levels where
 
 /-- **The rules never refute.** -/
 theorem joinMeetRoundK_ne_refuted {Γ : Context S.R} (problem : EquationStore (TotalTerm Γ))
-    (missing : ¬ (frames S.levels).Solvable problem) :
+    (absent : ¬ (frames S.levels).Solvable problem) :
     joinMeetRoundK facts roots heads algebra rigid complete headsTyped join joinSound bias problem ≠
-      .refuted missing := by
+      .refuted absent := by
   cases problem with
   | nil => intro h; cases h
   | cons e rest =>
@@ -573,9 +573,9 @@ theorem joinMeetK_decided {Θ : Context S.R} {original : EquationStore (TotalTer
         ((∃ state finished,
             run (joinMeetSolverK facts roots heads algebra rigid complete headsTyped join joinSound bias) original
                 larger = .solved state finished ∧ (frames S.levels).Principal original state.answer) ∨
-          (∃ missing,
+          (∃ absent,
             run (joinMeetSolverK facts roots heads algebra rigid complete headsTyped join joinSound bias) original
-              larger = .refuted missing)) :=
+              larger = .refuted absent)) :=
   (joinMeetFragmentK facts roots heads algebra rigid complete headsTyped join joinSound bias total).decided inside
 
 include facts roots heads algebra rigid complete headsTyped joinSound bias total in
@@ -585,14 +585,14 @@ theorem principal_of_inJoinMeetFragmentK {Θ : Context S.R} {original : Equation
     ∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), (frames S.levels).Principal original answer := by
   obtain ⟨fuel, ends⟩ := joinMeetK_decided facts roots heads algebra rigid complete headsTyped join joinSound bias
     total inside
-  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨missing, refuted⟩
+  rcases (ends fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨absent, refuted⟩
   · exact ⟨_, _, principal⟩
   · exact absurd refuted (drive_ne_refuted
       (joinMeetSolverK facts roots heads algebra rigid complete headsTyped join joinSound bias)
-      (fun problem missing =>
+      (fun problem absent =>
         joinMeetRoundK_ne_refuted facts roots heads algebra rigid complete headsTyped join joinSound bias problem
-          missing)
-      fuel _ missing)
+          absent)
+      fuel _ absent)
 
 end Solver
 

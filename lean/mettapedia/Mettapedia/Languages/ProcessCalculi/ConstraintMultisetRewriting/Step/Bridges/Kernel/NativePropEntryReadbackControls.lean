@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Brid
 # Public-caller byte observations and complete proposition-rule controls
 
 The positive uses the existing public entry, whose premise has only twenty-four
-backed bytes and whose old output is not present. No memory map is copied or changed.
+backed bytes and whose old output is absent. No memory map is copied or changed.
 Mode provenance remains a source declaration, without an issuer certificate.
 -/
 
@@ -418,7 +418,7 @@ theorem capacity_is_not_backing (field : Word) :
     ¬ ∀ byte : Fin 32, ∃ value : BitVec 8, (entry field).state.mem.get? (12288 + byte.val) = some value :=
   X86P1SuccessCapture.Controls.premise_capacity_not_full_backing field
 
-theorem old_output_is_unwritten (field : Word) (byte : Fin 32) :
+theorem old_output_is_absent (field : Word) (byte : Fin 32) :
     (entry field).state.mem.get? (16384 + byte.val) = none := (observations field).outputUnobserved byte
 
 theorem no_old_output_readback (field : Word) (byte : Fin 32) :
@@ -427,7 +427,7 @@ theorem no_old_output_readback (field : Word) (byte : Fin 32) :
   obtain ⟨_,_,actual,present,_⟩ := X86MemoryReadback.byte_observed declaredModes (entry field).state _ value knownByte
   rw [BitVec.ofNat_add,physical_low 16384 byte.val (by have := byte.isLt; omega)] at present
   change (entry field).state.mem.get? (16384 + byte.val) = some actual at present
-  rw [old_output_is_unwritten field byte] at present
+  rw [old_output_is_absent field byte] at present
   cases present
 
 theorem field_not_truncated :

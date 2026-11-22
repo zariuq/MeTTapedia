@@ -103,7 +103,7 @@ theorem accepts_iff (problem : EquationStore (Term signature)) (label : O → Te
                 List.mem_cons_self values).symm
           | none =>
               rw [decide_eq_true_eq, possible_eq]
-              exact (PrincipalCheckRegions.none_iff_possible_empty A problem label world pattern).symm
+              exact (PrincipalCheckRegions.absent_iff_possible_empty A problem label world pattern).symm
       | count pattern number =>
           rw [decide_eq_true_eq, possible_eq, certain_eq]
           have interface := SubstitutionAction.Principal.on A principal (pattern :: world.toList.map label)
@@ -126,14 +126,14 @@ theorem possible_covers (problem : EquationStore (Term signature)) (label : O �
   subst equation
   exact same
 
-/-- A covered restriction preserves the actual executable none verdict,
+/-- A covered restriction preserves the actual executable absence verdict,
 including its consistency check. Partial unqualified scans get no such law. -/
-theorem none_accepts_iff_of_covered (problem : EquationStore (Term signature))
+theorem absent_accepts_iff_of_covered (problem : EquationStore (Term signature))
     (label : O → Term signature) (visible world : Finset O) (pattern : Term signature)
     (included : visible ⊆ world)
     (covered : Check.CoversMatches A problem label visible world pattern) :
     acceptsCertainCheck problem label visible (.predicate .none pattern) = true ↔
       acceptsCertainCheck problem label world (.predicate .none pattern) = true := by
-  rw [accepts_iff, accepts_iff, Check.entails_none_iff_of_covered A included covered]
+  rw [accepts_iff, accepts_iff, Check.entails_absent_iff_of_covered A included covered]
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FirstOrderChecks

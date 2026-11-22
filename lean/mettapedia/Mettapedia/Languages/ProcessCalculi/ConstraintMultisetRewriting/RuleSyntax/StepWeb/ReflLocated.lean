@@ -16,7 +16,7 @@ and the REFL correspondence are not shown here.
 A row is `At(p, l)` (`atLoc p l`). Locations are values: the root `Root` (`rootLoc`) and, for the reflection
 `x?(P)` at the location `m`, the child `Child(m, x, P)` (`childLoc m x P`). Rules mention location unknowns
 `L`, `M`, which match these values. A location that were an unknown of the knowledge could be identified with
-another one by a solution, so takes would merge locations and a none query at a location would see the rows of
+another one by a solution, so takes would merge locations and an absence at a location would see the rows of
 the others (`ReflLocated.Controls.unknown_locations_merge`). The child location names its own reflection, so a
 close can only put a child's result back into the reflection it came from.
 

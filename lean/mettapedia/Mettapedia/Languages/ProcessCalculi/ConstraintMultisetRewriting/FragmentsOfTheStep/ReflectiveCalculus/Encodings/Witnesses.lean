@@ -8,7 +8,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Fragments
   restricted composition gives emptiness from the step with every pair composable, into any target
   (`restricted_implies_total`); with the reflective calculus as target this is the negative half of
   `strict_separation` (`total_from_restricted`).
-* **The count check and the collect pattern witness the separation as well as none queries**
+* **The count check and the collect pattern witness the separation as well as absence**
   (`separation_by_count`, `separation_by_collect`).
 -/
 

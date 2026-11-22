@@ -50,7 +50,7 @@ private theorem image_valid_of_check (instance_ : Subst signature) (check : Chec
     exact holds residual
 
 def equalityCheck : Check (Term signature) := .equal (.var 0) (.const 0)
-def noneCheck : Check (Term signature) := .predicate .none (.var 0)
+def absenceCheck : Check (Term signature) := .predicate .none (.var 0)
 def countCheck : Check (Term signature) := .count (.var 0) 1
 
 theorem equality_instance_valid :
@@ -66,19 +66,19 @@ theorem equality_source_refused : ¬ makeOutput.Valid A guardLabel (guarded equa
   change Term.const (σ := signature) 1 = .const 0 at asked
   cases asked
 
-theorem none_instance_valid :
+theorem absence_instance_valid :
     makeOutput.Valid A (fun occurrence => A.apply one (guardLabel occurrence))
-      ((guarded noneCheck).map (A.apply one)) (SubstitutionStability.configuration A one guardWorld) := by
-  apply image_valid_of_check one noneCheck
+      ((guarded absenceCheck).map (A.apply one)) (SubstitutionStability.configuration A one guardWorld) := by
+  apply image_valid_of_check one absenceCheck
   intro residual occurrence present same
   have atZero : occurrence = 0 := by simpa [guardWorld] using present
   subst occurrence
   change Term.const (σ := signature) 1 = .const 0 at same
   cases same
 
-theorem none_source_refused : ¬ makeOutput.Valid A guardLabel (guarded noneCheck) guardWorld := by
+theorem absence_source_refused : ¬ makeOutput.Valid A guardLabel (guarded absenceCheck) guardWorld := by
   intro valid
-  have asked := valid.checks noneCheck (by simp [guarded]) zero (by
+  have asked := valid.checks absenceCheck (by simp [guarded]) zero (by
     intro equation member
     simp [Selection.problem, Selection.equations, makeOutput, guardWorld, guarded] at member)
   exact asked 0 (by simp [guardWorld]) rfl

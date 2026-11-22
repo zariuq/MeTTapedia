@@ -1,6 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.TptpFofNnfShiftLanguageDef
 import Mettapedia.GSLT.LanguageDef.TptpFofPrenexLanguageDef
-import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
+import Mettapedia.GSLT.LanguageDef.RewriteValidationTransport
 import Mettapedia.GSLT.LanguageDef.StructuralCategory
 
 /-!
@@ -694,9 +694,9 @@ theorem rewrite_count : language.rewrites.length = 45 := by
       "tptp-fof-prenex-normalize:result"] := by
   rfl
 
-local macro "certify_authored_row" : tactic =>
+local macro "certify_authored_rows" : tactic =>
   `(tactic|
-    simp [RewriteValidationCertificate.check,
+    (simp [-Bool.and_eq_true, RewriteValidationCertificate.check,
       RewriteValidationCertificate.contextTypesCheck,
       RewriteValidationCertificate.premiseTypesCheck,
       RewriteValidationCertificate.patternDeclaredCheck,
@@ -752,302 +752,90 @@ local macro "certify_authored_row" : tactic =>
       LanguageDef.premiseForAllParams,
       LanguageDef.premiseProducedFvarNames,
       LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
-      Pattern.zipHead, Pattern.mapHead, Pattern.evalHead])
-
-local macro "certify_source_row" : tactic =>
-  `(tactic|
-    simp [RewriteValidationCertificate.check,
-      RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.premiseTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      language_typeNames, language_constructorSignatures,
-      language_constructorLabels,
-      TptpFofNnfShiftLanguageDef.rewrites,
-      TptpFofNnfShiftLanguageDef.typed, TptpFofNnfShiftLanguageDef.mkRule,
-      TptpFofNnfShiftLanguageDef.congruence,
-      TptpFofNnfShiftLanguageDef.indexRequest,
-      TptpFofNnfShiftLanguageDef.indexResult,
-      TptpFofNnfShiftLanguageDef.termRequest,
-      TptpFofNnfShiftLanguageDef.termResult,
-      TptpFofNnfShiftLanguageDef.termsRequest,
-      TptpFofNnfShiftLanguageDef.termsResult,
-      TptpFofNnfShiftLanguageDef.formulaRequest,
-      TptpFofNnfShiftLanguageDef.formulaResult,
-      TptpFofNnfShiftLanguageDef.indexZero,
-      TptpFofNnfShiftLanguageDef.indexSucc,
-      TptpFofNnfShiftLanguageDef.termVariable,
-      TptpFofNnfShiftLanguageDef.termFunction,
-      TptpFofNnfShiftLanguageDef.termsNil,
-      TptpFofNnfShiftLanguageDef.termsCons,
-      TptpFofNnfShiftLanguageDef.verum,
-      TptpFofNnfShiftLanguageDef.falsum,
-      TptpFofNnfShiftLanguageDef.positive,
-      TptpFofNnfShiftLanguageDef.negative,
-      TptpFofNnfShiftLanguageDef.equal,
-      TptpFofNnfShiftLanguageDef.notEqual,
-      TptpFofNnfShiftLanguageDef.and,
-      TptpFofNnfShiftLanguageDef.or,
-      TptpFofNnfShiftLanguageDef.all,
-      TptpFofNnfShiftLanguageDef.ex,
-      TptpFofNnfShiftLanguageDef.a, TptpFofNnfShiftLanguageDef.v,
-      LanguageDef.premisePatterns, LanguageDef.patternFvarNames,
-      LanguageDef.patternBinderNames, Pattern.constructorRefs,
-      Pattern.constructorRefsList, Pattern.freeFvarNames,
-      Pattern.isWellScoped, Pattern.isWellScopedAt,
-      Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
-      LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames,
-      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
-      Pattern.zipHead, Pattern.mapHead, Pattern.evalHead])
+      Pattern.zipHead, Pattern.mapHead, Pattern.evalHead]; decide +kernel))
 
 private theorem constructorLabels_nodup :
     (language.terms.map (·.label)).Nodup := by
   decide +kernel
 
-private theorem source00_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[0] = true := by certify_source_row
-private theorem source01_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[1] = true := by certify_source_row
-private theorem source02_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[2] = true := by certify_source_row
-private theorem source03_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[3] = true := by certify_source_row
-private theorem source04_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[4] = true := by certify_source_row
-private theorem source05_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[5] = true := by certify_source_row
-private theorem source06_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[6] = true := by certify_source_row
-private theorem source07_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[7] = true := by certify_source_row
-private theorem source08_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[8] = true := by certify_source_row
-private theorem source09_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[9] = true := by certify_source_row
-private theorem source10_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[10] = true := by certify_source_row
-private theorem source11_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[11] = true := by certify_source_row
-private theorem source12_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[12] = true := by certify_source_row
-private theorem source13_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[13] = true := by certify_source_row
-private theorem source14_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[14] = true := by certify_source_row
-private theorem source15_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[15] = true := by certify_source_row
-private theorem source16_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[16] = true := by certify_source_row
-private theorem source17_checked :
-    RewriteValidationCertificate.check language
-      TptpFofNnfShiftLanguageDef.rewrites[17] = true := by certify_source_row
+private theorem matrixShiftRewrites_checked :
+    matrixShiftRewrites.all (RewriteValidationCertificate.check language) = true := by
+  certify_authored_rows
 
-private theorem authored00_checked :
-    RewriteValidationCertificate.check language authoredRewrites[0] = true := by
-  certify_authored_row
-private theorem authored01_checked :
-    RewriteValidationCertificate.check language authoredRewrites[1] = true := by
-  certify_authored_row
-private theorem authored02_checked :
-    RewriteValidationCertificate.check language authoredRewrites[2] = true := by
-  certify_authored_row
-private theorem authored03_checked :
-    RewriteValidationCertificate.check language authoredRewrites[3] = true := by
-  certify_authored_row
-private theorem authored04_checked :
-    RewriteValidationCertificate.check language authoredRewrites[4] = true := by
-  certify_authored_row
-private theorem authored05_checked :
-    RewriteValidationCertificate.check language authoredRewrites[5] = true := by
-  certify_authored_row
-private theorem authored06_checked :
-    RewriteValidationCertificate.check language authoredRewrites[6] = true := by
-  certify_authored_row
-private theorem authored07_checked :
-    RewriteValidationCertificate.check language authoredRewrites[7] = true := by
-  certify_authored_row
-private theorem authored08_checked :
-    RewriteValidationCertificate.check language authoredRewrites[8] = true := by
-  certify_authored_row
-private theorem authored09_checked :
-    RewriteValidationCertificate.check language authoredRewrites[9] = true := by
-  certify_authored_row
-private theorem authored10_checked :
-    RewriteValidationCertificate.check language authoredRewrites[10] = true := by
-  certify_authored_row
-private theorem authored11_checked :
-    RewriteValidationCertificate.check language authoredRewrites[11] = true := by
-  certify_authored_row
-private theorem authored12_checked :
-    RewriteValidationCertificate.check language authoredRewrites[12] = true := by
-  certify_authored_row
-private theorem authored13_checked :
-    RewriteValidationCertificate.check language authoredRewrites[13] = true := by
-  certify_authored_row
-private theorem authored14_checked :
-    RewriteValidationCertificate.check language authoredRewrites[14] = true := by
-  certify_authored_row
-private theorem authored15_checked :
-    RewriteValidationCertificate.check language authoredRewrites[15] = true := by
-  certify_authored_row
-private theorem authored16_checked :
-    RewriteValidationCertificate.check language authoredRewrites[16] = true := by
-  certify_authored_row
-private theorem authored17_checked :
-    RewriteValidationCertificate.check language authoredRewrites[17] = true := by
-  certify_authored_row
-private theorem authored18_checked :
-    RewriteValidationCertificate.check language authoredRewrites[18] = true := by
-  certify_authored_row
-private theorem authored19_checked :
-    RewriteValidationCertificate.check language authoredRewrites[19] = true := by
-  certify_authored_row
-private theorem authored20_checked :
-    RewriteValidationCertificate.check language authoredRewrites[20] = true := by
-  certify_authored_row
-private theorem authored21_checked :
-    RewriteValidationCertificate.check language authoredRewrites[21] = true := by
-  certify_authored_row
-private theorem authored22_checked :
-    RewriteValidationCertificate.check language authoredRewrites[22] = true := by
-  certify_authored_row
-private theorem authored23_checked :
-    RewriteValidationCertificate.check language authoredRewrites[23] = true := by
-  certify_authored_row
-private theorem authored24_checked :
-    RewriteValidationCertificate.check language authoredRewrites[24] = true := by
-  certify_authored_row
-private theorem authored25_checked :
-    RewriteValidationCertificate.check language authoredRewrites[25] = true := by
-  certify_authored_row
-private theorem authored26_checked :
-    RewriteValidationCertificate.check language authoredRewrites[26] = true := by
-  certify_authored_row
+private theorem formShiftRewrites_checked :
+    formShiftRewrites.all (RewriteValidationCertificate.check language) = true := by
+  certify_authored_rows
 
-private theorem every_rewrite_checked (rewrite : RewriteRule)
-    (membership : rewrite ∈ language.rewrites) :
-    RewriteValidationCertificate.check language rewrite = true := by
-  simp only [language_rewrites, List.mem_append] at membership
-  rcases membership with sourceMembership | authoredMembership
-  · simp only [TptpFofNnfShiftLanguageDef.rewrites, List.mem_cons,
-      List.not_mem_nil, or_false] at sourceMembership
-    rcases sourceMembership with
-      (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-       rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl)
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source00_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source01_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source02_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source03_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source04_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source05_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source06_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source07_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source08_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source09_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source10_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source11_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source12_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source13_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source14_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source15_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source16_checked
-    · simpa [TptpFofNnfShiftLanguageDef.rewrites] using source17_checked
-  · simp only [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-      combineRewrites, prenexRewrites, List.mem_append] at authoredMembership
-    rcases authoredMembership with matrixOrFormOrCombine | prenexMembership
-    · rcases matrixOrFormOrCombine with matrixOrForm | combineMembership
-      · rcases matrixOrForm with matrixMembership | formMembership
-        · simp only [List.mem_cons,
-            List.not_mem_nil, or_false] at matrixMembership
-          rcases matrixMembership with
-            (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl)
-          · simpa [authoredRewrites, matrixShiftRewrites] using authored00_checked
-          · simpa [authoredRewrites, matrixShiftRewrites] using authored01_checked
-          · simpa [authoredRewrites, matrixShiftRewrites] using authored02_checked
-          · simpa [authoredRewrites, matrixShiftRewrites] using authored03_checked
-          · simpa [authoredRewrites, matrixShiftRewrites] using authored04_checked
-          · simpa [authoredRewrites, matrixShiftRewrites] using authored05_checked
-          · simpa [authoredRewrites, matrixShiftRewrites] using authored06_checked
-          · simpa [authoredRewrites, matrixShiftRewrites] using authored07_checked
-        · simp only [List.mem_cons,
-            List.not_mem_nil, or_false] at formMembership
-          rcases formMembership with (rfl | rfl | rfl)
-          · simpa [authoredRewrites, matrixShiftRewrites,
-              formShiftRewrites] using authored08_checked
-          · simpa [authoredRewrites, matrixShiftRewrites,
-              formShiftRewrites] using authored09_checked
-          · simpa [authoredRewrites, matrixShiftRewrites,
-              formShiftRewrites] using authored10_checked
-      · simp only [List.mem_cons,
-          List.not_mem_nil, or_false] at combineMembership
-        rcases combineMembership with (rfl | rfl | rfl | rfl | rfl | rfl)
-        · simpa [authoredRewrites, matrixShiftRewrites,
-            formShiftRewrites, combineRewrites] using authored11_checked
-        · simpa [authoredRewrites, matrixShiftRewrites,
-            formShiftRewrites, combineRewrites] using authored12_checked
-        · simpa [authoredRewrites, matrixShiftRewrites,
-            formShiftRewrites, combineRewrites] using authored13_checked
-        · simpa [authoredRewrites, matrixShiftRewrites,
-            formShiftRewrites, combineRewrites] using authored14_checked
-        · simpa [authoredRewrites, matrixShiftRewrites,
-            formShiftRewrites, combineRewrites] using authored15_checked
-        · simpa [authoredRewrites, matrixShiftRewrites,
-            formShiftRewrites, combineRewrites] using authored16_checked
-    · simp only [List.mem_cons,
-        List.not_mem_nil, or_false] at prenexMembership
-      rcases prenexMembership with
-        (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl)
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored17_checked
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored18_checked
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored19_checked
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored20_checked
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored21_checked
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored22_checked
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored23_checked
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored24_checked
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored25_checked
-      · simpa [authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-          combineRewrites, prenexRewrites] using authored26_checked
+private theorem combineRewrites_checked :
+    combineRewrites.all (RewriteValidationCertificate.check language) = true := by
+  certify_authored_rows
+
+private theorem prenexRewrites_checked :
+    prenexRewrites.all (RewriteValidationCertificate.check language) = true := by
+  certify_authored_rows
+private theorem authoredRewrites_checked :
+    authoredRewrites.all (RewriteValidationCertificate.check language) = true := by
+  simp only [authoredRewrites, List.all_append, matrixShiftRewrites_checked,
+    formShiftRewrites_checked, combineRewrites_checked, prenexRewrites_checked, Bool.and_self]
+
+private def addedTerms : List GrammarRule :=
+  TptpFofPrenexLanguageDef.matrixTerms ++
+    TptpFofPrenexLanguageDef.prenexTerms ++ connectiveTerms ++ operationTerms
+
+private def tptpLabel (name : String) : Bool := name.startsWith "tptp-"
+
+private theorem addedTerms_namespaced :
+    (addedTerms.map (·.label)).all tptpLabel = true := by
+  decide +kernel
+
+private theorem inheritedNames_plain :
+    (TptpFofNnfShiftLanguageDef.rewrites.flatMap RewriteValidationCertificateExtension.schemaNames).all
+      (fun name => !(tptpLabel name)) = true := by
+  simp [-Bool.and_eq_true, RewriteValidationCertificateExtension.schemaNames,
+    TptpFofNnfShiftLanguageDef.rewrites, TptpFofNnfShiftLanguageDef.typed,
+    TptpFofNnfShiftLanguageDef.mkRule, TptpFofNnfShiftLanguageDef.congruence,
+    TptpFofNnfShiftLanguageDef.indexRequest, TptpFofNnfShiftLanguageDef.indexResult,
+    TptpFofNnfShiftLanguageDef.termRequest, TptpFofNnfShiftLanguageDef.termResult,
+    TptpFofNnfShiftLanguageDef.termsRequest, TptpFofNnfShiftLanguageDef.termsResult,
+    TptpFofNnfShiftLanguageDef.formulaRequest, TptpFofNnfShiftLanguageDef.formulaResult,
+    TptpFofNnfShiftLanguageDef.indexZero, TptpFofNnfShiftLanguageDef.indexSucc,
+    TptpFofNnfShiftLanguageDef.termVariable, TptpFofNnfShiftLanguageDef.termFunction,
+    TptpFofNnfShiftLanguageDef.termsNil, TptpFofNnfShiftLanguageDef.termsCons,
+    TptpFofNnfShiftLanguageDef.verum, TptpFofNnfShiftLanguageDef.falsum,
+    TptpFofNnfShiftLanguageDef.positive, TptpFofNnfShiftLanguageDef.negative,
+    TptpFofNnfShiftLanguageDef.equal, TptpFofNnfShiftLanguageDef.notEqual,
+    TptpFofNnfShiftLanguageDef.and, TptpFofNnfShiftLanguageDef.or,
+    TptpFofNnfShiftLanguageDef.all, TptpFofNnfShiftLanguageDef.ex,
+    TptpFofNnfShiftLanguageDef.a, TptpFofNnfShiftLanguageDef.v,
+    LanguageDef.premisePatterns, LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
+    Pattern.freeFvarNames, LanguageDef.premiseFvarNames, LanguageDef.premiseForAllParams,
+    tptpLabel]
+  decide +kernel
+
+private theorem inheritedRewrite_validate
+    (rewrite : RewriteRule) (member : rewrite ∈ TptpFofNnfShiftLanguageDef.rewrites) :
+    language.validateRewrite rewrite = [] := by
+  have clean := LanguageDef.validateRewrite_eq_nil_of_validate_eq_nil
+    TptpFofNnfShiftLanguageDef.language TptpFofNnfShiftLanguageDef.language_validate
+    rewrite member
+  apply RewriteValidationCertificate.validateRewrite_of_append_signature
+    (addedTerms := addedTerms) clean rfl _ _ constructorLabels_nodup
+  · simp only [language, addedTerms, List.append_assoc]
+  · intro name localName collision
+    have occurs := List.mem_flatMap.mpr ⟨rewrite, member, localName⟩
+    have fresh := List.all_eq_true.mp inheritedNames_plain name occurs
+    have namespaced := List.all_eq_true.mp addedTerms_namespaced name collision
+    simp only [namespaced, Bool.not_true, Bool.false_eq_true] at fresh
 
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_concreteSyntaxAndRewrites
   all_goals try decide +kernel
   intro rewrite membership
-  apply RewriteValidationCertificate.validateRewrite_eq_nil_of_check
-    constructorLabels_nodup
-  exact every_rewrite_checked rewrite membership
+  simp only [language_rewrites, List.mem_append] at membership
+  rcases membership with inherited | authored
+  · exact inheritedRewrite_validate rewrite inherited
+  · exact RewriteValidationCertificate.validateRewrite_eq_nil_of_all
+      constructorLabels_nodup authoredRewrites_checked rewrite authored
 
 def validated : ValidatedLanguageDef := ⟨language, language_validate⟩
 

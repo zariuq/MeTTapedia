@@ -174,7 +174,7 @@ def cumulativeRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (To
       match cumulativeRule facts roots heads algebra rigid complete declared choices reducer root normalizes
           certifyNormal fuel problem with
       | some (.solved update smaller) => .progress update (below_of_arity facts roots heads algebra rigid complete smaller)
-      | some (.refuted missing) => .refuted missing
+      | some (.refuted absent) => .refuted absent
       | none => .stuck
   | other => other
 

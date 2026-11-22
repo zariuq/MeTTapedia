@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ScopedVar
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CheckStability
 
 /-!
-# Protected parameters, delayed checks and transported none query
+# Protected parameters, delayed checks and transported absence
 -/
 
 set_option autoImplicit false
@@ -44,23 +44,23 @@ theorem rigid_parameter_cannot_be_assigned :
   rw [protectedValue] at same
   cases same
 
-theorem unresolved_none_stays_pending (probe : Check (Term signature) → Option Bool)
+theorem unresolved_absence_stays_pending (probe : Check (Term signature) → Option Bool)
     (sound : Check.ProbeSound A [] label {1} probe) :
     probe (.predicate .none (.const 0)) = none :=
   Check.unresolved_not_discharged A sound
-    ⟨open_none_is_not_entailed, open_presence_is_not_entailed⟩
+    ⟨open_absence_is_not_entailed, open_presence_is_not_entailed⟩
 
 theorem accepting_every_unbound_check_is_unsound :
     ¬ Check.ProbeSound A [] label {1} (fun _ => some true) := by
   intro sound
-  have pending := unresolved_none_stays_pending _ sound
+  have pending := unresolved_absence_stays_pending _ sound
   cases pending
 
 def blockerLabel (_ : Nat) : Term signature := .const 0
 
-/-- Consuming one blocker and then checking the none query retains exactly the
+/-- Consuming one blocker and then checking absence retains exactly the
 original single-occurrence condition, even with duplicate-valued blockers. -/
-theorem none_after_consumption_is_exact (world : Finset Nat) (present : 3 ∈ world) :
+theorem absence_after_consumption_is_exact (world : Finset Nat) (present : 3 ∈ world) :
     A.Entails [] (fun σ => (Check.predicate .none (.const 0)).Holds A σ blockerLabel
       (fire world (Commit.takeOne 3 : Commit Nat (Term signature)))) ↔ world = {3} := by
   constructor
@@ -78,10 +78,10 @@ theorem none_after_consumption_is_exact (world : Finset Nat) (present : 3 ∈ wo
     intro σ model o member
     simp [fire, Commit.takeOne] at member
 
-theorem duplicate_valued_blocker_prevents_none :
+theorem duplicate_valued_blocker_prevents_absence :
     ¬ A.Entails [] (fun σ => (Check.predicate .none (.const 0)).Holds A σ blockerLabel
       (fire {3, 7} (Commit.takeOne 3 : Commit Nat (Term signature)))) := by
-  rw [none_after_consumption_is_exact _ (by simp)]
+  rw [absence_after_consumption_is_exact _ (by simp)]
   decide
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Controls

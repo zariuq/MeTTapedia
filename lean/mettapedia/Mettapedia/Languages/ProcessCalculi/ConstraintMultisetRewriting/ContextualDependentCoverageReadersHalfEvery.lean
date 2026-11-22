@@ -99,7 +99,7 @@ theorem everySearch_not_stuck (fuel : Nat) {Θ : Context S.R}
       | progress update smaller =>
           intro stuck
           cases stuck
-      | refuted missing =>
+      | refuted absent =>
           intro stuck
           cases stuck
 
@@ -140,7 +140,7 @@ theorem everyRound_not_stuck_of_front (fuel : Nat) {Θ : Context S.R} {problem :
   | progress update smaller =>
       intro stuck
       cases stuck
-  | refuted missing =>
+  | refuted absent =>
       intro stuck
       cases stuck
 
@@ -235,7 +235,7 @@ theorem tower_every_decided_of_everyReads
       run (everyTower.solver larger) problem larger = run (everyTower.solver budget) problem budget ∧
       ((∃ state finished, run (everyTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (everyTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (everyTower.solver larger) problem larger = .refuted absent)) :=
   tower_every_decided_of_firing
     (fun permuted nonempty => firing_of_everyReads (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads
       TowerModel.algebra ContextualDependentPiSpine.Controls.rigid TowerModel.complete

@@ -27,7 +27,7 @@ variable {run : (step setting.levels Nat).toStep.Run start.state}
 
 def consumerRun : (step setting.levels Nat).toStep.Run run.last :=
   Continuation.fullRun profile.finalConfiguration (proofRow run.last.frame)
-    profile.finalConfiguration.fresh profile.finalConfiguration.fresh_not_present
+    profile.finalConfiguration.fresh profile.finalConfiguration.fresh_absent
 
 def followed : (step setting.levels Nat).toStep.Run start.state := run.append (consumerRun profile)
 
@@ -42,7 +42,7 @@ theorem followed_readout :
   apply endRead.trans
   unfold readout
   have label := Continuation.fullRun_output profile.finalConfiguration (proofRow run.last.frame)
-    profile.finalConfiguration.fresh profile.finalConfiguration.fresh_not_present
+    profile.finalConfiguration.fresh profile.finalConfiguration.fresh_absent
   exact congrArg (fun row : TotalTerm run.last.frame =>
     (⟨run.last.frame.arity, row.1.code, row.2.code⟩ : Σ n : Nat, Tower.Tm n × Tower.Tm n)) label
 
@@ -51,7 +51,7 @@ theorem followed_target_present :
   change profile.finalConfiguration.fresh ∈ (run.append (consumerRun profile)).last.present
   rw [Step.Run.last_append]
   exact Continuation.fullRun_target profile.finalConfiguration (proofRow run.last.frame)
-    profile.finalConfiguration.fresh profile.finalConfiguration.fresh_not_present
+    profile.finalConfiguration.fresh profile.finalConfiguration.fresh_absent
 
 theorem followed_event_count : (followed profile).word.length = run.word.length + 1 := by
   unfold followed

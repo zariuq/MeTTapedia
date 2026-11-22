@@ -36,7 +36,7 @@ theorem unique_read_iff_positive_presence (frame : Finset CoreOccurrence) (store
       · intro guard
         change (Check.matches locatedAction assignment label (world frame store)
           (licenses, HOLLightCanonicalLicenses.payload key)).card = 1 at guard
-        rw [region_is_private_query, store.query_of_lookup_none key known] at guard
+        rw [region_is_private_query, store.query_of_absent key known] at guard
         simp at guard
 
 theorem registered_presence_entailed (frame : Finset CoreOccurrence) (store : Store)
@@ -60,7 +60,7 @@ theorem presence_entailment_has_registered_witness (frame : Finset CoreOccurrenc
       have guard := entailed assignment solved
       change (Check.matches locatedAction assignment label (world frame store)
         (licenses, HOLLightCanonicalLicenses.payload key)).card = 1 at guard
-      rw [region_is_private_query, store.query_of_lookup_none key known] at guard
+      rw [region_is_private_query, store.query_of_absent key known] at guard
       simp at guard
 
 end Mettapedia.Logic.TierZero.Adequacy.HOLLightCanonicalPresence

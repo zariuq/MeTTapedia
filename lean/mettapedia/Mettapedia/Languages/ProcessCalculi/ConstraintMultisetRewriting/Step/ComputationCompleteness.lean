@@ -39,11 +39,11 @@ theorem realize_scoped {n : Nat} {before after : Tm Head n} (steps : StepStar S.
       have code : configuration.code = before := eq_of_heq aligned
       subst before
       obtain ⟨instruction, target⟩ := source_complete (presentation := presentation) first
-      let next := instruction.next qualified configuration.fresh configuration.fresh_not_present
+      let next := instruction.next qualified configuration.fresh configuration.fresh_absent
       have atNext : HEq next.code middle :=
-        heq_of_eq ((instruction.next_code qualified configuration.fresh configuration.fresh_not_present).trans target)
+        heq_of_eq ((instruction.next_code qualified configuration.fresh configuration.fresh_absent).trans target)
       obtain ⟨continuation, endpoint⟩ := ih next rfl atNext
-      exact ⟨.cons instruction configuration.fresh configuration.fresh_not_present continuation, endpoint⟩
+      exact ⟨.cons instruction configuration.fresh configuration.fresh_absent continuation, endpoint⟩
 
 theorem realize {configuration : Configuration (S := S)} {value : Tm Head configuration.state.frame.arity}
     (steps : StepStar S.R configuration.code value) :

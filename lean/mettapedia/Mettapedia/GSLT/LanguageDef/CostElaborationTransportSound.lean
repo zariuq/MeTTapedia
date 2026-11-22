@@ -190,14 +190,14 @@ def FiberEquations
     (leftObjects : WellSorted.isObjectPatternList leftArguments = true)
     (leftScope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         leftArguments = true)
     (rightCanonical :
       Pattern.hasCanonicalBinderMetadataList rightArguments = true)
     (rightObjects : WellSorted.isObjectPatternList rightArguments = true)
     (rightScope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         rightArguments = true),
     WellSorted.AvailableOpenArguments.EquationForall₂
       source.costWholeReflectionProfile source.costWholeLanguage targetFree
@@ -227,14 +227,14 @@ def FiberEquations
     (leftObjects : WellSorted.isObjectPatternList leftElements = true)
     (leftScope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         leftElements = true)
     (rightCanonical :
       Pattern.hasCanonicalBinderMetadataList rightElements = true)
     (rightObjects : WellSorted.isObjectPatternList rightElements = true)
     (rightScope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         rightElements = true),
     WellSorted.AvailableOpenElements.EquationForall₂
       source.costWholeReflectionProfile source.costWholeLanguage targetFree
@@ -357,41 +357,21 @@ theorem neutralApplicationOrdinary_semanticEquations
       simpa [WellSorted.isObjectPattern] using rightObject
     have leftArgumentScope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           leftArguments = true := by
       intro presentation presentationMembership
-      have notThisQuote : rule.label ≠ presentation.quoteConstructor := by
-        intro labelEquality
-        have detected : ReflectiveContextSupport.isQuoteConstructor
-            source.costWholeReflectionProfile rule.label = true := by
-          unfold ReflectiveContextSupport.isQuoteConstructor
-          rw [List.any_eq_true]
-          exact ⟨presentation, presentationMembership,
-            by simp [labelEquality]⟩
-        rw [detected] at ordinary
-        contradiction
-      exact binderSafeListAt_of_binderSafeAt_apply_of_ne
-        presentation.quoteConstructor rule.label available.length
-          leftArguments notThisQuote
+      have notThisQuote :=
+        ReflectiveContextSupport.not_sealing_of_ordinary presentationMembership ordinary
+      exact scopeSafeListAt_of_apply notThisQuote
             (leftScope presentation presentationMembership)
     have rightArgumentScope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
           rightArguments = true := by
       intro presentation presentationMembership
-      have notThisQuote : rule.label ≠ presentation.quoteConstructor := by
-        intro labelEquality
-        have detected : ReflectiveContextSupport.isQuoteConstructor
-            source.costWholeReflectionProfile rule.label = true := by
-          unfold ReflectiveContextSupport.isQuoteConstructor
-          rw [List.any_eq_true]
-          exact ⟨presentation, presentationMembership,
-            by simp [labelEquality]⟩
-        rw [detected] at ordinary
-        contradiction
-      exact binderSafeListAt_of_binderSafeAt_apply_of_ne
-        presentation.quoteConstructor rule.label available.length
-          rightArguments notThisQuote
+      have notThisQuote :=
+        ReflectiveContextSupport.not_sealing_of_ordinary presentationMembership ordinary
+      exact scopeSafeListAt_of_apply notThisQuote
             (rightScope presentation presentationMembership)
     have assembled :=
       (argumentsSound leftArgumentCanonical leftArgumentObjects
@@ -503,14 +483,14 @@ theorem neutralApplicationQuote_semanticEquations
           source.costWholeReflectionProfile
           (available ++ outer).length (.apply rule.label leftArguments) := by
       intro presentation presentationMembership
-      exact binderSafeAt_mono presentation.quoteConstructor
+      exact scopeSafeAt_mono
         (leftScope presentation presentationMembership) (by simp)
     have rightParentScopeAtBound :
         ReflectiveWellSorted.ReflectiveScopeSafeAt
           source.costWholeReflectionProfile
           (available ++ outer).length (.apply rule.label rightArguments) := by
       intro presentation presentationMembership
-      exact binderSafeAt_mono presentation.quoteConstructor
+      exact scopeSafeAt_mono
         (rightScope presentation presentationMembership) (by simp)
     have leftArgumentsTyped :
         WellSorted.ArgumentsHaveTypes source.costWholeLanguage targetFree
@@ -1041,14 +1021,14 @@ theorem collection_semanticEquations
           simpa [WellSorted.isObjectPattern] using rightObject
         have leftElementScope : ∀ presentation ∈
             source.costWholeReflectionProfile.presentations,
-            binderSafeListAt presentation.quoteConstructor available.length
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               leftElements = true := by
           intro presentation presentationMembership
           simpa [binderSafeAt] using
             leftScope presentation presentationMembership
         have rightElementScope : ∀ presentation ∈
             source.costWholeReflectionProfile.presentations,
-            binderSafeListAt presentation.quoteConstructor available.length
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               rightElements = true := by
           intro presentation presentationMembership
           simpa [binderSafeAt] using
@@ -1186,9 +1166,9 @@ theorem cons_fiberEquations
         available.length leftArgument := by
     intro presentation presentationMembership
     have parts :
-        binderSafeAt presentation.quoteConstructor available.length
+        scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
               leftArgument = true ∧
-          binderSafeListAt presentation.quoteConstructor available.length
+          scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               leftArguments = true := by
       simpa [binderSafeListAt] using
         leftScope presentation presentationMembership
@@ -1199,35 +1179,35 @@ theorem cons_fiberEquations
         available.length rightArgument := by
     intro presentation presentationMembership
     have parts :
-        binderSafeAt presentation.quoteConstructor available.length
+        scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
               rightArgument = true ∧
-          binderSafeListAt presentation.quoteConstructor available.length
+          scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               rightArguments = true := by
       simpa [binderSafeListAt] using
         rightScope presentation presentationMembership
     exact parts.1
   have leftTailScope : ∀ presentation ∈
       source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         leftArguments = true := by
     intro presentation presentationMembership
     have parts :
-        binderSafeAt presentation.quoteConstructor available.length
+        scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
               leftArgument = true ∧
-          binderSafeListAt presentation.quoteConstructor available.length
+          scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               leftArguments = true := by
       simpa [binderSafeListAt] using
         leftScope presentation presentationMembership
     exact parts.2
   have rightTailScope : ∀ presentation ∈
       source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         rightArguments = true := by
     intro presentation presentationMembership
     have parts :
-        binderSafeAt presentation.quoteConstructor available.length
+        scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
               rightArgument = true ∧
-          binderSafeListAt presentation.quoteConstructor available.length
+          scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               rightArguments = true := by
       simpa [binderSafeListAt] using
         rightScope presentation presentationMembership
@@ -1351,9 +1331,9 @@ theorem cons_fiberEquations
         available.length leftElement := by
     intro presentation presentationMembership
     have parts :
-        binderSafeAt presentation.quoteConstructor available.length
+        scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
               leftElement = true ∧
-          binderSafeListAt presentation.quoteConstructor available.length
+          scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               leftElements = true := by
       simpa [binderSafeListAt] using
         leftScope presentation presentationMembership
@@ -1364,35 +1344,35 @@ theorem cons_fiberEquations
         available.length rightElement := by
     intro presentation presentationMembership
     have parts :
-        binderSafeAt presentation.quoteConstructor available.length
+        scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
               rightElement = true ∧
-          binderSafeListAt presentation.quoteConstructor available.length
+          scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               rightElements = true := by
       simpa [binderSafeListAt] using
         rightScope presentation presentationMembership
     exact parts.1
   have leftTailScope : ∀ presentation ∈
       source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         leftElements = true := by
     intro presentation presentationMembership
     have parts :
-        binderSafeAt presentation.quoteConstructor available.length
+        scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
               leftElement = true ∧
-          binderSafeListAt presentation.quoteConstructor available.length
+          scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               leftElements = true := by
       simpa [binderSafeListAt] using
         leftScope presentation presentationMembership
     exact parts.2
   have rightTailScope : ∀ presentation ∈
       source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         rightElements = true := by
     intro presentation presentationMembership
     have parts :
-        binderSafeAt presentation.quoteConstructor available.length
+        scopeSafeAt presentation.quoteScope presentation.quoteConstructor available.length
               rightElement = true ∧
-          binderSafeListAt presentation.quoteConstructor available.length
+          scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
               rightElements = true := by
       simpa [binderSafeListAt] using
         rightScope presentation presentationMembership

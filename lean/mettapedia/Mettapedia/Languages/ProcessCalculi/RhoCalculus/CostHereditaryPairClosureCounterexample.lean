@@ -50,7 +50,8 @@ private theorem permutationLeft_wellSorted :
       (.cons (.fvar (by simp [permutationFree]))
         (.nil [] permutationAtomType)))
   · intro presentation membership
-    simp [permutationLeft, binderSafeAt, binderSafeListAt]
+    exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+      simp [permutationLeft, binderSafeAt, binderSafeListAt])
 
 private theorem permutationRight_wellSorted :
     ReflectiveWellSorted.OpenPatternWellSorted
@@ -65,7 +66,8 @@ private theorem permutationRight_wellSorted :
       (.cons (.fvar (by simp [permutationFree]))
         (.nil [] permutationAtomType)))
   · intro presentation membership
-    simp [permutationRight, binderSafeAt, binderSafeListAt]
+    exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+      simp [permutationRight, binderSafeAt, binderSafeListAt])
 
 private theorem permutation_canonical :
     canonicalize

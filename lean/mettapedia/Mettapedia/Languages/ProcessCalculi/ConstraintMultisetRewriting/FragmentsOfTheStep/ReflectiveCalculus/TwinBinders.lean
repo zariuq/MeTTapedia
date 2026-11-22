@@ -140,7 +140,7 @@ mutual
     cases typed with
     | bvar _ => rfl
     | fvar _ => rfl
-    | quote processTyped admitted =>
+    | quote processTyped =>
         rename_i process
         have parts : IsCanonical process ∧ ∀ inner, process ≠ .apply "PDrop" [inner] := canonical
         change semanticNormalizeName (.apply "NQuote" [process]) = .apply "NQuote" [process]
@@ -251,13 +251,13 @@ mutual
         rw [twinFvar]
         simp [semanticSubstName, semanticSubstNameMark, semanticNormalizeName, twin, osubst,
           Canonical.canonicalize]
-    | quote processTyped admitted =>
+    | quote processTyped =>
         rename_i process
         have parts : IsCanonical process ∧ ∀ inner, process ≠ .apply "PDrop" [inner] := canonical
         have closed : binderSafeAt "NQuote" 0 (.apply "NQuote" [process]) = true := by
           simpa [binderSafeAt, rhoReflectivePresentation] using safe
         have normal : semanticNormalizeName (.apply "NQuote" [process]) = .apply "NQuote" [process] :=
-          normalizeName_canonical (.quote processTyped admitted) canonical
+          normalizeName_canonical (.quote processTyped) canonical
         change twin (semanticSubstName index (.apply "NQuote" [received]) (.apply "NQuote" [process])) =
           osubst index (.apply "NQuote" [received]) (twin received)
             (twin (.apply "NQuote" [process]))
@@ -310,14 +310,14 @@ mutual
         | fvar _ =>
             simp [semanticSubstProc, semanticSubstNameMark, semanticNormalizeName, twin, twinList,
               osubst, osubstList, rhoReflectivePresentation, Canonical.canonicalize]
-        | quote processTyped admitted =>
+        | quote processTyped =>
             rename_i quoted
             have nameCanonical : IsCanonical (.apply "NQuote" [quoted]) := canonical.1
             have parts : IsCanonical quoted ∧ ∀ inner, quoted ≠ .apply "PDrop" [inner] :=
               nameCanonical
             have normal : semanticNormalizeName (.apply "NQuote" [quoted]) =
                 .apply "NQuote" [quoted] :=
-              normalizeName_canonical (.quote processTyped admitted) nameCanonical
+              normalizeName_canonical (.quote processTyped) nameCanonical
             have closedInner : binderSafeAt "NQuote" 0 quoted = true := by
               simpa [binderSafeAt, binderSafeListAt, rhoReflectivePresentation] using safe
             have fixedInner := osubst_fixed index (.apply "NQuote" [received]) (twin received)

@@ -15,7 +15,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Hosting.T
 * `reflection`: every admitted firing from a state that represents an alternative is a source step of
   that alternative, and its result represents one of the alternatives the step makes.
 
-The unmatched call is the one place where admission has a check: the none query of a matching equation
+The unmatched call is the one place where admission has a check: the absence of a matching equation
 row is exactly "no equation matches" (`unmatched_guard`, `unmatched_none`).
 -/
 

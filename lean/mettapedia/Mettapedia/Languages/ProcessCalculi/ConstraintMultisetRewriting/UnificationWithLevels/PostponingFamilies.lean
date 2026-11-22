@@ -144,10 +144,10 @@ theorem eventually {Γ : Context rules} {original : EquationStore (TotalTerm Γ)
         obtain ⟨rounds, rfl⟩ : ∃ k, rounds = k + 1 := ⟨rounds - 1, by omega⟩
         rw [step fuel enough rounds, step threshold le_rfl 0]
         exact ⟨rfl, Or.inr ⟨state, rfl, empty, forced computed⟩⟩
-    | refuted missing =>
+    | refuted absent =>
         have step : ∀ fuel', threshold ≤ fuel' → ∀ rounds',
             drive (family.solver fuel') (rounds' + 1) state =
-              .refuted fun solvable => missing (state.solvable_iff.mp solvable) := by
+              .refuted fun solvable => absent (state.solvable_iff.mp solvable) := by
           intro fuel' enough' rounds'
           rw [drive_succ, Settled.advance_refuted fuel' empty ((same fuel' enough').trans computed)]
         refine ⟨threshold, 1, fun fuel enough rounds more => ?_⟩
@@ -179,7 +179,7 @@ theorem outcome {Γ : Context rules} {original : EquationStore (TotalTerm Γ)} (
       run (family.solver larger) original larger = run (family.solver budget) original budget ∧
       ((∃ state finished, run (family.solver larger) original larger = .solved state finished ∧
           (frames levels).Principal original state.answer) ∨
-        (∃ missing, run (family.solver larger) original larger = .refuted missing) ∨
+        (∃ absent, run (family.solver larger) original larger = .refuted absent) ∨
         (∃ state, run (family.solver larger) original larger = .stuck state ∧ state.remaining ≠ [] ∧
           Exact (frames levels) original state.answer state.remaining ∧ NoPrincipal levels state.remaining)) := by
   obtain ⟨fuel₀, rounds₀, eventual⟩ := settled.eventually (Update.pending levels original) inside
@@ -192,7 +192,7 @@ theorem outcome {Γ : Context rules} {original : EquationStore (TotalTerm Γ)} (
   rcases ends with decided | ⟨s, isStuck, nonempty, none⟩
   · cases result : drive (family.solver fuel₀) rounds₀ (Update.pending levels original) with
     | solved state finished => exact .inl ⟨state, finished, rfl, state.completed finished⟩
-    | refuted missing => exact .inr (.inl ⟨missing, rfl⟩)
+    | refuted absent => exact .inr (.inl ⟨absent, rfl⟩)
     | stuck _ =>
         rw [result] at decided
         exact False.elim decided
@@ -234,9 +234,9 @@ theorem cross_sortTower_postponed :
   have none : NoPrincipal setting.levels crossStore := fun answer => fragment_without_principal_answer.2.2 answer
   obtain ⟨budget, ends⟩ := (noPrincipalSettled sortTower tower_sort_const).outcome none
   refine ⟨budget, fun larger enough => ⟨(ends larger enough).1, ?_⟩⟩
-  rcases (ends larger enough).2 with ⟨state, _, _, principal⟩ | ⟨missing, _⟩ | stuck
+  rcases (ends larger enough).2 with ⟨state, _, _, principal⟩ | ⟨absent, _⟩ | stuck
   · exact absurd principal (none state.answer)
-  · exact absurd fragment_without_principal_answer.2.1 missing
+  · exact absurd fragment_without_principal_answer.2.1 absent
   · exact stuck
 
 end DependentFibre

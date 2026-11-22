@@ -57,8 +57,8 @@ theorem fibreMass_dirac [DecidableEq S] (view : S → C) (x₀ : S) (k : C) :
     fibreMass view (dirac (𝕜 := 𝕜) x₀) k = if view x₀ = k then 1 else 0 := by
   rw [fibreMass_eq_sum_ite]
   simp only [dirac]
-  rw [Finset.sum_eq_single x₀ (fun x _ other => by simp [other]) (fun missing =>
-    absurd (Finset.mem_univ x₀) missing)]
+  rw [Finset.sum_eq_single x₀ (fun x _ other => by simp [other]) (fun absent =>
+    absurd (Finset.mem_univ x₀) absent)]
   simp
 
 omit [LinearOrder 𝕜] [IsStrictOrderedRing 𝕜] [Fintype C] in

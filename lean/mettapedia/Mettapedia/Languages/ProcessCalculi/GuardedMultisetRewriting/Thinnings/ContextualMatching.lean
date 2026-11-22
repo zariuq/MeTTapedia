@@ -41,8 +41,8 @@ theorem subCheck_iff (used allowed : Thin) :
   · intro checked i usedHere
     have inside : i < used.length := by
       by_contra outside
-      have missing := bit_of_length_le (θ := used) (Nat.le_of_not_gt outside)
-      rw [missing] at usedHere
+      have absent := bit_of_length_le (θ := used) (Nat.le_of_not_gt outside)
+      rw [absent] at usedHere
       cases usedHere
     exact checked i inside usedHere
   · intro included i _ usedHere
@@ -109,8 +109,8 @@ theorem solution_includes_support {store : Store Head} (canonical : Canonical st
     exact freeBody
   have bodyInside : j < body.thin.length := by
     by_contra outside
-    have missing := bit_of_length_le (θ := body.thin) (Nat.le_of_not_gt outside)
-    rw [missing] at kept
+    have absent := bit_of_length_le (θ := body.thin) (Nat.le_of_not_gt outside)
+    rw [absent] at kept
     cases kept
   have declared := (bit_sel (θ := allowed) (lt_of_lt_of_le bodyInside bodyScope)).1
   simpa only [position] using declared
@@ -151,11 +151,11 @@ theorem restrictRef_refuses_iff {store : Store Head} (canonical : Canonical stor
     have found := (restrictRef_exact canonical valid allowed body).mpr solution
     rw [refused] at found
     cases found
-  · intro missing
+  · intro absent
     cases result : restrictRef allowed source with
     | none => rfl
     | some body =>
-      exact False.elim (missing ⟨body, (restrictRef_exact canonical valid allowed body).mp result⟩)
+      exact False.elim (absent ⟨body, (restrictRef_exact canonical valid allowed body).mp result⟩)
 
 /-- Placing an accepted assignment back gives the same canonical source
 reference, not only an equal printed tree. -/
@@ -190,8 +190,8 @@ theorem solution_weaken {store : Store Head} (canonical : Canonical store)
       exact free
     have inside : j < body.thin.length := by
       by_contra outside
-      have missing := bit_of_length_le (θ := body.thin) (Nat.le_of_not_gt outside)
-      rw [missing] at kept
+      have absent := bit_of_length_le (θ := body.thin) (Nat.le_of_not_gt outside)
+      rw [absent] at kept
       cases kept
     exact sel_cut _ (lt_of_lt_of_le inside solution.2.1)
 

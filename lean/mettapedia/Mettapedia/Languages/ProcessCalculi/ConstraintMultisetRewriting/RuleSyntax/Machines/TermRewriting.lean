@@ -10,7 +10,7 @@ this kind when their transition table is finitely many such schemas.
 
 * **The program** (`rootRules`): one rule per schema, which takes the left row and makes the right row
   (`rowRule`). When the unknowns of each right pattern occur in its left pattern, the rules are range-restricted
-  and positive (`rootRules_fragment`): no read, tell, equation guard, none check, count check or query pattern.
+  and positive (`rootRules_fragment`): no read, tell, equation guard, absence check, count check or query pattern.
 * **One root rewrite is one rewrite of the one-row bag** (`rewrites_rootRules_iff`).
 * **One root rewrite is one firing, and no other firing is admitted**, at every state that reads as the row
   (`firing_of_rootStep`, `rootStep_of_firing`).

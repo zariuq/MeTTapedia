@@ -65,7 +65,7 @@ def rhoBreadthStructuralBoundaryA :
   contentObjectPattern := rfl
   contentReflectiveScopeSafe := by
     intro declaration membership
-    rfl
+    simp
 
 /-- Certification and the explicit structural endpoint recover the same
 complete source/target fibre. -/

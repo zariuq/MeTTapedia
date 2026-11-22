@@ -187,12 +187,12 @@ theorem localsRule_eventually (rigid : ∀ name, (TowerModel.setting valuation).
       rcases List.mem_cons.mp member with rfl | later
       · obtain ⟨fuel, fires⟩ := localsClash_eventually valuation rigid equation distinct rest
         refine ⟨fuel, fun larger enough => ?_⟩
-        obtain ⟨notMem, computed⟩ := Option.isSome_iff_exists.mp (fires larger enough)
+        obtain ⟨absent, computed⟩ := Option.isSome_iff_exists.mp (fires larger enough)
         simp only [localsRule, computed]
         rfl
       · obtain ⟨fuel, fires⟩ := localsRule_eventually rigid rest ⟨equation, later, distinct⟩
         refine ⟨fuel, fun larger enough => ?_⟩
-        obtain ⟨notMem, computed⟩ := Option.isSome_iff_exists.mp (fires larger enough)
+        obtain ⟨absent, computed⟩ := Option.isSome_iff_exists.mp (fires larger enough)
         simp only [localsRule]
         split
         · rfl
@@ -213,11 +213,11 @@ def settled : Settled (family valuation rigid normalizes certifyNormal) where
   settles := by
     intro Γ problem inside _
     obtain ⟨threshold, fires⟩ := localsRule_eventually valuation rigid problem inside
-    obtain ⟨notMem, computed⟩ := Option.isSome_iff_exists.mp (fires threshold le_rfl)
+    obtain ⟨absent, computed⟩ := Option.isSome_iff_exists.mp (fires threshold le_rfl)
     have atBudget : ∀ fuel, threshold ≤ fuel →
-        (family valuation rigid normalizes certifyNormal).round fuel problem = .refuted notMem.down := by
+        (family valuation rigid normalizes certifyNormal).round fuel problem = .refuted absent.down := by
       intro fuel enough
-      obtain ⟨notMem', computed'⟩ := Option.isSome_iff_exists.mp (fires fuel enough)
+      obtain ⟨absent', computed'⟩ := Option.isSome_iff_exists.mp (fires fuel enough)
       change rigidRound (S := TowerModel.setting valuation) rigid TowerModel.complete TowerModel.facts
         TowerModel.roots TowerModel.heads TowerModel.algebra declared tc red (fun _ => none) normalizes certifyNormal
         ContextualDependentNormalCheckingTower.head_typing_unique fuel problem = _
@@ -240,15 +240,15 @@ theorem decided {Θ : Context (LevelTower.rules L)} {problem : EquationStore (To
     ∃ budget, ∀ larger, budget ≤ larger →
       run ((family valuation rigid normalizes certifyNormal).solver larger) problem larger =
         run ((family valuation rigid normalizes certifyNormal).solver budget) problem budget ∧
-      ∃ notMem, run ((family valuation rigid normalizes certifyNormal).solver larger) problem larger = .refuted notMem := by
+      ∃ absent, run ((family valuation rigid normalizes certifyNormal).solver larger) problem larger = .refuted absent := by
   obtain ⟨budget, eventual⟩ := (settled valuation rigid normalizes certifyNormal).decided inside
   obtain ⟨threshold, fires⟩ := localsRule_eventually valuation rigid problem inside
-  obtain ⟨notMem, _⟩ := Option.isSome_iff_exists.mp (fires threshold le_rfl)
+  obtain ⟨absent, _⟩ := Option.isSome_iff_exists.mp (fires threshold le_rfl)
   refine ⟨budget, fun larger enough => ?_⟩
   obtain ⟨same, outcome⟩ := eventual larger enough
   refine ⟨same, ?_⟩
   rcases outcome with ⟨state, _, _, principal⟩ | refuted
-  · exact absurd ⟨_, state.answer, principal.sound⟩ notMem.down
+  · exact absurd ⟨_, state.answer, principal.sound⟩ absent.down
   · exact refuted
 
 end ContextualDependentDecisiveLocals

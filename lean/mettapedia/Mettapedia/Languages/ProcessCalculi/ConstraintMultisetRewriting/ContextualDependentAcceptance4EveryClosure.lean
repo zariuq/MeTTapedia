@@ -174,7 +174,7 @@ theorem everySearch_keeps (fuel : Nat) {Θ : Context S.R}
               exact everyAt_keeps facts roots heads algebra rigid complete declared choices reducer strengthening sn
                 fuel inner keeps _ first firstSmaller (permuted.perm (List.rotate_perm problem k).symm) computed)
             fired
-      | refuted missing =>
+      | refuted absent =>
           rw [computed] at fired
           cases fired
 
@@ -201,7 +201,7 @@ theorem everyStep_keeps (fuel : Nat) {Θ : Context S.R}
       rw [computed] at fired
       cases fired
       exact keepsDead problem _ _ permuted computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
 
@@ -267,9 +267,9 @@ theorem every_decided_of_firing
       ((∃ state finished, run ((everyFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((everyFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((everyFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (everySettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -310,7 +310,7 @@ theorem tower_every_decided_of_firing
       run (everyTower.solver larger) problem larger = run (everyTower.solver budget) problem budget ∧
       ((∃ state finished, run (everyTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (everyTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (everyTower.solver larger) problem larger = .refuted absent)) :=
   every_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices

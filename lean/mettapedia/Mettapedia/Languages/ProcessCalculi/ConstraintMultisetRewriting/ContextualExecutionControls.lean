@@ -164,7 +164,7 @@ theorem no_endomorphic_model :
   exact ContextualTransportedActivationControls.the_original_small_frame_is_inconsistent
 
 /-- The generic semantic realization constructs this actual consuming and
-producing execution, despite the lack of an original endomorphic model. -/
+producing execution, despite the absence of an original endomorphic model. -/
 theorem actual_consumption_and_production_require_the_fresh_family :
     ∃ after : ContextualExecution.Endpoint localDefs Nat [(), ()] (),
       ∃ firing : ContextualExecution.Firing localDefs start after,

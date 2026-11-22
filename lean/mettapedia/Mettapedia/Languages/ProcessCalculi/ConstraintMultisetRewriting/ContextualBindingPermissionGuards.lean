@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualBindingPermissions
 
 /-!
-# Binding footprints of contextual none queries and count observations
+# Binding footprints of contextual absence and count observations
 
 A guard depends on its query and the captures of every watched row. Schema
 locals remain per-use existential witnesses; captured variables in those

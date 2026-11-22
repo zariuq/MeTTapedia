@@ -124,7 +124,7 @@ def instantiate (X : Frames Tm Hom) {a b : Obj} (row : Closure Tm a)
     (j : Hom row.schema.locals b) : Closure Tm a :=
   ⟨row.schema.instantiate X j, row.args⟩
 
-/-- A directed instance cannot introduce a value missing from the general schema. -/
+/-- A directed instance cannot introduce a value absent from the general schema. -/
 theorem readsAt_of_instance (X : Frames Tm Hom) {a b c : Obj} (row : Closure Tm a)
     (j : Hom row.schema.locals b) (σ : Hom a c) (value : Tm c)
     (reads : (row.instantiate X j).ReadsAt X σ value) : row.ReadsAt X σ value := by

@@ -73,18 +73,18 @@ theorem missing_send_cannot_be_repaired_by_available_resources :
   have allowed := formed.send_required locals captures (occurrence := 99) (by decide)
   cases allowed
 
-def noneCheck : Check Nat := .predicate .none 5
+def absentCheck : Check Nat := .predicate .none 5
 def onlySite (_ : Check Nat) : Finset Nat := {3}
 def noPorts : Selection Nat := ⟨[], [], []⟩
 
 theorem an_empty_region_still_requires_its_declared_observe_right :
-    ¬ Authority deny locations onlySite [noneCheck] noPorts ∅ := by
+    ¬ Authority deny locations onlySite [absentCheck] noPorts ∅ := by
   intro authority
-  have allowed := authority.regions noneCheck (List.mem_singleton_self _) (by trivial) 3 (by decide)
+  have allowed := authority.regions absentCheck (List.mem_singleton_self _) (by trivial) 3 (by decide)
   cases allowed
 
 theorem an_empty_authorized_region_is_formed :
-    Authority allow locations onlySite [noneCheck] noPorts ∅ := by
+    Authority allow locations onlySite [absentCheck] noPorts ∅ := by
   refine ⟨?_, by intros; rfl, ?_⟩
   · exact ⟨by simp [noPorts, Selection.commit], by simp [noPorts, Selection.commit],
       by simp [noPorts, Selection.commit], by simp [Selection.commit]⟩
@@ -92,9 +92,9 @@ theorem an_empty_authorized_region_is_formed :
     exact False.elim (Finset.notMem_empty occurrence impossible)
 
 theorem undeclared_live_region_is_rejected_even_with_all_rights :
-    ¬ Authority allow locations (fun _ : Check Nat => ∅) [noneCheck] noPorts {7} := by
+    ¬ Authority allow locations (fun _ : Check Nat => ∅) [absentCheck] noPorts {7} := by
   intro authority
   exact Finset.notMem_empty _
-    (authority.coverage noneCheck (List.mem_singleton_self _) (by trivial) 7 (by decide))
+    (authority.coverage absentCheck (List.mem_singleton_self _) (by trivial) 7 (by decide))
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualSituatedControls

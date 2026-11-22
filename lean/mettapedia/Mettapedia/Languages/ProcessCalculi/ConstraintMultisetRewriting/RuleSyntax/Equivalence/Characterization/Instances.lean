@@ -28,7 +28,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 At the state a context reaches (with the same identities, `Congruent.basic_same`), a firing of the
 one side that the other side cannot answer statically (`answers_of_congruent`) separates them:
 
-* `none_separates_static`: after a row `9`, the unguarded spawn fires and the guarded one cannot;
+* `absence_separates_static`: after a row `9`, the unguarded spawn fires and the guarded one cannot;
 * `dormant_separates_static`: after a row `9`, the rule that takes it fires and the empty program has no
   firing;
 * `guard_not_entailed_static`, `tell_not_entailed_static`: at a row `6`, the rule that reads and makes
@@ -40,7 +40,7 @@ one side that the other side cannot answer statically (`answers_of_congruent`) s
 
 * **Equivalent, and not an instance of the seven laws** (`subsumed_example`): `{spawn}` and
   `{spawn, spawnGuarded}`: a rule whose every firing a less guarded rule of the program reproduces may
-  be added, beside every program, at every state. The guard is a none query, which no law covers.
+  be added, beside every program, at every state. The guard is an absence query, which no law covers.
 * **Not equivalent, with the separating context computed** (`touch_separates`): `take x, make x`
   ("touch any row") against the empty program, at the empty store. Neither moves there; the
   characterization asks for the rule's firings at every state a context reaches, and the least such
@@ -217,9 +217,9 @@ theorem cong_basic_same {S T : Sys} (related : Cong S T) (c : Basic Tm ℕ E) (a
   related.basic_same (fun π p s => mayBarb_renameState X π p s)
     (fun related p => mayBarb_modulo related p) c applyS applyT
 
-/-- **The none query**: after a row `9`, the unguarded spawn fires, and the guarded one has no firing to
+/-- **Absence**: after a row `9`, the unguarded spawn fires, and the guarded one has no firing to
 answer it. -/
-theorem none_separates_static : ¬ Cong ⟨{spawnGuarded}, empty⟩ ⟨{spawn}, empty⟩ := by
+theorem absence_separates_static : ¬ Cong ⟨{spawnGuarded}, empty⟩ ⟨{spawn}, empty⟩ := by
   intro related
   have nine : Cong ⟨{spawnGuarded}, addRows empty {0} (fun _ => c 9)⟩
       ⟨{spawn}, addRows empty {0} (fun _ => c 9)⟩ :=
@@ -431,7 +431,7 @@ theorem touch_separates : ¬ Cong ⟨{touch}, empty⟩ ⟨∅, empty⟩ := by
 #print axioms readTakeMake_static
 #print axioms entailedGuard_answers
 #print axioms entailedTell_answers
-#print axioms none_separates_static
+#print axioms absence_separates_static
 #print axioms takeNine_fires
 #print axioms dormant_separates_static
 #print axioms guard_not_entailed_static

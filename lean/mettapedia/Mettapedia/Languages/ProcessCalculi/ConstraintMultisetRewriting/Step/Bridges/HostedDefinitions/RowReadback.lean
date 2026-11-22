@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Brid
 
 The matching environment comes from the real source equation. Used slots are
 read back at the actual native ambient scope; unused slots are padded only
-where their none query is proved. The generated target is the exact runtime
+where their absence is proved. The generated target is the exact runtime
 substitution request, not a semantic reduction supplied to its admission.
 -/
 

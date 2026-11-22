@@ -37,7 +37,7 @@ def arithRewrites : List RewriteRule :=
 def arith : LanguageDef := LanguageDef.ofCore "Arith" ["Nat"] arithTerms [] arithRewrites
 
 def arithSpec : Spec :=
-  ⟨GeneralExecutionAdmission.compile ⟨arith, [("n", .base "Nat")], ⟨[], []⟩⟩ {}, [], .base "Nat"⟩
+  ⟨GeneralExecutionAdmission.compile ⟨arith, [("n", .base "Nat")], { signatures := [], rows := [] }⟩ {}, [], .base "Nat"⟩
 
 def cycleTerms : List GrammarRule :=
   [{ label := "A", category := "State", params := [], syntaxPattern := [] },
@@ -48,7 +48,7 @@ def cycleRewrites : List RewriteRule :=
    { name := "b-to-a", typeContext := [], premises := [], left := c "B", right := c "A" }]
 
 def cycleSpec : Spec :=
-  ⟨GeneralExecutionAdmission.compile ⟨LanguageDef.ofCore "Cycle" ["State"] cycleTerms [] cycleRewrites, [], ⟨[], []⟩⟩
+  ⟨GeneralExecutionAdmission.compile ⟨LanguageDef.ofCore "Cycle" ["State"] cycleTerms [] cycleRewrites, [], { signatures := [], rows := [] }⟩
     {sites := .rootOnly}, [], .base "State"⟩
 
 def partrecSpec : Spec := ⟨Mettapedia.OSLF.NativeTypes.Instances.Partrec.Backend.plan, [], .base "Cfg"⟩

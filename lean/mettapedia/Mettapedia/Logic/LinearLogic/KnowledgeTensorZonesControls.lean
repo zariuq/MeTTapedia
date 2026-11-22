@@ -21,9 +21,9 @@ import Mettapedia.Logic.LinearLogic.KnowledgeTensorSequent
 * **Sequents.** The two readers have a tensor sequent over the one lent occurrence
   (`the_two_readers_have_a_tensor_sequent`). No sequent discards a leftover
   (`sequents_do_not_discard`).
-* **The whole calculus.** The none query control, read in the whole calculus at one frame, runs
-  alone and is refused beside `c` (`none_runs_in_the_whole_calculus`,
-  `none_is_refused_in_the_whole_calculus`).
+* **The whole calculus.** The absence control, read in the whole calculus at one frame, runs
+  alone and is refused beside `c` (`absence_runs_in_the_whole_calculus`,
+  `absence_is_refused_in_the_whole_calculus`).
 * **Frames.** Frames are the natural numbers, a frame map adds names, atoms of a frame are its
   names. The declaration that makes the last name of its target frame makes a fresh atom
   (`names_are_fresh`). The declaration that makes a carried atom does not (`reuse_is_not_fresh`).
@@ -172,18 +172,18 @@ theorem sequents_do_not_discard {known known' : Knowledge} {uses : List Unit} :
 
 /-! ## The whole calculus -/
 
-theorem none_runs_in_the_whole_calculus :
+theorem absence_runs_in_the_whole_calculus :
     ∃ along : (() : Unit) ⟶ (),
-      noneGuarded.zoned.RunUnder () 0 Set.univ (noneGuarded.premises ()) ([()].map (Sigma.mk ())) () along
-        (Set.univ ⊓ Set.univ) (noneGuarded.conclusions ()) :=
-  (CheckedSystem.run_iff_zoned _ _ _ _ _).mp none_fires_alone
+      absence.zoned.RunUnder () 0 Set.univ (absence.premises ()) ([()].map (Sigma.mk ())) () along
+        (Set.univ ⊓ Set.univ) (absence.conclusions ()) :=
+  (CheckedSystem.run_iff_zoned _ _ _ _ _).mp absence_fires_alone
 
-theorem none_is_refused_in_the_whole_calculus :
+theorem absence_is_refused_in_the_whole_calculus :
     ¬ ∃ along : (() : Unit) ⟶ (),
-      noneGuarded.zoned.RunUnder () 0 Set.univ (noneGuarded.premises () + {c}) ([()].map (Sigma.mk ())) ()
-        along (Set.univ ⊓ Set.univ) (noneGuarded.conclusions () + {c}) := by
+      absence.zoned.RunUnder () 0 Set.univ (absence.premises () + {c}) ([()].map (Sigma.mk ())) ()
+        along (Set.univ ⊓ Set.univ) (absence.conclusions () + {c}) := by
   rintro ⟨along, run⟩
-  exact none_blocked ((CheckedSystem.run_iff_zoned _ _ _ _ _).mpr ⟨along, run⟩) rfl rfl
+  exact absence_blocked ((CheckedSystem.run_iff_zoned _ _ _ _ _).mpr ⟨along, run⟩) rfl rfl
 
 /-! ## Frames and fresh names -/
 

@@ -12,7 +12,7 @@ a program does not. Its admission reads the store only through its regions.
 ## Locality
 
 The **regions** of a firing are its taken, read and made identities and, at each solution of its
-information, the rows that a solution equates with one of its query patterns (the none query and count
+information, the rows that a solution equates with one of its query patterns (the absence and count
 patterns of its checks and its collect patterns, `Firing.queryPatterns`). A change of the present rows
 **outside the regions** (`OutsideRegions`) keeps the taken, read and made identities as they were and
 touches only rows that no solution of the information equates with a query pattern.
@@ -20,7 +20,7 @@ touches only rows that no solution of the information equates with a query patte
 * **`admits_of_outsideRegions`**: a firing admitted at a state is admitted after any change outside
   its regions that keeps its opening fresh; with freshness at both states, `admits_iff_of_outsideRegions`.
 * Control (query regions count, `Controls.row_in_region_refused`, `Controls.row_outside_admitted`): the
-  none queries of `9` is admitted with a row `x` bound to `5`; adding a row labelled `9` (inside the region)
+  absence of `9` is admitted with a row `x` bound to `5`; adding a row labelled `9` (inside the region)
   refuses it, while adding a second row labelled `x` (outside the region at every solution, though its
   label is an unknown) keeps it admitted.
 * Control (an instance of the interface whose admission is not local, `Controls.nonlocal_restriction`):
@@ -28,8 +28,8 @@ touches only rows that no solution of the information equates with a query patte
   changes when row `7`, outside every region, is added. By locality no step of a program does this.
 * **Rights are local** (`permitted_admits_of_outsideRegions`): permissions restrict the step by a
   predicate on the selected identities and their handles, so the permitted step of a program is local
-  too. They do not see predicate queries (`Controls.none_without_rights_permitted`): with no right
-  at all, a none query is permitted, since the permission checks the selection's commit, which carries
+  too. They do not see predicate queries (`Controls.absence_without_rights_permitted`): with no right
+  at all, an absence is permitted, since the permission checks the selection's commit, which carries
   no query.
 
 ## The knowledge of a result, by definition
@@ -85,7 +85,7 @@ section Locality
 
 variable {X : Frames Tm Hom} {O : Type uOcc} {E : Extensions.{uO, uH, uE} Hom} {P : Program Tm}
 
-/-- **The query patterns of a firing**: the opened none queries and count patterns and collect patterns. -/
+/-- **The query patterns of a firing**: the opened absence and count patterns and collect patterns. -/
 def Firing.queryPatterns (X : Frames Tm Hom) {a : Obj} (f : Firing O E P a) :
     List (Tm (E.target f.ext)) :=
   (f.opened X).checks.filterMap checkRegion ++ f.collectOpened X
@@ -319,7 +319,7 @@ end Generic
 namespace Controls
 
 open Mettapedia.Logic.LP
-open Examples (Tm X E x c demo noNineFiring guardAt everywhere fresh_of_ground noNine)
+open Examples (Tm X E x c demo absentFiring guardAt everywhere fresh_of_ground absentNine)
 open OneFrame (frames ext)
 open _root_.Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Controls
   (atoms action)
@@ -330,35 +330,35 @@ def nineAtOne (o : ℕ) : Term atoms := if o = 1 then c 9 else x
 /-- The request row `0` with `x` bound to `5`. -/
 def base : State Tm ℕ := ⟨PUnit.unit, [(x, c 5)], {0}, nineAtOne⟩
 
-theorem base_fresh (W : Finset ℕ) : Firing.Fresh X (base.withPresent W) noNineFiring := by
-  apply fresh_of_ground action _ noNineFiring
+theorem base_fresh (W : Finset ℕ) : Firing.Fresh X (base.withPresent W) absentFiring := by
+  apply fresh_of_ground action _ absentFiring
   intro t member σ
-  simp only [noNineFiring, noNine, Rule.terms, checkTerms, List.map_nil, List.flatMap_cons,
+  simp only [absentFiring, absentNine, Rule.terms, checkTerms, List.map_nil, List.flatMap_cons,
     List.flatMap_nil, List.nil_append, List.append_nil, List.mem_singleton] at member
   subst member
   rfl
 
 theorem base_information (W : Finset ℕ) :
-    noNineFiring.information X (base.withPresent W) = [(x, c 5)] := rfl
+    absentFiring.information X (base.withPresent W) = [(x, c 5)] := rfl
 
-/-- The none query of `9` at the given rows, with `x` bound to `5`. -/
-theorem none_admitted_iff (W : Finset ℕ) :
-    (step X ℕ E demo).Admits (s := base.withPresent W) noNineFiring ↔ 1 ∉ W := by
+/-- The absence of `9` at the given rows, with `x` bound to `5`. -/
+theorem absent_admitted_iff (W : Finset ℕ) :
+    (step X ℕ E demo).Admits (s := base.withPresent W) absentFiring ↔ 1 ∉ W := by
   rw [admits_iff]
   constructor
   · rintro ⟨-, -, -, -, checks, -⟩ present
     have solved : X.Models (a := PUnit.unit) (b := PUnit.unit) (everywhere 5)
-        (noNineFiring.information X (base.withPresent W)) := by
+        (absentFiring.information X (base.withPresent W)) := by
       rw [base_information]
       intro e inside
       rw [List.mem_singleton] at inside
       subst inside
       rfl
     exact checks (.predicate .none (c 9)) (List.mem_singleton_self _) PUnit.unit _ solved 1 present rfl
-  · intro missing
+  · intro absent
     refine ⟨base_fresh W, ⟨List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, rfl⟩, ?_,
       ⟨PUnit.unit, everywhere 5, ?_⟩, ?_, ?_⟩
-    · refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> simp [noNineFiring, Selection.commit]
+    · refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> simp [absentFiring, Selection.commit]
     · rw [base_information]
       intro e inside
       rw [List.mem_singleton] at inside
@@ -367,11 +367,11 @@ theorem none_admitted_iff (W : Finset ℕ) :
     · intro check inside b σ solved
       rw [base_information] at solved
       have bound : σ 0 = c 5 := solved (x, c 5) List.mem_cons_self
-      simp only [noNineFiring, noNine, Firing.opened, RuleInstance.map, List.map_cons,
+      simp only [absentFiring, absentNine, Firing.opened, RuleInstance.map, List.map_cons,
         List.map_nil, Check.map, List.mem_singleton] at inside
       subst inside
       intro o present equated
-      have other : o ≠ 1 := fun same => missing (same ▸ present)
+      have other : o ≠ 1 := fun same => absent (same ▸ present)
       have nine : (c 9 : Term atoms) = σ 0 := by
         have h : (c 9 : Term atoms) =
             Subst.applyTerm σ (Subst.applyTerm (Subst.id atoms) (nineAtOne o)) := equated
@@ -380,23 +380,23 @@ theorem none_admitted_iff (W : Finset ℕ) :
       rw [bound] at nine
       exact absurd (Term.const.inj nine) (by decide)
     · intro q inside
-      simp [noNineFiring, noNine, Firing.collectOpened] at inside
+      simp [absentFiring, absentNine, Firing.collectOpened] at inside
 
-/-- **A row inside the region refuses the none query.** -/
+/-- **A row inside the region refuses the absence.** -/
 theorem row_in_region_refused :
-    (step X ℕ E demo).Admits (s := base.withPresent {0}) noNineFiring ∧
-      ¬ (step X ℕ E demo).Admits (s := base.withPresent {0, 1}) noNineFiring :=
-  ⟨(none_admitted_iff {0}).mpr (by decide), fun admitted =>
-    (none_admitted_iff {0, 1}).mp admitted (by decide)⟩
+    (step X ℕ E demo).Admits (s := base.withPresent {0}) absentFiring ∧
+      ¬ (step X ℕ E demo).Admits (s := base.withPresent {0, 1}) absentFiring :=
+  ⟨(absent_admitted_iff {0}).mpr (by decide), fun admitted =>
+    (absent_admitted_iff {0, 1}).mp admitted (by decide)⟩
 
 /-- **A row outside the region at every solution keeps it admitted**, though its label is an unknown;
 this is locality applied to row `2`. -/
 theorem row_outside_admitted :
-    OutsideRegions X (base.withPresent {0}) {0, 2} noNineFiring ∧
-      (step X ℕ E demo).Admits (s := (base.withPresent {0}).withPresent {0, 2}) noNineFiring := by
-  have outside : OutsideRegions X (base.withPresent {0}) {0, 2} noNineFiring := by
+    OutsideRegions X (base.withPresent {0}) {0, 2} absentFiring ∧
+      (step X ℕ E demo).Admits (s := (base.withPresent {0}).withPresent {0, 2}) absentFiring := by
+  have outside : OutsideRegions X (base.withPresent {0}) {0, 2} absentFiring := by
     refine ⟨fun o member => ?_, fun b σ solved p inside o changed => ?_⟩
-    · simp [noNineFiring] at member
+    · simp [absentFiring] at member
     · rw [base_information] at solved
       have bound : σ 0 = c 5 := solved (x, c 5) List.mem_cons_self
       have two : o = 2 := by
@@ -405,7 +405,7 @@ theorem row_outside_admitted :
         simp only [State.withPresent, Finset.mem_insert, Finset.mem_singleton]
         omega
       subst two
-      simp only [Firing.queryPatterns, noNineFiring, noNine, Firing.opened, RuleInstance.map,
+      simp only [Firing.queryPatterns, absentFiring, absentNine, Firing.opened, RuleInstance.map,
         List.map_cons, List.map_nil, Check.map, List.filterMap_cons, checkRegion,
         List.filterMap_nil, Firing.collectOpened, List.append_nil, List.mem_singleton] at inside
       subst inside
@@ -413,20 +413,20 @@ theorem row_outside_admitted :
       have nine : (c 9 : Term atoms) = σ 0 := equated
       rw [bound] at nine
       exact absurd (Term.const.inj nine) (by decide)
-  exact ⟨outside, admits_of_outsideRegions ((none_admitted_iff {0}).mpr (by decide)) outside
+  exact ⟨outside, admits_of_outsideRegions ((absent_admitted_iff {0}).mpr (by decide)) outside
     (base_fresh {0, 2})⟩
 
 /-- **An instance of the interface whose admission is not local**: the step restricted to states
-without row `7`. Adding row `7`, outside every region of the none firing, refuses it. -/
+without row `7`. Adding row `7`, outside every region of the absence firing, refuses it. -/
 theorem nonlocal_restriction :
     let nonlocal := Spaces.restrict (step X ℕ E demo).toStep (fun {s} _ => 7 ∉ s.present)
-    OutsideRegions X (base.withPresent {0}) {0, 7} noNineFiring ∧
-      nonlocal.Admits (s := base.withPresent {0}) noNineFiring ∧
-      ¬ nonlocal.Admits (s := (base.withPresent {0}).withPresent {0, 7}) noNineFiring := by
+    OutsideRegions X (base.withPresent {0}) {0, 7} absentFiring ∧
+      nonlocal.Admits (s := base.withPresent {0}) absentFiring ∧
+      ¬ nonlocal.Admits (s := (base.withPresent {0}).withPresent {0, 7}) absentFiring := by
   intro nonlocal
   refine ⟨⟨fun o member => ?_, fun b σ solved p inside o changed => ?_⟩,
-    ⟨(none_admitted_iff {0}).mpr (by decide), by decide⟩, fun admitted => admitted.2 (by decide)⟩
-  · simp [noNineFiring] at member
+    ⟨(absent_admitted_iff {0}).mpr (by decide), by decide⟩, fun admitted => admitted.2 (by decide)⟩
+  · simp [absentFiring] at member
   · rw [base_information] at solved
     have bound : σ 0 = c 5 := solved (x, c 5) List.mem_cons_self
     have seven : o = 7 := by
@@ -435,7 +435,7 @@ theorem nonlocal_restriction :
       simp only [State.withPresent, Finset.mem_insert, Finset.mem_singleton]
       omega
     subst seven
-    simp only [Firing.queryPatterns, noNineFiring, noNine, Firing.opened, RuleInstance.map,
+    simp only [Firing.queryPatterns, absentFiring, absentNine, Firing.opened, RuleInstance.map,
       List.map_cons, List.map_nil, Check.map, List.filterMap_cons, checkRegion,
       List.filterMap_nil, Firing.collectOpened, List.append_nil, List.mem_singleton] at inside
     subst inside
@@ -444,13 +444,13 @@ theorem nonlocal_restriction :
     rw [bound] at nine
     exact absurd (Term.const.inj nine) (by decide)
 
-/-- **Rights do not see predicate queries**: with no right at all, the none query of `9` is still
+/-- **Rights do not see predicate queries**: with no right at all, the absence of `9` is still
 permitted and admitted, because the permission of the tree checks the selection's commit, which
 carries no query, so its `observe` clause is never asked. -/
-theorem none_without_rights_permitted :
+theorem absence_without_rights_permitted :
     (Permissions.permitted (step X ℕ E demo).toStep (fun _ : ℕ => (0 : ℕ))
-      (fun _ _ => false)).Admits (s := Examples.boundRequest) noNineFiring := by
-  refine ⟨Examples.noNine_admitted_when_bound, ⟨fun o member => ?_, fun o member => ?_,
+      (fun _ _ => false)).Admits (s := Examples.boundRequest) absentFiring := by
+  refine ⟨Examples.absent_admitted_when_bound, ⟨fun o member => ?_, fun o member => ?_,
     fun o member => ?_, fun q member => ?_⟩⟩
   · change o ∈ ([] : List ℕ).toFinset at member
     simp at member
@@ -458,7 +458,7 @@ theorem none_without_rights_permitted :
     simp at member
   · change o ∈ ([] : List ℕ).toFinset at member
     simp at member
-  · simp [noNineFiring, Selection.commit] at member
+  · simp [absentFiring, Selection.commit] at member
 
 /-- The token firing, making identity `n`. -/
 def consumeAt (n : ℕ) : Firing ℕ E demo PUnit.unit :=
@@ -523,6 +523,6 @@ end Controls
 #print axioms Controls.nonlocal_restriction
 #print axioms Controls.knowledge_reads_selected_labels
 #print axioms Controls.made_choices_infinite
-#print axioms Controls.none_without_rights_permitted
+#print axioms Controls.absence_without_rights_permitted
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax

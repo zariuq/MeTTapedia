@@ -81,7 +81,7 @@ theorem recover (path : Quiver.Path source target) :
       certificate.selections = ContextualExecution.selections path ∧
       certificate.fuels = ContextualExecution.fuels path := by
   induction path with
-  | nil => exact ⟨.nil source, by simp [Checked, questions], rfl, rfl⟩
+  | nil => exact ⟨.nil source, by simp [Checked, questions, observations], rfl, rfl⟩
   | cons past edge earlier =>
       obtain ⟨certificate, checked, selected, spent⟩ := earlier
       let prepared := Prepared.ofFiring edge
@@ -91,10 +91,16 @@ theorem recover (path : Quiver.Path source target) :
         rw [questions_castTarget]
         exact (checked_append_iff locals _ _).mpr ⟨checked, Prepared.checked_ofFiring edge⟩
       · change ((Certificate.snoc certificate prepared).castTarget _).selections = _
-        rw [selections_castTarget, selections, selected]
+        rw [selections_castTarget]
+        change certificate.selections ++ [prepared.selection] =
+          ContextualExecution.selections past ++ [edge.selection]
+        rw [selected]
         rfl
       · change ((Certificate.snoc certificate prepared).castTarget _).fuels = _
-        rw [fuels_castTarget, fuels, spent]
+        rw [fuels_castTarget]
+        change certificate.fuels ++ [prepared.fuel] =
+          ContextualExecution.fuels past ++ [edge.fuel]
+        rw [spent]
         rfl
 
 /-- Existence is equivalent at the original full typed endpoint, not merely

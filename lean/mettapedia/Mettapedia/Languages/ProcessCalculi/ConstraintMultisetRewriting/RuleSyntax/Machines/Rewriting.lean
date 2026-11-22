@@ -253,9 +253,9 @@ theorem rowsAfter_of_not_mem (rows : O → Expr) :
     ∀ (made : List O) (es : List Expr) {o : O}, o ∉ made → rowsAfter rows made es o = rows o
   | [], _, _, _ => rfl
   | _ :: _, [], _, _ => rfl
-  | o' :: rest, e :: es, o, missing => by
-      have other : o ≠ o' := fun same => missing (List.mem_cons.mpr (Or.inl same))
-      have later : o ∉ rest := fun inside => missing (List.mem_cons.mpr (Or.inr inside))
+  | o' :: rest, e :: es, o, absent => by
+      have other : o ≠ o' := fun same => absent (List.mem_cons.mpr (Or.inl same))
+      have later : o ∉ rest := fun inside => absent (List.mem_cons.mpr (Or.inr inside))
       simp only [rowsAfter, if_neg other]
       exact rowsAfter_of_not_mem rows rest es later
 
@@ -312,7 +312,7 @@ theorem relabel_reads {σ : Subst rowSig} (old : O → Tm) (rows : O → Expr) (
       · simp only [relabel, rowsAfter, List.map_cons, if_neg same]
         exact relabel_reads old rows opening val rest ps (Nat.succ.inj lengths)
           (fun q member => each q (List.mem_cons_of_mem _ member))
-          (fun missing => other fun inside => (List.mem_cons.mp inside).elim same missing)
+          (fun absent => other fun inside => (List.mem_cons.mp inside).elim same absent)
 
 /-- **The result of an admitted firing reads as the rows after it**, at a state that reads as rows. -/
 theorem result_reads {s : SState O} {rows : O → Expr} (reads : Reads s rows)

@@ -60,154 +60,22 @@ theorem generic_non_infer_lifted_rule_empty
   simp only [genericNonInferSourceRules, List.mem_cons, List.mem_nil_iff,
     or_false] at membership
   rcases membership with rfl | rfl | rfl | rfl | rfl | rfl
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.inputIndexFaultTransition record rest
-      nodes nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [v "id", v "formula", v "provenance", v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [id, rule, parents, evidence, conclusion, relevance])
-    · simp [sourceInstruction?,
-        DerivationCheckMachineLanguageDef.inputIndexFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
+  all_goals
+    refine generic_lifted_record_rule_empty_of_decode_mismatch host _ record
+      rest nodes nextId root serviceState _ _ rfl ?_ recordDecoded ?_
     · simp [liftLeft, liftPattern,
         DerivationCheckMachineLanguageDef.inputIndexFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded,
-        DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.inputRelevanceFaultTransition record
-      rest nodes nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [v "id", v "formula", v "provenance", v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [id, rule, parents, evidence, conclusion, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.inputRelevanceFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.inputRelevanceFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded,
-        DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.inputDecisionFaultTransition record
-      rest nodes nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [v "id", v "formula", v "provenance", v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [id, rule, parents, evidence, conclusion, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.inputDecisionFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.inputDecisionFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded,
-        DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.inputAcceptTransition record rest
-      nodes nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:input"
-        [v "id", v "formula", v "provenance", v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [id, rule, parents, evidence, conclusion, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.inputAcceptTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.inputAcceptTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded,
-        DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.dropFaultTransition record rest nodes
-      nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:drop" [v "id"])
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [id, rule, parents, evidence, conclusion, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.dropFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.dropFaultTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded,
-        DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
-  · apply generic_lifted_record_rule_empty_of_decode_mismatch host
-      DerivationCheckMachineLanguageDef.dropAcceptTransition record rest nodes
-      nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:drop" [v "id"])
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [id, rule, parents, evidence, conclusion, relevance])
-    · simp [sourceInstruction?,
         DerivationCheckMachineLanguageDef.dropAcceptTransition,
         DerivationCheckMachineLanguageDef.run,
         DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
-    · simp [liftLeft, liftPattern,
-        DerivationCheckMachineLanguageDef.dropAcceptTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
-        DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded,
-        DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        run, recordsCons, v, DerivationWordMachineLanguageDef.a]
+    · simp [decoded, DerivationWordMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.a, matchPattern, matchArgs]
 
 #print axioms generic_non_infer_lifted_rule_empty
 
@@ -1219,13 +1087,12 @@ theorem infer_index_accept_premise_empty_of_fault
       (query "DCMIndexAdvance" [v "nextId", v "id",
         DerivationCheckMachineLanguageDef.a "dcm:decision-index"
           [advancedPattern]]) = [] := by
-  simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    relationEnv, relationTuples, nextIdDecoded, idDecoded, indexFaulted,
-    inferDecodedBindings, inputStartBindings, query, v,
-    DerivationCheckMachineLanguageDef.decisionFault,
-    DerivationCheckMachineLanguageDef.a, matchRelationArgs,
-    matchRelationArgument, matchPattern, mergeBindings,
-    applyBindings, Bindings.lookup]
+  exact indexAdvance_premise_empty_of_fault host
+    (inferDecodedBindings record rest nodes nextIdPattern root serviceStatePattern idPattern
+      rulePattern parentsPattern evidencePattern conclusionPattern relevancePatternValue)
+    nextIdPattern idPattern advancedPattern faultPatternValue expectedId actualId
+    (by simp [inferDecodedBindings, inputStartBindings, Bindings.lookup])
+    (by simp [inferDecodedBindings, Bindings.lookup]) nextIdDecoded idDecoded indexFaulted
 
 #print axioms infer_index_accept_premise_empty_of_fault
 
@@ -1285,14 +1152,13 @@ theorem infer_relevance_accept_premise_empty_of_fault
         advanced)
       (query "DCMRelevanceShapeDecision" [v "id", v "relevance",
         DerivationCheckMachineLanguageDef.a "dcm:decision-accept"]) = [] := by
-  simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    relationEnv, relationTuples, idDecoded, relevanceDecoded,
-    relevanceFaulted, inferIndexedBindings, inferDecodedBindings,
-    inputStartBindings, query, v,
-    DerivationCheckMachineLanguageDef.decisionFault,
-    DerivationCheckMachineLanguageDef.a, matchRelationArgs,
-    matchRelationArgument, matchPattern, mergeBindings, applyBindings,
-    Bindings.lookup]
+  exact relevanceAccept_premise_empty_of_fault host
+    (inferIndexedBindings record rest nodes nextId root serviceState idPattern rule parents evidence
+      conclusion relevancePatternValue advanced)
+    idPattern relevancePatternValue faultPatternValue actualId relevance
+    (by simp [inferIndexedBindings, inferDecodedBindings, Bindings.lookup])
+    (by simp [inferIndexedBindings, inferDecodedBindings, Bindings.lookup])
+    idDecoded relevanceDecoded relevanceFaulted
 
 #print axioms infer_relevance_accept_premise_empty_of_fault
 
@@ -1494,6 +1360,19 @@ theorem infer_rule_fault_premise_empty_of_accept
 
 #print axioms infer_rule_fault_premise_empty_of_accept
 
+private def inferDecodeQuery : Premise :=
+  query "DWMDecodeRecord" [v "record", decoded
+    (DerivationCheckMachineLanguageDef.a "dcm:infer"
+      [v "id", v "rule", v "parents", v "evidence", v "conclusion", v "relevance"])]
+
+private def advanceIndexQuery : Premise :=
+  query "DCMIndexAdvance" [v "nextId", v "id",
+    DerivationCheckMachineLanguageDef.a "dcm:decision-index" [v "advanced"]]
+
+private def acceptRelevanceQuery : Premise :=
+  query "DCMRelevanceShapeDecision" [v "id", v "relevance",
+    DerivationCheckMachineLanguageDef.a "dcm:decision-accept"]
+
 theorem infer_index_fault_applyRule_empty
     (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
     (record rest nodes nextIdPattern root serviceStatePattern idPattern
@@ -1609,100 +1488,42 @@ theorem infer_index_fault_excludes_later_rule
       (fun _ => []) (liftRewrite sourceRule unannotated)
       (run (recordsCons record rest) nodes nextIdPattern root
         serviceStatePattern) = [] := by
+  have rejected : PremisePlan (engineBasePremises (relationEnv host)) language
+      (fun _ => []) (inputStartBindings record rest nodes nextIdPattern root
+        serviceStatePattern) [inferDecodeQuery, advanceIndexQuery] none :=
+    .advance (infer_decode_premise_exact host record rest nodes nextIdPattern
+      root serviceStatePattern idPattern rulePattern parentsPattern
+      evidencePattern conclusionPattern relevancePatternValue recordDecoded)
+      (.reject (infer_index_accept_premise_empty_of_fault host record rest nodes
+        nextIdPattern root serviceStatePattern idPattern rulePattern parentsPattern
+        evidencePattern conclusionPattern relevancePatternValue (v "advanced")
+        faultPatternValue expectedId actualId nextIdDecoded idDecoded indexFaulted))
   simp only [inferIndexSuccessSourceRules, List.mem_cons, List.mem_nil_iff,
     or_false] at membership
   rcases membership with rfl | rfl | rfl | rfl
-  · simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-      engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-      liftPattern, liftPremise,
-      DerivationCheckMachineLanguageDef.inferRelevanceFaultTransition,
-      DerivationCheckMachineLanguageDef.run,
-      DerivationCheckMachineLanguageDef.instructionsCons,
-      DerivationCheckMachineLanguageDef.decisionFault,
-      DerivationCheckMachineLanguageDef.outcomeFault,
-      DerivationCheckMachineLanguageDef.halted,
-      DerivationCheckMachineLanguageDef.a,
-      DerivationCheckMachineLanguageDef.v,
-      DerivationCheckMachineLanguageDef.query,
-      query, v, run, recordsCons, decoded,
-      DerivationWordMachineLanguageDef.a, relationEnv, relationTuples,
-      recordDecoded, nextIdDecoded, idDecoded, indexFaulted,
-      premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-      matchRelationArgs, matchRelationArgument, matchPattern, matchArgs,
-      mergeBindings, applyBindings, Bindings.lookup]
-  · simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-      engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-      liftPattern, liftPremise,
-      DerivationCheckMachineLanguageDef.inferParentFaultTransition,
-      DerivationCheckMachineLanguageDef.run,
-      DerivationCheckMachineLanguageDef.instructionsCons,
-      DerivationCheckMachineLanguageDef.decisionFault,
-      DerivationCheckMachineLanguageDef.outcomeFault,
-      DerivationCheckMachineLanguageDef.halted,
-      DerivationCheckMachineLanguageDef.a,
-      DerivationCheckMachineLanguageDef.v,
-      DerivationCheckMachineLanguageDef.query,
-      query, v, run, recordsCons, decoded,
-      DerivationWordMachineLanguageDef.a, relationEnv, relationTuples,
-      recordDecoded, nextIdDecoded, idDecoded, indexFaulted,
-      premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-      matchRelationArgs, matchRelationArgument, matchPattern, matchArgs,
-      mergeBindings, applyBindings, Bindings.lookup]
-  · simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-      engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-      liftPattern, liftPremise,
-      DerivationCheckMachineLanguageDef.inferRuleFaultTransition,
-      DerivationCheckMachineLanguageDef.run,
-      DerivationCheckMachineLanguageDef.instructionsCons,
-      DerivationCheckMachineLanguageDef.decisionFault,
-      DerivationCheckMachineLanguageDef.outcomeFault,
-      DerivationCheckMachineLanguageDef.halted,
-      DerivationCheckMachineLanguageDef.a,
-      DerivationCheckMachineLanguageDef.v,
-      DerivationCheckMachineLanguageDef.query,
-      query, v, run, recordsCons, decoded,
-      DerivationWordMachineLanguageDef.a, relationEnv, relationTuples,
-      recordDecoded, nextIdDecoded, idDecoded, indexFaulted,
-      premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-      matchRelationArgs, matchRelationArgument, matchPattern, matchArgs,
-      mergeBindings, applyBindings, Bindings.lookup]
-  · apply applyRuleUsing_empty_of_unique_match
-      (initialBindings := inputStartBindings record rest nodes nextIdPattern
-        root serviceStatePattern)
-    · apply generic_record_left_match_exact
-      exact liftedInferAccept_left
-    · rw [liftedInferAccept_premises]
-      let afterDecode := inferDecodedBindings record rest nodes nextIdPattern
-        root serviceStatePattern idPattern rulePattern parentsPattern
-        evidencePattern conclusionPattern relevancePatternValue
-      have decodeStep :
-          premiseStepUsing (engineBasePremises (relationEnv host)) language
-            (fun _ => [])
-            (inputStartBindings record rest nodes nextIdPattern root
-              serviceStatePattern)
-            (query "DWMDecodeRecord" [v "record", decoded
-              (DerivationCheckMachineLanguageDef.a "dcm:infer"
-                [v "id", v "rule", v "parents", v "evidence",
-                 v "conclusion", v "relevance"])]) = [afterDecode] := by
-        simpa only [query, premiseStepUsing, engineBasePremises] using
-          infer_decode_premise_exact host record rest nodes nextIdPattern root
-            serviceStatePattern idPattern rulePattern parentsPattern
-            evidencePattern conclusionPattern relevancePatternValue
-            recordDecoded
-      have indexStep :
-          premiseStepUsing (engineBasePremises (relationEnv host)) language
-            (fun _ => []) afterDecode
-            (query "DCMIndexAdvance" [v "nextId", v "id",
-              DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-                [v "advanced"]]) = [] := by
-        simpa only [query, premiseStepUsing, engineBasePremises] using
-          infer_index_accept_premise_empty_of_fault host record rest nodes
-            nextIdPattern root serviceStatePattern idPattern rulePattern
-            parentsPattern evidencePattern conclusionPattern
-            relevancePatternValue (v "advanced") faultPatternValue
-            expectedId actualId nextIdDecoded idDecoded indexFaulted
-      simp only [premisesUsing, decodeStep, List.flatMap_singleton, indexStep,
-        List.flatMap_nil]
+  all_goals
+    refine applyRuleUsing_eq_nil_of_rejected_prefix
+      (generic_record_left_match_exact _ _ _ _ _ _ _ ?_) ?_ rejected
+    · simp [liftRewrite, sourceInstruction?, liftLeft, liftPattern,
+        DerivationCheckMachineLanguageDef.inferRelevanceFaultTransition,
+        DerivationCheckMachineLanguageDef.inferParentFaultTransition,
+        DerivationCheckMachineLanguageDef.inferRuleFaultTransition,
+        DerivationCheckMachineLanguageDef.inferAcceptTransition,
+        DerivationCheckMachineLanguageDef.run,
+        DerivationCheckMachineLanguageDef.instructionsCons,
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        run, recordsCons, v, DerivationWordMachineLanguageDef.a]
+    · simp [inferDecodeQuery, advanceIndexQuery, liftRewrite,
+        sourceInstruction?, liftPremise, liftPattern,
+        DerivationCheckMachineLanguageDef.inferRelevanceFaultTransition,
+        DerivationCheckMachineLanguageDef.inferParentFaultTransition,
+        DerivationCheckMachineLanguageDef.inferRuleFaultTransition,
+        DerivationCheckMachineLanguageDef.inferAcceptTransition,
+        DerivationCheckMachineLanguageDef.run,
+        DerivationCheckMachineLanguageDef.instructionsCons,
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.query, query, v, decoded,
+        DerivationWordMachineLanguageDef.a]
 
 #print axioms infer_index_fault_excludes_later_rule
 
@@ -1840,99 +1661,44 @@ theorem infer_relevance_fault_excludes_later_rule
       (fun _ => []) (liftRewrite sourceRule unannotated)
       (run (recordsCons record rest) nodes nextIdPattern root
         serviceStatePattern) = [] := by
-  simp only [inferRelevanceSuccessSourceRules, List.mem_cons,
-    List.mem_nil_iff, or_false] at membership
+  have rejected : PremisePlan (engineBasePremises (relationEnv host)) language
+      (fun _ => []) (inputStartBindings record rest nodes nextIdPattern root
+        serviceStatePattern) [inferDecodeQuery, advanceIndexQuery, acceptRelevanceQuery] none :=
+    .advance (infer_decode_premise_exact host record rest nodes nextIdPattern
+      root serviceStatePattern idPattern rulePattern parentsPattern
+      evidencePattern conclusionPattern relevancePatternValue recordDecoded)
+      (.advance (infer_index_premise_exact host record rest nodes nextIdPattern
+        root serviceStatePattern idPattern rulePattern parentsPattern evidencePattern
+        conclusionPattern relevancePatternValue advancedPattern expectedId actualId
+        nextIdDecoded idDecoded indexAccepted)
+        (.reject (infer_relevance_accept_premise_empty_of_fault host record rest nodes
+          nextIdPattern root serviceStatePattern idPattern rulePattern parentsPattern
+          evidencePattern conclusionPattern relevancePatternValue advancedPattern
+          faultPatternValue actualId relevance idDecoded relevanceDecoded relevanceFaulted)))
+  simp only [inferRelevanceSuccessSourceRules, List.mem_cons, List.mem_nil_iff,
+    or_false] at membership
   rcases membership with rfl | rfl | rfl
-  · simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-      engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-      liftPattern, liftPremise,
-      DerivationCheckMachineLanguageDef.inferParentFaultTransition,
-      DerivationCheckMachineLanguageDef.run,
-      DerivationCheckMachineLanguageDef.instructionsCons,
-      DerivationCheckMachineLanguageDef.decisionFault,
-      DerivationCheckMachineLanguageDef.outcomeFault,
-      DerivationCheckMachineLanguageDef.halted,
-      DerivationCheckMachineLanguageDef.a,
-      DerivationCheckMachineLanguageDef.v,
-      DerivationCheckMachineLanguageDef.query,
-      query, v, run, recordsCons, decoded,
-      DerivationWordMachineLanguageDef.a, relationEnv, relationTuples,
-      recordDecoded, nextIdDecoded, idDecoded, relevanceDecoded,
-      indexAccepted, relevanceFaulted, premiseStepWithEnv,
-      relationQueryStep, builtinRelationTuples, matchRelationArgs,
-      matchRelationArgument, matchPattern, matchArgs, mergeBindings,
-      applyBindings, Bindings.lookup]
-  · simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-      engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-      liftPattern, liftPremise,
-      DerivationCheckMachineLanguageDef.inferRuleFaultTransition,
-      DerivationCheckMachineLanguageDef.run,
-      DerivationCheckMachineLanguageDef.instructionsCons,
-      DerivationCheckMachineLanguageDef.decisionFault,
-      DerivationCheckMachineLanguageDef.outcomeFault,
-      DerivationCheckMachineLanguageDef.halted,
-      DerivationCheckMachineLanguageDef.a,
-      DerivationCheckMachineLanguageDef.v,
-      DerivationCheckMachineLanguageDef.query,
-      query, v, run, recordsCons, decoded,
-      DerivationWordMachineLanguageDef.a, relationEnv, relationTuples,
-      recordDecoded, nextIdDecoded, idDecoded, relevanceDecoded,
-      indexAccepted, relevanceFaulted, premiseStepWithEnv,
-      relationQueryStep, builtinRelationTuples, matchRelationArgs,
-      matchRelationArgument, matchPattern, matchArgs, mergeBindings,
-      applyBindings, Bindings.lookup]
-  · apply applyRuleUsing_empty_of_unique_match
-      (initialBindings := inputStartBindings record rest nodes nextIdPattern
-        root serviceStatePattern)
-    · apply generic_record_left_match_exact
-      exact liftedInferAccept_left
-    · rw [liftedInferAccept_premises]
-      let afterDecode := inferDecodedBindings record rest nodes nextIdPattern
-        root serviceStatePattern idPattern rulePattern parentsPattern
-        evidencePattern conclusionPattern relevancePatternValue
-      let afterIndex := inferIndexedBindings record rest nodes nextIdPattern
-        root serviceStatePattern idPattern rulePattern parentsPattern
-        evidencePattern conclusionPattern relevancePatternValue advancedPattern
-      have decodeStep :
-          premiseStepUsing (engineBasePremises (relationEnv host)) language
-            (fun _ => [])
-            (inputStartBindings record rest nodes nextIdPattern root
-              serviceStatePattern)
-            (query "DWMDecodeRecord" [v "record", decoded
-              (DerivationCheckMachineLanguageDef.a "dcm:infer"
-                [v "id", v "rule", v "parents", v "evidence",
-                 v "conclusion", v "relevance"])]) = [afterDecode] := by
-        simpa only [query, premiseStepUsing, engineBasePremises] using
-          infer_decode_premise_exact host record rest nodes nextIdPattern root
-            serviceStatePattern idPattern rulePattern parentsPattern
-            evidencePattern conclusionPattern relevancePatternValue
-            recordDecoded
-      have indexStep :
-          premiseStepUsing (engineBasePremises (relationEnv host)) language
-            (fun _ => []) afterDecode
-            (query "DCMIndexAdvance" [v "nextId", v "id",
-              DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-                [v "advanced"]]) = [afterIndex] := by
-        simpa only [query, premiseStepUsing, engineBasePremises] using
-          infer_index_premise_exact host record rest nodes nextIdPattern root
-            serviceStatePattern idPattern rulePattern parentsPattern
-            evidencePattern conclusionPattern relevancePatternValue
-            advancedPattern expectedId actualId nextIdDecoded idDecoded
-            indexAccepted
-      have relevanceStep :
-          premiseStepUsing (engineBasePremises (relationEnv host)) language
-            (fun _ => []) afterIndex
-            (query "DCMRelevanceShapeDecision" [v "id", v "relevance",
-              DerivationCheckMachineLanguageDef.a
-                "dcm:decision-accept"]) = [] := by
-        simpa only [query, premiseStepUsing, engineBasePremises] using
-          infer_relevance_accept_premise_empty_of_fault host record rest nodes
-            nextIdPattern root serviceStatePattern idPattern rulePattern
-            parentsPattern evidencePattern conclusionPattern
-            relevancePatternValue advancedPattern faultPatternValue actualId
-            relevance idDecoded relevanceDecoded relevanceFaulted
-      simp only [premisesUsing, decodeStep, indexStep, relevanceStep,
-        List.flatMap_singleton, List.flatMap_nil]
+  all_goals
+    refine applyRuleUsing_eq_nil_of_rejected_prefix
+      (generic_record_left_match_exact _ _ _ _ _ _ _ ?_) ?_ rejected
+    · simp [liftRewrite, sourceInstruction?, liftLeft, liftPattern,
+        DerivationCheckMachineLanguageDef.inferParentFaultTransition,
+        DerivationCheckMachineLanguageDef.inferRuleFaultTransition,
+        DerivationCheckMachineLanguageDef.inferAcceptTransition,
+        DerivationCheckMachineLanguageDef.run,
+        DerivationCheckMachineLanguageDef.instructionsCons,
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        run, recordsCons, v, DerivationWordMachineLanguageDef.a]
+    · simp [inferDecodeQuery, advanceIndexQuery, acceptRelevanceQuery, liftRewrite,
+        sourceInstruction?, liftPremise, liftPattern,
+        DerivationCheckMachineLanguageDef.inferParentFaultTransition,
+        DerivationCheckMachineLanguageDef.inferRuleFaultTransition,
+        DerivationCheckMachineLanguageDef.inferAcceptTransition,
+        DerivationCheckMachineLanguageDef.run,
+        DerivationCheckMachineLanguageDef.instructionsCons,
+        DerivationCheckMachineLanguageDef.v, DerivationCheckMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.query, query, v, decoded,
+        DerivationWordMachineLanguageDef.a]
 
 #print axioms infer_relevance_fault_excludes_later_rule
 
@@ -2432,6 +2198,62 @@ theorem infer_parent_fault_excludes_later_rule
 
 #print axioms infer_parent_fault_excludes_later_rule
 
+private def resolveParentsQuery : Premise :=
+  query "DCMResolveParents" [v "nodes", v "id", v "relevance", v "parents",
+    DerivationCheckMachineLanguageDef.a "dcm:decision-parents"
+      [v "parentFormulas", v "nextNodes"]]
+
+/-- Complete the shared decode, index, relevance and parent prefix.
+The caller supplies the plan for the remaining authored premises. -/
+private theorem plan_after_resolving_parents
+    (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
+    (record rest nodesPatternValue nextIdPattern root serviceStatePattern
+      idPattern rulePattern parentsPattern evidencePattern conclusionPattern
+      relevancePatternValue advancedPattern parentFormulasPattern nextNodesPattern : Pattern)
+    (nodes : List (Node Formula)) (expectedId actualId : Nat)
+    (relevance : RelevanceWitness) (parents : List Nat)
+    (recordDecoded : decodeDecision host record =
+      decoded (DerivationCheckMachineLanguageDef.a "dcm:infer"
+        [idPattern, rulePattern, parentsPattern, evidencePattern,
+         conclusionPattern, relevancePatternValue]))
+    (nodesDecoded : decodeNodes? host nodesPatternValue = some nodes)
+    (nextIdDecoded : decodeIndex? nextIdPattern = some expectedId)
+    (idDecoded : decodeIndex? idPattern = some actualId)
+    (relevanceDecoded : decodeRelevance? relevancePatternValue = some relevance)
+    (parentsDecoded : decodeParentIds? parentsPattern = some parents)
+    (indexAccepted : indexDecision expectedId actualId =
+      DerivationCheckMachineLanguageDef.a "dcm:decision-index" [advancedPattern])
+    (relevanceAccepted : relevanceDecision actualId relevance =
+      DerivationCheckMachineLanguageDef.a "dcm:decision-accept")
+    (parentAccepted : parentDecision host nodes actualId relevance parents =
+      DerivationCheckMachineLanguageDef.a "dcm:decision-parents"
+        [parentFormulasPattern, nextNodesPattern])
+    {restPremises : List Premise} {result : Option Bindings}
+    (remaining : PremisePlan (engineBasePremises (relationEnv host)) language (fun _ => [])
+      (inferParentBindings record rest nodesPatternValue nextIdPattern root
+        serviceStatePattern idPattern rulePattern parentsPattern evidencePattern
+        conclusionPattern relevancePatternValue advancedPattern parentFormulasPattern nextNodesPattern)
+      restPremises result) :
+    PremisePlan (engineBasePremises (relationEnv host)) language (fun _ => [])
+      (inputStartBindings record rest nodesPatternValue nextIdPattern root serviceStatePattern)
+      (inferDecodeQuery :: advanceIndexQuery :: acceptRelevanceQuery ::
+        resolveParentsQuery :: restPremises) result :=
+  .advance (infer_decode_premise_exact host record rest nodesPatternValue nextIdPattern root
+    serviceStatePattern idPattern rulePattern parentsPattern evidencePattern conclusionPattern
+    relevancePatternValue recordDecoded)
+    (.advance (infer_index_premise_exact host record rest nodesPatternValue nextIdPattern root
+      serviceStatePattern idPattern rulePattern parentsPattern evidencePattern conclusionPattern
+      relevancePatternValue advancedPattern expectedId actualId nextIdDecoded idDecoded indexAccepted)
+      (.advance (infer_relevance_premise_exact host record rest nodesPatternValue nextIdPattern root
+        serviceStatePattern idPattern rulePattern parentsPattern evidencePattern conclusionPattern
+        relevancePatternValue advancedPattern actualId relevance idDecoded relevanceDecoded
+        relevanceAccepted)
+        (.advance (infer_parent_premise_exact host record rest nodesPatternValue nextIdPattern root
+          serviceStatePattern idPattern rulePattern parentsPattern evidencePattern conclusionPattern
+          relevancePatternValue advancedPattern parentFormulasPattern nextNodesPattern nodes
+          actualId relevance parents nodesDecoded idDecoded relevanceDecoded parentsDecoded parentAccepted)
+          remaining)))
+
 theorem infer_accept_applyRule_empty_of_rule_fault
     (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
     (record rest nodesPatternValue nextIdPattern root serviceStatePattern
@@ -2482,93 +2304,21 @@ theorem infer_accept_applyRule_empty_of_rule_fault
       (liftRewrite DerivationCheckMachineLanguageDef.inferAcceptTransition)
       (run (recordsCons record rest) nodesPatternValue nextIdPattern root
         serviceStatePattern) = [] := by
-  apply applyRuleUsing_empty_of_unique_match
-    (initialBindings := inputStartBindings record rest nodesPatternValue
-      nextIdPattern root serviceStatePattern)
-  · apply generic_record_left_match_exact
-    exact liftedInferAccept_left
-  · rw [liftedInferAccept_premises]
-    let afterDecode := inferDecodedBindings record rest nodesPatternValue
-      nextIdPattern root serviceStatePattern idPattern rulePattern
-      parentsPattern evidencePattern conclusionPattern relevancePatternValue
-    let afterIndex := inferIndexedBindings record rest nodesPatternValue
-      nextIdPattern root serviceStatePattern idPattern rulePattern
-      parentsPattern evidencePattern conclusionPattern relevancePatternValue
-      advancedPattern
-    let afterParents := inferParentBindings record rest nodesPatternValue
-      nextIdPattern root serviceStatePattern idPattern rulePattern
-      parentsPattern evidencePattern conclusionPattern relevancePatternValue
-      advancedPattern parentFormulasPattern nextNodesPattern
-    have decodeStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => [])
-          (inputStartBindings record rest nodesPatternValue nextIdPattern root
-            serviceStatePattern)
-          (query "DWMDecodeRecord" [v "record", decoded
-            (DerivationCheckMachineLanguageDef.a "dcm:infer"
-              [v "id", v "rule", v "parents", v "evidence",
-               v "conclusion", v "relevance"])]) = [afterDecode] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_decode_premise_exact host record rest nodesPatternValue
-          nextIdPattern root serviceStatePattern idPattern rulePattern
-          parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue recordDecoded
-    have indexStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => []) afterDecode
-          (query "DCMIndexAdvance" [v "nextId", v "id",
-            DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-              [v "advanced"]]) = [afterIndex] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_index_premise_exact host record rest nodesPatternValue
-          nextIdPattern root serviceStatePattern idPattern rulePattern
-          parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue advancedPattern expectedId actualId
-          nextIdDecoded idDecoded indexAccepted
-    have relevanceStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => []) afterIndex
-          (query "DCMRelevanceShapeDecision" [v "id", v "relevance",
-            DerivationCheckMachineLanguageDef.a
-              "dcm:decision-accept"]) = [afterIndex] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_relevance_premise_exact host record rest nodesPatternValue
-          nextIdPattern root serviceStatePattern idPattern rulePattern
-          parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue advancedPattern actualId relevance idDecoded
-          relevanceDecoded relevanceAccepted
-    have parentStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => []) afterIndex
-          (query "DCMResolveParents" [v "nodes", v "id", v "relevance",
-            v "parents", DerivationCheckMachineLanguageDef.a
-              "dcm:decision-parents"
-              [v "parentFormulas", v "nextNodes"]]) = [afterParents] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_parent_premise_exact host record rest nodesPatternValue
-          nextIdPattern root serviceStatePattern idPattern rulePattern
-          parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue advancedPattern parentFormulasPattern
-          nextNodesPattern nodes actualId relevance parents nodesDecoded
-          idDecoded relevanceDecoded parentsDecoded parentAccepted
-    have ruleStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => []) afterParents
-          (query "DCMRuleDecision" [v "id", v "serviceState", v "rule",
-            v "parentFormulas", v "evidence", v "conclusion",
-            DerivationCheckMachineLanguageDef.decisionState
-              (v "nextServiceState")]) = [] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_rule_accept_premise_empty_of_fault host record rest
-          nodesPatternValue nextIdPattern root serviceStatePattern idPattern
-          rulePattern parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue advancedPattern parentFormulasPattern
-          nextNodesPattern (v "nextServiceState") faultPatternValue actualId
-          serviceState rule parentFormulas evidence conclusion idDecoded
-          serviceStateDecoded ruleDecoded parentFormulasDecoded
-          evidenceDecoded conclusionDecoded ruleFaulted
-    simp only [premisesUsing, decodeStep, indexStep, relevanceStep, parentStep,
-      ruleStep, List.flatMap_singleton, List.flatMap_nil]
+  refine applyRuleUsing_eq_of_plan (result := none)
+    (generic_record_left_match_exact _ _ _ _ _ _ _ liftedInferAccept_left) ?_
+  rw [liftedInferAccept_premises]
+  exact plan_after_resolving_parents host record rest nodesPatternValue nextIdPattern root
+    serviceStatePattern idPattern rulePattern parentsPattern evidencePattern conclusionPattern
+    relevancePatternValue advancedPattern parentFormulasPattern nextNodesPattern nodes expectedId
+    actualId relevance parents recordDecoded nodesDecoded nextIdDecoded idDecoded relevanceDecoded
+    parentsDecoded indexAccepted relevanceAccepted parentAccepted
+    (.reject (infer_rule_accept_premise_empty_of_fault host record rest nodesPatternValue
+      nextIdPattern root serviceStatePattern idPattern rulePattern parentsPattern evidencePattern
+      conclusionPattern relevancePatternValue advancedPattern parentFormulasPattern nextNodesPattern
+      (v "nextServiceState") faultPatternValue actualId serviceState rule parentFormulas evidence
+      conclusion idDecoded serviceStateDecoded ruleDecoded parentFormulasDecoded evidenceDecoded
+      conclusionDecoded ruleFaulted))
+
 
 #print axioms infer_accept_applyRule_empty_of_rule_fault
 
@@ -2623,93 +2373,21 @@ theorem infer_rule_fault_applyRule_empty_of_accept
       (liftRewrite DerivationCheckMachineLanguageDef.inferRuleFaultTransition)
       (run (recordsCons record rest) nodesPatternValue nextIdPattern root
         serviceStatePattern) = [] := by
-  apply applyRuleUsing_empty_of_unique_match
-    (initialBindings := inputStartBindings record rest nodesPatternValue
-      nextIdPattern root serviceStatePattern)
-  · apply generic_record_left_match_exact
-    exact liftedInferRuleFault_left
-  · rw [liftedInferRuleFault_premises]
-    let afterDecode := inferDecodedBindings record rest nodesPatternValue
-      nextIdPattern root serviceStatePattern idPattern rulePattern
-      parentsPattern evidencePattern conclusionPattern relevancePatternValue
-    let afterIndex := inferIndexedBindings record rest nodesPatternValue
-      nextIdPattern root serviceStatePattern idPattern rulePattern
-      parentsPattern evidencePattern conclusionPattern relevancePatternValue
-      advancedPattern
-    let afterParents := inferParentBindings record rest nodesPatternValue
-      nextIdPattern root serviceStatePattern idPattern rulePattern
-      parentsPattern evidencePattern conclusionPattern relevancePatternValue
-      advancedPattern parentFormulasPattern nextNodesPattern
-    have decodeStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => [])
-          (inputStartBindings record rest nodesPatternValue nextIdPattern root
-            serviceStatePattern)
-          (query "DWMDecodeRecord" [v "record", decoded
-            (DerivationCheckMachineLanguageDef.a "dcm:infer"
-              [v "id", v "rule", v "parents", v "evidence",
-               v "conclusion", v "relevance"])]) = [afterDecode] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_decode_premise_exact host record rest nodesPatternValue
-          nextIdPattern root serviceStatePattern idPattern rulePattern
-          parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue recordDecoded
-    have indexStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => []) afterDecode
-          (query "DCMIndexAdvance" [v "nextId", v "id",
-            DerivationCheckMachineLanguageDef.a "dcm:decision-index"
-              [v "advanced"]]) = [afterIndex] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_index_premise_exact host record rest nodesPatternValue
-          nextIdPattern root serviceStatePattern idPattern rulePattern
-          parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue advancedPattern expectedId actualId
-          nextIdDecoded idDecoded indexAccepted
-    have relevanceStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => []) afterIndex
-          (query "DCMRelevanceShapeDecision" [v "id", v "relevance",
-            DerivationCheckMachineLanguageDef.a
-              "dcm:decision-accept"]) = [afterIndex] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_relevance_premise_exact host record rest nodesPatternValue
-          nextIdPattern root serviceStatePattern idPattern rulePattern
-          parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue advancedPattern actualId relevance idDecoded
-          relevanceDecoded relevanceAccepted
-    have parentStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => []) afterIndex
-          (query "DCMResolveParents" [v "nodes", v "id", v "relevance",
-            v "parents", DerivationCheckMachineLanguageDef.a
-              "dcm:decision-parents"
-              [v "parentFormulas", v "nextNodes"]]) = [afterParents] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_parent_premise_exact host record rest nodesPatternValue
-          nextIdPattern root serviceStatePattern idPattern rulePattern
-          parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue advancedPattern parentFormulasPattern
-          nextNodesPattern nodes actualId relevance parents nodesDecoded
-          idDecoded relevanceDecoded parentsDecoded parentAccepted
-    have ruleStep :
-        premiseStepUsing (engineBasePremises (relationEnv host)) language
-          (fun _ => []) afterParents
-          (query "DCMRuleDecision" [v "id", v "serviceState", v "rule",
-            v "parentFormulas", v "evidence", v "conclusion",
-            DerivationCheckMachineLanguageDef.decisionFault
-              (v "fault")]) = [] := by
-      simpa only [query, premiseStepUsing, engineBasePremises] using
-        infer_rule_fault_premise_empty_of_accept host record rest
-          nodesPatternValue nextIdPattern root serviceStatePattern idPattern
-          rulePattern parentsPattern evidencePattern conclusionPattern
-          relevancePatternValue advancedPattern parentFormulasPattern
-          nextNodesPattern (v "fault") nextServiceStatePattern actualId
-          serviceState rule parentFormulas evidence conclusion idDecoded
-          serviceStateDecoded ruleDecoded parentFormulasDecoded
-          evidenceDecoded conclusionDecoded ruleAccepted
-    simp only [premisesUsing, decodeStep, indexStep, relevanceStep, parentStep,
-      ruleStep, List.flatMap_singleton, List.flatMap_nil]
+  refine applyRuleUsing_eq_of_plan (result := none)
+    (generic_record_left_match_exact _ _ _ _ _ _ _ liftedInferRuleFault_left) ?_
+  rw [liftedInferRuleFault_premises]
+  exact plan_after_resolving_parents host record rest nodesPatternValue nextIdPattern root
+    serviceStatePattern idPattern rulePattern parentsPattern evidencePattern conclusionPattern
+    relevancePatternValue advancedPattern parentFormulasPattern nextNodesPattern nodes expectedId
+    actualId relevance parents recordDecoded nodesDecoded nextIdDecoded idDecoded relevanceDecoded
+    parentsDecoded indexAccepted relevanceAccepted parentAccepted
+    (.reject (infer_rule_fault_premise_empty_of_accept host record rest nodesPatternValue
+      nextIdPattern root serviceStatePattern idPattern rulePattern parentsPattern evidencePattern
+      conclusionPattern relevancePatternValue advancedPattern parentFormulasPattern nextNodesPattern
+      (v "fault") nextServiceStatePattern actualId serviceState rule parentFormulas evidence
+      conclusion idDecoded serviceStateDecoded ruleDecoded parentFormulasDecoded evidenceDecoded
+      conclusionDecoded ruleAccepted))
+
 
 #print axioms infer_rule_fault_applyRule_empty_of_accept
 

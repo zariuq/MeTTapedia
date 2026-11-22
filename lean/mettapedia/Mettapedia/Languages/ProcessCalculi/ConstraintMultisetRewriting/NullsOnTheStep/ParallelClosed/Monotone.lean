@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.ParallelClosed.NonEmptyPair
 
 /-!
-# Over ground terms, success without none queries and count checks survives every composable neighbour
+# Over ground terms, success without absence and count checks survives every composable neighbour
 
 The separation `no_uniformTranslation` has the switchability of its source as a hypothesis. This
 module shows where switchability comes from over ground terms, and that the hypothesis is needed
@@ -10,7 +10,7 @@ by a program that fires.
 ## Monotonicity
 
 **For every substitution action** (`succeeds_union_of_joint`), with occurrences labelled by their
-rows: for a program whose rules have only equality checks and `any` queries (no none query and no count
+rows: for a program whose rules have only equality checks and `any` queries (no absence and no count
 check, `MonotoneChecks`; rows added beside can only add witnesses to an `any` query) and every success
 predicate on rows, if `C` reaches success by firings each of
 whose information has a solution that also solves the knowledge of a composable `D` (`JointStep`),
@@ -26,18 +26,18 @@ admission and its result (`dropQueries_valid`).
 of its union with every composable configuration**.
 
 Hence such a step is **not switchable** (`not_switchable`), and over ground terms a switchable program
-has a rule with a none query or a count check (`switchable_has_none_or_count`).
+has a rule with an absence or a count check (`switchable_has_absence_or_count`).
 
 ## The dividing line, with a control for each source of switching
 
-* A none check: the none-guarded program is switchable (`source_switchable`, ground terms).
+* An absence check: the absence-guarded program is switchable (`source_switchable`, ground terms).
 * A count check: `counted` (make `T` where exactly one `V` is present) is switchable over ground terms
   (`counted_switchable`): alone the store holding one `V` succeeds; beside a second `V` it never does.
 * A tell on an unknown the neighbour's knowledge constrains: the program of `PositiveTell` has no check
   and is switchable over first-order terms (`PositiveTell.tellSource_switchable`).
 
 Over first-order terms the dividing line is a theorem (`SharedUnknown.switchable_has_guard_or_shared`):
-a switchable program has a rule with a none query or a count check, or a switching pair every run to
+a switchable program has a rule with an absence or a count check, or a switching pair every run to
 success of whose first part has a firing whose information mentions an unknown the second part's
 knowledge mentions.
 
@@ -81,11 +81,11 @@ section General
 
 variable {T : Type*} {S : Type*} [DecidableEq T]
 
-/-- **A rule without none queries and count checks**: each of its checks is an equality. -/
+/-- **A rule without absence and count checks**: each of its checks is an equality. -/
 def EqualityChecks (r : RuleInstance T) : Prop := ∀ c ∈ r.checks, ∃ l r', c = Check.equal l r'
 
 /-- **A rule no composable neighbour switches off**: each of its checks is an equality or an `any`
-query. A neighbour only adds rows, and added rows can only add witnesses to an `any` query; a none query
+query. A neighbour only adds rows, and added rows can only add witnesses to an `any` query; an absence
 (`none`) check and a count can each be falsified by an added row. -/
 def MonotoneChecks (r : RuleInstance T) : Prop :=
   ∀ c ∈ r.checks, (∃ l r', c = Check.equal l r') ∨ ∃ p, c = Check.predicate .any p
@@ -376,9 +376,9 @@ theorem not_switchable (monotone : ∀ r, P r → MonotoneChecks r) :
   rintro ⟨s, s', composable, succeeds, blocked⟩
   exact blocked (succeeds_union monotone composable succeeds)
 
-/-- **The dividing line over ground terms**: a switchable program has a rule with a none query or a
+/-- **The dividing line over ground terms**: a switchable program has a rule with an absence or a
 count check. -/
-theorem switchable_has_none_or_count
+theorem switchable_has_absence_or_count
     (switchable : (stepCalculus ground (Prod.fst : Occ → Expr) P row).Switchable) :
     ∃ r, P r ∧ ∃ c ∈ r.checks, (∃ p, c = Check.predicate .none p) ∨ ∃ p n, c = Check.count p n := by
   by_contra none
@@ -736,7 +736,7 @@ end Maker
 #print axioms joint_run_of_ground
 #print axioms succeeds_union
 #print axioms not_switchable
-#print axioms switchable_has_none_or_count
+#print axioms switchable_has_absence_or_count
 #print axioms counted_alone
 #print axioms counted_beside
 #print axioms counted_switchable

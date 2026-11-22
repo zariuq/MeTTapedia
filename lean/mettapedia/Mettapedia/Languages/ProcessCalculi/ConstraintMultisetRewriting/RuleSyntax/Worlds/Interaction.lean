@@ -31,7 +31,7 @@ Controls on first-order atoms (`RuleSyntax.Examples`), continuing `Worlds.Contro
 ## A located row that a check reads
 
 * `shared_row_blocks`: in the candidate with a store at each location
-  (`Hosting.Alternatives.Located.LState`), a location's none check of `9` passes while the row `9`
+  (`Hosting.Alternatives.Located.LState`), a location's absence check of `9` passes while the row `9`
   is at another location, and is refused once that row is shared. With located rows that checks read,
   a check and the sharing of a row do not commute; with closed rows they always do
   (`fire_publish_commute`).
@@ -40,7 +40,7 @@ Controls on first-order atoms (`RuleSyntax.Examples`), continuing `Worlds.Contro
 set_option autoImplicit false
 
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Examples
-  (Tm X E x c demo shift everywhere boundRequest noNineFiring noNine_fresh)
+  (Tm X E x c demo shift everywhere boundRequest absentFiring absent_fresh)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Controls (atoms)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Equivalence
   (System Pattern MayBarb)
@@ -228,7 +228,7 @@ theorem distribute_instance :
       ⟨(⟨demo ∪ ∅, Scope.beside boundRequest nineHolder⟩ : System Tm ℕ) ::ₘ
         (⟨demo ∪ ∅, Scope.beside boundRequest nineHolder⟩ : System Tm ℕ) ::ₘ 0, ∅⟩ :=
   merge_distributes 0 ∅ ⟨demo, boundRequest⟩ ⟨demo, boundRequest⟩ ⟨∅, nineHolder⟩
-    none_reads_its_own_world.2.1 none_reads_its_own_world.2.1
+    absence_reads_its_own_world.2.1 absence_reads_its_own_world.2.1
 
 /-! ## A publication gives a firing that was not there -/
 
@@ -285,12 +285,12 @@ theorem private_row_unseen {o : ℕ} (seen : o ∈ ((nineAt (some false)).view t
     · exact absurd (Option.some.inj atFirst) (by decide)
     · exact absurd shared (by decide)
 
-/-- **While the row `9` is at another location, the none check passes.** -/
+/-- **While the row `9` is at another location, the absence check passes.** -/
 theorem private_row_passes :
-    (step X ℕ E demo).Admits (s := (nineAt (some false)).view true) noNineFiring := by
-  show noNineFiring.Admits X ((nineAt (some false)).view true)
-  refine ⟨⟨noNine_fresh _, List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, rfl⟩, ?_, ?_, ?_⟩
-  · refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> simp [noNineFiring, Selection.commit]
+    (step X ℕ E demo).Admits (s := (nineAt (some false)).view true) absentFiring := by
+  show absentFiring.Admits X ((nineAt (some false)).view true)
+  refine ⟨⟨absent_fresh _, List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, rfl⟩, ?_, ?_, ?_⟩
+  · refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> simp [absentFiring, Selection.commit]
   · refine ⟨PUnit.unit, everywhere 5, fun e inside => ?_⟩
     change e ∈ [(x, c 5)] at inside
     rw [List.mem_singleton] at inside
@@ -300,8 +300,8 @@ theorem private_row_passes :
     have known : X.Models (a := PUnit.unit) (b := b) σ [(x, c 5)] := solved
     have bound : σ 0 = c 5 := known (x, c 5) List.mem_cons_self
     refine ⟨fun check inside => ?_, fun q inside => absurd inside List.not_mem_nil⟩
-    have isNone : check = Check.predicate .none (c 9) := List.mem_singleton.mp inside
-    subst isNone
+    have isAbsent : check = Check.predicate .none (c 9) := List.mem_singleton.mp inside
+    subst isAbsent
     intro o present equated
     have isOwn : o = 0 := private_row_unseen present
     subst isOwn
@@ -309,13 +309,13 @@ theorem private_row_passes :
     rw [bound] at nine
     exact absurd (Term.const.inj nine) (by decide)
 
-/-- **Once the row `9` is shared, the none check is refused.** -/
+/-- **Once the row `9` is shared, the absence check is refused.** -/
 theorem shared_row_refuses :
-    ¬ (step X ℕ E demo).Admits (s := (nineAt none).view true) noNineFiring := by
+    ¬ (step X ℕ E demo).Admits (s := (nineAt none).view true) absentFiring := by
   intro admitted
-  obtain ⟨-, -, -, -, checks, -⟩ := (admits_iff noNineFiring).mp admitted
+  obtain ⟨-, -, -, -, checks, -⟩ := (admits_iff absentFiring).mp admitted
   have solved : X.Models (a := PUnit.unit) (b := PUnit.unit) (everywhere 5)
-      (noNineFiring.information X ((nineAt none).view true)) := by
+      (absentFiring.information X ((nineAt none).view true)) := by
     intro e inside
     change e ∈ [(x, c 5)] at inside
     rw [List.mem_singleton] at inside
@@ -325,11 +325,11 @@ theorem shared_row_refuses :
   exact holds 1 (Finset.mem_filter.mpr
     ⟨Finset.mem_insert_of_mem (Finset.mem_singleton_self 1), Or.inr rfl⟩) rfl
 
-/-- **A located row that a check reads**: the none check of `9` passes while the row `9` is at
+/-- **A located row that a check reads**: the absence check of `9` passes while the row `9` is at
 another location, and is refused once it is shared. -/
 theorem shared_row_blocks :
-    (step X ℕ E demo).Admits (s := (nineAt (some false)).view true) noNineFiring ∧
-      ¬ (step X ℕ E demo).Admits (s := (nineAt none).view true) noNineFiring :=
+    (step X ℕ E demo).Admits (s := (nineAt (some false)).view true) absentFiring ∧
+      ¬ (step X ℕ E demo).Admits (s := (nineAt none).view true) absentFiring :=
   ⟨private_row_passes, shared_row_refuses⟩
 
 #print axioms importSix_admitted

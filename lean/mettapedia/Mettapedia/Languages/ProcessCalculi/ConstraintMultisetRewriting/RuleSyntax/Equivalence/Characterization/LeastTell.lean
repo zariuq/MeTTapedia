@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 /-!
 # A positive program with no least enabling tell
 
-The statement that fails for the none-guarded spawn (`no_least_enabling_tell`: no enabling tell
+The statement that fails for the absence-guarded spawn (`no_least_enabling_tell`: no enabling tell
 context is entailed by every enabling one) fails in the same form for a positive program with two
 rules, at the same row.
 
@@ -17,7 +17,7 @@ make `7`". At one row labelled by the free unknown `x`:
 * hence no enabling tell is entailed by every enabling one (`no_least_enabling_tell_positive`).
 
 Both rules are positive (`either_positive`): their checks are equations and they have no collect query. The
-obstruction here is the choice between two firings, not none queries.
+obstruction here is the choice between two firings, not absence.
 -/
 
 set_option autoImplicit false

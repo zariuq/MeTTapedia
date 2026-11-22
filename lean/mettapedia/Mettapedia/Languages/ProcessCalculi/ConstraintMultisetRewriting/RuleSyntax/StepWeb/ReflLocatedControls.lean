@@ -25,7 +25,7 @@ Each hypothesis of `ReflLocated` with the example that fails without it.
   row at `l1` and a row at `l2`, and every solution of its result identifies `l1` and `l2`.
 * **Close takes the token** (`close_as_designed_refused`): a close that takes the last row `C @ L` and asks
   that no row be at `L` is refused at every fresh opening, because the check sees the taken row. The close of
-  the located program asks the same none query while taking the token: it is admitted once the child is cooled,
+  the located program asks the same absence while taking the token: it is admitted once the child is cooled,
   reading `for(@0 <- @0) 0 @ Root` at every solution of its result (`close_root_fires`, close-empty), and
   refused while a row is left at the child (`close_root_waits`). These are hand-made states, not reached
   runs.
@@ -462,7 +462,7 @@ theorem design_check : psubst designInstance (atLoc anyY locL) = rowsDesign 2 :=
   decide +kernel
 
 /-- **The design's close is refused at every fresh opening**: some solution of its information reads the
-check's `Y @ L` as the taken row `0 @ L`, so the none query does not hold at every solution. -/
+check's `Y @ L` as the taken row `0 @ L`, so the absence does not hold at every solution. -/
 theorem close_as_designed_refused (ρ : PSubst) (fresh : (closeDesignAt ρ).Fresh X (embed rowsDesign startDesign)) :
     ¬ (RuleSyntax.step X ℕ E designProgram).Admits (s := embed rowsDesign startDesign) (closeDesignAt ρ) := by
   intro admitted
@@ -488,7 +488,7 @@ theorem close_as_designed_refused (ρ : PSubst) (fresh : (closeDesignAt ρ).Fres
   show psubst w (psubst ρ (atLoc anyY locL)) = psubst w (rowsDesign 2)
   rw [reads, psubst_of_pvars_nil w _ (by decide +kernel)]
 
-/-! ## The close of the located program: guarded by none queries, through the token -/
+/-! ## The close of the located program: guarded by absence, through the token -/
 
 /-- A reflection at the root, the token of its stepped child with the cooled bag `0`, and a row at the child
 (present only in `leftConf`). -/

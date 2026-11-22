@@ -12,7 +12,7 @@ rows opened at reserved scopes; guards and queries asked at every solution of th
 the firing's own tells; the rule carried by the firing, its unknowns in the private family; one
 knowledge store, published along the solver's returned frame).
 
-The rule of a call that no equation matches carries a none guard: no present row reads as
+The rule of a call that no equation matches carries an absence guard: no present row reads as
 `eqn(T)` for the call `T` (`Hosting.unmatchedRule`). The adapter's admission law
 (`HostedNative.admits_iff`) covers guarded rules; here it is exercised on an admitted firing of that
 rule, with the refusing controls beside it.
@@ -47,7 +47,7 @@ alternatives' rows: exactly when no other row matches the call at any solution o
 * `admits_iff_guard`, `realized_iff_guard`: at such a selection the guard alone decides admission, on
   both sides; `native_solvable`: the native information has a solution, so the guard is never asked
   vacuously.
-* `live_checks`: the live firing carries the none check; `ret_live_checks`: the `ret` rule's live
+* `live_checks`: the live firing carries the absence check; `ret_live_checks`: the `ret` rule's live
   firing carries none.
 
 ## The instance
@@ -61,7 +61,7 @@ presented by `withRowPresented t` (from `startWithPresented`); the rule is place
   `shared_admitted`: the canonical firing taking the call's row `0` and making row `2` is admitted;
   `shared_realized`: its live firing is realized, at every ledger and budget; `shared_information`:
   the native information is the hosted information carried along the frame map; `shared_guard`: the
-  native information has a solution and the none check holds at each; `shared_result`: the native
+  native information has a solution and the absence check holds at each; `shared_result`: the native
   result is a dead-name extension of the adapted hosted result; `shared_run`: the one-member family
   runs in the native step, ending in a state that agrees with the adapted hosted result up to dead
   names.
@@ -285,11 +285,11 @@ theorem admits_iff_noRow (beside : Beside N P n ⟨K, .eval (.apply t), fs, ps�
       (canonicalUnmatched N P w ⟨[a], [], [m]⟩)).checks =
       [.predicate .none (instantiateObservation (canonicalUnmatched N P w ⟨[a], [], [m]⟩).opening (unmatchedCheck N))] :=
     rfl
-  have missing := (admitted.2.2.2 B u solvedU).1 _ (by rw [checkMember]; exact List.mem_singleton_self _)
+  have absent := (admitted.2.2.2 B u solvedU).1 _ (by rw [checkMember]; exact List.mem_singleton_self _)
   have inTerms : unmatchedCheck N ∈ (canonicalUnmatched N P w ⟨[a], [], [m]⟩).rule.terms := by
     show unmatchedCheck N ∈ (unmatchedRule N).terms
     simp [RuleSyntax.Rule.terms, unmatchedRule, RuleSyntax.checkTerms]
-  apply missing o oPresent
+  apply absent o oPresent
   change instantiateObservation u
       (instantiateObservation (canonicalUnmatched N P w ⟨[a], [], [m]⟩).opening (unmatchedCheck N)) =
     instantiateObservation u (RuleSyntax.Firing.row (Interface.Frames.contextual S) w _ o)
@@ -333,7 +333,7 @@ theorem admits_iff_guard (beside : Beside N P n ⟨K, .eval (.apply t), fs, ps�
     ⟨unmatched_shapes N w a m, enabled_single (beside.row_present N) fresh, unmatched_solvable N beside solvable m,
       guard⟩⟩
 
-/-- **The live firing carries the none check**: the placed unmatched rule's one check, opened. -/
+/-- **The live firing carries the absence check**: the placed unmatched rule's one check, opened. -/
 theorem live_checks (p : Presented Γ star w) (occupied : Finset ℕ) (selection : Selection ℕ) (fuel : ℕ) :
     (live N w p occupied (placedUnmatched (κ := κ) N) selection fuel).rule.checks =
       [.predicate .none (instantiate (place (placedUnmatched (κ := κ) N) w.frame) (eqnN N (unk .datum)))] :=
@@ -493,7 +493,7 @@ theorem shared_information (occupied : Finset ℕ) (fuel : ℕ) :
     (placedUnmatched N) ⟨[0], [], [2]⟩ fuel
 
 /-- **Its guard, not vacuously**: the native information has a solution, and at every solution the
-none check holds. -/
+absence check holds. -/
 theorem shared_guard (occupied : Finset ℕ) (fuel : ℕ) :
     (Interface.Frames.contextual MSig).Solvable
         (a := (state mkeys (withRow sharedRow) (withRowPresented sharedRow) occupied).infoFrame)
@@ -771,7 +771,7 @@ theorem pinned_realized (occupied : Finset ℕ) (fuel : ℕ) :
     fuel).mp pinned_admitted
 
 /-- **Its guard, not vacuously**: the native information has a solution, and at every solution the
-none check holds. -/
+absence check holds. -/
 theorem pinned_guard (occupied : Finset ℕ) (fuel : ℕ) :
     (Interface.Frames.contextual MSig).Solvable
         (a := (state mkeys pinnedState pinnedPresented occupied).infoFrame)

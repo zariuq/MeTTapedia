@@ -191,7 +191,7 @@ def readTwice : Rule Rows := rule [] [.sym 7, .sym 7] [] [] [.sym 8]
 /-- **A program of the fragment.** -/
 def demo : List (Rule Rows) := [consume, observe, guarded, refused, readTwice]
 
-/-- Make a `12` where `11` is not present: a none check. -/
+/-- Make a `12` where `11` is absent: an absence check. -/
 def spawn : Rule Rows := rule [] [] [] [.predicate .none (.sym 11)] [.sym 12]
 
 /-- Make a `12` where exactly one `11` is present: a count check. -/

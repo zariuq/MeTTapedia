@@ -45,7 +45,7 @@ theorem contents_prime {context : Ctx sig} (process : Process context) {pattern 
     (member : pattern ∈ contents process) : IsPrime context pattern := by
   have normal : IsCanonicalList [encodeEquationClass process] :=
     ⟨encoded_isCanonical process, trivial⟩
-  have typed : ProcListWellSorted rhoApplyPresentation FreeSortContext.empty
+  have typed : ProcListWellSorted rhoReflectivePresentation FreeSortContext.empty
       (contextLabels context) (contents process) :=
     normalizeBagElements_procListWellSorted (.cons (encoded_class_sorted process) .nil) rfl
   exact ⟨procListWellSorted_iff_forall_mem.mp typed pattern member,
@@ -79,7 +79,7 @@ theorem ordered_canonical {context : Ctx sig} (inventory : Inventory context) :
   isCanonicalList_of_forall fun _ member => (ordered_prime inventory member).2.1
 
 theorem ordered_typed {context : Ctx sig} (inventory : Inventory context) :
-    ProcListWellSorted rhoApplyPresentation FreeSortContext.empty
+    ProcListWellSorted rhoReflectivePresentation FreeSortContext.empty
       (contextLabels context) (ordered inventory) :=
   procListWellSorted_iff_forall_mem.mpr fun _ member => (ordered_prime inventory member).1
 

@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 One capture assignment satisfies a retained guard; another refutes it, while
 both keep the same resource selection and consistent equation problem. The
 uninstantiated source guard is unresolved. An additional shared row can also
-invalidate a none guard without changing the original binding problem.
+invalidate an absence guard without changing the original binding problem.
 -/
 
 set_option autoImplicit false
@@ -74,10 +74,10 @@ theorem both_instances_keep_one_guard :
     (prepared locals captures occupied selection (mappedRule pinB) (mappedRows pinB)).rule.checks.length = 1 :=
   ⟨rfl, rfl⟩
 
-def noneRule : RuleInstance RawTerm := ⟨[], [], [], [.predicate .none rawA], [rawA]⟩
+def absentRule : RuleInstance RawTerm := ⟨[], [], [], [.predicate .none rawA], [rawA]⟩
 def emptyWorld : Configuration (Term (signature base captures) [] ()) Nat := ⟨[], ∅⟩
 
-theorem none_in_the_empty_world : Information locals captures occupied selection noneRule rows emptyWorld := by
+theorem absence_in_the_empty_world : Information locals captures occupied selection absentRule rows emptyWorld := by
   refine ⟨ContextualFrameUnifier.solvable_of_consistent ⟨generator active, SubstitutionAction.models_nil _ _⟩, ?_⟩
   intro check member
   have only : check = .predicate .none (atom active) := List.mem_singleton.mp member
@@ -85,15 +85,15 @@ theorem none_in_the_empty_world : Information locals captures occupied selection
   intro Future future candidate _model occurrence impossible
   exact False.elim (Finset.notMem_empty occurrence impossible)
 
-theorem the_same_none_guard_refuses_after_a_row_arrives :
-    ¬ Information locals captures occupied selection noneRule rows bare := by
+theorem the_same_absence_guard_refuses_after_a_row_arrives :
+    ¬ Information locals captures occupied selection absentRule rows bare := by
   intro information
   have asked := information.checks (.predicate .none (atom active)) (List.mem_singleton_self _)
   exact asked (Mettapedia.Logic.LP.ScopedVar Nat ⊕ Nat) active (generator active)
     (fun _ member => False.elim (List.not_mem_nil member)) 7 (by decide) rfl
 
 theorem arrival_preserves_the_equation_problem :
-    problem locals captures occupied selection noneRule rows emptyWorld =
-      problem locals captures occupied selection noneRule rows bare := rfl
+    problem locals captures occupied selection absentRule rows emptyWorld =
+      problem locals captures occupied selection absentRule rows bare := rfl
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualGuardedPromotionControls

@@ -14,7 +14,7 @@ its contract module names the subtype rows (`HOLContract.subtypeEdges`, `HOLCont
 and its judgments ignore them.
 
 So on programs whose declarations have ground subjects and which have no subtype row
-(`MeasuredTypeFragment`) these two causes of difference are not present:
+(`MeasuredTypeFragment`) these two causes of difference are absent:
 
 * `annotation_ignores_variable_subject`: the model's declared types of a ground atom do not see a
   declaration whose subject is a variable;
@@ -72,7 +72,7 @@ instance (atoms : List Atom) : Decidable (GroundSubjects atoms) :=
   inferInstanceAs (Decidable (_ = _))
 
 /-- **The measured type fragment**: declarations with ground subjects, and no subtype row. The two
-measured causes that make the model's type query differ from HE's are not present on it. -/
+measured causes that make the model's type query differ from HE's are absent on it. -/
 def MeasuredTypeFragment (atoms : List Atom) : Prop :=
   GroundSubjects atoms ∧ Mettapedia.Languages.MeTTa.HE.HOLContract.SubtypeFree (Space.ofList atoms)
 

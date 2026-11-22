@@ -292,8 +292,7 @@ theorem comm_receipt {elements : List Pattern} {inputIndex outputIndex : ℕ}
         receipt.target = applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
           (commBindingsAt elements inputIndex outputIndex channel body payload) := by
   obtain ⟨sortedSource, safe⟩ := Bool.and_eq_true_iff.mp admitted
-  have typed := DerivedPresentationSyntax.ProcWellSorted.ofSealed (presentation := rhoReflectivePresentation)
-    (Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted sortedSource)) safe
+  have typed := Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted sortedSource)
   obtain ⟨_, elementsTyped⟩ := rho_parallel_wellSorted_inv typed
   have inputMember := List.getElem_mem inputBound
   have outputMember := List.mem_of_mem_eraseIdx (List.getElem_mem outputBound)
@@ -383,8 +382,7 @@ theorem comm_receipt {elements : List Pattern} {inputIndex outputIndex : ℕ}
 /-! ## A step inside a member is a firing at a bag site -/
 
 open Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax (ProcWellSorted ProcListWellSorted) in
-theorem sorted_of_rho {scope : QuoteScope} {term : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) (fun _ => none) [] term) :
+theorem sorted_of_rho {term : Pattern} (typed : ProcWellSorted rhoReflectivePresentation (fun _ => none) [] term) :
     sorted term = true :=
   sorted_of_plan ((GeneralPlanEnvironment.typing_iff plan [] proc _).mpr (GeneralRho.derived_process_open typed))
 
@@ -397,8 +395,7 @@ theorem bag_replace_sorted {elements : List Pattern} {index : ℕ}
   have rho := Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted typed)
   obtain ⟨_, elementsTyped⟩ := rho_parallel_wellSorted_inv rho
   have replacementTyped := Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted replacementSorted)
-  refine sorted_of_rho (scope := .reaching .apply)
-    (.parallel (procListWellSorted_iff_forall_mem.mpr fun member found => ?_))
+  refine sorted_of_rho (.parallel (procListWellSorted_iff_forall_mem.mpr fun member found => ?_))
   simp only [List.mem_append, List.mem_cons] at found
   rcases found with inTake | rfl | inDrop
   · exact procListWellSorted_iff_forall_mem.mp elementsTyped _ (List.mem_of_mem_take inTake)
@@ -591,8 +588,7 @@ theorem step_carrier {fuel : ℕ} {source target : Pattern} (admitted : carrier 
   obtain ⟨sortedSource, safe⟩ := Bool.and_eq_true_iff.mp admitted
   have rho := Complete.RhoReference.procWellSorted_of_sorted (plan_of_sorted sortedSource)
   obtain ⟨typed, sealedTarget⟩ :=
-    Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep.rhoStep_preserves_closed
-      (DerivedPresentationSyntax.ProcWellSorted.ofSealed (presentation := rhoReflectivePresentation) rho safe) safe
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep.rhoStep_preserves_closed rho safe
       (step_rho fuel step)
   simp only [carrier, Bool.and_eq_true]
   exact ⟨sorted_of_rho typed, sealedTarget⟩

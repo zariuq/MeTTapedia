@@ -3,11 +3,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CheckStab
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Controls
 
 /-!
-# A shared row wakes a ground none query through bindings alone
+# A shared row wakes a ground absence query through bindings alone
 
 The one physical row remains present. Its shared variable is constrained by
 an actual tell-only step. Every physical region has no write event, while
-the original universal none check becomes certain. Equal equation counts
+the original universal absence check becomes certain. Equal equation counts
 in different branches do not certify equal model sets.
 -/
 

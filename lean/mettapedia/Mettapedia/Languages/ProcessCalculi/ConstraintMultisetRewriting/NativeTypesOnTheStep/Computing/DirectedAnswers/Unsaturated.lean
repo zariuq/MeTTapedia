@@ -120,9 +120,9 @@ theorem twist_read : Definitions.rulesRead 60 (reading [(twistName, twistTerm)])
   decide +kernel
 
 /-- The reading reads every constant outside the development as itself. -/
-theorem twist_others (d : DeclName) (missing : ∀ e ∈ twistDev, e.1 ≠ d) :
+theorem twist_others (d : DeclName) (absent : ∀ e ∈ twistDev, e.1 ≠ d) :
     reading [(twistName, twistTerm)] d = .const d :=
-  Definitions.reading_single_other twistTerm (missing (twistName, twistDef) (List.mem_cons_self ..)).symm
+  Definitions.reading_single_other twistTerm (absent (twistName, twistDef) (List.mem_cons_self ..)).symm
 
 /-- **The reading is sound for `twist`**: whenever its rows take a closed term to a value, that value is
 the answer of the reading of the term. -/

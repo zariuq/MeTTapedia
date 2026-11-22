@@ -8,7 +8,7 @@ nothing, and makes one occurrence inside the region (`upsert`). Whatever the fib
 several), afterwards it holds exactly the made occurrence (`upsert_fiber`), and nothing outside the region changes
 (`upsert_outside`). On an empty fiber the upsert is an insertion that takes nothing (`upsert_eq_insert`); on a fiber of
 one occurrence it replaces that occurrence (`upsert_eq_replace`). So one rule covers the two cases that a fixed number of
-takes splits into a rule that takes and a rule that asks for none queries.
+takes splits into a rule that takes and a rule that asks for absence.
 
 The fiber is read in the world the commit fires in. Two upserts into one region whose fibers were both read before
 either fired, applied one after the other, leave both made occurrences in the fiber (`stale_upserts_double`). The

@@ -67,7 +67,7 @@ theorem refuteRound_eq_of_below (fuel : Nat) {Θ : Context S.R} {problem : Equat
   cases computed : below fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the family below decides, the family above decides with the same outcome.** -/
 theorem refute_run_of_below (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -86,14 +86,14 @@ theorem refuteRound_not_stuck_of_refuted (fuel : Nat) {Θ : Context S.R} {proble
     (read : (refute fuel problem).isSome) :
     refuteRound facts roots heads algebra rigid complete below refute fuel problem ≠ .stuck := by
   unfold refuteRound
-  obtain ⟨missing, computed⟩ := Option.isSome_iff_exists.mp read
+  obtain ⟨absent, computed⟩ := Option.isSome_iff_exists.mp read
   cases below fuel problem with
   | stuck =>
       change refutedRound (refute fuel problem) ≠ .stuck
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-! ## Eventual constancy -/
 
@@ -131,14 +131,14 @@ theorem refuteRound_closure (fuel : Nat) :
       | none =>
           rw [refuted] at fired
           cases fired
-      | some missing =>
+      | some absent =>
           rw [refuted] at fired
           cases fired
   | progress first firstSmaller =>
       rw [computed] at fired
       cases fired
       exact belowClosure fuel _ _ _ permuted computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
 
@@ -159,9 +159,9 @@ theorem refute_decided_of_firing
       ((∃ state finished,
           run ((refuteFamily facts roots heads algebra rigid complete below refute).solver larger) problem
             larger = .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing,
+        (∃ absent,
           run ((refuteFamily facts roots heads algebra rigid complete below refute).solver larger) problem
-            larger = .refuted missing)) :=
+            larger = .refuted absent)) :=
   (Settled.ofConst (refuteFamily facts roots heads algebra rigid complete below refute)
     (fun problem => refuteRound_const facts roots heads algebra rigid complete below refute belowConst refuteConst
       problem)

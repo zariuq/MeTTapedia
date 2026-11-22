@@ -86,7 +86,7 @@ theorem CodInv.narrowSolveCodes {Γ Θ : Context S.R} {σ : Θ ⟶ Γ} {e : Equa
     exact WideCovered.transport algebra.trans (codNarrowSolve glb spec algebra v ok) cov (solveSub_ne _ ne)
       (codNarrowed_decl glb spec v families k)
   have fromT : ∀ Y, Y ∈ e.2.2.code.support → WideCovered (codNarrowSolve glb spec algebra v ok ≫ σ) Y :=
-    fun Y h => keep Y (fun same => ok.notMem (same ▸ h)) (inv.occurs e List.mem_cons_self Y (.inr h))
+    fun Y h => keep Y (fun same => ok.absent (same ▸ h)) (inv.occurs e List.mem_cons_self Y (.inr h))
   constructor
   · rintro j ⟨i, hj⟩
     change j ∈ (Presentation.subst (solveSub v.X e.2.2.code) (σ.substitution i)).support at hj
@@ -301,10 +301,10 @@ theorem arrowsCod_initial {Θ : Context S.R} {original : EquationStore (TotalTer
     ∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), InitialSolution (frames S.levels) original answer := by
   obtain ⟨fuel, decided⟩ := arrowsCod_decided choices glb spec facts roots heads algebra rigid complete
     headTypingUnique declared strengthening total inside
-  rcases (decided fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨missing, _⟩
+  rcases (decided fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨absent, _⟩
   · exact arrowsCod_solved_initial choices glb spec facts roots heads algebra rigid complete headTypingUnique declared
       strengthening inh inside families solved
-  · exact absurd solvable missing
+  · exact absurd solvable absent
 
 end Rounds
 

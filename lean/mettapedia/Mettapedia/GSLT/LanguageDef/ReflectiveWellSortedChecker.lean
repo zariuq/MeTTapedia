@@ -5,7 +5,7 @@ import Mettapedia.GSLT.LanguageDef.WellSortedChecker
 # Executable checking for reflection-indexed carriers
 
 The core checker remains a checker for the five-field language.  This module
-adds the independent quote-sealing check selected by a reflection profile and
+adds the independent scope check selected by a reflection profile and
 proves the combined Boolean exactly characterizes the combined carrier.
 -/
 
@@ -19,7 +19,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 def checkReflectiveScopeSafeAt (profile : ReflectionProfile) (depth : Nat)
     (pattern : Pattern) : Bool :=
   profile.presentations.all fun presentation =>
-    Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt
+    Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt presentation.quoteScope
       presentation.quoteConstructor depth pattern
 
 @[simp]

@@ -16,7 +16,7 @@ beside a coordinating process. The reflective calculus has no restriction, so su
 success of its first hole (`keepsFirst_coordinated`, from persistence), so the separation holds for
 every compositional translation whose parallel context is coordinated, whatever `R`
 (`no_coordinatedTranslation`): from the step with restricted composition
-(`step_not_into_rho_coordinated`), from the step with the none-guarded program of
+(`step_not_into_rho_coordinated`), from the step with the absence-guarded program of
 `NullsOnTheStep.ParallelClosed`, and from the step with its positive program, whose tell is on an
 unknown the neighbour's knowledge shares (a composition that shares unknowns, unlike the tensor).
 
@@ -64,8 +64,8 @@ theorem step_not_into_rho_coordinated (ω : G [] .nm) (R : RhoProcess)
     (shape : τ.context = coordinated R) : False :=
   no_coordinatedTranslation (solvable_switchable ω) ω R τ shape
 
-/-- **From the step with the none-guarded program.** -/
-theorem none_not_into_rho_coordinated (ω : G [] .nm) (R : RhoProcess)
+/-- **From the step with the absence-guarded program.** -/
+theorem absence_not_into_rho_coordinated (ω : G [] .nm) (R : RhoProcess)
     (τ : CompositionalTranslation NullsOnTheStep.ParallelClosed.source (rhoParallel ω))
     (shape : τ.context = coordinated R) : False :=
   no_coordinatedTranslation NullsOnTheStep.ParallelClosed.source_switchable ω R τ shape
@@ -94,7 +94,7 @@ open ByInstantiation (read)
 /-- The process `T` guarded by an input on `@(@0!(0))`, a channel on which nothing outputs. -/
 def guard (T : RhoProcess) : RhoProcess :=
   ⟨input Source.otherChannel T.1, (rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.input (.quote (.output (.quote .unit (by decide)) .unit) (by decide))
+    ⟨.input (.quote (.output (.quote .unit) .unit))
       (((rhoClosedTermWellSorted_process_iff _).mp T.2).1.weakenBoundRight _),
      by
       have sealed := ((rhoClosedTermWellSorted_process_iff _).mp T.2).2
@@ -106,7 +106,7 @@ def guardedContext (first second : RhoProcess) : RhoProcess := par (guard first)
 
 theorem guarded_payload_prime : IsPrime (input Source.otherChannel payload) := by
   refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.input (.quote (.output (.quote .unit (by decide)) .unit) (by decide)) (.output (.quote .unit (by decide)) .unit), rfl⟩, ?_, ?_, ?_⟩
+    ⟨.input (.quote (.output (.quote .unit) .unit)) (.output (.quote .unit) .unit), rfl⟩, ?_, ?_, ?_⟩
   · simp [input, Source.otherChannel, payload, output, channel, zero, IsCanonical, IsCanonicalList]
   · simp [input]
   · intro elements
@@ -144,7 +144,7 @@ end Guarded
 #print axioms keepsFirst_coordinated
 #print axioms no_coordinatedTranslation
 #print axioms step_not_into_rho_coordinated
-#print axioms none_not_into_rho_coordinated
+#print axioms absence_not_into_rho_coordinated
 #print axioms positiveTell_not_into_rho_coordinated
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.FragmentsOfTheStep.ReflectiveCalculus.Encodings

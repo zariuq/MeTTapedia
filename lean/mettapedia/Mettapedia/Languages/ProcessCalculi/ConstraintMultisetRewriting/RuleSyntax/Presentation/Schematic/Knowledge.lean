@@ -254,9 +254,9 @@ theorem knowledge_steps_alone :
   let initial : Bindings := [("rest", bag []), ("y", dataCode x)]
   have headMatch : MatchRel (.apply "Row" [.fvar "y"]) (rowItem x) [("y", dataCode x)] :=
     .apply (.cons .fvar .nil (mergeBindings_nil _)) rfl
-  have restMissing : [("y", dataCode x)].find? (·.1 == "rest") = none := by simp
+  have restAbsent : [("y", dataCode x)].find? (·.1 == "rest") = none := by simp
   have merged : mergeBindings [("y", dataCode x)] [("rest", bag [])] = some initial := by
-    rw [mergeBindings_cons_none [] restMissing]
+    rw [mergeBindings_cons_none [] restAbsent]
     rfl
   have matched : initial ∈ matchPatternForRule knowledgeLanguage tellKnowledgeRewrite (bag [rowItem x]) := by
     rw [matchPatternForRule_eq_syntactic, matchPattern_iff_matchRel]

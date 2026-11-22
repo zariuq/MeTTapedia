@@ -7,18 +7,18 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Prog
 The constants are `f` and `g`, the ambient context `[f, g]`.
 - **Returned:** `(f (λy. y))` with only `(= (f (λx. $N)) $N)` is unmatched, since `$N` cannot capture
   `y`. The unmatched firing is admitted, it reads exactly `(f (λy. y))`, the actual worklist certifies
-  the none query, and the reference semantics evaluates the call to itself.
+  the absence, and the reference semantics evaluates the call to itself.
 - **Refused:** beside it, the η equation `(= (f (λx. $M x)) (λz. $M z))` matches the same call, so
   the unmatched firing is refused and the η firing is admitted. With the capture equation alone,
-  `(f (λy. g))` is matched (by `$N := g`) and refused too; no budget certifies a none query there.
+  `(f (λy. g))` is matched (by `$N := g`) and refused too; no budget certifies an absence there.
 - **Pending:** at `(f (λy. y y))` the only matching problem is the non-pattern `$M x x`. The call is
   matched, so it is not returned; the guard refuter's worklist never refutes it, at any fuel. The
   equation's own firing problem stays pending at every fuel (`Controls.twice_pending_on_step`).
 - **Unknown:** `(= g (g $Y))` turns `g` into `(g $Y)` with `$Y` unknown: the state reads `(g g)` and
-  `(g f)`. No equation matches any reading, so the call is returned, the none query is certified, it
+  `(g f)`. No equation matches any reading, so the call is returned, the absence is certified, it
   holds under every later binding of `$Y`, and no equation fires after the return.
 - **Not returned while a binding could make a redex:** after `(= g $Y)`, the call reads `f`, which is
-  unmatched, and `(f (λy. g y))`, which the η equation matches. The none query is asked at every future
+  unmatched, and `(f (λy. g y))`, which the η equation matches. Absence is asked at every future
   solution, so the call is not returned.
 -/
 
@@ -47,7 +47,7 @@ theorem capture_returns_itself (answer : Term sig Consts .term) :
         answer ↔ answer = captureCall :=
   unmatched_reads_iff _ captureCall (initial_determines captureCall) capture_returns answer
 
-/-- The none query is decided by the actual worklist. -/
+/-- The absence is decided by the actual worklist. -/
 theorem capture_return_certified : ∃ budget, certifiesUnmatched captureProgram budget (initial captureCall) = true :=
   certifies_of_unmatched _ (initial_pattern captureCall) (fun _ => lhsCapture_pattern)
     (fun future solution call reads => by
@@ -109,9 +109,9 @@ theorem twice_never_certified (budget : Option Unit → Nat) :
 
 /-- **Never refuted.** At every fuel, the guard refuter's worklist on the call's joint problem
 returns a residual, not a refutation. -/
-theorem twice_none_never_refuted (fuel : Nat) :
+theorem twice_absence_never_refuted (fuel : Nat) :
     letI := twiceStartReturn.1.equality
-    ContextualGuardRefutation.certifiesRowNone (locals (withReturn twiceProgram))
+    ContextualGuardRefutation.certifiesRowAbsence (locals (withReturn twiceProgram))
       (active (withReturn twiceProgram) twiceStartReturn.1.declarations) fuel
       (ContextualActivatedStep.problem (locals (withReturn twiceProgram)) twiceStartReturn.1.declarations
         twiceStartReturn.1.occupied (selection twiceStartReturn.2) (unmatchedRule twiceProgram twiceStartReturn.1.declarations)
@@ -120,7 +120,7 @@ theorem twice_none_never_refuted (fuel : Nat) :
         twiceStartReturn.1.inventory.rows twiceStartReturn.2)
       (checkAt twiceProgram twiceStartReturn ()) = false := by
   let _ : DecidableEq twiceStartReturn.1.Names := twiceStartReturn.1.equality
-  cases computed : ContextualGuardRefutation.certifiesRowNone (locals (withReturn twiceProgram))
+  cases computed : ContextualGuardRefutation.certifiesRowAbsence (locals (withReturn twiceProgram))
       (active (withReturn twiceProgram) twiceStartReturn.1.declarations) fuel
       (ContextualActivatedStep.problem (locals (withReturn twiceProgram)) twiceStartReturn.1.declarations
         twiceStartReturn.1.occupied (selection twiceStartReturn.2) (unmatchedRule twiceProgram twiceStartReturn.1.declarations)
@@ -140,7 +140,7 @@ theorem twice_none_never_refuted (fuel : Nat) :
         rw [(initial_holds (program := withReturn twiceProgram) twiceCall).1] at present
         exact Finset.mem_singleton.mp present
       subst only
-      exact ContextualGuardRefutation.certifiesRowNone_sound _ _ fuel _ _ _ computed candidate solved
+      exact ContextualGuardRefutation.certifiesRowAbsence_sound _ _ fuel _ _ _ computed candidate solved
 
 /-! ## Unknown: `(g $Y)` stays unmatched under every later binding -/
 
@@ -241,7 +241,7 @@ theorem unknown_lhs_patterns : ∀ index, Pattern sig (unknownProgram index).ari
   | false => introLhs_pattern
   | true => lhsCapture_pattern
 
-/-- The none query is decided by the actual worklist, with the unknown still open. -/
+/-- The absence is decided by the actual worklist, with the unknown still open. -/
 theorem unknown_return_certified : ∃ budget, certifiesUnmatched unknownProgram budget afterIntro = true :=
   certifies_of_unmatched afterIntro
     (destination_pattern unknownStart (some false) intro_admitted (initial_pattern gC) introLhs_pattern introRhs_pattern)
@@ -258,7 +258,7 @@ theorem unknown_stays_unmatched {Future : Type} (future : Future → MetaArity s
       instantiate binding (instantiate solution
         (output (withReturn unknownProgram) unknownStart.1.declarations (some false) unknownStart.1.occupied
           unknownStart.2)) :=
-  none_stable afterIntro _ afterIntro_holds afterIntro_unmatched future solution solved later binding index θ
+  absence_stable afterIntro _ afterIntro_holds afterIntro_unmatched future solution solved later binding index θ
 
 /-- After the return, no equation fires. -/
 theorem unknown_final (index : Bool) :
@@ -288,17 +288,17 @@ theorem f_unmatched : Unmatched twoWayProgram fC := by
       cases matched
 
 /-- **Not returned.** One reading, `f`, is unmatched; another, `(f (λy. g y))`, is matched by the η
-equation. The none query is asked at every future solution, so the unknown is not returned as itself: a
+equation. Absence is asked at every future solution, so the unknown is not returned as itself: a
 later binding could make it a redex. -/
 theorem unknown_redex_not_returned :
     Reads (withReturn twoWayProgram) afterUnknown fC ∧ Unmatched twoWayProgram fC ∧
       ¬ UnmatchedAdmitted twoWayProgram afterUnknown := by
   refine ⟨afterUnknown_reads fC, f_unmatched, fun valid => ?_⟩
   have holds := destination_holds (initial gC) (some true) two_way_admitted (initial_holds gC).1
-  obtain ⟨_, missing⟩ := (unmatched_admitted_iff afterUnknown _ holds).mp valid
+  obtain ⟨_, absent⟩ := (unmatched_admitted_iff afterUnknown _ holds).mp valid
   obtain ⟨Future, future, solution, reads⟩ := afterUnknown_reads callEta
   obtain ⟨θ, matched, _⟩ := (eta_answers (etaExpand gC)).mpr rfl
-  exact missing future solution callEta reads false θ matched
+  exact absent future solution callEta reads false θ matched
 
 #print axioms capture_returns
 #print axioms unknown_redex_not_returned
@@ -312,7 +312,7 @@ theorem unknown_redex_not_returned :
 #print axioms constant_never_certified
 #print axioms twice_not_returned
 #print axioms twice_never_certified
-#print axioms twice_none_never_refuted
+#print axioms twice_absence_never_refuted
 #print axioms g_unmatched
 #print axioms afterIntro_has_unknown
 #print axioms unknown_returns

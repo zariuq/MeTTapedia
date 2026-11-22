@@ -21,18 +21,27 @@
 #   CETTA      the CeTTa binary       (default: cetta on PATH)
 #   MEGALODON  the Megalodon binary   (default: megalodon/bin/megalodon here)
 #   MG_CHECK   the mg-check binary    (default: mg-check on PATH)
+#   JOBS       processes at once      (default: one for each processor)
 set -euo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 project=$(cd "$here/../../../.." && pwd)
 root=$(cd "$here/../../../../../.." && pwd)
 cetta=${CETTA:-cetta}
+jobs=${JOBS:-$(nproc)}
+[[ $jobs =~ ^[1-9][0-9]*$ ]] || { echo "check: JOBS must be a positive number"; exit 2; }
 megalodon=${MEGALODON:-$root/megalodon/bin/megalodon}
 mgcheck=${MG_CHECK:-mg-check}
 preamble=$root/megalodon/examples/egal/PfgEAug2022Preamble.mgs
 decls=$project/artifacts/lean-declarations
 work=$(mktemp -d "${TMPDIR:-/tmp}/lean-egal-kernel.XXXXXX")
 cleanup() {
-  rm -f -- "$work"/*.metta "$work"/*.mg "$work"/*.txt "$work"/*.json "$work"/*.out
+  wait
+  for own in "$work"/process-*; do
+    [ -d "$own" ] || continue
+    rm -f -- "$own"/*.metta "$own"/*.mg
+    rmdir -- "$own"
+  done
+  rm -f -- "$work"/*.metta "$work"/*.mg "$work"/*.txt "$work"/*.json "$work"/*.out "$work"/*.line
   rmdir -- "$work"
 }
 trap cleanup EXIT
@@ -65,13 +74,29 @@ listed=$(sed -n 's/^(= (computed-today) (\(.*\)))$/\1/p' "$here/kernel/check-com
   cat "$here/kernel/typing.metta" "$here/kernel/invert.metta" "$here/kernel/rules.metta" \
       "$here/kernel/numerals.metta" "$here/kernel/compute.metta" "$here/kernel/check-compute.metta"
 } > "$work/compute.metta"
+# report NAME PATTERN DRIVER CALL: the lines of one process, kept under NAME.  A process
+# writes the document it opens, so each has a directory of its own.
+report() {
+  local own="$work/process-$1"
+  mkdir "$own"
+  { sed "s|\"$work\"|\"$own\"|g" "$3"; echo "$4"; } > "$own/one.metta"
+  "$cetta" --lang petta "$own/one.metta" "$own" 2>/dev/null | grep -E "^\"?$2 " | tr -d '"' > "$work/$1.line" || true
+}
+# at_most_jobs: wait until another process may start.
+at_most_jobs() {
+  while [ "$(jobs -rp | wc -l)" -ge "$jobs" ]; do wait -n || true; done
+}
 first=${listed%% *}; computed=0; refused=0; count=0; : > "$work/computed.txt"
 set -- $listed
 while [ $# -gt 0 ]; do
-  i=$1; shift; j=${1:-$first}; count=$((count + 1))
-  { cat "$work/compute.metta"; echo "!(compute:report $i $j)"; } > "$work/one.metta"
-  line=$("$cetta" --lang petta "$work/one.metta" "$work" 2>/dev/null | grep -E '^"?computed ' | tr -d '"' || true)
-  echo "${line:-computed $i no accepted}" >> "$work/computed.txt"
+  i=$1; shift; j=${1:-$first}
+  at_most_jobs
+  report "computed-$i" computed "$work/compute.metta" "!(compute:report $i $j)" &
+done
+wait
+for i in $listed; do
+  count=$((count + 1)); line=$(cat "$work/computed-$i.line")
+  echo "${line:-computed $i no-verdict}" >> "$work/computed.txt"
   case "$line" in "computed $i yes "*) computed=$((computed + 1));; esac
   case "$line" in *" refused") refused=$((refused + 1));; esac
 done
@@ -82,9 +107,16 @@ echo "computations: 30 tests; $computed of $count listed are computed by kernel 
 wanted=$(sed -n 's/^(= (examples:expected) \([0-9]*\))$/\1/p' "$here/kernel/check-examples.metta")
 groups=$(sed -n 's/^(= (examples:groups) (\(.*\)))$/\1/p' "$here/kernel/check-examples.metta")
 : > "$work/examples.txt"
+cat "$work/compute.metta" "$here/kernel/check-examples.metta" > "$work/examples.metta"
 for group in $groups; do
-  { cat "$work/compute.metta" "$here/kernel/check-examples.metta"; echo "!(examples:report $group)"; } > "$work/one.metta"
-  "$cetta" --lang petta "$work/one.metta" "$work" 2>/dev/null | grep -E '^"?example ' | tr -d '"' >> "$work/examples.txt" || true
+  at_most_jobs
+  report "examples-$group" example "$work/examples.metta" "!(examples:report $group)" &
+done
+wait
+silent=""
+for group in $groups; do
+  cat "$work/examples-$group.line" >> "$work/examples.txt"
+  [ -s "$work/examples-$group.line" ] || silent="$silent $group"
 done
 shown=$(wc -l < "$work/examples.txt"); asexpected=$(grep -c ' as-expected$' "$work/examples.txt" || true)
 echo "examples: ${wanted:-0} goals; $shown decided, $asexpected as they must be (proved where a proof is due, not proved beside it)" >> "$work/kernel.out"
@@ -100,9 +132,10 @@ refused=$(sed -n 's/.*crossed: \([0-9]*\) of \([0-9]*\) refused$/\1 \2/p' <<<"$l
 line=$(grep '^computations:' "$work/kernel.out" || true)
 computed=$(sed -n 's/^computations: [0-9]* tests; \([0-9]*\) of \([0-9]*\) listed .*/\1 \2/p' <<<"$line")
 crossed=$(sed -n 's/.*crossed: \([0-9]*\) of \([0-9]*\) refused; .*/\1 \2/p' <<<"$line")
-[[ -n "$computed" && "${computed% *}" == "${computed#* }" && "${computed% *}" != 0 ]] || { echo "FAIL kernel: a listed test is not computed to the document's theorem"; fail=1; }
-[[ -n "$crossed" && "${crossed% *}" == "${crossed#* }" && "${crossed% *}" != 0 ]] || { echo "FAIL kernel: a computed theorem states another test's statement"; fail=1; }
-[[ -n "$wanted" && "$wanted" != 0 && "$shown" == "$wanted" && "$asexpected" == "$wanted" ]] || { echo "FAIL kernel: an example is not decided as it must be: $(grep -v ' as-expected$' "$work/examples.txt" | tr '\n' ';')"; fail=1; }
+[[ -n "$computed" && "${computed% *}" == "${computed#* }" && "${computed% *}" != 0 ]] || { echo "FAIL kernel: a listed test is not computed to the document's theorem: $(grep -vE '^computed [0-9]+ yes ' "$work/computed.txt" | tr '\n' ';')"; fail=1; }
+[[ -n "$crossed" && "${crossed% *}" == "${crossed#* }" && "${crossed% *}" != 0 ]] || { if grep -q ' accepted$' "$work/computed.txt"; then echo "FAIL kernel: a computed theorem states another test's statement: $(grep ' accepted$' "$work/computed.txt" | tr '\n' ';')"
+      else echo "FAIL kernel: a crossed statement got no verdict"; fi; fail=1; }
+[[ -n "$wanted" && "$wanted" != 0 && "$shown" == "$wanted" && "$asexpected" == "$wanted" ]] || { echo "FAIL kernel: an example is not decided as it must be: $(grep -v ' as-expected$' "$work/examples.txt" | tr '\n' ';')${silent:+ no verdict from group$silent}"; fail=1; }
 
 # The way back, in the two checkers.
 position() { sed -n 's/.*[Ff]ailure at line \([0-9]*\) char \([0-9]*\).*/\1 \2/p' | head -1; }

@@ -196,8 +196,8 @@ theorem check_eq_shared (origin : Origin) (certificate : Shared.Certificate P)
   unfold check DerivationGraph.replay
   rw [replay_rows]
   cases table : (Shared.inspectRows ([] : List P.Judgment) certificate.rows).table with
-  | none => simp [table, Shared.checkJudgments, Shared.checkJudgmentsWithWork]
-  | some values => simp [table, Shared.checkJudgments, Shared.checkJudgmentsWithWork]
+  | none => simp [table, Shared.checkJudgments, Shared.checkJudgmentsWithWork_eq_inspectRows]
+  | some values => simp [table, Shared.checkJudgments, Shared.checkJudgmentsWithWork_eq_inspectRows]
 
 /-- Finite source derivability has an accepted generic graph, and every
 accepted generic root reconstructs a source derivation. -/

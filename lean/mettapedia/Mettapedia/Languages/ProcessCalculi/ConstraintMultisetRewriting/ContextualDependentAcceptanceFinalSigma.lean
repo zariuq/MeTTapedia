@@ -59,7 +59,7 @@ theorem tower_sigma_decided_of_uncovered
       run (sigmaTower.solver larger) problem larger = run (sigmaTower.solver budget) problem budget ∧
       ((∃ state finished, run (sigmaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (sigmaTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (sigmaTower.solver larger) problem larger = .refuted absent)) :=
   tower_sigma_decided_of_sigmaReads (fun permuted nonempty => by
       obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : PieceCoveredHead equation
@@ -87,7 +87,7 @@ theorem tower_sigma_decided_of_uncovered_kinds
       run (sigmaTower.solver larger) problem larger = run (sigmaTower.solver budget) problem budget ∧
       ((∃ state finished, run (sigmaTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (sigmaTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (sigmaTower.solver larger) problem larger = .refuted absent)) :=
   tower_sigma_decided_of_uncovered (fun {_} {problem} permuted nonempty threshold constant equation member normal
       head covered => by
       have prepared := ContextualDependentCumulativeClosure.prepare_keeps (S := setting) (fun _ => none)

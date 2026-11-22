@@ -293,7 +293,7 @@ def illSortedResidual : Pattern := .collection .hashBag [illSortedBody] none
 
 private theorem wireTyped {bound : List String} :
     NameWellSorted rhoReflectivePresentation FreeSortContext.empty bound wire :=
-  .quote .unit (by decide)
+  .quote .unit
 
 private theorem payloadTyped {bound : List String} :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty bound payload :=
@@ -349,7 +349,7 @@ theorem surfaceSpelling_typed :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] surfaceSpelling := by
   have quoted : NameWellSorted rhoReflectivePresentation FreeSortContext.empty
       [rhoReflectivePresentation.nameSort] wrapped :=
-    .quote (.parallel (.cons (.drop (.bvar rfl)) (.cons .unit .nil))) (by decide)
+    .quote (.parallel (.cons (.drop (.bvar rfl)) (.cons .unit .nil)))
   exact .parallel (.cons (.output wireTyped payloadTyped) (.cons (.input wireTyped (.drop quoted)) .nil))
 
 theorem surfaceSpelling_not_literally_safe :
@@ -391,7 +391,7 @@ theorem canonical_surface_communicates :
   let arranged := Pattern.collection .hashBag [receive wrapped,out] none
   have bodyTyped : ProcWellSorted rhoReflectivePresentation env
       [rhoReflectivePresentation.nameSort] (body wrapped) :=
-    .drop (.quote (.parallel (.cons (.drop (.bvar rfl)) (.cons .unit .nil))) (by decide))
+    .drop (.quote (.parallel (.cons (.drop (.bvar rfl)) (.cons .unit .nil))))
   have ready : ProcWellSorted rhoReflectivePresentation env [] arranged :=
     .parallel (.cons (.input wireTyped bodyTyped) (.cons (.output wireTyped payloadTyped) .nil))
   have atArranged : RhoStep arranged

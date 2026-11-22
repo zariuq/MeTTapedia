@@ -293,9 +293,9 @@ def retype {s : State (Terms rules) O} (f : Firing O (helperExtensions (rules :=
 
 theorem retype_of_not_mem {s : State (Terms rules) O}
     (f : Firing O (helperExtensions (rules := rules)) P s.frame) (answers : List (Option ℕ))
-    (Δ : O → TypeOver s.frame) {o : O} (missing : o ∉ f.selection.made) :
+    (Δ : O → TypeOver s.frame) {o : O} (absent : o ∉ f.selection.made) :
     retype levels f answers Δ o = (Δ o).reindex f.ext.weaken :=
-  Firing.relabel_of_not_mem (Tm := fun Γ : Context rules => TypeOver Γ) _ _ _ missing
+  Firing.relabel_of_not_mem (Tm := fun Γ : Context rules => TypeOver Γ) _ _ _ absent
 
 theorem retype_made {s : State (Terms rules) O}
     (f : Firing O (helperExtensions (rules := rules)) P s.frame) (answers : List (Option ℕ))

@@ -50,6 +50,7 @@ import Mettapedia.Machines.NativeProviderAdmission
 import Mettapedia.Machines.NativeProviderPolicy
 import Mettapedia.Machines.NativeProviderClaims
 import Mettapedia.Machines.Kernel
+import Mettapedia.Machines.VersionedValidation
 
 /-!
 # Abstract-machine foundations

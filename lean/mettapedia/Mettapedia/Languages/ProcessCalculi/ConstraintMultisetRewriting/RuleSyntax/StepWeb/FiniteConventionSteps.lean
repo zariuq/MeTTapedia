@@ -396,7 +396,7 @@ theorem representsBy_convention {s : State Tm ℕ} {M : Multiset Pattern} {comp 
   rw [← represented.bag, card_filter_bagOf]
   by_cases found : ∃ o ∈ s.present, y ∈ pvars (comp o)
   · obtain ⟨o, present, inside⟩ := found
-    rw [Finset.sum_eq_single o (fun o' present' different => ?_) (fun missing => absurd present missing)]
+    rw [Finset.sum_eq_single o (fun o' present' different => ?_) (fun absent => absurd present absent)]
     · exact card_filter_parts_le_one (represented.hosted o present) y
     · rw [Multiset.card_eq_zero, Multiset.filter_eq_nil]
       intro d member inD

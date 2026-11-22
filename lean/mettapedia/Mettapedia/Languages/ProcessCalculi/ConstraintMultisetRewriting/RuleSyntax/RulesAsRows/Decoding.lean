@@ -20,7 +20,7 @@ read the row back as a rule (`decode`), check that the rule is in the fragment, 
 **Examples.** The codes of the two example rules are codes, and the example store is tagged
 (`second_isCode`, `start_taggedCheck`). Refused: a data row; the row the interpreter reads at the
 untagged store (its take entry is an unknown, not a quotation: `openedCode_not_code`), so that store is
-not tagged (`loose_not_tagged`); a code-shaped row whose none check carries a second term; one whose
+not tagged (`loose_not_tagged`); a code-shaped row whose absence check carries a second term; one whose
 tells have one side missing; one with a tenth part; and the code of a rule that drops
 (`dropRule_not_code`): quotation keeps the `drop`, and the rule read back is outside the fragment.
 -/
@@ -222,11 +222,11 @@ theorem loose_not_tagged : ¬ Tagged DataFragment Untagged.loose := by
   rw [← taggedCheck_iff Examples.dataFragment_closed dataCheck dataCheck_iff]
   decide
 
-/-- A code-shaped row whose none check carries a second term. -/
-def noneWithRight : Expr :=
+/-- A code-shaped row whose absence check carries a second term. -/
+def absentWithRight : Expr :=
   code (lst [nil, nil, nil, nil, nil, lst [Examples.five], lst [Examples.five], lst [(Kind.predicate .none).term], nil])
 
-theorem noneWithRight_not_code : isCode noneWithRight = false := by decide
+theorem absentWithRight_not_code : isCode absentWithRight = false := by decide
 
 /-- A code-shaped row with a tell whose right side is missing. -/
 def tellHalf : Expr := code (lst [nil, nil, nil, lst [Examples.five], nil, nil, nil, nil, nil])

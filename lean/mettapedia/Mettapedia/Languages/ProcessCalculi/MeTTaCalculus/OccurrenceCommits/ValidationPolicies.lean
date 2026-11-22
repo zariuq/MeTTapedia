@@ -19,7 +19,7 @@ be dropped (aborted). The chain that matters is the classical one of isolation l
 |---|---|---|
 | `unchecked` | none | double takes (`Controls.unchecked_double_take`) |
 | `snapshot` | takes | write skew, never a double take (`Controls.snapshot_write_skew`, `no_double_take`) |
-| `claims` | takes, keeps | a none race through predicate queries (`Controls.claims_none_race`) |
+| `claims` | takes, keeps | an absence race through predicate queries (`Controls.claims_absence_race`) |
 | `serializable` | all | exactly the executable subsequences (`round_serializable_iff`) |
 
 `snapshot` is snapshot isolation at the grain of occurrences; `claims` is the claims wave of
@@ -664,9 +664,9 @@ theorem snapshot_write_skew :
     revert this
     decide
 
-/-- **Claims: a none race.** Checking takes and keeps commits both "add unless
+/-- **Claims: an absence race.** Checking takes and keeps commits both "add unless
 present" proposals; checking regions refuses both orders. -/
-theorem claims_none_race :
+theorem claims_absence_race :
     Round label (fun _ => Mode.claims) {0} [addUnlessA, addUnlessB] [addUnlessA, addUnlessB]
         (fireList {0} [addUnlessA, addUnlessB]) ∧
       fireList {0} [addUnlessA, addUnlessB] = {0, 40, 41} ∧

@@ -8,8 +8,8 @@ import Mettapedia.Logic.LinearLogic.KnowledgeTensorTraces
 
 * **The grade functor on the two controls.** It is defined at the placement beside the
   occurrence `9` for the run that reads (`grade_functor_defined_for_reads`) and undefined there
-  for the run that checks none queries (`grade_functor_undefined_for_none`).
-* **The none query has no guard transport** (`none_has_no_guard_transport`), and its firing is a
+  for the run that checks absence (`grade_functor_undefined_for_absence`).
+* **Absence has no guard transport** (`absence_has_no_guard_transport`), and its firing is a
   framed leaf at its footprint (`unless_nine_is_a_framed_leaf`).
 * **A swap of uses is not a swap of events.** Two tokens are labelled `5`. The firing `move`
   takes one and makes a new one; `turn` takes the one `move` made. On labels the two uses are
@@ -44,17 +44,17 @@ theorem grade_functor_defined_for_reads :
     ⟨⟨reads_frames_nine, (valid_tensor_iff plain id reads reads_admitted).mp
       reads_is_admitted_beside_nine⟩, trivial⟩
 
-theorem grade_functor_undefined_for_none :
+theorem grade_functor_undefined_for_absence :
     ¬ (runAction (contextualRunInterpretation plain id) nine unlessNineRun PUnit.unit).Dom :=
-  fun defined => none_grade_is_not_structural.2
+  fun defined => absence_grade_is_not_structural.2
     ((gradeFunctor_dom (contextualRunInterpretation plain id) nine unlessNineRun PUnit.unit).mp defined)
 
-/-! ## The none query: no guard transport, and a framed leaf at its footprint -/
+/-! ## Absence: no guard transport, and a framed leaf at its footprint -/
 
-theorem none_has_no_guard_transport :
+theorem absence_has_no_guard_transport :
     IsEmpty (GuardTransportAt (contextualRunInterpretation plain id) (left := one) (right := nine)
       PUnit.unit unlessNineFiring) :=
-  ⟨fun transport => none_is_not_stable
+  ⟨fun transport => absence_is_not_stable
     (stableAt_of_guardTransport (contextualRunInterpretation plain id) transport)⟩
 
 theorem unless_nine_is_a_framed_leaf :
@@ -69,7 +69,7 @@ theorem unless_nine_is_a_framed_leaf :
       Nonempty ((firstOrderTransport plain id).Iso
         (AnnotatedRuns.tensor (FirstOrder.footprint one unlessNineFiring)
           (FirstOrder.rest one unlessNineFiring)) one) :=
-  FirstOrder.event_is_framed_leaf plain id unless_nine_admitted FirstOrder.none_shrinks rfl
+  FirstOrder.event_is_framed_leaf plain id unless_nine_admitted FirstOrder.absence_shrinks rfl
 
 /-! ## A swap of uses is not a swap of events -/
 

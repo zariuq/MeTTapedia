@@ -459,7 +459,7 @@ theorem matchesAt_transfer (agree : Agree r s u ιP ιU τ' τ) (presentSame : u
     exact equated'
 
 include hr in
-/-- **Corresponding solutions pass the guards of both firings or of neither**: equations, none checks and
+/-- **Corresponding solutions pass the guards of both firings or of neither**: equations, absences and
 counts check by check, and each collect pattern sees the same rows. -/
 theorem holds_transfer (agree : Agree r s u ιP ιU τ' τ) (presentSame : u.present = s.present)
     {seen : List (Finset O)} :

@@ -202,7 +202,7 @@ theorem derives_iff_entails (problem : EquationStore (RTree σ)) (label : O → 
           pattern List.mem_cons_self (fun o present => List.mem_cons_of_mem _
             (List.mem_map.mpr ⟨o, Finset.mem_toList.mpr present, rfl⟩))).mpr witness⟩
     | @none pattern solved refuted =>
-        exact ⟨⟨_, solved⟩, (PrincipalCheckRegions.none_iff_possible_empty (rationalAction σ) problem
+        exact ⟨⟨_, solved⟩, (PrincipalCheckRegions.absent_iff_possible_empty (rationalAction σ) problem
           label world pattern).mpr ((possible_empty_iff problem label world pattern).mpr refuted)⟩
     | @count pattern number solved card covered =>
         have consistent : (rationalAction σ).Consistent problem := ⟨_, solved⟩
@@ -228,7 +228,7 @@ theorem derives_iff_entails (problem : EquationStore (RTree σ)) (label : O → 
             (List.mem_map.mpr ⟨o, Finset.mem_toList.mpr present, rfl⟩))).mp asked)
         | none =>
             exact .none solved ((possible_empty_iff problem label world pattern).mp
-              ((PrincipalCheckRegions.none_iff_possible_empty (rationalAction σ) problem label world
+              ((PrincipalCheckRegions.absent_iff_possible_empty (rationalAction σ) problem label world
                 pattern).mp asked))
     | count pattern number =>
         obtain ⟨card, same⟩ := (PrincipalCheckRegions.count_iff_regions (rationalAction σ)

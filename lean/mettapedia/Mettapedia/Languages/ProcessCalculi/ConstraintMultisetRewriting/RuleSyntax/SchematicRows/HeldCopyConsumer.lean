@@ -66,7 +66,7 @@ theorem consumer_result_label (codes : Codes RowTerms C Z) (s : RState RowTerms 
 theorem temporary_is_consumed (codes : Codes RowTerms C Z) (s : RState RowTerms O R C Z)
     (code : C) (temporary output : O) (different : temporary ≠ output) :
     temporary ∉ ((consumer codes s code temporary output).result X).present := by
-  apply Materialization.consumed_private_instance_not_present X (consumer codes s code temporary output) temporary
+  apply Materialization.consumed_private_instance_is_absent X (consumer codes s code temporary output) temporary
   · exact List.mem_singleton_self temporary
   · simpa only [consumer, List.mem_singleton] using different
 

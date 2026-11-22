@@ -17,7 +17,7 @@ firing-level foundation (`openChild` and `closeChild`) of milestone P4 at the na
 * **Inner close at a child & solution extensions** (`closeChild_fresh_exists`,
   `closeChild_reads`, `closeChild_waits`, `closeChild_extends`, `cool_extends`,
   `closeRoot_extends`, `commChild_extends`): reads the made listener and `Done(l, m, 0)` token of
-  `closeChildAt`, proves its universal none guard waits for grandchild cooling, and extends
+  `closeChildAt`, proves its universal absence guard waits for grandchild cooling, and extends
   solutions across every child rule so `FreeOnPats` persists across recursive `REFL` segments.
 -/
 
@@ -819,7 +819,7 @@ theorem openChild_extends (label : O → Pattern) (C : Configuration Pattern O)
     onState (label o) (Or.inr (Or.inr ⟨o, p', rfl⟩))
   rwa [psubst_none] at agree
 
-/-! ## Inner close (`closeChildAt`) readouts, none guard, and child solution extensions -/
+/-! ## Inner close (`closeChildAt`) readouts, absence guard, and child solution extensions -/
 
 def closeChildAtX (ρ : PSubst) (reflection innerToken token made₁ madeTok : O) :
     Firing O E located PUnit.unit :=
@@ -951,7 +951,7 @@ theorem closeChild_owned_readback (policy : ReflLocatedStep.Ownership.GuardPolic
     retire owner (by simp), retire child (by simp), retire parent (by simp),
     writes (by simp), writes (by simp), ?_, ?_⟩
   · intro σ body loc
-    apply (ReflLocatedStep.Ownership.region_row_none_iff formed t.key σ body loc).mp
+    apply (ReflLocatedStep.Ownership.region_row_absence_iff formed t.key σ body loc).mp
     rw [packed]
     simp
   · have raw : after.raw = res label C (closeChildAt ρ owner child parent made next) :=

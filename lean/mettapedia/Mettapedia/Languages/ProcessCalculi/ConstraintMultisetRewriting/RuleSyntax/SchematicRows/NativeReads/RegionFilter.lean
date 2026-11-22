@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.SchematicRows.NativeReads.FrameFilter
 
 /-!
-# Complete retrieval preserves none queries, counts and exact collect query
+# Complete retrieval preserves absence, counts and exact collect query
 
 Only the observation's candidate set is filtered. Source presence and take
 admission are not changed. Equality of selected occurrences is proved at
@@ -37,7 +37,7 @@ theorem region_exact (pattern : Tm a) (keep : Row Tm a → Bool)
     have retained := FrameFilter.reading_survives X pattern keep complete (label occurrence) point point reading
     exact ⟨⟨member, retained⟩, matched⟩
 
-theorem none_exact (pattern : Tm a) (keep : Row Tm a → Bool)
+theorem absence_exact (pattern : Tm a) (keep : Row Tm a → Bool)
     (complete : FrameFilter.Complete X pattern keep)
     (label : O → Row Tm a) (present : Finset O) {b : Obj} (point : Hom a b) :
     (RegionQuery.predicate .none (Regions.membership X pattern)).Holds point label
@@ -74,7 +74,7 @@ theorem collect_exact (pattern : Tm a) (keep : Row Tm a → Bool)
     region_exact X pattern keep complete label present point]
 
 #print axioms region_exact
-#print axioms none_exact
+#print axioms absence_exact
 #print axioms count_exact
 #print axioms collect_exact
 
@@ -92,7 +92,7 @@ theorem universal_count_exact (knowledge : EquationStore (Tm a)) (pattern : Tm a
   · intro full b point model
     exact (count_exact X pattern keep complete count label present point).mpr (full b point model)
 
-theorem universal_none_exact (knowledge : EquationStore (Tm a)) (pattern : Tm a)
+theorem universal_absence_exact (knowledge : EquationStore (Tm a)) (pattern : Tm a)
     (keep : Row Tm a → Bool) (complete : FrameFilter.Complete X pattern keep)
     (label : O → Row Tm a) (present : Finset O) :
     X.Entails knowledge (fun _ point =>
@@ -102,11 +102,11 @@ theorem universal_none_exact (knowledge : EquationStore (Tm a)) (pattern : Tm a)
         (RegionQuery.predicate .none (Regions.membership X pattern)).Holds point label present) := by
   constructor
   · intro filtered b point model
-    exact (none_exact X pattern keep complete label present point).mp (filtered b point model)
+    exact (absence_exact X pattern keep complete label present point).mp (filtered b point model)
   · intro full b point model
-    exact (none_exact X pattern keep complete label present point).mpr (full b point model)
+    exact (absence_exact X pattern keep complete label present point).mpr (full b point model)
 
 #print axioms universal_count_exact
-#print axioms universal_none_exact
+#print axioms universal_absence_exact
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.SchematicRows.NativeReads.RegionFilter

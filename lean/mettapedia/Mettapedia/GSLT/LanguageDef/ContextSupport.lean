@@ -66,19 +66,51 @@ end ContextSupport
 /-! ## Reflective support action
 
 Ordinary typing retains every surrounding binder below a reflective quote,
-while reflective scope deliberately seals the quoted body from those outer
-binders.  Consequently the number used to weaken a structural parameter is
-not always the length of the typing context.  The following action tracks the
-binders available since the nearest authored quotation boundary. -/
+while a presentation that keeps quoted code closed deliberately seals the
+quoted body from those outer binders.  Consequently the number used to weaken a
+structural parameter is not always the length of the typing context.  The
+following action tracks the binders available since the nearest authored
+quotation boundary.  A presentation whose binders reach into quotations draws
+no boundary. -/
 
 namespace ReflectiveContextSupport
 
 /-- Whether a constructor is selected as a reflective quotation boundary by
-an explicit reflection profile. -/
+an explicit reflection profile: the quotation constructor of a selected
+presentation that keeps quoted code closed. -/
 def isQuoteConstructor (profile : ReflectionProfile)
     (constructor : String) : Bool :=
   profile.presentations.any
-    (fun presentation => presentation.quoteConstructor == constructor)
+    (fun presentation => presentation.quoteScope == .closed &&
+      presentation.quoteConstructor == constructor)
+
+theorem isQuoteConstructor_eq_true_iff {profile : ReflectionProfile}
+    {constructor : String} :
+    isQuoteConstructor profile constructor = true ↔
+      ∃ presentation ∈ profile.presentations,
+        presentation.quoteScope = .closed ∧
+          presentation.quoteConstructor = constructor := by
+  simp [isQuoteConstructor]
+
+/-- The quotation constructor of a selected closed presentation is a boundary. -/
+theorem isQuoteConstructor_of_mem {profile : ReflectionProfile}
+    {presentation : ReflectivePresentationDecl}
+    (membership : presentation ∈ profile.presentations)
+    (closed : presentation.quoteScope = .closed) :
+    isQuoteConstructor profile presentation.quoteConstructor = true :=
+  isQuoteConstructor_eq_true_iff.mpr ⟨presentation, membership, closed, rfl⟩
+
+/-- An ordinary constructor is not the sealing quotation of any selected
+closed presentation. -/
+theorem not_sealing_of_ordinary {profile : ReflectionProfile}
+    {presentation : ReflectivePresentationDecl}
+    (membership : presentation ∈ profile.presentations) {constructor : String}
+    (ordinary : isQuoteConstructor profile constructor = false) :
+    presentation.quoteScope = .closed → constructor ≠ presentation.quoteConstructor := by
+  intro closed equality
+  have detected := isQuoteConstructor_of_mem membership closed
+  rw [← equality, ordinary] at detected
+  cases detected
 
 /-- Capture-avoiding structural substitution indexed by the binder support
 available since the nearest reflective quote.  Every authored quote resets
@@ -1297,6 +1329,7 @@ mutual
       (safe : typed.ReflectiveSupportSafeAt profile support available)
       (presentation : ReflectivePresentationDecl)
       (membership : presentation ∈ profile.presentations)
+      (closed : presentation.quoteScope = .closed)
       {scopeDepth : Nat} (availableWithin : available.length ≤ scopeDepth)
       (scope : binderSafeAt presentation.quoteConstructor scopeDepth pattern = true) :
       binderSafeAt presentation.quoteConstructor scopeDepth
@@ -1308,6 +1341,7 @@ mutual
     | @fvar bound name type lookup available _binderImage shape =>
         have assignmentSafe :=
           assignment.reflectiveScopeSafe lookup presentation membership
+        rw [scopeSafeAt_of_closed closed] at assignmentSafe
         have lifted := ContextSubstitution.binderSafeAt_liftBVars
           presentation.quoteConstructor
           (ambient := (support name).length) (cutoff := 0)
@@ -1342,7 +1376,7 @@ mutual
                     simpa [same] using quoted
                   have outputList :=
                     argumentsSafe.substituteBinderSafeListAt assignment
-                      presentation membership (Nat.le_refl 0) inputList
+                      presentation membership closed (Nat.le_refl 0) inputList
                   simpa [ReflectiveContextSupport.substituteAt, selectedQuote,
                     binderSafeAt, same, binderSafeListAt] using outputList
                 · have inputList :
@@ -1351,7 +1385,7 @@ mutual
                     simpa [binderSafeAt, same, binderSafeListAt] using scope
                   have outputList :=
                     argumentsSafe.substituteBinderSafeListAt assignment
-                      presentation membership (Nat.zero_le scopeDepth) inputList
+                      presentation membership closed (Nat.zero_le scopeDepth) inputList
                   simpa [ReflectiveContextSupport.substituteAt, quoted,
                     binderSafeAt, same, binderSafeListAt] using outputList
             | cons second remainder =>
@@ -1361,7 +1395,7 @@ mutual
                   simpa [binderSafeAt] using scope
                 have outputList :=
                   argumentsSafe.substituteBinderSafeListAt assignment
-                    presentation membership (Nat.zero_le scopeDepth) inputList
+                    presentation membership closed (Nat.zero_le scopeDepth) inputList
                 simpa [ReflectiveContextSupport.substituteAt, quoted,
                   binderSafeAt] using outputList
     | @constructorOrdinary bound rule arguments membershipRule notBare
@@ -1371,9 +1405,8 @@ mutual
           intro same
           have quoted : ReflectiveContextSupport.isQuoteConstructor
               profile rule.label = true := by
-            unfold ReflectiveContextSupport.isQuoteConstructor
-            rw [List.any_eq_true]
-            exact ⟨presentation, membership, by simp [same]⟩
+            rw [same]
+            exact ReflectiveContextSupport.isQuoteConstructor_of_mem membership closed
           rw [quoted] at ordinary
           contradiction
         have inputList :
@@ -1387,7 +1420,7 @@ mutual
               | cons second remainder => simpa [binderSafeAt] using scope
         have outputList :=
           argumentsSafe.substituteBinderSafeListAt assignment presentation
-            membership availableWithin inputList
+            membership closed availableWithin inputList
         cases arguments with
         | nil =>
             simp [ReflectiveContextSupport.substituteAt, ordinary,
@@ -1409,7 +1442,7 @@ mutual
         have bodyWithin : (domain :: available).length ≤ scopeDepth + 1 := by
           simpa [List.length_cons] using Nat.add_le_add_right availableWithin 1
         have bodyResult := bodySafe.substituteBinderSafeAt assignment
-          presentation membership bodyWithin bodyScope
+          presentation membership closed bodyWithin bodyScope
         simpa [ReflectiveContextSupport.substituteAt, binderSafeAt,
           List.length_cons] using bodyResult
     | @multiLambda bound arity binders body domain codomain bodyTyped available
@@ -1424,7 +1457,7 @@ mutual
           simp only [List.length_append, List.length_replicate]
           omega
         have bodyResult := bodySafe.substituteBinderSafeAt assignment
-          presentation membership bodyWithin bodyScope
+          presentation membership closed bodyWithin bodyScope
         simpa [ReflectiveContextSupport.substituteAt, binderSafeAt,
           List.length_append, List.length_replicate, Nat.add_comm] using bodyResult
     | @subst bound body replacement domain codomain bodyTyped replacementTyped
@@ -1438,9 +1471,9 @@ mutual
         have bodyWithin : (domain :: available).length ≤ scopeDepth + 1 := by
           simpa [List.length_cons] using Nat.add_le_add_right availableWithin 1
         have bodyResult := bodySafe.substituteBinderSafeAt assignment
-          presentation membership bodyWithin componentScope.1
+          presentation membership closed bodyWithin componentScope.1
         have replacementResult := replacementSafe.substituteBinderSafeAt
-          assignment presentation membership availableWithin componentScope.2
+          assignment presentation membership closed availableWithin componentScope.2
         simpa [ReflectiveContextSupport.substituteAt, binderSafeAt,
           Bool.and_eq_true, List.length_cons] using
             And.intro bodyResult replacementResult
@@ -1452,7 +1485,7 @@ mutual
           simpa [binderSafeAt] using scope
         have outputList :=
           elementsSafe.substituteBinderSafeListAt assignment presentation
-            membership availableWithin inputList
+            membership closed availableWithin inputList
         simpa [ReflectiveContextSupport.substituteAt, binderSafeAt] using
           outputList
     | @collectionConstructor bound rule parameterName collectionType elements
@@ -1464,7 +1497,7 @@ mutual
           simpa [binderSafeAt] using scope
         have outputList :=
           elementsSafe.substituteBinderSafeListAt assignment presentation
-            membership availableWithin inputList
+            membership closed availableWithin inputList
         simpa [ReflectiveContextSupport.substituteAt, binderSafeAt] using
           outputList
 
@@ -1479,6 +1512,7 @@ mutual
       (safe : typed.ReflectiveSupportSafeAt profile support available)
       (presentation : ReflectivePresentationDecl)
       (membership : presentation ∈ profile.presentations)
+      (closed : presentation.quoteScope = .closed)
       {scopeDepth : Nat} (availableWithin : available.length ≤ scopeDepth)
       (scope : binderSafeListAt presentation.quoteConstructor scopeDepth
         arguments = true) :
@@ -1490,9 +1524,9 @@ mutual
     | cons argumentSafe argumentsSafe =>
         simp only [List.map, binderSafeListAt, Bool.and_eq_true] at scope ⊢
         exact ⟨argumentSafe.substituteBinderSafeAt assignment presentation
-            membership availableWithin scope.1,
+            membership closed availableWithin scope.1,
           argumentsSafe.substituteBinderSafeListAt assignment presentation
-            membership availableWithin scope.2⟩
+            membership closed availableWithin scope.2⟩
 
   theorem ElementsHaveType.ReflectiveSupportSafeAt.substituteBinderSafeListAt
       {language : LanguageDef} {source target : FreeTypeContext}
@@ -1504,6 +1538,7 @@ mutual
       (safe : typed.ReflectiveSupportSafeAt profile support available)
       (presentation : ReflectivePresentationDecl)
       (membership : presentation ∈ profile.presentations)
+      (closed : presentation.quoteScope = .closed)
       {scopeDepth : Nat} (availableWithin : available.length ≤ scopeDepth)
       (scope : binderSafeListAt presentation.quoteConstructor scopeDepth
         elements = true) :
@@ -1515,28 +1550,240 @@ mutual
     | cons elementSafe elementsSafe =>
         simp only [List.map, binderSafeListAt, Bool.and_eq_true] at scope ⊢
         exact ⟨elementSafe.substituteBinderSafeAt assignment presentation
-            membership availableWithin scope.1,
+            membership closed availableWithin scope.1,
           elementsSafe.substituteBinderSafeListAt assignment presentation
-            membership availableWithin scope.2⟩
+            membership closed availableWithin scope.2⟩
 end
 
-/-- Root-level supported substitution preserves every authored reflective
-scope boundary. -/
-theorem HasType.ReflectiveSupportSafeAt.substituteReflectiveScopeSafe
+mutual
+  /-- Supported substitution preserves ordinary scope at every depth that
+  contains the available binders: an inserted parameter is scoped by its
+  support, and every support lies within the available binders. -/
+  theorem HasType.ReflectiveSupportSafeAt.substituteIsWellScopedAt
+      {language : LanguageDef} {source target : FreeTypeContext}
+      {support : ContextSupport.Support}
+      {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      {typed : HasType language source bound pattern type}
+      {available : List TypeExpr}
+      (assignment : SupportedOpenAssignment profile language source target support)
+      (safe : typed.ReflectiveSupportSafeAt profile support available)
+      {scopeDepth : Nat} (availableWithin : available.length ≤ scopeDepth)
+      (scope : pattern.isWellScopedAt scopeDepth = true) :
+      (ReflectiveContextSupport.substituteAt profile support
+          assignment.assignment available.length pattern).isWellScopedAt scopeDepth = true := by
+    cases safe with
+    | bvar lookup available =>
+        simpa [ReflectiveContextSupport.substituteAt] using scope
+    | @fvar bound name type lookup available _binderImage shape =>
+        have assignmentScoped : (assignment.assignment name).isWellScopedAt
+            ((support name).length) = true :=
+          (assignment.typed lookup).isWellScopedAt
+        have lifted := liftBVars_isWellScopedAt (cutoff := 0)
+          (ambient := (support name).length)
+          (shift := available.length - (support name).length)
+          (by simpa using assignmentScoped)
+        have atAvailable :
+            (liftBVars 0 (available.length - (support name).length)
+                (assignment.assignment name)).isWellScopedAt available.length = true := by
+          obtain ⟨inner, rfl⟩ := shape
+          simpa [List.length_append, Nat.add_comm] using lifted
+        simpa only [ReflectiveContextSupport.substituteAt] using
+          isWellScopedAt_mono atAvailable availableWithin
+    | @constructorQuote bound rule arguments membershipRule notBare
+        argumentsTyped available _binderImage quoted argumentsSafe =>
+        have inputList : Pattern.isWellScopedListAt scopeDepth arguments = true := by
+          simpa [Pattern.isWellScopedAt] using scope
+        have outputList :=
+          argumentsSafe.substituteIsWellScopedListAt assignment (Nat.zero_le scopeDepth) inputList
+        simpa [ReflectiveContextSupport.substituteAt, quoted, Pattern.isWellScopedAt]
+          using outputList
+    | @constructorOrdinary bound rule arguments membershipRule notBare
+        argumentsTyped available _binderImage ordinary argumentsSafe =>
+        have inputList : Pattern.isWellScopedListAt scopeDepth arguments = true := by
+          simpa [Pattern.isWellScopedAt] using scope
+        have outputList :=
+          argumentsSafe.substituteIsWellScopedListAt assignment availableWithin inputList
+        simpa [ReflectiveContextSupport.substituteAt, ordinary, Pattern.isWellScopedAt]
+          using outputList
+    | @lambda bound binder body domain codomain bodyTyped available _binderImage
+        bodySafe =>
+        have bodyScope : body.isWellScopedAt (scopeDepth + 1) = true := by
+          simpa [Pattern.isWellScopedAt] using scope
+        have bodyWithin : (domain :: available).length ≤ scopeDepth + 1 := by
+          simpa [List.length_cons] using Nat.add_le_add_right availableWithin 1
+        have bodyResult := bodySafe.substituteIsWellScopedAt assignment bodyWithin bodyScope
+        simpa [ReflectiveContextSupport.substituteAt, Pattern.isWellScopedAt,
+          List.length_cons] using bodyResult
+    | @multiLambda bound arity binders body domain codomain bodyTyped available
+        _binderImage bodySafe =>
+        have bodyScope : body.isWellScopedAt (scopeDepth + arity) = true := by
+          simpa [Pattern.isWellScopedAt] using scope
+        have bodyWithin :
+            (List.replicate arity domain ++ available).length ≤ scopeDepth + arity := by
+          simp only [List.length_append, List.length_replicate]
+          omega
+        have bodyResult := bodySafe.substituteIsWellScopedAt assignment bodyWithin bodyScope
+        simpa [ReflectiveContextSupport.substituteAt, Pattern.isWellScopedAt,
+          List.length_append, List.length_replicate, Nat.add_comm] using bodyResult
+    | @subst bound body replacement domain codomain bodyTyped replacementTyped
+        available _binderImage bodySafe replacementSafe =>
+        have componentScope :
+            body.isWellScopedAt (scopeDepth + 1) = true ∧
+              replacement.isWellScopedAt scopeDepth = true := by
+          simpa [Pattern.isWellScopedAt, Bool.and_eq_true] using scope
+        have bodyWithin : (domain :: available).length ≤ scopeDepth + 1 := by
+          simpa [List.length_cons] using Nat.add_le_add_right availableWithin 1
+        have bodyResult := bodySafe.substituteIsWellScopedAt assignment bodyWithin
+          componentScope.1
+        have replacementResult := replacementSafe.substituteIsWellScopedAt
+          assignment availableWithin componentScope.2
+        simpa [ReflectiveContextSupport.substituteAt, Pattern.isWellScopedAt,
+          Bool.and_eq_true, List.length_cons] using And.intro bodyResult replacementResult
+    | @collection bound collectionType elements rest elementType elementsTyped
+        available _binderImage elementsSafe =>
+        have inputList : Pattern.isWellScopedListAt scopeDepth elements = true := by
+          simpa [Pattern.isWellScopedAt] using scope
+        have outputList :=
+          elementsSafe.substituteIsWellScopedListAt assignment availableWithin inputList
+        simpa [ReflectiveContextSupport.substituteAt, Pattern.isWellScopedAt] using outputList
+    | @collectionConstructor bound rule parameterName collectionType elements
+        rest elementType membershipRule parameterShape elementsTyped available
+        _binderImage elementsSafe =>
+        have inputList : Pattern.isWellScopedListAt scopeDepth elements = true := by
+          simpa [Pattern.isWellScopedAt] using scope
+        have outputList :=
+          elementsSafe.substituteIsWellScopedListAt assignment availableWithin inputList
+        simpa [ReflectiveContextSupport.substituteAt, Pattern.isWellScopedAt] using outputList
+
+  theorem ArgumentsHaveTypes.ReflectiveSupportSafeAt.substituteIsWellScopedListAt
+      {language : LanguageDef} {source target : FreeTypeContext}
+      {support : ContextSupport.Support}
+      {bound : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      {typed : ArgumentsHaveTypes language source bound arguments parameters}
+      {available : List TypeExpr}
+      (assignment : SupportedOpenAssignment profile language source target support)
+      (safe : typed.ReflectiveSupportSafeAt profile support available)
+      {scopeDepth : Nat} (availableWithin : available.length ≤ scopeDepth)
+      (scope : Pattern.isWellScopedListAt scopeDepth arguments = true) :
+      Pattern.isWellScopedListAt scopeDepth
+        (arguments.map (ReflectiveContextSupport.substituteAt profile support
+          assignment.assignment available.length)) = true := by
+    cases safe with
+    | nil => rfl
+    | cons argumentSafe argumentsSafe =>
+        simp only [List.map, Pattern.isWellScopedListAt, Bool.and_eq_true] at scope ⊢
+        exact ⟨argumentSafe.substituteIsWellScopedAt assignment availableWithin scope.1,
+          argumentsSafe.substituteIsWellScopedListAt assignment availableWithin scope.2⟩
+
+  theorem ElementsHaveType.ReflectiveSupportSafeAt.substituteIsWellScopedListAt
+      {language : LanguageDef} {source target : FreeTypeContext}
+      {support : ContextSupport.Support}
+      {bound : List TypeExpr} {elements : List Pattern} {elementType : TypeExpr}
+      {typed : ElementsHaveType language source bound elements elementType}
+      {available : List TypeExpr}
+      (assignment : SupportedOpenAssignment profile language source target support)
+      (safe : typed.ReflectiveSupportSafeAt profile support available)
+      {scopeDepth : Nat} (availableWithin : available.length ≤ scopeDepth)
+      (scope : Pattern.isWellScopedListAt scopeDepth elements = true) :
+      Pattern.isWellScopedListAt scopeDepth
+        (elements.map (ReflectiveContextSupport.substituteAt profile support
+          assignment.assignment available.length)) = true := by
+    cases safe with
+    | nil => rfl
+    | cons elementSafe elementsSafe =>
+        simp only [List.map, Pattern.isWellScopedListAt, Bool.and_eq_true] at scope ⊢
+        exact ⟨elementSafe.substituteIsWellScopedAt assignment availableWithin scope.1,
+          elementsSafe.substituteIsWellScopedListAt assignment availableWithin scope.2⟩
+end
+
+/-- Supported substitution preserves what one presentation's declared quote
+scope asks: sealing for a closed scope, ordinary scope for a reaching one. -/
+theorem HasType.ReflectiveSupportSafeAt.substituteScopeSafeAt
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     {typed : HasType language source bound pattern type}
+    {available : List TypeExpr}
     (assignment : SupportedOpenAssignment profile language source target support)
-    (safe : typed.ReflectiveSupportSafeAt profile support bound)
-    (scope : ReflectiveScopeSafeAt profile bound.length pattern) :
-    ReflectiveScopeSafeAt profile bound.length
-      (ReflectiveContextSupport.substitute profile support
-        assignment.assignment bound pattern) := by
-  intro presentation membership
-  simpa only [ReflectiveContextSupport.substitute] using
-    safe.substituteBinderSafeAt assignment presentation membership
-      (Nat.le_refl bound.length) (scope presentation membership)
+    (safe : typed.ReflectiveSupportSafeAt profile support available)
+    (presentation : ReflectivePresentationDecl)
+    (membership : presentation ∈ profile.presentations)
+    {scopeDepth : Nat} (availableWithin : available.length ≤ scopeDepth)
+    (scope : scopeSafeAt presentation.quoteScope presentation.quoteConstructor scopeDepth
+      pattern = true) :
+    scopeSafeAt presentation.quoteScope presentation.quoteConstructor scopeDepth
+      (ReflectiveContextSupport.substituteAt profile support
+        assignment.assignment available.length pattern) = true := by
+  cases scopeEq : presentation.quoteScope with
+  | closed =>
+      rw [scopeEq, scopeSafeAt_closed] at scope
+      rw [scopeSafeAt_closed]
+      exact safe.substituteBinderSafeAt assignment presentation membership scopeEq
+        availableWithin scope
+  | reaching view =>
+      rw [scopeEq, scopeSafeAt_reaching] at scope
+      rw [scopeSafeAt_reaching]
+      exact safe.substituteIsWellScopedAt assignment availableWithin scope
+
+/-- List form of `HasType.ReflectiveSupportSafeAt.substituteScopeSafeAt` for an
+argument spine. -/
+theorem ArgumentsHaveTypes.ReflectiveSupportSafeAt.substituteScopeSafeListAt
+    {language : LanguageDef} {source target : FreeTypeContext}
+    {support : ContextSupport.Support}
+    {bound : List TypeExpr} {arguments : List Pattern}
+    {parameters : List TermParam}
+    {typed : ArgumentsHaveTypes language source bound arguments parameters}
+    {available : List TypeExpr}
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : typed.ReflectiveSupportSafeAt profile support available)
+    (presentation : ReflectivePresentationDecl)
+    (membership : presentation ∈ profile.presentations)
+    {scopeDepth : Nat} (availableWithin : available.length ≤ scopeDepth)
+    (scope : scopeSafeListAt presentation.quoteScope presentation.quoteConstructor scopeDepth
+      arguments = true) :
+    scopeSafeListAt presentation.quoteScope presentation.quoteConstructor scopeDepth
+      (arguments.map (ReflectiveContextSupport.substituteAt profile support
+        assignment.assignment available.length)) = true := by
+  cases scopeEq : presentation.quoteScope with
+  | closed =>
+      rw [scopeEq, scopeSafeListAt_closed] at scope
+      rw [scopeSafeListAt_closed]
+      exact safe.substituteBinderSafeListAt assignment presentation membership scopeEq
+        availableWithin scope
+  | reaching view =>
+      rw [scopeEq, scopeSafeListAt_reaching] at scope
+      rw [scopeSafeListAt_reaching]
+      exact safe.substituteIsWellScopedListAt assignment availableWithin scope
+
+/-- List form of `HasType.ReflectiveSupportSafeAt.substituteScopeSafeAt` for
+collection elements. -/
+theorem ElementsHaveType.ReflectiveSupportSafeAt.substituteScopeSafeListAt
+    {language : LanguageDef} {source target : FreeTypeContext}
+    {support : ContextSupport.Support}
+    {bound : List TypeExpr} {elements : List Pattern} {elementType : TypeExpr}
+    {typed : ElementsHaveType language source bound elements elementType}
+    {available : List TypeExpr}
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : typed.ReflectiveSupportSafeAt profile support available)
+    (presentation : ReflectivePresentationDecl)
+    (membership : presentation ∈ profile.presentations)
+    {scopeDepth : Nat} (availableWithin : available.length ≤ scopeDepth)
+    (scope : scopeSafeListAt presentation.quoteScope presentation.quoteConstructor scopeDepth
+      elements = true) :
+    scopeSafeListAt presentation.quoteScope presentation.quoteConstructor scopeDepth
+      (elements.map (ReflectiveContextSupport.substituteAt profile support
+        assignment.assignment available.length)) = true := by
+  cases scopeEq : presentation.quoteScope with
+  | closed =>
+      rw [scopeEq, scopeSafeListAt_closed] at scope
+      rw [scopeSafeListAt_closed]
+      exact safe.substituteBinderSafeListAt assignment presentation membership scopeEq
+        availableWithin scope
+  | reaching view =>
+      rw [scopeEq, scopeSafeListAt_reaching] at scope
+      rw [scopeSafeListAt_reaching]
+      exact safe.substituteIsWellScopedListAt assignment availableWithin scope
 
 /-- A sorted term may be placed in a larger outer binder context without
 changing its de Bruijn indices.  The new binders are less local than every
@@ -2004,6 +2251,26 @@ theorem HasType.ReflectiveSupportSafeAt.substituteRoot
   simpa only [ReflectiveContextSupport.substitute] using
     safe.substitute (available := bound) (sealed := []) (by simp) assignment
 
+/-- Root-level supported substitution preserves the scope safety of every
+authored reflective presentation: a closed presentation's quotation seals by
+the sealing preservation above, and a reaching presentation's ordinary scope
+by the typing of the result. -/
+theorem HasType.ReflectiveSupportSafeAt.substituteReflectiveScopeSafe
+    {language : LanguageDef} {source target : FreeTypeContext}
+    {support : ContextSupport.Support}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    {typed : HasType language source bound pattern type}
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : typed.ReflectiveSupportSafeAt profile support bound)
+    (scope : ReflectiveScopeSafeAt profile bound.length pattern) :
+    ReflectiveScopeSafeAt profile bound.length
+      (ReflectiveContextSupport.substitute profile support
+        assignment.assignment bound pattern) := by
+  intro presentation membership
+  simpa only [ReflectiveContextSupport.substitute] using
+    safe.substituteScopeSafeAt assignment presentation membership
+      (Nat.le_refl bound.length) (scope presentation membership)
+
 /-- Supported reflective substitution maps a genuine open object term to a
 genuine open object term in the target free-variable context.  Typing,
 locally nameless binder metadata, object-pattern admissibility, and every
@@ -2121,11 +2388,8 @@ theorem ArgumentsHaveTypes.length_eq_one_of_quote
     (quoted : ReflectiveContextSupport.isQuoteConstructor profile
       rule.label = true) :
     arguments.length = 1 := by
-  unfold ReflectiveContextSupport.isQuoteConstructor at quoted
-  rw [List.any_eq_true] at quoted
-  obtain ⟨presentation, presentationMembership, quoteLabel⟩ := quoted
-  have quoteLabel' : presentation.quoteConstructor = rule.label := by
-    simpa using quoteLabel
+  obtain ⟨presentation, presentationMembership, _, quoteLabel'⟩ :=
+    ReflectiveContextSupport.isQuoteConstructor_eq_true_iff.mp quoted
   have presentationValid :=
     Mettapedia.OSLF.MeTTaIL.Reflection.presentation_validate_eq_nil_of_validate_eq_nil
       profileValid presentationMembership
@@ -2171,12 +2435,10 @@ theorem isWellScopedListAt_zero_of_typed_quote
     valid profileValid membership quoted
   obtain ⟨argument, argumentsShape⟩ := List.length_eq_one_iff.mp argumentLength
   subst arguments
-  unfold ReflectiveContextSupport.isQuoteConstructor at quoted
-  rw [List.any_eq_true] at quoted
-  obtain ⟨presentation, presentationMembership, quoteLabel⟩ := quoted
-  have quoteLabel' : presentation.quoteConstructor = rule.label := by
-    simpa using quoteLabel
+  obtain ⟨presentation, presentationMembership, closed, quoteLabel'⟩ :=
+    ReflectiveContextSupport.isQuoteConstructor_eq_true_iff.mp quoted
   have quotationSafe := scope presentation presentationMembership
+  rw [scopeSafeAt_of_closed closed] at quotationSafe
   have argumentSafe :
       binderSafeAt presentation.quoteConstructor 0 argument = true := by
     simpa [binderSafeAt, quoteLabel'] using quotationSafe
@@ -2267,10 +2529,25 @@ theorem binderSafeAt_of_isWellScopedAt_of_binderSafeAt
         (scopedAtSmall element membership) (safeAtLarge element membership)
         depthOrder
 
+/-- Lowering the ambient depth keeps the safety of every quote scope whenever
+ordinary scope is known at the smaller depth. -/
+theorem scopeSafeAt_of_isWellScopedAt_of_scopeSafeAt
+    {scope : QuoteScope} (quoteConstructor : String) {small large : Nat} {pattern : Pattern}
+    (scopedAtSmall : pattern.isWellScopedAt small = true)
+    (safeAtLarge : scopeSafeAt scope quoteConstructor large pattern = true)
+    (depthOrder : small ≤ large) :
+    scopeSafeAt scope quoteConstructor small pattern = true := by
+  cases scope with
+  | closed =>
+      exact binderSafeAt_of_isWellScopedAt_of_binderSafeAt quoteConstructor scopedAtSmall
+        safeAtLarge depthOrder
+  | reaching _ => exact scopedAtSmall
+
 /-- Every authored reflective presentation sees the contents of a typed
-quotation safely at depth zero.  For the selected quotation this is the
-direct reset rule; all other presentations are lowered using ordinary scope
-of the same unary argument. -/
+sealing quotation safely at depth zero.  For the selected quotation this is
+the direct reset rule; every other closed presentation is lowered using
+ordinary scope of the same unary argument, which is all a reaching
+presentation asks. -/
 theorem reflectiveScopeSafeListAt_zero_of_typed_quote
     {language : LanguageDef} (valid : language.validate = [])
     (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate language profile = [])
@@ -2283,7 +2560,8 @@ theorem reflectiveScopeSafeListAt_zero_of_typed_quote
     (scope : ReflectiveScopeSafeAt profile bound.length
       (.apply rule.label arguments)) :
     ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor 0 arguments = true := by
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor 0
+        arguments = true := by
   have argumentLength := typed.length_eq_one_of_quote
     valid profileValid membership quoted
   obtain ⟨argument, argumentsShape⟩ := List.length_eq_one_iff.mp argumentLength
@@ -2293,6 +2571,11 @@ theorem reflectiveScopeSafeListAt_zero_of_typed_quote
       valid profileValid membership typed quoted scope
   intro presentation presentationMembership
   have parentSafe := scope presentation presentationMembership
+  cases scopeEq : presentation.quoteScope with
+  | reaching view => simpa [Pattern.isWellScopedListAt] using ordinaryScope
+  | closed =>
+  rw [scopeEq, scopeSafeAt_closed] at parentSafe
+  rw [scopeSafeListAt_closed]
   by_cases selected : rule.label = presentation.quoteConstructor
   · have argumentSafe :
         binderSafeAt presentation.quoteConstructor 0 argument = true := by
@@ -2320,20 +2603,26 @@ theorem reflectiveScopeSafeListAt_of_nonquote
     (scope : ReflectiveScopeSafeAt profile bound.length
       (.apply rule.label arguments)) :
     ∀ presentation ∈ profile.presentations,
-      binderSafeListAt presentation.quoteConstructor bound.length
-        arguments = true := by
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
+        bound.length arguments = true := by
   intro presentation presentationMembership
+  have parentSafe := scope presentation presentationMembership
+  cases scopeEq : presentation.quoteScope with
+  | reaching view =>
+      rw [scopeEq, scopeSafeAt_reaching] at parentSafe
+      simpa [Pattern.isWellScopedAt] using parentSafe
+  | closed =>
+  rw [scopeEq, scopeSafeAt_closed] at parentSafe
+  rw [scopeSafeListAt_closed]
   have notSelected : rule.label ≠ presentation.quoteConstructor := by
     intro selected
     have selectedByLanguage :
         ReflectiveContextSupport.isQuoteConstructor profile rule.label =
           true := by
-      unfold ReflectiveContextSupport.isQuoteConstructor
-      rw [List.any_eq_true]
-      exact ⟨presentation, presentationMembership, by simp [selected]⟩
+      rw [selected]
+      exact ReflectiveContextSupport.isQuoteConstructor_of_mem presentationMembership scopeEq
     rw [ordinary] at selectedByLanguage
     cases selectedByLanguage
-  have parentSafe := scope presentation presentationMembership
   cases arguments with
   | nil => simp [binderSafeListAt]
   | cons argument arguments =>

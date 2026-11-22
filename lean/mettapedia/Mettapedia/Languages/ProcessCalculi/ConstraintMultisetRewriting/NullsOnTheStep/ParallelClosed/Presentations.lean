@@ -31,7 +31,7 @@ with them, the three names distinct. It is the tree's authored context frame at 
   the reduction modulo equations are closed beside (`beside kind p r`), whatever the other rules.
 * `contextual_not_switchedOff`, `moduloEquations_not_switchedOff`: **no relation that a parallel
   component switches off is the reduction of a presentation with a parallel context rule.**
-  `contextual_not_patternNoneStep`: the none step on patterns (`PatternNoneStep`: add `a` where `c` is
+  `contextual_not_absenceStep`: the absence step on patterns (`AbsenceStep`: add `a` where `c` is
   not a parallel component) is such a relation.
 * Success: `Component kind ω t` (`ω` is a parallel component of `t`, through nested collections of
   the kind) persists beside; modulo equations (`ShowsModulo`) too. `presentationCalculus` is the
@@ -44,7 +44,7 @@ with them, the three names distinct. It is the tree's authored context frame at 
   `a ~> b` and never steps `{a | z} ~> {b | z}`: its reduction is not closed beside
   (`Controls.withoutContext_not_closed`). With rho's `ParCong` added (`Controls.withContext`) it is
   (`Controls.withContext_closed`).
-* `Controls.patternNoneStep_example`: the none step fires at the empty bag and is switched off by a
+* `Controls.absenceStep_example`: the absence step fires at the empty bag and is switched off by a
   parallel `c`.
 -/
 
@@ -245,7 +245,7 @@ theorem moduloEquations_not_switchedOff {base : BasePremiseEvaluator} {language 
     ¬ ∀ x y, StepModuloEquations base language x y ↔ R x y :=
   not_iff_of_switchedOff (closedBeside_moduloEquations has) switched
 
-/-! ## Components and the none step on patterns -/
+/-! ## Components and the absence step on patterns -/
 
 /-- `c` is **a parallel component** of a pattern: the pattern itself, or a component of an element
 of a collection of the kind. -/
@@ -272,32 +272,32 @@ theorem not_component_empty {kind : CollType} {c : Pattern}
   | here => exact other rfl
   | inside member _ => simp at member
 
-/-- **The none step on patterns**: add `a` beside `P` where `c` is not a parallel component of
+/-- **The absence step on patterns**: add `a` beside `P` where `c` is not a parallel component of
 `P`. -/
-def PatternNoneStep (kind : CollType) (c a P Q : Pattern) : Prop :=
+def AbsenceStep (kind : CollType) (c a P Q : Pattern) : Prop :=
   ¬ Component kind c P ∧ Q = beside kind P a
 
-/-- **A parallel `c` switches the none step off.** -/
-theorem patternNoneStep_switchedOff {kind : CollType} {c P : Pattern} (a : Pattern)
-    (missing : ¬ Component kind c P) : SwitchedOffBeside (PatternNoneStep kind c a) (beside kind) :=
-  ⟨P, beside kind P a, c, ⟨missing, rfl⟩, fun step => step.1 (component_beside_self kind c P)⟩
+/-- **A parallel `c` switches the absence step off.** -/
+theorem absenceStep_switchedOff {kind : CollType} {c P : Pattern} (a : Pattern)
+    (absent : ¬ Component kind c P) : SwitchedOffBeside (AbsenceStep kind c a) (beside kind) :=
+  ⟨P, beside kind P a, c, ⟨absent, rfl⟩, fun step => step.1 (component_beside_self kind c P)⟩
 
-/-- **The none step is not the reduction of any presentation with a parallel context rule**, for
+/-- **The absence step is not the reduction of any presentation with a parallel context rule**, for
 every `c` that some pattern lacks as a component. -/
-theorem contextual_not_patternNoneStep {base : BasePremiseEvaluator} {language : LanguageDef}
+theorem contextual_not_absenceStep {base : BasePremiseEvaluator} {language : LanguageDef}
     {kind : CollType} (has : HasParallelContextRule kind language) {c P : Pattern} (a : Pattern)
-    (missing : ¬ Component kind c P) :
+    (absent : ¬ Component kind c P) :
     ¬ ∀ x y, Mettapedia.OSLF.MeTTaIL.ContextualStep.Step base language x y ↔
-      PatternNoneStep kind c a x y :=
-  contextual_not_switchedOff has (patternNoneStep_switchedOff a missing)
+      AbsenceStep kind c a x y :=
+  contextual_not_switchedOff has (absenceStep_switchedOff a absent)
 
-/-- **Instance: rho.** The none step of every `c` other than the empty bag is not the reduction of
+/-- **Instance: rho.** The absence step of every `c` other than the empty bag is not the reduction of
 the rho presentation, nor of any presentation with `ParCong` among its rules. -/
-theorem rhoCalc_not_patternNoneStep (base : BasePremiseEvaluator) {c : Pattern} (a : Pattern)
+theorem rhoCalc_not_absenceStep (base : BasePremiseEvaluator) {c : Pattern} (a : Pattern)
     (other : c ≠ .collection .hashBag [] none) :
     ¬ ∀ x y, Mettapedia.OSLF.MeTTaIL.ContextualStep.Step base rhoCalc x y ↔
-      PatternNoneStep .hashBag c a x y :=
-  contextual_not_patternNoneStep rhoCalc_hasParallelContextRule a (not_component_empty other)
+      AbsenceStep .hashBag c a x y :=
+  contextual_not_absenceStep rhoCalc_hasParallelContextRule a (not_component_empty other)
 
 /-! ## The presentation as a calculus with a parallel composition -/
 
@@ -416,12 +416,12 @@ theorem withContext_closed (base : BasePremiseEvaluator) :
   exact ⟨closedBeside_contextual has,
     closedBeside_contextual has _ _ atomZ (step_aToB (by simp [withContext]))⟩
 
-/-- **The none step fires and is switched off.** With `c = z`: it adds `a` beside the empty bag,
+/-- **The absence step fires and is switched off.** With `c = z`: it adds `a` beside the empty bag,
 and never fires beside a parallel `z`. -/
-theorem patternNoneStep_example :
-    PatternNoneStep .hashBag atomZ atomA (.collection .hashBag [] none)
+theorem absenceStep_example :
+    AbsenceStep .hashBag atomZ atomA (.collection .hashBag [] none)
         (beside .hashBag (.collection .hashBag [] none) atomA) ∧
-      ∀ P Q, ¬ PatternNoneStep .hashBag atomZ atomA (beside .hashBag P atomZ) Q :=
+      ∀ P Q, ¬ AbsenceStep .hashBag atomZ atomA (beside .hashBag P atomZ) Q :=
   ⟨⟨not_component_empty (by simp [atomZ]), rfl⟩,
     fun P _ step => step.1 (component_beside_self .hashBag atomZ P)⟩
 
@@ -437,11 +437,11 @@ end Controls
 #print axioms closedBeside_moduloEquations
 #print axioms contextual_not_switchedOff
 #print axioms moduloEquations_not_switchedOff
-#print axioms contextual_not_patternNoneStep
-#print axioms rhoCalc_not_patternNoneStep
+#print axioms contextual_not_absenceStep
+#print axioms rhoCalc_not_absenceStep
 #print axioms presentationCalculus_persistent
 #print axioms Controls.withoutContext_not_closed
 #print axioms Controls.withContext_closed
-#print axioms Controls.patternNoneStep_example
+#print axioms Controls.absenceStep_example
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.ParallelClosed

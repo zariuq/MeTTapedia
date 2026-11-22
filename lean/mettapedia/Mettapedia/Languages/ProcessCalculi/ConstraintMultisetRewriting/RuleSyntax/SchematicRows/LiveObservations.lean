@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 
 Labels can be inspected only with evidence of physical presence. The view
 keeps the exact frame, knowledge and every live row, including intensional
-schema code and captured-variable sharing. It forgets only missing label slots;
+schema code and captured-variable sharing. It forgets only absent label slots;
 it does not quotient equal payloads at different occurrences.
 -/
 

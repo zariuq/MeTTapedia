@@ -5,6 +5,7 @@ This layer fixes the verdict relation used by E2c-2 and seals the composed
 parser-plus-checker corpus against the E2c-1 reference checker.  The universal
 fuel-existence theorem is the next proof layer over these definitions.
 -/
+import Mettapedia.GSLT.LanguageDef.GuardedEvaluation
 import Mettapedia.GSLT.LanguageDef.LFCheckerEncoding
 import MeTTaILProofs.DecEq
 
@@ -2661,34 +2662,8 @@ theorem cong_eval_nf_active (F : AST -> AST)
       oneStep pTC (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pTC N s = v ->
       (∀ k, k < N -> NFActiveShape (eval pTC k s)) ->
-        ∃ M, eval pTC M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h _
-      simp only [eval] at h
-      subst h
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v h hguard
-      simp only [eval] at h
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at h
-          subst h
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at h
-          have hsactive : NFActiveShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguard' : ∀ k, k < n -> NFActiveShape (eval pTC k s') := by
-            intro k hk
-            have hk' : k + 1 < n + 1 := Nat.succ_lt_succ hk
-            simpa only [eval, hstep] using hguard (k + 1) hk'
-          obtain ⟨M, hM⟩ := ih h hguard'
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hsactive hstep]
-          exact hM
+        ∃ M, eval pTC M (F s) = F v :=
+  GuardedEvaluation.eval_result pTC pTC F NFActiveShape hcong
 
 theorem cong_eval_nf_active_with_guard (F : AST -> AST)
     (hwrap : ∀ s, NFActiveShape s -> NFActiveShape (F s))
@@ -2697,46 +2672,8 @@ theorem cong_eval_nf_active_with_guard (F : AST -> AST)
     ∀ (N : Nat) {s v : AST}, eval pTC N s = v ->
       (∀ k, k < N -> NFActiveShape (eval pTC k s)) ->
         ∃ M, eval pTC M (F s) = F v ∧
-          ∀ k, k < M -> NFActiveShape (eval pTC k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h _
-      simp only [eval] at h
-      subst h
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v h hguard
-      simp only [eval] at h
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at h
-          subst h
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at h
-          have hsactive : NFActiveShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguard' : ∀ k, k < n -> NFActiveShape (eval pTC k s') := by
-            intro k hk
-            have hk' : k + 1 < n + 1 := Nat.succ_lt_succ hk
-            simpa only [eval, hstep] using hguard (k + 1) hk'
-          obtain ⟨M, hM, hMguard⟩ := ih h hguard'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hsactive hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsactive
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa only [Nat.add_one] using hk)
-                have htotal : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
-                  simp only [eval, hcong s s' hsactive hstep]
-                rw [htotal]
-                exact hMguard k hkM
+          ∀ k, k < M -> NFActiveShape (eval pTC k (F s)) :=
+  GuardedEvaluation.eval_with_guard pTC pTC F NFActiveShape NFActiveShape hwrap hcong
 
 theorem cong_eval_nf_wrapper_with_guard (F : AST -> AST)
     (hwrap : ∀ s, NFActiveShape (F s))
@@ -2744,40 +2681,9 @@ theorem cong_eval_nf_wrapper_with_guard (F : AST -> AST)
       oneStep pTC (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pTC N s = v -> IsNormal pTC v ->
         ∃ M, eval pTC M (F s) = F v ∧
-          ∀ k, k < M -> NFActiveShape (eval pTC k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h _
-      simp only [eval] at h
-      subst h
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v h hv
-      simp only [eval] at h
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at h
-          subst h
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at h
-          obtain ⟨M, hM, hMguard⟩ := ih h hv
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa only [Nat.add_one] using hk)
-                have htotal : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
-                  simp only [eval, hcong s s' hstep]
-                rw [htotal]
-                exact hMguard k hkM
+          ∀ k, k < M -> NFActiveShape (eval pTC k (F s)) :=
+  fun N _ _ h _ =>
+    GuardedEvaluation.eval_with_wrapper pTC pTC F NFActiveShape hwrap hcong N h
 
 inductive FirstActiveNF (u : AST) (call : AST) : Prop where
   | intro {N : Nat} :
@@ -2913,28 +2819,8 @@ theorem eval_normal_unique_tc {s u v : AST} {N M : Nat}
 
 theorem cong_eval_tc (F : AST -> AST)
     (hcong : ∀ s s', oneStep pTC s = some s' -> oneStep pTC (F s) = some (F s')) :
-    ∀ (N : Nat) {s v : AST}, eval pTC N s = v -> IsNormal pTC v -> ∃ M, eval pTC M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v hs hv
-      simp only [eval] at hs
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at hs
-          obtain ⟨M, hM⟩ := ih hs hv
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hstep]
-          exact hM
+    ∀ (N : Nat) {s v : AST}, eval pTC N s = v -> IsNormal pTC v -> ∃ M, eval pTC M (F s) = F v :=
+  fun N _ _ h _ => GuardedEvaluation.eval_result_of_step pTC pTC F hcong N h
 
 inductive FirstPayloadNF (u : AST) (call : AST) : Prop where
   | intro {payload : AST} {N M : Nat} :
@@ -3064,158 +2950,33 @@ theorem cong_eval_recK_active_with_guard :
       (∀ k, k < N ->
         Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (eval pTC k s)) ->
       ∃ M, eval pTC M (recK s) = recK v ∧
-        ∀ k, k < M -> LFCheckKChildOpenShape (eval pTC k (recK s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst v
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hguard
-      simp only [eval] at hs
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at hs
-          subst v
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsactive : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguardTail :
-              ∀ k, k < n ->
-                Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape (eval pTC k s') := by
-            intro k hk
-            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hone : eval pTC 1 s = s' := by
-              simp only [eval, hstep]
-            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
-              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [← hshift]
-            exact hguard (Nat.succ k) hkSucc
-          obtain ⟨M, hM, hMguard⟩ := ih hs hguardTail
-          refine ⟨1 + M, ?_, ?_⟩
-          · have hstepWrap :
-                eval pTC 1 (recK s) = recK s' := by
-              simp only [eval, hcong_recK_active_tc hsactive hstep]
-            exact eval_trans_tc 1 M _ _ _ hstepWrap hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using LFCheckKChildOpenShape.recKCall s
-            | succ k =>
-                have hkM : k < M := by
-                  simpa only [Nat.one_add, Nat.succ_lt_succ_iff] using hk
-                have hstepWrap :
-                    eval pTC 1 (recK s) = recK s' := by
-                  simp only [eval, hcong_recK_active_tc hsactive hstep]
-                have hshift : eval pTC (Nat.succ k) (recK s) = eval pTC k (recK s') := by
-                  have h := eval_trans_tc 1 k (recK s) (recK s') (eval pTC k (recK s'))
-                    hstepWrap rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [hshift]
-                exact hMguard k hkM
+        ∀ k, k < M -> LFCheckKChildOpenShape (eval pTC k (recK s)) :=
+  GuardedEvaluation.eval_with_guard pTC pTC recK
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape LFCheckKChildOpenShape
+    (fun s _ => .recKCall s) (fun _ _ => hcong_recK_active_tc)
 
 theorem cong_eval_lfcheckK_child_open_with_guard (A : AST) (hA : IsNormal pTC A) :
     ∀ (N : Nat) {s v : AST},
       eval pTC N s = v ->
       (∀ k, k < N -> LFCheckKChildOpenShape (eval pTC k s)) ->
-      ∃ M, eval pTC M (lfcheckK A s) = lfcheckK A v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst v
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v hs hguard
-      simp only [eval] at hs
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at hs
-          subst v
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hopen : LFCheckKChildOpenShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguardTail : ∀ k, k < n -> LFCheckKChildOpenShape (eval pTC k s') := by
-            intro k hk
-            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hone : eval pTC 1 s = s' := by
-              simp only [eval, hstep]
-            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
-              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [← hshift]
-            exact hguard (Nat.succ k) hkSucc
-          obtain ⟨M, hM⟩ := ih hs hguardTail
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong_lfcheckK_child_open_tc A hA hopen hstep]
-          exact hM
+      ∃ M, eval pTC M (lfcheckK A s) = lfcheckK A v :=
+  GuardedEvaluation.eval_result pTC pTC (lfcheckK A) LFCheckKChildOpenShape
+    (fun _ _ => hcong_lfcheckK_child_open_tc A hA)
 
 theorem cong_eval_verdict_child_open_with_guard :
     ∀ (N : Nat) {s v : AST},
       eval pTC N s = v ->
       (∀ k, k < N -> VerdictChildOpen (eval pTC k s)) ->
-      ∃ M, eval pTC M (verdict s) = verdict v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst v
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v hs hguard
-      simp only [eval] at hs
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at hs
-          subst v
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hopen : VerdictChildOpen s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguardTail : ∀ k, k < n -> VerdictChildOpen (eval pTC k s') := by
-            intro k hk
-            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hone : eval pTC 1 s = s' := by
-              simp only [eval, hstep]
-            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
-              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [← hshift]
-            exact hguard (Nat.succ k) hkSucc
-          obtain ⟨M, hM⟩ := ih hs hguardTail
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong_verdict_child_open_tc hopen hstep]
-          exact hM
+      ∃ M, eval pTC M (verdict s) = verdict v :=
+  GuardedEvaluation.eval_result pTC pTC verdict VerdictChildOpen
+    (fun _ _ => hcong_verdict_child_open_tc)
 
 theorem verdict_child_open_append_guard {s mid : AST} {N M : Nat}
     (hN : eval pTC N s = mid)
     (hPrefix : ∀ k, k < N -> VerdictChildOpen (eval pTC k s))
     (hTail : ∀ k, k < M -> VerdictChildOpen (eval pTC k mid)) :
-    ∀ k, k < N + M -> VerdictChildOpen (eval pTC k s) := by
-  intro k hk
-  by_cases hkPrefix : k < N
-  · exact hPrefix k hkPrefix
-  · have hge : N ≤ k := Nat.le_of_not_gt hkPrefix
-    let j := k - N
-    have hjlt : j < M := by omega
-    have hkdecomp : k = N + j := by omega
-    subst j
-    rw [hkdecomp]
-    have hshift :
-        eval pTC (N + (k - N)) s = eval pTC (k - N) mid :=
-      eval_trans_tc N (k - N) _ _ _ hN rfl
-    rw [hshift]
-    exact hTail (k - N) hjlt
+    ∀ k, k < N + M -> VerdictChildOpen (eval pTC k s) :=
+  GuardedEvaluation.eval_guard_append pTC hN hPrefix hTail
 
 theorem cong_eval_checkK_child_open_with_guard
     (fuel A : AST) (hfuel : IsNormal pTC fuel) (hA : IsNormal pTC A) :
@@ -3224,57 +2985,10 @@ theorem cong_eval_checkK_child_open_with_guard
       (∀ k, k < N -> CheckKChildOpen fuel A (eval pTC k s)) ->
       ∃ M,
         eval pTC M (checkK fuel A s) = checkK fuel A v ∧
-          ∀ k, k < M -> VerdictChildOpen (eval pTC k (checkK fuel A s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst v
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hguard
-      simp only [eval] at hs
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at hs
-          subst v
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hopen : CheckKChildOpen fuel A s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguardTail : ∀ k, k < n -> CheckKChildOpen fuel A (eval pTC k s') := by
-            intro k hk
-            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hone : eval pTC 1 s = s' := by
-              simp only [eval, hstep]
-            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
-              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [← hshift]
-            exact hguard (Nat.succ k) hkSucc
-          obtain ⟨M, hM, hMguard⟩ := ih hs hguardTail
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong_checkK_child_open_tc hfuel hA hopen hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using verdict_child_open_checkK_tc fuel A s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa only [Nat.add_one] using hk)
-                have hshift : eval pTC (Nat.succ k) (checkK fuel A s) =
-                    eval pTC k (checkK fuel A s') := by
-                  have hone : eval pTC 1 (checkK fuel A s) = checkK fuel A s' := by
-                    simp only [eval, hcong_checkK_child_open_tc hfuel hA hopen hstep]
-                  have h := eval_trans_tc 1 k (checkK fuel A s) (checkK fuel A s')
-                    (eval pTC k (checkK fuel A s')) hone rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [hshift]
-                exact hMguard k hkM
+          ∀ k, k < M -> VerdictChildOpen (eval pTC k (checkK fuel A s)) :=
+  GuardedEvaluation.eval_with_guard pTC pTC (checkK fuel A) (CheckKChildOpen fuel A)
+    VerdictChildOpen (fun s _ => verdict_child_open_checkK_tc fuel A s)
+    (fun _ _ => hcong_checkK_child_open_tc hfuel hA)
 
 theorem cong_eval_convA_child_open_with_guard
     (fuel B : AST) (hfuel : IsNormal pTC fuel) (hB : IsNormal pTC B) :
@@ -3283,57 +2997,10 @@ theorem cong_eval_convA_child_open_with_guard
       (∀ k, k < N -> ConvAChildOpen fuel B (eval pTC k s)) ->
       ∃ M,
         eval pTC M (convA fuel B s) = convA fuel B v ∧
-          ∀ k, k < M -> VerdictChildOpen (eval pTC k (convA fuel B s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst v
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hguard
-      simp only [eval] at hs
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at hs
-          subst v
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hopen : ConvAChildOpen fuel B s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguardTail : ∀ k, k < n -> ConvAChildOpen fuel B (eval pTC k s') := by
-            intro k hk
-            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hone : eval pTC 1 s = s' := by
-              simp only [eval, hstep]
-            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
-              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [← hshift]
-            exact hguard (Nat.succ k) hkSucc
-          obtain ⟨M, hM, hMguard⟩ := ih hs hguardTail
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong_convA_child_open_tc hfuel hB hopen hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using verdict_child_open_convA_tc fuel B s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa only [Nat.add_one] using hk)
-                have hshift : eval pTC (Nat.succ k) (convA fuel B s) =
-                    eval pTC k (convA fuel B s') := by
-                  have hone : eval pTC 1 (convA fuel B s) = convA fuel B s' := by
-                    simp only [eval, hcong_convA_child_open_tc hfuel hB hopen hstep]
-                  have h := eval_trans_tc 1 k (convA fuel B s) (convA fuel B s')
-                    (eval pTC k (convA fuel B s')) hone rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [hshift]
-                exact hMguard k hkM
+          ∀ k, k < M -> VerdictChildOpen (eval pTC k (convA fuel B s)) :=
+  GuardedEvaluation.eval_with_guard pTC pTC (convA fuel B) (ConvAChildOpen fuel B)
+    VerdictChildOpen (fun s _ => verdict_child_open_convA_tc fuel B s)
+    (fun _ _ => hcong_convA_child_open_tc hfuel hB)
 
 theorem cong_eval_convB_child_open_with_guard
     (A : AST) (hA : IsNormal pTC A) :
@@ -3342,57 +3009,10 @@ theorem cong_eval_convB_child_open_with_guard
       (∀ k, k < N -> ConvBChildOpen A (eval pTC k s)) ->
       ∃ M,
         eval pTC M (convB A s) = convB A v ∧
-          ∀ k, k < M -> VerdictChildOpen (eval pTC k (convB A s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst v
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hguard
-      simp only [eval] at hs
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at hs
-          subst v
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hopen : ConvBChildOpen A s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguardTail : ∀ k, k < n -> ConvBChildOpen A (eval pTC k s') := by
-            intro k hk
-            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hone : eval pTC 1 s = s' := by
-              simp only [eval, hstep]
-            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
-              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [← hshift]
-            exact hguard (Nat.succ k) hkSucc
-          obtain ⟨M, hM, hMguard⟩ := ih hs hguardTail
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong_convB_child_open_tc hA hopen hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using verdict_child_open_convB_tc A s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa only [Nat.add_one] using hk)
-                have hshift : eval pTC (Nat.succ k) (convB A s) =
-                    eval pTC k (convB A s') := by
-                  have hone : eval pTC 1 (convB A s) = convB A s' := by
-                    simp only [eval, hcong_convB_child_open_tc hA hopen hstep]
-                  have h := eval_trans_tc 1 k (convB A s) (convB A s')
-                    (eval pTC k (convB A s')) hone rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [hshift]
-                exact hMguard k hkM
+          ∀ k, k < M -> VerdictChildOpen (eval pTC k (convB A s)) :=
+  GuardedEvaluation.eval_with_guard pTC pTC (convB A) (ConvBChildOpen A)
+    VerdictChildOpen (fun s _ => verdict_child_open_convB_tc A s)
+    (fun _ _ => hcong_convB_child_open_tc hA)
 
 theorem cong_eval_convB_left_nf_active_with_guard
     (s : AST) (hs : NFActiveShape s) :
@@ -3400,45 +3020,10 @@ theorem cong_eval_convB_left_nf_active_with_guard
       eval pTC N A = A' ->
       ∃ M,
         eval pTC M (convB A s) = convB A' s ∧
-          ∀ k, k < M -> VerdictChildOpen (eval pTC k (convB A s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro A A' hA
-      simp only [eval] at hA
-      subst A'
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro A A' hA
-      simp only [eval] at hA
-      cases hstep : oneStep pTC A with
-      | none =>
-          rw [hstep] at hA
-          subst A'
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some A1 =>
-          rw [hstep] at hA
-          obtain ⟨M, hM, hMguard⟩ := ih hA
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong_convB_left_nf_active_tc hs hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using verdict_child_open_convB_tc A s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa only [Nat.add_one] using hk)
-                have hshift : eval pTC (Nat.succ k) (convB A s) =
-                    eval pTC k (convB A1 s) := by
-                  have hone : eval pTC 1 (convB A s) = convB A1 s := by
-                    simp only [eval, hcong_convB_left_nf_active_tc hs hstep]
-                  have h := eval_trans_tc 1 k (convB A s) (convB A1 s)
-                    (eval pTC k (convB A1 s)) hone rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [hshift]
-                exact hMguard k hkM
+          ∀ k, k < M -> VerdictChildOpen (eval pTC k (convB A s)) :=
+  GuardedEvaluation.eval_with_wrapper pTC pTC (fun A => convB A s)
+    VerdictChildOpen (fun A => verdict_child_open_convB_tc A s)
+    (fun _ _ => hcong_convB_left_nf_active_tc hs)
 
 theorem isnormal_sexp1_tc (l : Label) (a : AST)
     (hb : baseReducts pTC (.sexp l [a]) = []) (ha : IsNormal pTC a) :
@@ -3765,28 +3350,11 @@ theorem good_cong_eval_tc (F : AST → AST)
     (hdesc : ∀ {a a' : AST}, ResolveGoodTC a →
       oneStep pTC a = some a' → oneStep pTC (F a) = some (F a')) :
     ∀ (N : Nat) {Y V : AST}, ResolveGoodTC Y → eval pTC N Y = V →
-      IsNormal pTC V → ∃ M, eval pTC M (F Y) = F V := by
-  intro N
-  induction N with
-  | zero =>
-      intro Y V _ hY _
-      simp only [eval] at hY
-      subst V
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro Y V hgood hY hV
-      simp only [eval] at hY
-      cases hstep : oneStep pTC Y with
-      | none =>
-          rw [hstep] at hY
-          subst V
-          exact ⟨0, rfl⟩
-      | some Y' =>
-          rw [hstep] at hY
-          obtain ⟨M, hM⟩ := ih (good_step_tc hgood hstep) hY hV
-          exact ⟨M + 1, by
-            simp only [eval, hdesc hgood hstep]
-            exact hM⟩
+      IsNormal pTC V → ∃ M, eval pTC M (F Y) = F V :=
+  fun N _ _ good evaluated _ =>
+    GuardedEvaluation.eval_result pTC pTC F ResolveGoodTC (fun _ _ => hdesc)
+      N evaluated (fun k _ =>
+        GuardedEvaluation.eval_invariant pTC ResolveGoodTC (fun _ _ safe next => good_step_tc safe next) good k)
 
 theorem hdesc_ctxK_tc :
     ∀ {a a' : AST}, ResolveGoodTC a →
@@ -13154,86 +12722,17 @@ theorem cong_eval_internTerm_child_open_with_guard :
         (∀ k, k < N -> InternTermChildOpen (eval pTC k s)) ->
           ∃ M,
             eval pTC M (internTerm s) = internTerm v ∧
-              ∀ k, k < M -> InternActiveShape (eval pTC k (internTerm s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h _
-      simp only [eval] at h
-      subst v
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v h hguard
-      simp only [eval] at h
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at h
-          subst v
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at h
-          have hopen : InternTermChildOpen s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguard' :
-              ∀ k, k < n -> InternTermChildOpen (eval pTC k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            simpa only [eval, hstep] using hguard (Nat.succ k) hk'
-          obtain ⟨M, hM, hMguard⟩ := ih h hguard'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong_internTerm_child_open_tc hopen hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using InternActiveShape.term s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa only [Nat.add_one] using hk)
-                have htotal : eval pTC (Nat.succ k) (internTerm s) =
-                    eval pTC k (internTerm s') := by
-                  have hone : eval pTC 1 (internTerm s) = internTerm s' := by
-                    simp only [eval, hcong_internTerm_child_open_tc hopen hstep]
-                  have h := eval_trans_tc 1 k (internTerm s) (internTerm s')
-                    (eval pTC k (internTerm s')) hone rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [htotal]
-                exact hMguard k hkM
+              ∀ k, k < M -> InternActiveShape (eval pTC k (internTerm s)) :=
+  GuardedEvaluation.eval_with_guard pTC pTC internTerm InternTermChildOpen InternActiveShape
+    (fun s _ => .term s) (fun _ _ => hcong_internTerm_child_open_tc)
 
 theorem cong_eval_intern_active (F : AST -> AST)
     (hcong : ∀ s s', InternActiveShape s -> oneStep pTC s = some s' ->
       oneStep pTC (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pTC N s = v ->
       (∀ k, k < N -> InternActiveShape (eval pTC k s)) ->
-        ∃ M, eval pTC M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h _
-      simp only [eval] at h
-      subst h
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v h hguard
-      simp only [eval] at h
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at h
-          subst h
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at h
-          have hsactive : InternActiveShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguard' : ∀ k, k < n -> InternActiveShape (eval pTC k s') := by
-            intro k hk
-            have hk' : k + 1 < n + 1 := Nat.succ_lt_succ hk
-            simpa only [eval, hstep] using hguard (k + 1) hk'
-          obtain ⟨M, hM⟩ := ih h hguard'
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hsactive hstep]
-          exact hM
+        ∃ M, eval pTC M (F s) = F v :=
+  GuardedEvaluation.eval_result pTC pTC F InternActiveShape hcong
 
 theorem cong_eval_intern_wrapper_with_guard (F : AST -> AST)
     (hwrap : ∀ s, InternActiveShape (F s))
@@ -13241,44 +12740,8 @@ theorem cong_eval_intern_wrapper_with_guard (F : AST -> AST)
       oneStep pTC (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pTC N s = v ->
       ∃ M, eval pTC M (F s) = F v ∧
-        ∀ k, k < M -> InternActiveShape (eval pTC k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h
-      simp only [eval] at h
-      subst v
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v h
-      simp only [eval] at h
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at h
-          subst v
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at h
-          obtain ⟨M, hM, hMguard⟩ := ih h
-          refine ⟨1 + M, ?_, ?_⟩
-          · have hstepWrap : eval pTC 1 (F s) = F s' := by
-              simp only [eval, hcong s s' hstep]
-            exact eval_trans_tc 1 M _ _ _ hstepWrap hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s
-            | succ k =>
-                have hkM : k < M := by
-                  simpa only [Nat.one_add, Nat.succ_lt_succ_iff] using hk
-                have hstepWrap : eval pTC 1 (F s) = F s' := by
-                  simp only [eval, hcong s s' hstep]
-                have hshift : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
-                  have h := eval_trans_tc 1 k (F s) (F s') (eval pTC k (F s'))
-                    hstepWrap rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [hshift]
-                exact hMguard k hkM
+        ∀ k, k < M -> InternActiveShape (eval pTC k (F s)) :=
+  GuardedEvaluation.eval_with_wrapper pTC pTC F InternActiveShape hwrap hcong
 
 theorem good_cong_eval_intern_wrapper_with_guard (F : AST -> AST)
     (hwrap : ∀ s, InternActiveShape (F s))
@@ -13286,44 +12749,11 @@ theorem good_cong_eval_intern_wrapper_with_guard (F : AST -> AST)
       oneStep pTC (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, ResolveGoodTC s -> eval pTC N s = v ->
       ∃ M, eval pTC M (F s) = F v ∧
-        ∀ k, k < M -> InternActiveShape (eval pTC k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v _ h
-      simp only [eval] at h
-      subst v
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hgood h
-      simp only [eval] at h
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at h
-          subst v
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at h
-          obtain ⟨M, hM, hMguard⟩ := ih (good_step_tc hgood hstep) h
-          refine ⟨1 + M, ?_, ?_⟩
-          · have hstepWrap : eval pTC 1 (F s) = F s' := by
-              simp only [eval, hcong hgood hstep]
-            exact eval_trans_tc 1 M _ _ _ hstepWrap hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s
-            | succ k =>
-                have hkM : k < M := by
-                  simpa only [Nat.one_add, Nat.succ_lt_succ_iff] using hk
-                have hstepWrap : eval pTC 1 (F s) = F s' := by
-                  simp only [eval, hcong hgood hstep]
-                have hshift : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
-                  have h := eval_trans_tc 1 k (F s) (F s') (eval pTC k (F s'))
-                    hstepWrap rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [hshift]
-                exact hMguard k hkM
+        ∀ k, k < M -> InternActiveShape (eval pTC k (F s)) :=
+  fun N _ _ good evaluated =>
+    GuardedEvaluation.eval_with_guard pTC pTC F ResolveGoodTC InternActiveShape
+      (fun s _ => hwrap s) (fun _ _ => hcong) N evaluated (fun k _ =>
+        GuardedEvaluation.eval_invariant pTC ResolveGoodTC (fun _ _ safe next => good_step_tc safe next) good k)
 
 theorem cong_eval_intern_active_with_guard (F : AST -> AST)
     (hwrap : ∀ s, InternActiveShape s -> InternActiveShape (F s))
@@ -13332,46 +12762,8 @@ theorem cong_eval_intern_active_with_guard (F : AST -> AST)
     ∀ (N : Nat) {s v : AST}, eval pTC N s = v ->
       (∀ k, k < N -> InternActiveShape (eval pTC k s)) ->
         ∃ M, eval pTC M (F s) = F v ∧
-          ∀ k, k < M -> InternActiveShape (eval pTC k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h _
-      simp only [eval] at h
-      subst h
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v h hguard
-      simp only [eval] at h
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at h
-          subst h
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at h
-          have hsactive : InternActiveShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguard' : ∀ k, k < n -> InternActiveShape (eval pTC k s') := by
-            intro k hk
-            have hk' : k + 1 < n + 1 := Nat.succ_lt_succ hk
-            simpa only [eval, hstep] using hguard (k + 1) hk'
-          obtain ⟨M, hM, hMguard⟩ := ih h hguard'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hsactive hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsactive
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa only [Nat.add_one] using hk)
-                have htotal : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
-                  simp only [eval, hcong s s' hsactive hstep]
-                rw [htotal]
-                exact hMguard k hkM
+          ∀ k, k < M -> InternActiveShape (eval pTC k (F s)) :=
+  GuardedEvaluation.eval_with_guard pTC pTC F InternActiveShape InternActiveShape hwrap hcong
 
 theorem first_active_intern_prefix {r : Option AST} {call next : AST} {M : Nat}
     (hstep : eval pTC M call = next)
@@ -13385,19 +12777,7 @@ theorem first_active_intern_prefix {r : Option AST} {call next : AST} {M : Nat}
           eval_trans_tc M N call next (eval pTC N next) hstep rfl
         rw [htotal]
         exact hmatch
-      · intro k hk
-        by_cases hkM : k < M
-        · exact hguard k hkM
-        · have hge : M ≤ k := Nat.le_of_not_gt hkM
-          let j := k - M
-          have hjlt : j < N := by omega
-          have hk_eq : k = M + j := by omega
-          have hshift : eval pTC k call = eval pTC j next := by
-            have htotal : eval pTC (M + j) call = eval pTC j next :=
-              eval_trans_tc M j call next (eval pTC j next) hstep rfl
-            simpa [hk_eq] using htotal
-          rw [hshift]
-          exact hnextGuard j hjlt
+      · exact GuardedEvaluation.eval_guard_append pTC hstep hguard hnextGuard
 
 theorem first_active_intern_prepend {r : Option AST} {call next : AST}
     (hstep : eval pTC 1 call = next) (hactive : InternActiveShape call)
@@ -13447,22 +12827,7 @@ theorem first_active_intern_bind_active {r q : Option AST} {call : AST}
               eval_trans_tc Mctx Nend _ _ _ hMctx rfl
             rw [htotal]
             exact hendMatch
-          · intro k hk
-            by_cases hkctx : k < Mctx
-            · exact hMguard k hkctx
-            · have hge : Mctx ≤ k := Nat.le_of_not_gt hkctx
-              let j := k - Mctx
-              have hjlt : j < Nend := by
-                exact Nat.sub_lt_left_of_lt_add hge hk
-              have hkdecomp : k = Mctx + j := by
-                exact (Nat.add_sub_of_le hge).symm
-              subst j
-              rw [hkdecomp]
-              have htotal : eval pTC (Mctx + (k - Mctx)) (F call)
-                    = eval pTC (k - Mctx) (F (eval pTC Nchild call)) :=
-                eval_trans_tc Mctx (k - Mctx) _ _ _ hMctx rfl
-              rw [htotal]
-              exact hendGuard (k - Mctx) hjlt
+          · exact GuardedEvaluation.eval_guard_append pTC hMctx hMguard hendGuard
 
 theorem first_active_internPi1_normalize_left {r : Option AST}
     {Braw s : AST} {B : LF.Term}
@@ -14997,59 +14362,10 @@ theorem cong_eval_parser_active_with_guard_tc (F : AST -> AST)
         ∃ M, eval pTC M (F s) = F v ∧
           ∀ k, k < M ->
             Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape
-              (eval pTC k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst v
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hguard
-      simp only [eval] at hs
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at hs
-          subst v
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsactive : Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguardTail :
-              ∀ k, k < n ->
-                Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape
-                  (eval pTC k s') := by
-            intro k hk
-            have hkSucc : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hone : eval pTC 1 s = s' := by
-              simp only [eval, hstep]
-            have hshift : eval pTC (Nat.succ k) s = eval pTC k s' := by
-              have h := eval_trans_tc 1 k s s' (eval pTC k s') hone rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [← hshift]
-            exact hguard (Nat.succ k) hkSucc
-          obtain ⟨M, hM, hMguard⟩ := ih hs hguardTail
-          refine ⟨1 + M, ?_, ?_⟩
-          · have hstepWrap : eval pTC 1 (F s) = F s' := by
-              simp only [eval, hcong s s' hsactive hstep]
-            exact eval_trans_tc 1 M _ _ _ hstepWrap hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsactive
-            | succ k =>
-                have hkM : k < M := by
-                  simpa only [Nat.one_add, Nat.succ_lt_succ_iff] using hk
-                have hstepWrap : eval pTC 1 (F s) = F s' := by
-                  simp only [eval, hcong s s' hsactive hstep]
-                have hshift : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
-                  have h := eval_trans_tc 1 k (F s) (F s') (eval pTC k (F s'))
-                    hstepWrap rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [hshift]
-                exact hMguard k hkM
+              (eval pTC k (F s)) :=
+  GuardedEvaluation.eval_with_guard pTC pTC F
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape hwrap hcong
 
 theorem cong_eval_with_active_wrapper_tc (F : AST -> AST)
     (hwrap : ∀ s,
@@ -15060,44 +14376,9 @@ theorem cong_eval_with_active_wrapper_tc (F : AST -> AST)
       ∃ M, eval pTC M (F s) = F v ∧
         ∀ k, k < M ->
           Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape
-            (eval pTC k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h
-      simp only [eval] at h
-      subst v
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v h
-      simp only [eval] at h
-      cases hstep : oneStep pTC s with
-      | none =>
-          rw [hstep] at h
-          subst v
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at h
-          obtain ⟨M, hM, hMguard⟩ := ih h
-          refine ⟨1 + M, ?_, ?_⟩
-          · have hstepWrap : eval pTC 1 (F s) = F s' := by
-              simp only [eval, hcong s s' hstep]
-            exact eval_trans_tc 1 M _ _ _ hstepWrap hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s
-            | succ k =>
-                have hkM : k < M := by
-                  simpa only [Nat.one_add, Nat.succ_lt_succ_iff] using hk
-                have hstepWrap : eval pTC 1 (F s) = F s' := by
-                  simp only [eval, hcong s s' hstep]
-                have hshift : eval pTC (Nat.succ k) (F s) = eval pTC k (F s') := by
-                  have h := eval_trans_tc 1 k (F s) (F s') (eval pTC k (F s'))
-                    hstepWrap rfl
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-                rw [hshift]
-                exact hMguard k hkM
+            (eval pTC k (F s)) :=
+  GuardedEvaluation.eval_with_wrapper pTC pTC F
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape hwrap hcong
 
 theorem first_active_shiftable_bind_active_tc
     {r q : Option (LF.Term × List LF.Tok)} {call : AST}
@@ -15124,21 +14405,7 @@ theorem first_active_shiftable_bind_active_tc
       eval_trans_tc Mctx Nend _ _ _ hMctx rfl
     rw [htotal]
     exact hendRaw
-  · intro k hk
-    by_cases hkctx : k < Mctx
-    · exact hMguard k hkctx
-    · have hge : Mctx ≤ k := Nat.le_of_not_gt hkctx
-      let j := k - Mctx
-      have hjlt : j < Nend := by omega
-      have hk_eq : k = Mctx + j := by omega
-      have hshift : eval pTC k (F call) =
-          eval pTC j (F (eval pTC Nchild call)) := by
-        have htotal : eval pTC (Mctx + j) (F call) =
-            eval pTC j (F (eval pTC Nchild call)) :=
-          eval_trans_tc Mctx j _ _ _ hMctx rfl
-        simpa [hk_eq] using htotal
-      rw [hshift]
-      exact hendGuard j hjlt
+  · exact GuardedEvaluation.eval_guard_append pTC hMctx hMguard hendGuard
 
 def ReducesToEncTermTC (u : AST) (t : LF.Term) : Prop :=
   ∃ N, eval pTC N u = encTerm t
@@ -15956,20 +15223,8 @@ theorem internTerm_child_open_append_guard {s mid : AST} {N M : Nat}
     (hEval : eval pTC N s = mid)
     (hPrefix : ∀ k, k < N -> InternTermChildOpen (eval pTC k s))
     (hTail : ∀ k, k < M -> InternTermChildOpen (eval pTC k mid)) :
-    ∀ k, k < N + M -> InternTermChildOpen (eval pTC k s) := by
-  intro k hk
-  by_cases hkN : k < N
-  · exact hPrefix k hkN
-  · have hge : N ≤ k := Nat.le_of_not_gt hkN
-    let j := k - N
-    have hjlt : j < M := by omega
-    have hk_eq : k = N + j := by omega
-    have hshift : eval pTC k s = eval pTC j mid := by
-      have htotal : eval pTC (N + j) s = eval pTC j mid :=
-        eval_trans_tc N j s mid (eval pTC j mid) hEval rfl
-      simpa [hk_eq] using htotal
-    rw [hshift]
-    exact hTail j hjlt
+    ∀ k, k < N + M -> InternTermChildOpen (eval pTC k s) :=
+  GuardedEvaluation.eval_guard_append pTC hEval hPrefix hTail
 
 theorem internTerm_child_open_shiftStack_shiftVar_tc
     (cs : List Nat) (c k b : AST) :
@@ -16685,21 +15940,7 @@ theorem first_active_shiftable_raw_bind_active_tc
       eval_trans_tc Mctx Nend _ _ _ hMctx rfl
     rw [htotal]
     exact hendRaw
-  · intro k hk
-    by_cases hkctx : k < Mctx
-    · exact hMguard k hkctx
-    · have hge : Mctx ≤ k := Nat.le_of_not_gt hkctx
-      let j := k - Mctx
-      have hjlt : j < Nend := by omega
-      have hk_eq : k = Mctx + j := by omega
-      have hshift : eval pTC k (F call) =
-          eval pTC j (F (eval pTC Nchild call)) := by
-        have htotal : eval pTC (Mctx + j) (F call) =
-            eval pTC j (F (eval pTC Nchild call)) :=
-          eval_trans_tc Mctx j _ _ _ hMctx rfl
-        simpa [hk_eq] using htotal
-      rw [hshift]
-      exact hendGuard j hjlt
+  · exact GuardedEvaluation.eval_guard_append pTC hMctx hMguard hendGuard
 
 theorem hcong_arK_arg_tc (f ctx s : AST)
     (hf : IsNormal pTC f) (hctx : IsNormal pTC ctx)

@@ -9,7 +9,7 @@ Version `1` has no equation for `f`; version `2` installs `(= (f a) b)`.
 * **Answered as itself under version 1** (`answered_as_itself_v1`, `…_on_step`): `(f a)` returns
   the data `(f a)`, citing version `1`.
 * **Reduced under version 2** (`reduced_v2`, `…_on_step`): `(f a)` returns `b`, citing version `2`.
-  The none query refuses the unmatched firing there (`unmatched_refused_v2`): a matching
+  The absence query refuses the unmatched firing there (`unmatched_refused_v2`): a matching
   equation is seen at the cut.
 * **No retroactive change** (`no_retroactive_change`, `…_on_step`): `(f a)` is answered under
   version `1`, then version `2` is installed; the answer `(f a)` and its citation of version `1`
@@ -107,7 +107,7 @@ theorem fa_matches (n : ℕ) : ¬ UnmatchedRecheck defsV 2 n fa := fun recheck =
     rw [member]
     rfl)
 
-/-- **The none query refuses the unmatched firing under version 2**, wherever the call and the
+/-- **The absence query refuses the unmatched firing under version 2**, wherever the call and the
 version row are represented. -/
 theorem unmatched_refused_v2 {C : Config} {n : ℕ} {μ : Subst rows} (solved : SolvedForm C n μ)
     {F : Multiset SRow} (image : C.present.val.map (readAt μ) = (.ap fa [] ::ₘ .version 2 ::ₘ F).map SRow.enc)

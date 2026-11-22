@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Knowledge
 # Control: the grade is a property of the run, not of its trace
 
 Terms have one variable. The firing `pins` tells that the variable is `5`. The firing `asks`
-checks the none query of `9`. Where no occurrence is present the two are admitted in both orders, so
+checks the absence of `9`. Where no occurrence is present the two are admitted in both orders, so
 the two local runs are one trace (`the_two_orders_are_one_trace`).
 
 Beside a context that holds one occurrence labelled by the variable:
@@ -49,7 +49,7 @@ def unknown (_ : Nat) : Option Nat := none
 def pins : Firing (Option Nat) (Option Nat) Nat :=
   ⟨⟨[], [], [(none, some 5)], [], []⟩, [], ⟨[], [], []⟩⟩
 
-/-- Checks the none query of `9`. -/
+/-- Checks the absence of `9`. -/
 def asks : Firing (Option Nat) (Option Nat) Nat :=
   ⟨⟨[], [], [], [Check.predicate .none (some 9)], []⟩, [], ⟨[], [], []⟩⟩
 
@@ -74,7 +74,7 @@ theorem asks_problem (C : Configuration (Option Nat) Nat) :
   have shape : asks.selection.problem unknown asks.rule C = C.equations ++ [] ++ [] ++ [] := rfl
   rw [shape, List.append_nil, List.append_nil, List.append_nil]
 
-/-- Where the store pins the variable, the none query of `9` holds whatever is present. -/
+/-- Where the store pins the variable, the absence of `9` holds whatever is present. -/
 theorem asks_valid_of_pinned {C : Configuration (Option Nat) Nat}
     (pinned : ((none : Option Nat), some 5) ∈ C.equations)
     (solved : oneVariable.Models (some 5) C.equations) : asks.Valid oneVariable unknown C := by
@@ -93,7 +93,7 @@ theorem asks_valid_of_pinned {C : Configuration (Option Nat) Nat}
   · intro query member
     cases member
 
-/-- Where nothing is present, the none query of `9` holds. -/
+/-- Where nothing is present, the absence of `9` holds. -/
 theorem asks_valid_of_empty {equations : EquationStore (Option Nat)}
     (consistent : oneVariable.Consistent equations) :
     asks.Valid oneVariable unknown ⟨equations, ∅⟩ := by
@@ -221,10 +221,10 @@ theorem reads_run_is_stable_along :
       readsRun :=
   ⟨reads_is_stable one nine, trivial⟩
 
-/-- The run that checks the none query is not stable along its placement beside the occurrence `9`. -/
-theorem none_run_is_not_stable_along :
+/-- The run that checks absence is not stable along its placement beside the occurrence `9`. -/
+theorem absence_run_is_not_stable_along :
     ¬ StableAlong (contextualRunInterpretation plain id) (left := one) (right := nine) PUnit.unit
       unlessNineRun :=
-  fun stable => none_is_not_stable stable.1
+  fun stable => absence_is_not_stable stable.1
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore.Controls

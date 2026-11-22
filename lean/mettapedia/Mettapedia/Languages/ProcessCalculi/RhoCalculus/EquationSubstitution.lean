@@ -135,7 +135,7 @@ theorem name_substituteAt_eq_of_safeAt_zero
       ReflectiveContextSupport.substituteAt rhoReflectionProfile support
         assignment.assignment availableDepth name := by
   apply nameResult_substituteAt_eq_of_safeAt_zero
-    rho_reflectiveNameResultSealed assignment
+    ReflectiveWellSorted.rhoReflectionProfile_closed rho_reflectiveNameResultSealed assignment
     rhoReflectivePresentation.toReflectivePresentationDecl
     (by simp [rhoReflectionProfile]) typed
   · simpa [rhoReflectivePresentation, TypeExpr.name, TypeExpr.baseType] using
@@ -172,7 +172,7 @@ theorem quote_drop_substituteAt_equationEquiv
     simp [rhoReflectionProfile]
   simpa [rhoReflectivePresentation] using
     (quoteDrop_substituteAt_equationEquiv_of_resultsQuoted
-      rho_reflectiveNameResultSealed.resultsQuoted assignment
+      (rho_reflectiveNameResultSealed.resultsQuoted ReflectiveWellSorted.rhoReflectionProfile_closed) assignment
       rhoReflectivePresentation.toReflectivePresentationDecl membership
       (by simp [rhoReflectivePresentation]) typed
       (by
@@ -210,7 +210,7 @@ theorem substituteAt_canonicalize_equationEquiv
         (profile := rhoReflectionProfile)
           rhoCalc LanguageDefAdequacy.rhoCalc_validate
           rhoCalcValidatedReflective.admittedReflection.2
-          rho_reflectiveNameResultSealed.resultsQuoted
+          (rho_reflectiveNameResultSealed.resultsQuoted ReflectiveWellSorted.rhoReflectionProfile_closed)
           rho_reflectiveDropCanonicalSupportStable assignment
           rhoReflectivePresentation.toReflectivePresentationDecl
           (by simp [rhoReflectionProfile]) typed safe object

@@ -73,7 +73,7 @@ theorem actual_publication_controls (fuel : Nat) :
       (nativeStep.event first admittedFirst) looked permitted
     exact ⟨source, origin, congrArg (fun event => event.firing) erased⟩
 
-theorem missing_origin_refused (firing : NativeFiring originState) :
+theorem absent_origin_refused (firing : NativeFiring originState) :
     ¬ (profile (catalogueAt firing.rule) (fun _ _ _ => True)).Admits ⟨2, firing⟩ := by
   intro admitted
   have resolved := admitted.2.1

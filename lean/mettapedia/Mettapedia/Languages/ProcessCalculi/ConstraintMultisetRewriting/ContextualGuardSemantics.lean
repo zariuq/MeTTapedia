@@ -5,10 +5,10 @@ import Lean.Elab.Tactic.Omega
 /-!
 # Scoped occurrence guards as nonbinding future-model asks
 
-Equality, none queries and counts reuse the existing `Check` constructors. A row
+Equality, absence and counts reuse the existing `Check` constructors. A row
 contributes one physical identity when it has a local instance, independently
 of the number of local witnesses. Admission observes every later-family model
-of the equation store. Pointwise the none query is not such an admission decision.
+of the equation store. Pointwise absence is not such an admission decision.
 -/
 
 set_option autoImplicit false
@@ -45,7 +45,7 @@ theorem mem_region (candidate : Assignment captures next) {Γ : Ctx S} {sort : S
   classical
   simp only [region, Finset.mem_filter]
 
-theorem none_iff_empty (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
+theorem absent_iff_empty (candidate : Assignment captures next) {Γ : Ctx S} {sort : S.Srt}
     (rows : O → ContextualStoredRows.Row locals captures Γ sort) (world : Finset O)
     (pattern : Term (signature S captures) Γ sort) :
     Holds locals candidate rows world (.predicate .none pattern) ↔ region locals candidate rows world pattern = ∅ := by
@@ -179,7 +179,7 @@ theorem region_erase [DecidableEq O] (candidate : Assignment captures next) {Γ 
   classical
   simp only [region, Finset.filter_erase]
 
-theorem none_after_erase_iff_count_one [DecidableEq O] (candidate : Assignment captures next)
+theorem absent_after_erase_iff_count_one [DecidableEq O] (candidate : Assignment captures next)
     {Γ : Ctx S} {sort : S.Srt} (rows : O → ContextualStoredRows.Row locals captures Γ sort)
     (world : Finset O) (pattern : Term (signature S captures) Γ sort) (occurrence : O)
     (present : occurrence ∈ world)
@@ -188,7 +188,7 @@ theorem none_after_erase_iff_count_one [DecidableEq O] (candidate : Assignment c
       Holds locals candidate rows world (.count pattern 1) := by
   classical
   have member := (mem_region locals candidate rows world pattern occurrence).mpr ⟨present, matched⟩
-  rw [none_iff_empty, region_erase, ← Finset.card_eq_zero, Finset.card_erase_of_mem member]
+  rw [absent_iff_empty, region_erase, ← Finset.card_eq_zero, Finset.card_erase_of_mem member]
   change (region locals candidate rows world pattern).card - 1 = 0 ↔
     (region locals candidate rows world pattern).card = 1
   have positive := Finset.card_pos.mpr ⟨occurrence, member⟩

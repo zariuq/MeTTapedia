@@ -5,10 +5,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 /-!
 # Earlier shared captures and real query-data interference
 
-The entry fact is box(X). The first clause checks none queries of box(2),
+The entry fact is box(X). The first clause checks absence of box(2),
 and the second binds X to 1. Inspecting the later cut incorrectly accepts
-that none query. The actual-row query at the first cut retains its countermodel.
-A second query admits none queries of symbol(8), detects a matching insertion,
+that absence. The actual-row query at the first cut retains its countermodel.
+A second query admits absence of symbol(8), detects a matching insertion,
 and permits an unrelated insertion of symbol(9).
 -/
 
@@ -80,16 +80,16 @@ theorem source_input : body.native.sourceGuardInputs 9 = ofStored none result.de
 theorem only_surviving_input : body.native.survivingGuardInputs ∅ = {9} := by
   decide +kernel
 
-theorem earlier_entry_none_fails :
+theorem earlier_entry_absence_fails :
     ¬ Ask none (body.cuts.get earlier).problem body.native.sourceGuardInputs
       (body.native.survivingGuardInputs ∅) (.predicate .none (box (symbol 2))) := by
   intro asked
-  have missing := asked Empty none (cutModel none 2) (earlier_model 2)
-  apply missing 9 (by rw [only_surviving_input]; exact Finset.mem_singleton_self _)
+  have absent := asked Empty none (cutModel none 2) (earlier_model 2)
+  apply absent 9 (by rw [only_surviving_input]; exact Finset.mem_singleton_self _)
   rw [source_input, ofStored_matches_iff, ContextualGuardMatching.shared_matches_iff]
   rfl
 
-theorem later_entry_none_holds :
+theorem later_entry_absence_holds :
     Ask none (body.cuts.get later).problem body.native.sourceGuardInputs
       (body.native.survivingGuardInputs ∅) (.predicate .none (box (symbol 2))) := by
   intro Future future candidate model occurrence present matched
@@ -109,16 +109,16 @@ theorem the_actual_earlier_query_is_refused :
       (body.native.nativeCutMatchingQuery earlier (box (symbol 2)) ∅ ∅)
       (ContextualPredicateQueryAdmission.nativeLabels body.native.guardNativeBank (body.native.nativeBindingState ∅))
       (body.native.nativeBindingState ∅).present := by
-  exact fun observed => earlier_entry_none_fails
-    ((body.native.native_cut_none_iff earlier shapes resources consistent ∅ [] [] (box (symbol 2)) ∅).mp observed)
+  exact fun observed => earlier_entry_absence_fails
+    ((body.native.native_cut_absence_iff earlier shapes resources consistent ∅ [] [] (box (symbol 2)) ∅).mp observed)
 
 theorem choosing_the_later_cut_would_accept :
     ContextualPredicateQueryAdmission.AskData (body.native.nativeBindingInformation ∅ [] [])
       (body.native.nativeCutMatchingQuery later (box (symbol 2)) ∅ ∅)
       (ContextualPredicateQueryAdmission.nativeLabels body.native.guardNativeBank (body.native.nativeBindingState ∅))
       (body.native.nativeBindingState ∅).present :=
-  (body.native.native_cut_none_iff later shapes resources consistent ∅ [] [] (box (symbol 2)) ∅).mpr
-    later_entry_none_holds
+  (body.native.native_cut_absence_iff later shapes resources consistent ∅ [] [] (box (symbol 2)) ∅).mpr
+    later_entry_absence_holds
 
 theorem an_earlier_native_equality_keeps_its_countermodel :
     ¬ Ask body.native.guardNativeBank (body.native.nativeBindingInformation ∅ [] [])
@@ -136,7 +136,7 @@ theorem an_earlier_native_equality_keeps_its_countermodel :
   have impossible : (2 : Nat) = 1 := DataOperator.symbol.inj (Sum.inl.inj (Term.op.inj same).1)
   omega
 
-theorem none_of_eight :
+theorem absence_of_eight :
     Ask none (body.cuts.get earlier).problem body.native.sourceGuardInputs
       (body.native.survivingGuardInputs ∅) (.predicate .none (symbol 8)) := by
   intro Future future candidate _model occurrence present matched
@@ -152,7 +152,7 @@ theorem the_actual_unrelated_query_is_admitted :
       (body.native.nativeCutMatchingQuery earlier (symbol 8) ∅ ∅)
       (ContextualPredicateQueryAdmission.nativeLabels body.native.guardNativeBank (body.native.nativeBindingState ∅))
       (body.native.nativeBindingState ∅).present :=
-  (body.native.native_cut_none_iff earlier shapes resources consistent ∅ [] [] (symbol 8) ∅).mpr none_of_eight
+  (body.native.native_cut_absence_iff earlier shapes resources consistent ∅ [] [] (symbol 8) ∅).mpr absence_of_eight
 
 theorem a_matching_insertion_is_detected :
     ¬ ContextualPredicateQueryAdmission.AskData (body.native.nativeBindingInformation ∅ [] [])
@@ -251,8 +251,8 @@ theorem the_clause_own_equation_is_retained :
       (body.native.nativeCutMatchingQuery watched (box (symbol 2)) ∅ ∅)
       (ContextualPredicateQueryAdmission.nativeLabels body.native.guardNativeBank (body.native.nativeBindingState ∅))
       (body.native.nativeBindingState ∅).present := by
-  apply (body.native.native_cut_none_iff watched shapes resources consistent ∅ [] [] (box (symbol 2)) ∅).mpr
-  exact later_entry_none_holds
+  apply (body.native.native_cut_absence_iff watched shapes resources consistent ∅ [] [] (box (symbol 2)) ∅).mpr
+  exact later_entry_absence_holds
 
 theorem the_own_equation_also_discharges_native_equality :
     Ask body.native.guardNativeBank (body.native.nativeBindingInformation ∅ [] [])
@@ -296,11 +296,11 @@ theorem consistent : ContextualConditionalExecution.Solvable result.equations :=
 theorem source_guard_refuses_the_internal_creation : ¬ body.Admitted := by
   intro admitted
   have asked := admitted.2.checks (.predicate .none (box (symbol 2))) (List.mem_singleton_self _)
-  have missing := asked Empty none (secondModel none) (by
+  have absent := asked Empty none (secondModel none) (by
     change ContextualResidual.Models (secondModel none) []
     intro equation member
     cases member)
-  apply missing 0 (by decide +kernel)
+  apply absent 0 (by decide +kernel)
   rw [ContextualConditionalSourceAdmission.sourceRows, matches_map_iff]
   apply (ContextualClauseSourceState.ordinary_output_instances first_admitted
     ⟨0, by decide +kernel⟩ rfl none _ (box (symbol 2))).mpr
@@ -316,18 +316,18 @@ theorem the_entry_query_alone_is_insufficient :
       (ContextualPredicateQueryAdmission.nativeLabels body.native.guardNativeBank (body.native.nativeBindingState ∅))
       (body.native.nativeBindingState ∅).present ∧ ¬ body.Admitted := by
   refine ⟨?_, source_guard_refuses_the_internal_creation⟩
-  apply (body.native.native_cut_none_iff watched shapes resources consistent ∅ [] [] (box (symbol 2)) ∅).mpr
+  apply (body.native.native_cut_absence_iff watched shapes resources consistent ∅ [] [] (box (symbol 2)) ∅).mpr
   intro Future future candidate _model occurrence member
   change occurrence ∈ (∅ : Finset Nat) at member
   exact False.elim (Finset.notMem_empty _ member)
 
 theorem the_creation_query_restores_the_refusal :
     ¬ ContextualPredicateQueryAdmission.AskData (body.native.nativeBindingInformation ∅ [] [])
-      (body.native.nativeVirtualNoneQuery watched (box (symbol 2)))
+      (body.native.nativeVirtualAbsenceQuery watched (box (symbol 2)))
       (ContextualPredicateQueryAdmission.nativeLabels body.native.guardNativeBank (body.native.nativeBindingState ∅))
       (body.native.nativeBindingState ∅).present := by
   intro virtual
-  have complete := (body.native.native_entry_none_iff watched shapes resources consistent ∅ [] [] (box (symbol 2))).mpr
+  have complete := (body.native.native_entry_absence_iff watched shapes resources consistent ∅ [] [] (box (symbol 2))).mpr
     ⟨the_entry_query_alone_is_insufficient.1, virtual⟩
   have held : (body.native.entryCutAt watched).Holds := by
     intro check member

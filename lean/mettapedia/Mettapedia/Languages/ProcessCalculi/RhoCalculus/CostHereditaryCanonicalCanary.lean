@@ -328,7 +328,7 @@ def rhoCutOrderBaseSelectedRight :
   refine ⟨⟨.fvar ?_, rfl, rfl, rfl⟩, ?_⟩
   · simp [rhoCutOrderFree, FreeTypeContext.ofList, sortName]
   · intro declaration membership
-    rfl
+    simp
 set_option backward.isDefEq.respectTransparency false in
 
 @[simp]

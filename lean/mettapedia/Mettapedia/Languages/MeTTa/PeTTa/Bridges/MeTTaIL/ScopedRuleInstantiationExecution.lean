@@ -3389,12 +3389,15 @@ private def hiddenQuoteDrop : Pattern :=
 def controls : List Control :=
   [{ label := "selected-dropped-quote-activates", replacement := controlQuote,
       body := .apply "Drop" [.bvar 0], expected := controlProcess },
-
+   { label := "literal-quote-is-substitution-opaque", replacement := controlQuote,
+      body := .apply "Quote" [.bvar 0], expected := .apply "Quote" [.bvar 0] },
    { label := "literal-dropped-quote-remains-inert", replacement := controlQuote,
       body := .apply "Drop" [controlQuote], expected := .apply "Drop" [controlQuote] },
    { label := "lowered-name-has-no-substitution-mark", replacement := controlQuote,
       body := .apply "Drop" [.bvar 1], expected := .apply "Drop" [.bvar 0] },
-   { label := "open-replacement-lifts-under-binder", replacement := .apply "Quote" [.apply "Drop" [.bvar 0]],
+   { label := "open-replacement-lifts-under-binder", replacement := .apply "Quote" [.bvar 0],
+      body := .lambda (some "n") (.apply "Drop" [.bvar 1]), expected := .lambda (some "n") (.bvar 1) },
+   { label := "open-name-replacement-lifts-under-binder", replacement := .apply "Quote" [.apply "Drop" [.bvar 0]],
       body := .lambda (some "n") (.apply "Drop" [.bvar 1]),
       expected := .lambda (some "n") (.apply "Drop" [.bvar 1]) },
    { label := "ordinary-indices-substitute-and-lower", replacement := .fvar "R",
@@ -3423,9 +3426,15 @@ def controls : List Control :=
       body := .apply "Drop" [.apply "Quote" [.apply "Drop" [.bvar 0]]], expected := controlProcess },
    { label := "unit-wrapped-dropped-quote-activates", replacement := controlQuote,
       body := parallelWrappedDrop .hashBag (.apply "Zero" []), expected := controlProcess },
-
-
-
+   { label := "non-unit-parallel-partner-stays-literal", replacement := controlQuote,
+      body := parallelWrappedDrop .hashBag (.apply "Other" []),
+      expected := parallelWrappedDrop .hashBag (.apply "Other" []) },
+   { label := "two-selected-drops-are-not-one-name", replacement := controlQuote,
+      body := parallelWrappedDrop .hashBag (.apply "Drop" [.bvar 0]),
+      expected := parallelWrappedDrop .hashBag (.apply "Drop" [.bvar 0]) },
+   { label := "other-collection-kind-is-not-parallel", replacement := controlQuote,
+      body := parallelWrappedDrop .vec (.apply "Zero" []),
+      expected := parallelWrappedDrop .vec (.apply "Zero" []) },
    collectionControl .vec, collectionControl .hashBag, collectionControl .hashSet,
    { label := "hidden-quote-drop-channel-resolves", replacement := controlQuote,
       body := .apply "Send" [hiddenQuoteDrop, .apply "Zero" []],
@@ -3446,7 +3455,8 @@ def controls : List Control :=
 private def quotedIndex : Pattern := .apply "Quote" [.bvar 0]
 
 /-- **Negative admission controls.** These bodies mention the eliminated binder
-inside genuine quoted code, which a closed quote scope does not admit. -/
+inside genuine quoted code, so they are outside the closed-code fragment;
+substitution still passes their quotations by (`controls`). -/
 theorem inadmissible_controls :
     ¬ ReflectiveSubstitution.QuotesClosed controlDeclaration quotedIndex ∧
       ¬ ReflectiveSubstitution.QuotesClosed controlDeclaration

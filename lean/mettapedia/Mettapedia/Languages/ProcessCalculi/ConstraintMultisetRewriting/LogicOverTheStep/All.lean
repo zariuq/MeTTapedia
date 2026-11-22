@@ -47,8 +47,8 @@ pullback property holds; otherwise one implication holds, and a control separate
 * **The fibre over one solution** (`SolutionFibres`): the step at a solution includes into the
   step; possibility pulls back exactly for quiet rule sets; ground rule sets are quiet; a tell is not.
 * **Contexts** (`ContextGrades`): adding a store is a change with identity and composition laws;
-  positive predicates survive it, none queries and exact counts exactly within their grade; a firing's
-  grade is that of its none checks; possibility through none queries and successor necessity do not survive.
+  positive predicates survive it, absence and exact counts exactly within their grade; a firing's
+  grade is that of its absences; possibility through absence and successor necessity do not survive.
 * **Narrowings** (`Narrowings`): rho and sequential PeTTa are open; HE is a span of open maps; the
   precise failure of unlocked hyperpose; the first-order narrowing through heating lifts the future
   and not the past.
@@ -72,7 +72,7 @@ pullback property holds; otherwise one implication holds, and a control separate
 * **Rho's past** (`RhoPast`): predecessors do not lift along rho's narrowing, because every
   communication records its matches; rho's predecessor necessity is the store's over the heating
   class. With an empty source (a program that makes `T` from nothing) predecessors do lift.
-* **Dependent grades** (`DependentGrades`): typed none query and exact counts survive exactly beside
+* **Dependent grades** (`DependentGrades`): typed absence and exact counts survive exactly beside
   stores without the pattern at the solution; along the helper weakening, at the composite solution.
 * **Adding a store on the quotient** (`StoreQuotient`): bisimilarity observing knowledge and labels
   is renaming, so adding a fresh store is a map on the quotient for every program; controls for

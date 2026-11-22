@@ -37,8 +37,8 @@ theorem accepted_has_firing (edges : List (Edge Key)) (state : State Key)
     (CheckedAdmission.step_iff edges index state.keys state.values candidate after).mp checked
   have within : index < edges.length := by
     by_contra beyond
-    have missing : edges[index]? = none := List.getElem?_eq_none (Nat.le_of_not_gt beyond)
-    rw [missing] at selected
+    have absent : edges[index]? = none := List.getElem?_eq_none (Nat.le_of_not_gt beyond)
+    rw [absent] at selected
     cases selected
   let firing : Firing edges := ⟨⟨index, within⟩, candidate⟩
   have same : firing.edge = edge :=

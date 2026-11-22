@@ -126,7 +126,8 @@ theorem scan_ground_completes {O : Type} (label : O → Atom) (bindings : Subst)
       have decides : unify bindings pattern (Unifying.rename use (label row)) ≠ .exhausted :=
         unify_ground_decides bindings pattern
           (by rw [Unifying.rename_ground use (label row) rowGround]; exact rowGround)
-      simp only [scan, scanned, Option.bind_eq_bind, Option.bind_some]
+      simp only [scan] at scanned ⊢
+      simp only [Unifying.queryRows, scanned, Option.bind_eq_bind, Option.bind_some]
       cases outcome : unify bindings pattern (Unifying.rename use (label row)) with
       | ok bound => exact ⟨_, rfl⟩
       | clash => exact ⟨_, rfl⟩

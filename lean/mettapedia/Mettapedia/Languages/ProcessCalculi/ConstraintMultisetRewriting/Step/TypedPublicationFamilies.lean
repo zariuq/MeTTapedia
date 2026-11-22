@@ -28,7 +28,7 @@ def resolveFamilyDecision : NativeTypesOnTheStep.Decision levels (schema.compile
     Resolution schema pick
   | .settled target answer initial =>
       .ready target answer (NativeTypesOnTheStep.principal_of_initial levels initial)
-  | .refuted missing => .refuted missing
+  | .refuted absent => .refuted absent
   | .undecided => .suspended .declined (ContextualDependentUpdate.Update.pending levels _)
 
 def resolveFamily (family : NativeTypesOnTheStep.Family levels) : Resolution schema pick :=
@@ -39,8 +39,8 @@ theorem declining_keeps_original :
       .suspended .declined (ContextualDependentUpdate.Update.pending levels (schema.compile pick).information) := rfl
 
 theorem declining_is_not_refutation :
-    ∀ missing, schema.resolveFamilyDecision pick .undecided ≠ Resolution.refuted missing := by
-  intro missing same
+    ∀ absent, schema.resolveFamilyDecision pick .undecided ≠ Resolution.refuted absent := by
+  intro absent same
   cases same
 
 theorem declining_creates_no_application :

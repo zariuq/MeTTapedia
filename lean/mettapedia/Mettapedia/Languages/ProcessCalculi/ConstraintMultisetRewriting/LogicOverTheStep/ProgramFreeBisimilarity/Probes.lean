@@ -20,14 +20,14 @@ syntactically, has the same moves (`moves_raw_iff`).
   knowledge with its tells is consistent and entails its checks, and it leaves the rows as they are
   (`moves_quiet_iff`). The guard (`guardRule`: an equation entailed by the knowledge,
   `moves_guard_iff`), the tell (`tellRule`: an equation consistent with it, `moves_tell_iff`), the
-  none check (`noneRule`, `moves_none_iff`) and the count check (`countRule`,
+  absence check (`absentRule`, `moves_absent_iff`) and the count check (`countRule`,
   `moves_count_iff`) are quiet.
 * **Takes** (`takeRule ps`): one row for each pattern, all distinct, with the matching equations
   consistent with the knowledge; the result removes the rows and keeps the matching equations
   (`moves_take_iff`).
-* **Multiplicity and none queries of a class**: the take of `k` copies of `p` moves to a configuration
+* **Multiplicity and absence of a class**: the take of `k` copies of `p` moves to a configuration
   with the same solutions exactly when at least `k` rows carry labels that the knowledge entails
-  equal to `p` (`moves_takeCopies_iff`); with `k = 1`, its failure is the none query of the class.
+  equal to `p` (`moves_takeCopies_iff`); with `k = 1`, its failure is the absence of the class.
 
 ## The step restricted to rule forms
 
@@ -69,8 +69,8 @@ def guardRule (l r : T) : RuleInstance T := ⟨[], [], [], [.equal l r], []⟩
 /-- **The tell probe**: add `l = r` to the knowledge. -/
 def tellRule (l r : T) : RuleInstance T := ⟨[], [], [(l, r)], [], []⟩
 
-/-- **The none probe**: ask that no row matches `p`, at every solution. -/
-def noneRule (p : T) : RuleInstance T := ⟨[], [], [], [.predicate .none p], []⟩
+/-- **The absence probe**: ask that no row matches `p`, at every solution. -/
+def absentRule (p : T) : RuleInstance T := ⟨[], [], [], [.predicate .none p], []⟩
 
 /-- **The count probe**: ask that exactly `n` rows match `p`, at every solution. -/
 def countRule (p : T) (n : ℕ) : RuleInstance T := ⟨[], [], [], [.count p n], []⟩
@@ -83,7 +83,7 @@ def Quiet (ρ : RuleInstance T) : Prop := ρ.take = [] ∧ ρ.read = [] ∧ ρ.p
 
 theorem quiet_guardRule (l r : T) : Quiet (guardRule l r) := ⟨rfl, rfl, rfl⟩
 theorem quiet_tellRule (l r : T) : Quiet (tellRule l r) := ⟨rfl, rfl, rfl⟩
-theorem quiet_noneRule (p : T) : Quiet (noneRule p) := ⟨rfl, rfl, rfl⟩
+theorem quiet_absentRule (p : T) : Quiet (absentRule p) := ⟨rfl, rfl, rfl⟩
 theorem quiet_countRule (p : T) (n : ℕ) : Quiet (countRule p n) := ⟨rfl, rfl, rfl⟩
 theorem quiet_takeRule_nil : Quiet (takeRule ([] : List T)) := ⟨rfl, rfl, rfl⟩
 
@@ -250,15 +250,15 @@ theorem moves_tell_iff {l r : T} {C C' : Configuration T O} :
   rw [moves_quiet_iff (quiet_tellRule l r)]
   simp [tellRule]
 
-/-- **The none probe** moves exactly at consistent configurations whose knowledge entails that no
+/-- **The absence probe** moves exactly at consistent configurations whose knowledge entails that no
 row matches `p`, and changes nothing. -/
-theorem moves_none_iff {p : T} {C C' : Configuration T O} :
-    Race.Moves A label (ruleOffers A) C (noneRule p) C' ↔
+theorem moves_absent_iff {p : T} {C C' : Configuration T O} :
+    Race.Moves A label (ruleOffers A) C (absentRule p) C' ↔
       (A.Consistent C.equations ∧
         A.Entails C.equations fun σ => ∀ o ∈ C.present, ¬ A.E (A.apply σ p) (A.apply σ (label o))) ∧
       C' = C := by
-  rw [moves_quiet_iff (quiet_noneRule p)]
-  simp only [noneRule, List.append_nil, List.mem_singleton, forall_eq]
+  rw [moves_quiet_iff (quiet_absentRule p)]
+  simp only [absentRule, List.append_nil, List.mem_singleton, forall_eq]
   exact Iff.rfl
 
 /-- **The count probe** moves exactly at consistent configurations whose knowledge entails that
@@ -361,7 +361,7 @@ theorem equations_replicate (t : T) : ∀ taken : List O,
 open Classical in
 /-- **The multiplicity probe**: the take of `k` copies of `t` moves to a configuration with the same
 solutions exactly when at least `k` rows carry labels that the knowledge entails equal to `t`. With
-`k = 1` it is the none probe of a class: no such move exactly when no row is in the class of
+`k = 1` it is the absence probe of a class: no such move exactly when no row is in the class of
 `t`. -/
 theorem moves_takeCopies_iff {t : T} {k : ℕ} {C : Configuration T O}
     (consistent : A.Consistent C.equations) :
@@ -542,21 +542,21 @@ theorem consistent_append_iff_of_bisimilar (h : Race.Bisimilar A label (probeOff
   SubstitutionAction.equivalent_consistent A
     (GuardFreeProcessOrders.equivalent_append A (equivalent_of_bisimilar h consistent) K)
 
-/-- **Bisimilar configurations agree on none queries**: a consequence of the same solutions and the same
-bag, here read directly from the none check of the program-free step. -/
-theorem none_iff_of_bisimilar (h : Race.Bisimilar A label (ruleOffers A) C D) (p : T) :
+/-- **Bisimilar configurations agree on absence**: a consequence of the same solutions and the same
+bag, here read directly from the absence check of the program-free step. -/
+theorem absent_iff_of_bisimilar (h : Race.Bisimilar A label (ruleOffers A) C D) (p : T) :
     (A.Consistent C.equations ∧
         A.Entails C.equations fun σ => ∀ o ∈ C.present, ¬ A.E (A.apply σ p) (A.apply σ (label o))) ↔
       (A.Consistent D.equations ∧
         A.Entails D.equations fun σ => ∀ o ∈ D.present, ¬ A.E (A.apply σ p) (A.apply σ (label o))) := by
   obtain ⟨R, ⟨forward, backward, -⟩, related⟩ := h
   constructor
-  · intro missing
-    obtain ⟨D', moved, -⟩ := forward related (noneRule p) (moves_none_iff.mpr ⟨missing, rfl⟩)
-    exact (moves_none_iff.mp moved).1
-  · intro missing
-    obtain ⟨C', moved, -⟩ := backward related (noneRule p) (moves_none_iff.mpr ⟨missing, rfl⟩)
-    exact (moves_none_iff.mp moved).1
+  · intro absent
+    obtain ⟨D', moved, -⟩ := forward related (absentRule p) (moves_absent_iff.mpr ⟨absent, rfl⟩)
+    exact (moves_absent_iff.mp moved).1
+  · intro absent
+    obtain ⟨C', moved, -⟩ := backward related (absentRule p) (moves_absent_iff.mpr ⟨absent, rfl⟩)
+    exact (moves_absent_iff.mp moved).1
 
 /-- **The bag of the first inside the bag of the second.** The first takes every row under its own
 label; the second must answer with distinct rows; the two results have the same solutions again, so
@@ -603,7 +603,7 @@ end Shared
 #print axioms moves_quiet_iff
 #print axioms moves_guard_iff
 #print axioms moves_tell_iff
-#print axioms moves_none_iff
+#print axioms moves_absent_iff
 #print axioms moves_count_iff
 #print axioms moves_takeNil_iff
 #print axioms moves_take_iff
@@ -617,7 +617,7 @@ end Shared
 #print axioms entailed_iff_of_bisimilar
 #print axioms equivalent_of_bisimilar
 #print axioms consistent_append_iff_of_bisimilar
-#print axioms none_iff_of_bisimilar
+#print axioms absent_iff_of_bisimilar
 #print axioms bag_le_of_bisimilar
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LogicOverTheStep.ProgramFreeBisimilarity

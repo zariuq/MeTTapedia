@@ -59,12 +59,12 @@ theorem same_class_value_states (s : State (Terms (Term signature)) O)
   apply relabel_transport rename
   · simp only [List.length_map, Firing.opened, RuleInstance.map]
     exact firstAdmitted.1.2.2.2.2.2.1.symm
-  · intro missing
+  · intro absent
     have old : o ∈ s.present := by
       change o ∈ (s.present \ first.selection.taken.toFinset) ∪ first.selection.made.toFinset at inside
       rcases Finset.mem_union.mp inside with retained | made
       · exact (Finset.mem_sdiff.mp retained).1
-      · exact False.elim (missing (List.mem_toFinset.mp made))
+      · exact False.elim (absent (List.mem_toFinset.mp made))
     rw [fixes o old]
     exact (agrees (s.label o) (Or.inr (Or.inr ⟨o, old, rfl⟩))).symm
 

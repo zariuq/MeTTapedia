@@ -20,7 +20,7 @@ first, the reader sees the store after every prefix of the rows and keeps whatev
 * **They agree behind every monotone reader exactly when the sink is monotone**
   (`pipelining_safe_for_sink_iff`): a guarded count needs a barrier before anything reads it.
 
-So a stratum boundary is needed exactly at a non-monotone edge: a predicate query (absence, `all`,
+So a stratum boundary is needed exactly at a non-monotone edge: a predicate query (absence, `collect`,
 `unique`, a count) downstream, or a staged sink upstream.
 
 ## Fusing two rule instances
@@ -44,7 +44,7 @@ production (`Span.fuse_produce_of_handoff`). This is deforestation for transform
 
 A staged sink adds the rows' contributions in a commutative monoid and finalizes the sum once
 (`StagedSink`). Its staging divides among workers in any way (`StagedSink.run_split`), runs as a fold in
-any order (`StagedSink.run_eq_foldr`), and is what an `all` source followed by a fold computes. A
+any order (`StagedSink.run_eq_foldr`), and is what a `collect` source followed by a fold computes. A
 streamable sink is a staged sink through the union of writes with the identity as its finalization
 (`StagedSink.ofStreamable_run`). Counts and sums stage through the natural numbers
 (`StagedSink.count_run`).

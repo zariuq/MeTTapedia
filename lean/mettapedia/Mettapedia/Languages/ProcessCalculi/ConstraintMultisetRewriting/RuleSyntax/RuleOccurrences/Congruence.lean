@@ -156,7 +156,7 @@ def rename (π : Equiv.Perm O) : CBasic Tm O R E → CBasic Tm O R E
   | .system c => .system (c.rename π)
   | .hold added => .hold added
 
-/-- A context applies to a configuration when the row identities it adds are not present. -/
+/-- A context applies to a configuration when the row identities it adds are absent. -/
 def Applies (code : R → Rule Tm) (c : CBasic Tm O R E) (κ : Config Tm O R) : Prop :=
   (c.toBasic code).Applies (κ.system code)
 

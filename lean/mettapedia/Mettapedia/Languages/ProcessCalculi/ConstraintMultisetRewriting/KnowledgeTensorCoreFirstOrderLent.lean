@@ -329,8 +329,8 @@ theorem checks_gives_lent_proof {left right : Configuration T O}
     constructor
     · rintro ⟨here | there, outside⟩
       · exact here
-      · by_contra missing
-        exact outside ⟨there, missing⟩
+      · by_contra absent
+        exact outside ⟨there, absent⟩
     · intro here
       exact ⟨Or.inl here, fun both => both.2 here⟩
   obtain ⟨along, zoned⟩ := runUnder_lent_of_native_run A label

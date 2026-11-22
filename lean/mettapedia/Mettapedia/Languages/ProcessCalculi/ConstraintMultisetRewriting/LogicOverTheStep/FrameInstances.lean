@@ -12,10 +12,10 @@ A predicate is **persistent** when later instantiation keeps it (`Persistent`); 
 store are (`persistent_models`). The step reads its guards by entailment, a universal statement
 over the solutions of the knowledge, and **what the knowledge entails, the result of every firing
 entails along the firing** (`entails_along`): adding knowledge never invalidates an entailed
-observation. None read at one solution is not persistent
-(`FirstOrder.noneMatchAt_not_persistent`: the pattern `x` misses the constant `c` at the identity and
+observation. Absence read at one solution is not persistent
+(`FirstOrder.absentAt_not_persistent`: the pattern `x` misses the constant `c` at the identity and
 meets it once `x` is instantiated by `c`); the step does not read it there. Adding knowledge loses
-no entailed observation; none queries of a stored pattern is lost to stores, put beside
+no entailed observation; absence of a stored pattern is lost to stores, put beside
 (`ContextGrades`) or made by firings.
 
 ## First-order frames (`FirstOrder`)
@@ -137,20 +137,20 @@ def x : Term tiny := .var ()
 def c : Term tiny := .const ()
 
 /-- The pattern `x` misses the one occurrence, labelled `c`, at a solution. -/
-def noneMatchAt : Pred (fun _ _ : PUnit.{1} => Subst tiny) PUnit.unit :=
+def absentAt : Pred (fun _ _ : PUnit.{1} => Subst tiny) PUnit.unit :=
   fun σ => (Check.predicate .none x).Holds (ConstraintMultisetRewriting.FirstOrder.action tiny) σ.2
     (fun _ : Unit => c) {()}
 
-/-- **Control: none queries at a solution is not persistent.** At the identity `x` misses `c`; after
+/-- **Control: absence at a solution is not persistent.** At the identity `x` misses `c`; after
 instantiating `x` by `c` it meets it. -/
-theorem noneMatchAt_not_persistent :
-    noneMatchAt ⟨PUnit.unit, Subst.id tiny⟩ ∧
-      ¬ noneMatchAt ⟨PUnit.unit, Subst.comp (fun _ => c) (Subst.id tiny)⟩ ∧
-      ¬ Persistent (frames tiny) noneMatchAt := by
-  have atIdentity : noneMatchAt ⟨PUnit.unit, Subst.id tiny⟩ := by
+theorem absentAt_not_persistent :
+    absentAt ⟨PUnit.unit, Subst.id tiny⟩ ∧
+      ¬ absentAt ⟨PUnit.unit, Subst.comp (fun _ => c) (Subst.id tiny)⟩ ∧
+      ¬ Persistent (frames tiny) absentAt := by
+  have atIdentity : absentAt ⟨PUnit.unit, Subst.id tiny⟩ := by
     intro o _ same
     cases same
-  have afterInstantiation : ¬ noneMatchAt ⟨PUnit.unit, Subst.comp (fun _ => c) (Subst.id tiny)⟩ :=
+  have afterInstantiation : ¬ absentAt ⟨PUnit.unit, Subst.comp (fun _ => c) (Subst.id tiny)⟩ :=
     fun clear => clear () (Finset.mem_singleton_self ()) rfl
   exact ⟨atIdentity, afterInstantiation, fun persistent =>
     afterInstantiation (persistent PUnit.unit PUnit.unit (Subst.id tiny) (fun _ => c) atIdentity)⟩
@@ -257,7 +257,7 @@ end Full
 #print axioms FirstOrder.firstOrder_reindex_id
 #print axioms FirstOrder.firstOrder_reindex_comp
 #print axioms FirstOrder.firstOrder_result_eq
-#print axioms FirstOrder.noneMatchAt_not_persistent
+#print axioms FirstOrder.absentAt_not_persistent
 #print axioms Dependent.reindex_id_raw
 #print axioms Dependent.reindex_comp_raw
 #print axioms Dependent.definition_covers

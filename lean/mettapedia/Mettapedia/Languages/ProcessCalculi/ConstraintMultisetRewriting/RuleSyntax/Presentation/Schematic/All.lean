@@ -41,7 +41,7 @@ the step is `RuleSyntax.step` at one frame over the tree's first-order action.
 * **Spatial law** (`Spatial`): the split law, the generated logic's possibility, a firing of a part as a firing of
   the whole in the generated types (`split_possibly_schematic`) and on `RuleSyntax.step` (`fires_beside`).
 * **Where it stops** (`Boundary`, `Knowledge`): the class of premises is closed under parallel composition and so
-  never presents none queries (`schematic_not_none`), and open bags are needed (`closedBag_not_parClosed`); an
+  never presents absence (`schematic_not_absence`), and open bags are needed (`closedBag_not_parClosed`); an
   unknown that survives a firing leaves a result that reads as no store (`survivor_unread`) and a presented term
   that is no store (`survivorTerm_not_store`); a tell that binds a caller's unknown needs the knowledge in the term
   (`knowledge_needed`); with the knowledge in the term and an oracle premise of joint solvability, the tell is

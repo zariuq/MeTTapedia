@@ -58,7 +58,7 @@ def openSkeleton : ReflectiveWellSorted.OpenPattern rhoCIGSLT.costWholeReflectio
     rhoCIGSLT.costWholeLanguage (freeContext frame.boundaryTable) []
     (.base (costBaseSortName "Proc")) :=
   ⟨skeleton, ⟨skeleton_typed, rfl, rfl, skeleton_typed.isWellScopedAt⟩,
-    by intro declaration member; rfl⟩
+    by intro declaration member; exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ rfl⟩
 
 /-- Reuse the established typed reflective substitution, with actual current
 values from the planner's table. -/

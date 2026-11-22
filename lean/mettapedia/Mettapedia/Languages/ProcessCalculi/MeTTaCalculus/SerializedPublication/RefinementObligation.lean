@@ -66,7 +66,7 @@ open attempt of `c` invalid. Two properties matter.
 * **Executed read dependencies.** `SourceReads` supplies that justification for the existing
   pure adaptive query compiler with a concrete ordered scanner. A clear local check preserves
   its entire observation and source rows; under the matcher laws it also preserves declarative
-  none query. Effectful sources and the concrete concurrency boundary remain separate.
+  absence. Effectful sources and the concrete concurrency boundary remain separate.
 -/
 
 set_option autoImplicit false
@@ -597,7 +597,7 @@ def answer (pending : ReadOnlyQuery.Retained.State Nat Bool (Bool × Bool)) : Op
   | .read _ _ => none
 
 /-- Each read uses the actual descriptor decision, but the combined answer
-is missing from both instantaneous stores. No partial writer is involved. -/
+is absent from both instantaneous stores. No partial writer is involved. -/
 theorem mixed_read :
     answer (execute before after [.read, .publish, .read] initial).2 = some (false, true) := by
   rfl
@@ -799,7 +799,7 @@ namespace Controls
 
 /-- The first coordinate is a predicate; the second is its argument. -/
 def label (occurrence : Nat) : Nat × Nat := (0, occurrence)
-def noneRead : Commit Nat (Nat × Nat) := ⟨∅, ∅, ∅, [⟨fun x => x == (0, 0), ∅⟩]⟩
+def absence : Commit Nat (Nat × Nat) := ⟨∅, ∅, ∅, [⟨fun x => x == (0, 0), ∅⟩]⟩
 def fullRead : Commit Nat (Nat × Nat) := ⟨∅, ∅, ∅, [⟨fun x => x == (0, 0), {0}⟩]⟩
 
 theorem distinct_same_predicate :
@@ -833,7 +833,7 @@ theorem fresh_identity_clash :
   decide
 
 theorem matching_insertion_into_empty_query :
-    obstructs label (Commit.makeOne 0) noneRead = true := by
+    obstructs label (Commit.makeOne 0) absence = true := by
   rw [obstructs_iff]
   unfold Clash Spoils WritesInto
   decide
@@ -845,7 +845,7 @@ theorem matching_removal_from_full_query :
   decide
 
 theorem unrelated_same_predicate_query_write :
-    obstructs label (Commit.makeOne 1) noneRead = false := by
+    obstructs label (Commit.makeOne 1) absence = false := by
   rw [clear_iff]
   unfold Clash Spoils WritesInto
   decide
@@ -862,9 +862,9 @@ theorem duplicate_payloads_remain_distinct :
 #guard obstructs label (Commit.takeOne 0) (Commit.takeOne 0) == true
 #guard obstructs label (Commit.takeOne 0) (Commit.keepOne 0) == true
 #guard obstructs label (Commit.makeOne 0) (Commit.makeOne 0) == true
-#guard obstructs label (Commit.makeOne 0) noneRead == true
+#guard obstructs label (Commit.makeOne 0) absence == true
 #guard obstructs label (Commit.takeOne 0) fullRead == true
-#guard obstructs label (Commit.makeOne 1) noneRead == false
+#guard obstructs label (Commit.makeOne 1) absence == false
 #guard obstructs (fun _ : Nat => (0, 7)) (Commit.takeOne 0) (Commit.takeOne 1) == false
 
 end Controls
@@ -953,8 +953,8 @@ theorem clear_preserves_source_rows {V P : Type v}
   simpa only [Sources.Query.run_compile L matcher label _ _ (scan_complete label _)] using answers
 
 /-- With the independent matcher and pure-computation laws, the same local
-check preserves none queries in the declarative source semantics. -/
-theorem clear_preserves_declarative_none {V P : Type v} [DecidableEq V]
+check preserves absence in the declarative source semantics. -/
+theorem clear_preserves_declarative_absence {V P : Type v} [DecidableEq V]
     (L : Sources.TermLayer V R P) (matcher : Sources.Matcher V R P)
     (label : O → R) (store : Finset O) (published : Commit O R)
     (sound : Sources.Matcher.Sound L matcher) (complete : Sources.Matcher.Complete L matcher)
@@ -1185,7 +1185,7 @@ theorem delivered_ready_change_cannot_sleep (label : O → R) (captured current 
   exact notified_never_sleeps ⟨generation, .armed⟩ later (by simp) same
 
 /-- The existing source cursor, including its explicit completion inspection,
-supplies the same recheck consumer. Arming implies none queries in the independent
+supplies the same recheck consumer. Arming implies absence in the independent
 source judgment at the current store. Scanner and matcher laws retain their
 own scope; no Boolean guard-correctness premise replaces this construction. -/
 theorem armed_source_has_no_row {O V T P : Type u} [DecidableEq O] [DecidableEq V]
@@ -1242,10 +1242,10 @@ theorem new_source_row_requires_notice {O V T P : Type u} [LinearOrder O] [Decid
     have same := Cursor.ReadOnlyQuery.validated_completion before (scan label (fire current published)) fuel
       (Sources.Query.compile L matcher label [] source bindings) observation finished
       ((ReadOnlyQuery.checkReads_iff _ _).mpr afterAgrees)
-    have missing := (Sources.Query.run_empty_iff_no_declarative L matcher label (fire current published)
+    have absent := (Sources.Query.run_empty_iff_no_declarative L matcher label (fire current published)
       (scan label (fire current published)) (scan_complete label _) sound complete minimal source respects bindings).mp
     exfalso
-    apply missing ?_ appeared
+    apply absent ?_ appeared
     rw [same]
     cases listEq : observation.answer with
     | nil => rfl
@@ -1982,7 +1982,7 @@ inductive Observation (O V T : Type) where
   | complete (result : ReadOnlyQuery.Observation (T → Bool) (List O) (List (Row O V T)))
 
 /-- Completion and current validation are distinct from an empty answer.
-Faults and unfinished source work cannot masquerade as guard none queries. -/
+Faults and unfinished source work cannot masquerade as guard absence. -/
 def observe [DecidableEq O] (current : (T → Bool) → List O)
     (state : State (O := O) (V := V) (T := T) (P := P) (Answer := Answer) authority required) : Observation O V T :=
   match OwnWrite.completed authority required state.producer with
@@ -1998,7 +1998,7 @@ def observe [DecidableEq O] (current : (T → Bool) → List O)
               if ReadOnlyQuery.checkReads current result.reads then .complete result else .stale
 
 /-- Keep the selected list occurrence. Only a complete current observation
-can yield a proposal; None alone does not establish guard none queries. -/
+can yield a proposal; None alone does not establish guard absence. -/
 def select [DecidableEq O] (current : (T → Bool) → List O) (index : Nat)
     (state : State (O := O) (V := V) (T := T) (P := P) (Answer := Answer) authority required) : Option (Row O V T) :=
   match observe authority required current state with
@@ -2352,7 +2352,7 @@ theorem captured_recipe_source [DecidableEq O]
     (buildRecipe L matcher label transform bindings body) producer initial after first later paid recipe finished
   exact ⟨environment, produced, same.symm⟩
 
-/-- A genuinely complete empty guard is the none query in the independent source
+/-- A genuinely complete empty guard is absence in the independent source
 relation. Unstarted, partial and stale observations cannot prove this result. -/
 theorem observed_empty_declarative [DecidableEq O] [DecidableEq V]
     (L : Sources.TermLayer V T P) (matcher : Sources.Matcher V T P) (label : O → T)
@@ -2429,7 +2429,7 @@ def completion (state : State (O := O) (V := V) (T := T) (P := P) (Answer := Ans
     state.attempt.bind fun ⟨view, packet⟩ => Cursor.ReadOnlyQuery.completed? view packet.2
 
 /-- Recheck the actual exclusively acquired driver in its installed question.
-A missing completion does not arm the waiter. Producer faults are exposed by
+An absent completion does not arm the waiter. Producer faults are exposed by
 observe and remain distinct from a complete empty guard. -/
 def recheckOwned [DecidableEq O] (current : (T → Bool) → List O)
     (key : AsyncWait.Identity) (use : Use)
@@ -2713,7 +2713,7 @@ theorem producer_finishes_saved_suffix_once :
     (recipe? revocationWorlds writeRequirement completed).isSome = true ∧ completed.producer.1 = 2 ∧
       OrderedDependencyStore.query (OwnWrite.current revocationWorlds writeRequirement completed.producer).store 0 = [7] := by decide +kernel
 
-theorem partial_guard_is_not_none :
+theorem partial_guard_is_not_absence :
     isChecking beforeView halfway = true ∧ answerCount beforeView halfway = none ∧
       select revocationWorlds writeRequirement beforeView 0 halfway = none ∧
       queryInvoice revocationWorlds writeRequirement halfway = 1 ∧ answerCount beforeView emptyGuard = some 0 := by decide +kernel
@@ -2910,7 +2910,7 @@ def rearmOwned (current : (T → Bool) → List O) (key : AsyncWait.Identity) (u
 
 /-- Advance the guarded program stored in the acquired entry. Stale reads
 return false with the actual refused packet; zero allowance does no query
-validation. The reply does not classify readiness or declarative none query. -/
+validation. The reply does not classify readiness or declarative absence. -/
 def resumeOwnedGuard (current : (T → Bool) → List O) (fuel : Nat) (key : AsyncWait.Identity) (use : Use)
     (pool : Registration.State Holder Use
       (State (O := O) (V := V) (T := T) (P := P) (Answer := Answer) authority required)) :=
@@ -3005,7 +3005,7 @@ structure Selection (O V T : Type) where
   made : Finset O
 
 /-- All tests are finite. The issued set includes retired identities, so an
-output cannot recycle an old identity merely because it is currently missing. -/
+output cannot recycle an old identity merely because it is currently absent. -/
 def eligible (label : O → T) (store born : Finset O) (selected : Selection O V T) : Prop :=
   let footprint := Sources.footprintOf selected.row.2
   footprint.Linear ∧ footprint.Holds label store ∧
@@ -3144,7 +3144,7 @@ theorem applySelection_eq_fire (label : O → T) (store : Finset O)
   simp only [applySelection, fire, formed.taken, outputs]
 
 omit [DecidableEq T] in
-theorem consumed_not_present (label : O → T) (store born : Finset O)
+theorem consumed_absent (label : O → T) (store born : Finset O)
     (selected : Selection O V T) (valid : eligible label store born selected)
     (occurrence : O) (taken : occurrence ∈ (Sources.footprintOf selected.row.2).takes) :
     occurrence ∉ applySelection store selected := by
@@ -3423,10 +3423,10 @@ theorem equal_alternatives_retain_their_selected_position :
 
 theorem admission_checks_kept_and_complete_observations :
     let kept : Selection Nat Nat Value := ⟨0, (Sources.AbsenceControls.empty, [.keep 1]), ∅⟩
-    let missing : Selection Nat Nat Value :=
+    let absent : Selection Nat Nat Value :=
       ⟨0, (Sources.AbsenceControls.empty, [.query ⟨fun _ => true, ∅⟩ false]), ∅⟩
     ¬ eligible Reactive.Controls.label {0} {0, 1} kept ∧
-      ¬ eligible Reactive.Controls.label {0} {0} missing := by decide +kernel
+      ¬ eligible Reactive.Controls.label {0} {0} absent := by decide +kernel
 
 /-- Installation, acquisition, readiness recheck and actual queue service
 produce this claimed registration; no test supplies the claimed phase. -/
@@ -3809,7 +3809,7 @@ def cut (store : Finset Nat) (fuel : Nat) :=
 
 def ready (rows : List Nat) : Bool := !rows.isEmpty
 
-theorem completed_current_none_arms :
+theorem completed_current_absence_arms :
     recheck id {2} 1 ready ⟨1, .checking⟩ (cut {2} 2) = ⟨1, .armed⟩ := by
   simp [recheck, recheckCompleted, cut, ready, ReadOnlyQuery.Retained.resume,
     ReadOnlyQuery.Retained.begin, ReadOnlyQuery.pausePrefix, SourceReads.Controls.adaptive,
@@ -3841,7 +3841,7 @@ theorem matching_arrival_makes_source_ready :
 theorem matching_arrival_produces_notice :
     notice id (Commit.makeOne 12) 1 (cut {2} 2).1 = some 1 := by
   apply becomes_ready_requires_notice id {2} {2} 1 2 SourceReads.Controls.adaptive ready
-    (Commit.makeOne 12) completed_current_none_arms
+    (Commit.makeOne 12) completed_current_absence_arms
   have afterStore : fire {2} (Commit.makeOne 12 : Commit Nat Nat) = {2, 12} := by decide
   rw [afterStore]
   exact matching_arrival_makes_source_ready

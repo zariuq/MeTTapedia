@@ -31,7 +31,7 @@ of which kind it is, what it survives, what destroys it, and how its membership 
   up to bisimilarity, so on every finite program of the first-order step.
 * `Changes`: what a type must survive: firings (invariant cores), growth by another party (exactly
   the positively generated types of a join-preserving lens), more observers, substitution.
-* `ThatsAll`: a closure clause is a none statement, sound in an open world exactly on an owned
+* `ThatsAll`: a closure clause is an absence statement, sound in an open world exactly on an owned
   region; the constructor reading needs only that other creation goes through the constructors.
 * `TwoKinds`: constructor-defined types have finite witnesses that survive growth; observer-defined
   types are refuted by one observation, persist as predicates and lose their lists of members; a

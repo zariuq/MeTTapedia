@@ -42,8 +42,8 @@ The runs of the two-zone calculus as the 1-cells of a free structure, and their 
 * **Grades** (`Grades`, `InterchangeControls`, `GradeControls`): takes and makes interchange at every
   frame; checks blind to the frame do too (`SemanticCell.beside`). Knowledge blocks an interchange
   exactly through a tell some guard waits for: a teller and its asker have a cell exactly where the
-  teller is quiet (`teller_asker_cell_iff`, `quiet_iff_never_waited_on`). Counting and none queries
-  interchange only within their grade (`counting_cell_not_placed`, `noneGuarded_no_cell`), and the grade
+  teller is quiet (`teller_asker_cell_iff`, `quiet_iff_never_waited_on`). Counting and absence
+  interchange only within their grade (`counting_cell_not_placed`, `absence_no_cell`), and the grade
   is a property of a run, not of its trace (`grade_not_trace_invariant`).
 * **Waves** (`Waves`, `WavesOnTheStep`): pairwise compatibility gives a joint wave where the tells are
   median-convex (`helly`), and gluing works along consistent join trees (`ConsistentTree.glue`). The
@@ -158,9 +158,9 @@ namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProofR
 #print axioms GradeControls.counting_cell_not_placed
 #print axioms GradeControls.counting_no_cell_beside
 #print axioms GradeControls.grade_not_trace_invariant
-#print axioms GradeControls.noneGuarded_left_runs
-#print axioms GradeControls.noneGuarded_right_runs
-#print axioms GradeControls.noneGuarded_no_cell
+#print axioms GradeControls.absence_left_runs
+#print axioms GradeControls.absence_right_runs
+#print axioms GradeControls.absence_no_cell
 
 #print axioms Fibred.Path.run
 #print axioms Fibred.Path.exists_iff_run

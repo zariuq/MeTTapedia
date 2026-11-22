@@ -119,12 +119,12 @@ theorem retained_matches (occurrence : O) (notMade : occurrence ∉ picked.made)
         (Assignment.compose candidate (Assignment.compose (ContextualComputedFreshFrame.includeSource compiled.firing.update)
           (ContextualSelectionViews.capturedTarget (ContextualClauseFrames.bank (expanded queries inners) locals)
             before.declarations))) pattern (before.rows occurrence) := by
-  have missing : descriptor (rule := rule) (picked := picked) occurrence = none := by
+  have absent : descriptor (rule := rule) (picked := picked) occurrence = none := by
     cases selected : descriptor (rule := rule) (picked := picked) occurrence with
     | none => rfl
     | some entry => exact False.elim (notMade (ContextualTemplateSource.assign_mem _ _ _ _ selected))
   change Matches (resultLocals compiled) compiled.firing.target.declarations candidate pattern (rows compiled occurrence) ↔ _
-  simp only [rows, missing]
+  simp only [rows, absent]
   change Matches (resultLocals compiled) compiled.firing.target.declarations candidate pattern (packOrdinary compiled _) ↔ _
   have native := compiled.firing.retained_matches occurrence (by rw [compiled.selected]; exact notMade) next candidate pattern
   refine (ContextualConditionalRowPacking.matches_iff (PrivateNames compiled) (privateDeclarations compiled)

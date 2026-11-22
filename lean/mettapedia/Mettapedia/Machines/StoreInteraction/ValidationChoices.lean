@@ -40,7 +40,7 @@ theorem promotion_iff_current_keeps {label : O → R} {store : Finset O} {c : Co
 
 omit [DecidableEq O] in
 /-- The dual boundary: live positive witnesses do not discharge complete
-queries, including none queries. -/
+queries, including absence. -/
 theorem promotion_iff_current_queries {label : O → R} {store : Finset O} {c : Commit O R}
     (permitted : Permits label Mode.claims store c) :
     Permits label Mode.serializable store c ↔ ∀ query ∈ c.queries, query.Holds label store := by
@@ -55,7 +55,7 @@ namespace Controls
 
 def label (o : Nat) : Nat := o
 def oldPositive : Commit Nat Nat := ⟨∅, {0}, ∅, []⟩
-def oldNoneQuery : Commit Nat Nat := ⟨∅, ∅, ∅, [⟨fun _ => true, ∅⟩]⟩
+def oldAbsence : Commit Nat Nat := ⟨∅, ∅, ∅, [⟨fun _ => true, ∅⟩]⟩
 
 theorem historical_positive_current_predicates :
     Permits label predicateCurrent ∅ oldPositive ∧ ¬ Permits label Mode.claims ∅ oldPositive := by
@@ -63,7 +63,7 @@ theorem historical_positive_current_predicates :
   decide
 
 theorem current_positive_historical_predicates :
-    Permits label Mode.claims {0} oldNoneQuery ∧ ¬ Permits label predicateCurrent {0} oldNoneQuery := by
+    Permits label Mode.claims {0} oldAbsence ∧ ¬ Permits label predicateCurrent {0} oldAbsence := by
   simp only [Permits]
   decide
 

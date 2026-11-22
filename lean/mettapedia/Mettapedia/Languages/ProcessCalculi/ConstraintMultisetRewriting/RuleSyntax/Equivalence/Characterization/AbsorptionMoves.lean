@@ -130,7 +130,7 @@ theorem mentions_fiveMore {a : State Tm ℕ} {d : ℕ} (t : Term atoms)
         · exact absurd (Finset.mem_singleton.mp new) isD
       exact Or.inl (Or.inr (Or.inr ⟨o, old, (label_fiveMore_of_ne isD).symm⟩))
 
-/-- **Forward**: a firing of every rule at `a` is answered at `fiveMore a d`, for `d` missing from `a`
+/-- **Forward**: a firing of every rule at `a` is answered at `fiveMore a d`, for `d` absent from `a`
 and not made by the firing, by a firing whose result is statically equivalent. -/
 theorem answer_forward {a : State Tm ℕ} (f : Firing ℕ E everyRule a.frame) (admitted : f.Admits X a)
     {d : ℕ} (freshD : d ∉ a.present) (notMade : d ∉ f.selection.made) :

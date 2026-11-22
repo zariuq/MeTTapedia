@@ -1,4 +1,4 @@
-let M inst. assume Hinst: inst :e Lean_AddCommMonoid M.
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let M. assume H_M: M :e LeanUniv l_u_1. let inst. assume Hinst: inst :e Lean_AddCommMonoid M.
 claim Hop: forall x y :e M,
   (fun x1 :e M => (fun x2 :e M => (LeanAddOf M inst) x1 x2)) x y = LeanAddOf M inst x y.
 { let x. assume Hx: x :e M. let y. assume Hy: y :e M.

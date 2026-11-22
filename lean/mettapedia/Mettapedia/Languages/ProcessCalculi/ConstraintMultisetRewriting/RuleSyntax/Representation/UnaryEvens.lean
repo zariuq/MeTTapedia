@@ -80,38 +80,38 @@ theorem eSize_eNat : ∀ i : ℕ, eSize (eNat i) = 2 * i + 1
 /-- Instantiations that agree off `x` agree on a pattern without `x`. -/
 theorem inst_off (θ θ' : ℕ → Expr) (x : ℕ) (others : ∀ v, v ≠ x → θ' v = θ v) :
     ∀ t : Tm, x ∉ unknowns t → inst θ' t = inst θ t
-  | .var v, missing => others v fun same => missing (by rw [same]; exact List.mem_singleton_self _)
+  | .var v, absent => others v fun same => absent (by rw [same]; exact List.mem_singleton_self _)
   | .const (.sym _), _ => rfl
   | .const (.name _), _ => rfl
-  | .app .app ts, missing => by
+  | .app .app ts, absent => by
       show Expr.app (inst θ' (ts head)) (inst θ' (ts tail)) = Expr.app (inst θ (ts head)) (inst θ (ts tail))
-      rw [inst_off θ θ' x others (ts head) fun inside => missing (List.mem_append_left _ inside),
-        inst_off θ θ' x others (ts tail) fun inside => missing (List.mem_append_right _ inside)]
-  | .app .code ts, missing => by
+      rw [inst_off θ θ' x others (ts head) fun inside => absent (List.mem_append_left _ inside),
+        inst_off θ θ' x others (ts tail) fun inside => absent (List.mem_append_right _ inside)]
+  | .app .code ts, absent => by
       show Expr.code (inst θ' (ts body)) = Expr.code (inst θ (ts body))
-      rw [inst_off θ θ' x others (ts body) missing]
+      rw [inst_off θ θ' x others (ts body) absent]
 
 /-- **Without `x`, and with every other unknown standing for a constant, a pattern's instance is at most one
 higher than the pattern.** -/
 theorem eHeight_inst_le (θ : ℕ → Expr) (x : ℕ) :
     ∀ t : Tm, x ∉ unknowns t → (∀ v ∈ unknowns t, v ≠ x → θ v = .sym 1) → eHeight (inst θ t) ≤ height t + 1
-  | .var v, missing, shallow => by
-      have other : v ≠ x := fun same => missing (by rw [same]; exact List.mem_singleton_self _)
+  | .var v, absent, shallow => by
+      have other : v ≠ x := fun same => absent (by rw [same]; exact List.mem_singleton_self _)
       show eHeight (θ v) ≤ 0 + 1
       rw [shallow v (List.mem_singleton_self _) other]
       rfl
   | .const (.sym _), _, _ => by show 1 ≤ 1 + 1; omega
   | .const (.name _), _, _ => by show 1 ≤ 1 + 1; omega
-  | .app .app ts, missing, shallow => by
-      have left := eHeight_inst_le θ x (ts head) (fun inside => missing (List.mem_append_left _ inside))
+  | .app .app ts, absent, shallow => by
+      have left := eHeight_inst_le θ x (ts head) (fun inside => absent (List.mem_append_left _ inside))
         fun v inside => shallow v (List.mem_append_left _ inside)
-      have right := eHeight_inst_le θ x (ts tail) (fun inside => missing (List.mem_append_right _ inside))
+      have right := eHeight_inst_le θ x (ts tail) (fun inside => absent (List.mem_append_right _ inside))
         fun v inside => shallow v (List.mem_append_right _ inside)
       show max (eHeight (inst θ (ts head))) (eHeight (inst θ (ts tail))) + 1 ≤
         max (height (ts head)) (height (ts tail)) + 1 + 1
       omega
-  | .app .code ts, missing, shallow => by
-      have inner := eHeight_inst_le θ x (ts body) missing shallow
+  | .app .code ts, absent, shallow => by
+      have inner := eHeight_inst_le θ x (ts body) absent shallow
       show eHeight (inst θ (ts body)) + 1 ≤ height (ts body) + 1 + 1
       omega
 

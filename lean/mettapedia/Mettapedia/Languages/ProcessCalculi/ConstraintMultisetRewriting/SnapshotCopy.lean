@@ -236,16 +236,16 @@ theorem Firing.unique_preserved {rule : RuleInstance (Row Value)} {token : Occur
 
 theorem Firing.unique_new {rule : RuleInstance (Row Value)} {token : Occurrence Value}
     {before after : World Value} (firing : Firing rule token before after) (row : Row Value)
-    (missing : ¬ Has before.present row) (distinct : rule.produce.Nodup) :
+    (absent : ¬ Has before.present row) (distinct : rule.produce.Nodup) :
     UniqueRow after.present row := by
   intro first firstHere second secondHere firstLabel secondLabel
   have firstMade : first ∈ firing.picked.made := by
     rcases (firing.present_iff first).mp firstHere with old | made
-    · exact False.elim (missing ⟨first,old.1,firstLabel⟩)
+    · exact False.elim (absent ⟨first,old.1,firstLabel⟩)
     · exact made
   have secondMade : second ∈ firing.picked.made := by
     rcases (firing.present_iff second).mp secondHere with old | made
-    · exact False.elim (missing ⟨second,old.1,secondLabel⟩)
+    · exact False.elim (absent ⟨second,old.1,secondLabel⟩)
     · exact made
   exact firing.made_unique distinct firstMade secondMade (firstLabel.trans secondLabel.symm)
 
@@ -350,7 +350,7 @@ theorem copy_extends_prefix {before after : World Value} {token : Occurrence Val
     rw [firing.has_iff _ (by simp [atToken]),earlier.exact]
     simpa [copyRule] using (next_prefix_lookup values index value found position other).symm
   · intro first firstHere second secondHere position firstValue secondValue firstLabel secondLabel
-    have oldNotPresent : ∀ occurrence ∈ before.present, ∀ item,
+    have oldAbsent : ∀ occurrence ∈ before.present, ∀ item,
         label occurrence = .cell destination index item → False := by
       intro occurrence present item same
       have old := (earlier.exact index item).mp ⟨occurrence,present,same⟩
@@ -376,11 +376,11 @@ theorem copy_extends_prefix {before after : World Value} {token : Occurrence Val
       · exact earlier.unique first oldFirst.1 second oldSecond.1 position firstValue secondValue firstLabel secondLabel
       · have positionEq := newIndex second newSecond position secondValue secondLabel
         subst position
-        exact False.elim (oldNotPresent first oldFirst.1 firstValue firstLabel)
+        exact False.elim (oldAbsent first oldFirst.1 firstValue firstLabel)
     · rcases (firing.present_iff second).mp secondHere with oldSecond | newSecond
       · have positionEq := newIndex first newFirst position firstValue firstLabel
         subst position
-        exact False.elim (oldNotPresent second oldSecond.1 secondValue secondLabel)
+        exact False.elim (oldAbsent second oldSecond.1 secondValue secondLabel)
       · exact (newUnique first newFirst position firstValue firstLabel).trans
           (newUnique second newSecond position secondValue secondLabel).symm
 

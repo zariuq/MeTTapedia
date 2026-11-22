@@ -282,7 +282,7 @@ def nested : Nat → Pattern
 theorem nested_typed : ∀ n, ProcWellSorted rhoReflectivePresentation FreeSortContext.empty []
     (nested n)
   | 0 => .unit
-  | n + 1 => .output (.quote .unit (by decide)) (nested_typed n)
+  | n + 1 => .output (.quote .unit) (nested_typed n)
 
 theorem nested_safe : ∀ n, binderSafeAt "NQuote" 0 (nested n) = true
   | 0 => rfl
@@ -324,7 +324,7 @@ theorem nested_injective : Function.Injective nested := by
 
 theorem nested_output_prime (n : Nat) : IsPrime (output channel (nested n)) := by
   refine ⟨(rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.output (.quote .unit (by decide)) (nested_typed n), nested_safe (n + 1)⟩, nested_canonical (n + 1), ?_, ?_⟩
+    ⟨.output (.quote .unit) (nested_typed n), nested_safe (n + 1)⟩, nested_canonical (n + 1), ?_, ?_⟩
   · simp [output]
   · intro elements
     simp [output]

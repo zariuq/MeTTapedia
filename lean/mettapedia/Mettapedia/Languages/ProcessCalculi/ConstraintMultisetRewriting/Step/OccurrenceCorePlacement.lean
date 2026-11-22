@@ -2,11 +2,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Regi
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRuns
 
 /-!
-# Joined qualification: the occurrence core is the one-frame step, and the none query is one concept
+# Joined qualification: the occurrence core is the one-frame step, and absence is one concept
 
 The occurrence core (`ConstraintMultisetRewriting.Step`, the relation of `OccurrenceStep`) carries many
 results: resource controls, the Need machine, snapshot copying, the collect query and the
-none query controls. The candidate step's one-frame instance is `AnnotatedRuns.firstOrder`. This module
+absence controls. The candidate step's one-frame instance is `AnnotatedRuns.firstOrder`. This module
 places the first inside the second, so those results are statements about one instance of the
 common interface `Interface.Step`.
 
@@ -28,16 +28,16 @@ common interface `Interface.Step`.
   firing, a block that adds more rows than the bound. Atomic blocks of unbounded size therefore need
   rules computed per block.
 
-## The none query: a guard and a predicate query are the same observation
+## Absence: a guard and a predicate query are the same observation
 
-The tree states none queries two ways: as the guard `Check.absent p` of a rule, and as a predicate query
+The tree states absence two ways: as the guard `Check.absent p` of a rule, and as a predicate query
 whose collect query is empty. For a decidable equivalence they coincide.
 
-* `noneQuery_holds_iff`: at every solution, the empty-collect query of the region of `p` holds
+* `absenceQuery_holds_iff`: at every solution, the empty-collect query of the region of `p` holds
   exactly when the guard `absent p` holds.
-* `admits_none_check_iff_query`: moving a none guard into the firing's predicate queries keeps
+* `admits_absent_check_iff_query`: moving an absence guard into the firing's predicate queries keeps
   admission of the one-frame instance, so the guard part and the query part of the interface's
-  `Holds` read none queries identically.
+  `Holds` read absence identically.
 -/
 
 set_option autoImplicit false
@@ -156,39 +156,39 @@ theorem no_bounded_family_commits {C D : Configuration T O} (rules : Set (RuleIn
   rintro ⟨f, admitted, member, rfl⟩
   exact absurd (le_trans (added_card_le A label f admitted) (bounded _ member)) (not_le.mpr large)
 
-/-! ## The none query as a guard and as a predicate query -/
+/-! ## Absence as a guard and as a predicate query -/
 
-section NoneQuery
+section Absence
 
 variable [∀ a b : T, Decidable (A.E a b)]
 
 /-- The predicate query whose region, at a solution, is the occurrences matching `pattern`, and
 whose collect query is empty. -/
-def noneQuery (pattern : T) : PredicateQueryAdmission.Query T S O :=
+def absenceQuery (pattern : T) : PredicateQueryAdmission.Query T S O :=
   ⟨fun σ t => decide (A.E (A.apply σ pattern) (A.apply σ t)), ∅⟩
 
 omit [DecidableEq O] in
-/-- **The empty-collect query is the none guard**, at every solution and every store. -/
-theorem noneQuery_holds_iff (pattern : T) (σ : S) (store : Finset O) :
-    ((noneQuery (O := O) A pattern).atSolution σ).Holds label store ↔
+/-- **The empty-collect query is the absence guard**, at every solution and every store. -/
+theorem absenceQuery_holds_iff (pattern : T) (σ : S) (store : Finset O) :
+    ((absenceQuery (O := O) A pattern).atSolution σ).Holds label store ↔
       (Check.predicate .none pattern).Holds A σ label store := by
-  simp only [noneQuery, PredicateQueryAdmission.Query.atSolution, PredicateQuery.Holds,
+  simp only [absenceQuery, PredicateQueryAdmission.Query.atSolution, PredicateQuery.Holds,
     regionOf, Check.Holds, Quantifier.holds_none, Finset.filter_eq_empty_iff, decide_eq_true_eq]
 
-/-- **Moving a none guard into the predicate queries keeps admission.** The guard part and the
-query part of the one-frame instance's `Holds` read none queries identically. -/
-theorem admits_none_check_iff_query (rule : RuleInstance T) (pattern : T)
+/-- **Moving an absence guard into the predicate queries keeps admission.** The guard part and the
+query part of the one-frame instance's `Holds` read absence identically. -/
+theorem admits_absent_check_iff_query (rule : RuleInstance T) (pattern : T)
     (queries : List (PredicateQueryAdmission.Query T S O)) (selection : Selection O)
     (C : Configuration T O) :
     (firstOrder A label).Admits (s := C)
         (⟨{ rule with checks := rule.checks ++ [.predicate .none pattern] }, queries.map PredicateQueryAdmission.Query.toRegion, selection⟩ :
           Firing T S O) ↔
       (firstOrder A label).Admits (s := C)
-        (⟨rule, (queries ++ [noneQuery A pattern]).map PredicateQueryAdmission.Query.toRegion, selection⟩ : Firing T S O) := by
+        (⟨rule, (queries ++ [absenceQuery A pattern]).map PredicateQueryAdmission.Query.toRegion, selection⟩ : Firing T S O) := by
   change PredicateQueryAdmission.RegionValid A label { rule with checks := rule.checks ++ [.predicate .none pattern] }
       (queries.map PredicateQueryAdmission.Query.toRegion) C selection ↔
     PredicateQueryAdmission.RegionValid A label rule
-      ((queries ++ [noneQuery A pattern]).map PredicateQueryAdmission.Query.toRegion) C selection
+      ((queries ++ [absenceQuery A pattern]).map PredicateQueryAdmission.Query.toRegion) C selection
   rw [Interface.RegionQueryAdapters.valid_exact_iff,Interface.RegionQueryAdapters.valid_exact_iff]
   constructor
   · rintro ⟨firing, observations⟩
@@ -200,7 +200,7 @@ theorem admits_none_check_iff_query (rule : RuleInstance T) (pattern : T)
     · exact observations query member
     · obtain rfl := List.mem_singleton.mp member
       intro σ solved
-      exact (noneQuery_holds_iff A label pattern σ C.present).mpr
+      exact (absenceQuery_holds_iff A label pattern σ C.present).mpr
         (firing.checks _ (List.mem_append_right _ (List.mem_singleton_self _)) σ solved)
   · rintro ⟨firing, observations⟩
     refine ⟨⟨firing.take_distinct, firing.output_distinct, firing.take_length, firing.read_length,
@@ -211,10 +211,10 @@ theorem admits_none_check_iff_query (rule : RuleInstance T) (pattern : T)
     · exact firing.checks check member
     · obtain rfl := List.mem_singleton.mp member
       intro σ solved
-      exact (noneQuery_holds_iff A label pattern σ C.present).mp
+      exact (absenceQuery_holds_iff A label pattern σ C.present).mp
         (observations _ (List.mem_append_right _ (List.mem_singleton_self _)) σ solved)
 
-end NoneQuery
+end Absence
 
 #print axioms core_step_iff_admitted
 #print axioms query_step_iff_admitted
@@ -222,7 +222,7 @@ end NoneQuery
 #print axioms coreReaches_iff_run
 #print axioms added_card_le
 #print axioms no_bounded_family_commits
-#print axioms noneQuery_holds_iff
-#print axioms admits_none_check_iff_query
+#print axioms absenceQuery_holds_iff
+#print axioms admits_absent_check_iff_query
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.OccurrenceCorePlacement

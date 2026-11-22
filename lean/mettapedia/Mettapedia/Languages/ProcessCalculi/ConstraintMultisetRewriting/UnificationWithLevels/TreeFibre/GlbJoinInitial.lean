@@ -471,15 +471,15 @@ theorem glbJoin_initial {Θ : Context S.R} {original : EquationStore (TotalTerm 
     ∃ (Δ : Context S.R) (answer : Δ ⟶ Θ), InitialSolution (frames S.levels) original answer := by
   obtain ⟨fuel, decided⟩ := glbJoinK_decided facts roots heads algebra rigid complete headsTyped join joinSound meet
     meetSound joinTotal meetTotal inside
-  rcases (decided fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨missing, refuted⟩
+  rcases (decided fuel le_rfl).2 with ⟨state, finished, solved, _⟩ | ⟨absent, refuted⟩
   · exact glbJoin_solved_initial facts roots heads algebra rigid complete headsTyped join joinSound meet meetSound inh
       inside solved
   · exact absurd refuted (drive_ne_refuted
       (glbJoinSolverK facts roots heads algebra rigid complete headsTyped join joinSound meet meetSound)
-      (fun problem missing =>
+      (fun problem absent =>
         glbJoinRoundK_ne_refuted facts roots heads algebra rigid complete headsTyped join joinSound meet meetSound
-          problem missing)
-      fuel _ missing)
+          problem absent)
+      fuel _ absent)
 
 end Rounds
 

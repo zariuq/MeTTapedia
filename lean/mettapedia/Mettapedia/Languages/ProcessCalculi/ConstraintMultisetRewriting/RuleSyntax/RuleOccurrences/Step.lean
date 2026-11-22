@@ -266,9 +266,9 @@ theorem assign_of_not_mem {ι : Type*} {β : Type*} [DecidableEq ι] (old : ι �
     ∀ (is : List ι) (vs : List β) {j : ι}, j ∉ is → assign old is vs j = old j
   | [], _, _, _ => rfl
   | _ :: _, [], _, _ => rfl
-  | i :: rest, v :: vs, j, missing => by
-      have other : j ≠ i := fun same => missing (List.mem_cons.mpr (Or.inl same))
-      have later : j ∉ rest := fun inside => missing (List.mem_cons.mpr (Or.inr inside))
+  | i :: rest, v :: vs, j, absent => by
+      have other : j ≠ i := fun same => absent (List.mem_cons.mpr (Or.inl same))
+      have later : j ∉ rest := fun inside => absent (List.mem_cons.mpr (Or.inr inside))
       simp only [assign, if_neg other]
       exact assign_of_not_mem old rest vs later
 
@@ -531,9 +531,9 @@ theorem result_held_made (shapes : f.RuleShapes ambient) {x : R × Held Tm C Z (
   assign_zip _ f.madeRules _ shapes.madeNodup (f.length_madeLabels shapes).symm x inside
 
 /-- **Every other held rule is carried along the extension.** -/
-theorem result_held_other {ρ : R} (missing : ρ ∉ f.madeRules) :
+theorem result_held_other {ρ : R} (absent : ρ ∉ f.madeRules) :
     (f.result X).held ρ = (s.held ρ).act X (E.weaken f.ext) :=
-  assign_of_not_mem _ f.madeRules _ missing
+  assign_of_not_mem _ f.madeRules _ absent
 
 end RFiring
 

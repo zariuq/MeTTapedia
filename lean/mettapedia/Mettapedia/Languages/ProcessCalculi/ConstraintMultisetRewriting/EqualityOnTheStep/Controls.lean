@@ -16,16 +16,16 @@ is a family of sets, inhabited at `S` (`idFamily_at_S`) and closed-uninhabited a
 `Id (U0 → U0) T S`. So the restriction "transport needs a respect term" is necessary: dropping it
 would transport the intensional identity type, which is false.
 
-**The none query does not transport** (`none_does_not_transport`). Over `p : Ground`, a state holding the
+**Absence does not transport** (`absence_does_not_transport`). Over `p : Ground`, a state holding the
 evidence for `setEq S T` and the member `(p, λy. y) : T (Ground → Ground)`, and no member of `S`:
-the none query of every member of `S (Ground → Ground)` is admitted (`noneOfS_admitted`), and the none query
-of every member of `T (Ground → Ground)` is refused (`noneOfT_refused`). A rule "none queries at `S` and
-`S ≈ T` give none queries at `T`" would be unsound. The rule that prevents it: queries read through the
+the absence of every member of `S (Ground → Ground)` is admitted (`absentS_admitted`), and the absence
+of every member of `T (Ground → Ground)` is refused (`absentT_refused`). A rule "absence at `S` and
+`S ≈ T` give absence at `T`" would be unsound. The rule that prevents it: queries read through the
 **knowledge** only (`Query.reads`), the equality rows are rows, not knowledge, and a transport firing
 only makes a row: it takes nothing, tells nothing, guards nothing and asks nothing
-(`transportBy_only_makes`). The none query is an observation of the rows present, not a proposition. A
+(`transportBy_only_makes`). Absence is an observation of the rows present, not a proposition. A
 negation `S X → ⊥` is a family, and it has a respect term, by the backward map
-(`SetTheory.negRespect_typed`), so non-membership transports where the none query does not.
+(`SetTheory.negRespect_typed`), so non-membership transports where absence does not.
 -/
 
 set_option autoImplicit false
@@ -116,7 +116,7 @@ theorem idFamily_no_respect {r : Tower.Tm 0} : ¬ Typed Tower.rules .nil r (resp
     carried
   exact idSets_uninhabited (.conv atT idFamily_at_T_beta (.sort _))
 
-/-! ## The none query does not transport -/
+/-! ## Absence does not transport -/
 
 /-- `λy. y : Ground → Ground`. -/
 theorem identity_typed {n : Nat} (Γ : Tower.Ctx n) : Typed Tower.rules Γ (.lam (.var 0)) arrow :=
@@ -144,7 +144,7 @@ def arrowMemberT : TotalTerm point :=
 
 /-- **The state**: the evidence for `setEq S T` (row `0`) and a member of `T (Ground → Ground)`
 (row `1`); no member of `S`. -/
-def noneState : State Tower.rules Nat :=
+def absenceState : State Tower.rules Nat :=
   ⟨point, [], {0, 1}, fun o => if o = 0 then evidenceRowAtPoint else arrowMemberT⟩
 
 /-- `h : S (Ground → Ground)`. -/
@@ -165,8 +165,8 @@ def tPattern : TotalTerm withTHelper :=
   ⟨Run.smallType withTHelper (.app tCode arrow) (Run.app_small (t_typed _) (arrow_typed _)),
     ⟨.var 0, Derivable.var 0⟩⟩
 
-/-- **Ask the none query of every member of `S (Ground → Ground)`.** -/
-def noneOfS : Firing setting.levels noneState where
+/-- **Ask the absence of every member of `S (Ground → Ground)`.** -/
+def absentS : Firing setting.levels absenceState where
   helpers := .cons sHelper (.nil _)
   taken := []
   read := []
@@ -177,8 +177,8 @@ def noneOfS : Firing setting.levels noneState where
   guards := []
   queries := [Query.predicate setting.levels Nat .none sPattern]
 
-/-- **Ask the none query of every member of `T (Ground → Ground)`.** -/
-def noneOfT : Firing setting.levels noneState where
+/-- **Ask the absence of every member of `T (Ground → Ground)`.** -/
+def absentT : Firing setting.levels absenceState where
   helpers := .cons tHelper (.nil _)
   taken := []
   read := []
@@ -189,23 +189,23 @@ def noneOfT : Firing setting.levels noneState where
   guards := []
   queries := [Query.predicate setting.levels Nat .none tPattern]
 
-theorem noneOfS_information : noneOfS.information = [] := rfl
+theorem absentS_information : absentS.information = [] := rfl
 
-theorem noneOfT_information : noneOfT.information = [] := rfl
+theorem absentT_information : absentT.information = [] := rfl
 
-theorem noneOfS_row (o : Nat) : noneOfS.row o = (noneState.label o).reindex (projectionHom point sHelper) :=
+theorem absentS_row (o : Nat) : absentS.row o = (absenceState.label o).reindex (projectionHom point sHelper) :=
   rfl
 
-/-- **The none query of members of `S` is admitted**: no solution equates a member of `S (Ground → Ground)`
+/-- **The absence of members of `S` is admitted**: no solution equates a member of `S (Ground → Ground)`
 with the evidence (a dependent function, not a pair) or with the member of `T (Ground → Ground)`
 (`Σ (Ground → Ground) Ground` is not `Σ Ground (Ground → Ground)`). -/
-theorem noneOfS_admitted : (step setting.levels Nat).Admits noneOfS := by
-  refine (admits_iff noneOfS).mpr ⟨⟨List.nodup_nil, List.nodup_nil, rfl, rfl,
+theorem absentS_admitted : (step setting.levels Nat).Admits absentS := by
+  refine (admits_iff absentS).mpr ⟨⟨List.nodup_nil, List.nodup_nil, rfl, rfl,
       fun _ member => absurd member List.not_mem_nil⟩,
     ⟨fun _ member => absurd member List.not_mem_nil, fun _ member => absurd member List.not_mem_nil,
       fun _ member => absurd member List.not_mem_nil, fun _ member => absurd member List.not_mem_nil⟩,
     ?_, fun _ _ _ _ member => absurd member List.not_mem_nil, ?_⟩
-  · rw [noneOfS_information]
+  · rw [absentS_information]
     exact ⟨withSHelper, 𝟙 _, Frames.models_nil _⟩
   intro q member Θ τ _
   obtain rfl := List.mem_singleton.mp member
@@ -230,29 +230,29 @@ theorem noneOfS_admitted : (step setting.levels Nat).Admits noneOfS := by
 def tWitness : point ⟶ withTHelper := pair (𝟙 point) ⟨.pair (.var 0) (.lam (.var 0)), arrowMemberT_typed⟩
 
 theorem tWitness_identifies :
-    tPattern.reindex tWitness = (noneOfT.row 1).reindex tWitness :=
+    tPattern.reindex tWitness = (absentT.row 1).reindex tWitness :=
   totalTerm_ext (TypeOver.ext rfl rfl) rfl
 
-/-- **The none query of members of `T` is refused**: the solution `h ↦ (p, λy. y)` equates the pattern
+/-- **The absence of members of `T` is refused**: the solution `h ↦ (p, λy. y)` equates the pattern
 with row `1`. -/
-theorem noneOfT_refused : ¬ (step setting.levels Nat).Admits noneOfT := by
+theorem absentT_refused : ¬ (step setting.levels Nat).Admits absentT := by
   intro admitted
-  obtain ⟨-, -, -, -, queries⟩ := (admits_iff noneOfT).mp admitted
-  have solved : (frames setting.levels).Models tWitness noneOfT.information := by
-    rw [noneOfT_information]
+  obtain ⟨-, -, -, -, queries⟩ := (admits_iff absentT).mp admitted
+  have solved : (frames setting.levels).Models tWitness absentT.information := by
+    rw [absentT_information]
     exact Frames.models_nil _
   have asked := (Query.predicate_holds_iff _ _ _ _ _).mp (queries _ (List.Mem.head _) point tWitness solved)
   refine asked 1 (show (1 : Nat) ∈ ({0, 1} : Finset Nat) by decide) ?_
-  show (frames setting.levels).E (tPattern.reindex tWitness) ((noneOfT.row 1).reindex tWitness)
+  show (frames setting.levels).E (tPattern.reindex tWitness) ((absentT.row 1).reindex tWitness)
   rw [tWitness_identifies]
   exact ((frames setting.levels).equivalence _).refl _
 
-/-- **The none query does not transport**: in a state holding the evidence for `setEq S T`, the none query of
-members of `S` at `Ground → Ground` is admitted and the none query of members of `T` there is refused. -/
-theorem none_does_not_transport :
-    (noneState.label 0).1.code = setEq sCode tCode ∧ 0 ∈ noneState.present ∧
-      (step setting.levels Nat).Admits noneOfS ∧ ¬ (step setting.levels Nat).Admits noneOfT :=
-  ⟨rfl, show (0 : Nat) ∈ ({0, 1} : Finset Nat) by decide, noneOfS_admitted, noneOfT_refused⟩
+/-- **Absence does not transport**: in a state holding the evidence for `setEq S T`, the absence of
+members of `S` at `Ground → Ground` is admitted and the absence of members of `T` there is refused. -/
+theorem absence_does_not_transport :
+    (absenceState.label 0).1.code = setEq sCode tCode ∧ 0 ∈ absenceState.present ∧
+      (step setting.levels Nat).Admits absentS ∧ ¬ (step setting.levels Nat).Admits absentT :=
+  ⟨rfl, show (0 : Nat) ∈ ({0, 1} : Finset Nat) by decide, absentS_admitted, absentT_refused⟩
 
 /-- **Transport only makes rows**: it takes nothing, tells nothing, guards nothing and asks nothing. -/
 theorem transportBy_only_makes (st : State Tower.rules Nat) (i j k : Nat) (σ : st.frame ⟶ Transport.Omega) :
@@ -267,9 +267,9 @@ end EqualityOnTheStep.Controls
 #print axioms EqualityOnTheStep.Controls.idFamily_at_S
 #print axioms EqualityOnTheStep.Controls.idSets_uninhabited
 #print axioms EqualityOnTheStep.Controls.idFamily_no_respect
-#print axioms EqualityOnTheStep.Controls.noneOfS_admitted
-#print axioms EqualityOnTheStep.Controls.noneOfT_refused
-#print axioms EqualityOnTheStep.Controls.none_does_not_transport
+#print axioms EqualityOnTheStep.Controls.absentS_admitted
+#print axioms EqualityOnTheStep.Controls.absentT_refused
+#print axioms EqualityOnTheStep.Controls.absence_does_not_transport
 #print axioms EqualityOnTheStep.Controls.transportBy_only_makes
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

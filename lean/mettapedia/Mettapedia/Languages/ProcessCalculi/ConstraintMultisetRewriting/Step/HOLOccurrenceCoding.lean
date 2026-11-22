@@ -34,7 +34,7 @@ def finitePredicate (store : Finset O) : Option O → Prop
 def finiteValue (store : Finset O) : HOL.Ty.denote.{0,w+1} model.Carrier setType :=
   predicateValue model code (finitePredicate store)
 
-theorem invalid_code_false (store : Finset O) :
+theorem invalid_absent (store : Finset O) :
     ¬(finiteValue model code store (code.symm none)).down := by
   simp only [finiteValue, predicateValue, Equiv.apply_symm_apply, finitePredicate, not_false_eq_true]
 
@@ -61,7 +61,7 @@ def initialCoding (Obj : Type uO) (Tm : Obj → Type uT) (Hom : Obj → Obj → 
     Coding (HOLFrameDomains.initial Obj Tm Hom O other prior) O :=
   (HOLFrameCoding.parameterCoding (Obj := Obj) (Tm := Tm) (Hom := Hom) O other prior .occurrences).trans Equiv.ulift
 
-#print axioms invalid_code_false
+#print axioms invalid_absent
 #print axioms initialCoding
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLOccurrenceCoding

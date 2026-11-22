@@ -9,7 +9,7 @@ import Mettapedia.GSLT.Contracts.ContractDimensions
 import Mettapedia.GSLT.Contracts.AdministrationJoins
 import Mettapedia.GSLT.Contracts.SocietyControls
 import Mettapedia.GSLT.Contracts.CoordinationFreedom
-import Mettapedia.GSLT.Contracts.NoneFrontier
+import Mettapedia.GSLT.Contracts.AbsenceFrontier
 import Mettapedia.GSLT.Contracts.FrontierNegation
 import Mettapedia.GSLT.Contracts.ConsumptionArbitration
 import Mettapedia.GSLT.Contracts.ConeCapabilities
@@ -132,7 +132,7 @@ confluence; firing absence rules only at a frontier, where the strata they
 read are quiescent, restores determinacy
 (`Contracts.Coordination.stratified_determinate`).  In a self-modifying space a
 frontier for a pattern is a region closed under outputs that contains no match
-(`Contracts.NoneFrontier.frontier_iff_closedRegion`), and absence read there
+(`Contracts.AbsenceFrontier.frontier_iff_closedRegion`), and absence read there
 is final.  Under the over-approximation of firing, absence at a frontier is
 exactly intuitionistic negation over the reachable states
 (`Contracts.FrontierNegation.knot_iff_absent_frontier`); it is sound for every

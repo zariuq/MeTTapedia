@@ -66,12 +66,12 @@ theorem holds_iff (name : O → P) (injective : Function.Injective name) (candid
               (same occurrence present).mpr matched⟩
       | none =>
           constructor
-          · intro missing occurrence present matched
-            exact missing (name occurrence) (Finset.mem_image_of_mem name present)
+          · intro absent occurrence present matched
+            exact absent (name occurrence) (Finset.mem_image_of_mem name present)
               ((same occurrence present).mpr matched)
-          · intro missing physical present matched
+          · intro absent physical present matched
             obtain ⟨occurrence, sourcePresent, rfl⟩ := Finset.mem_image.mp present
-            exact missing occurrence sourcePresent ((same occurrence sourcePresent).mp matched)
+            exact absent occurrence sourcePresent ((same occurrence sourcePresent).mp matched)
   | count pattern cardinality =>
       rw [Holds, Holds, region_image locals name candidate rows represented world agrees pattern,
         Finset.card_image_of_injective _ injective]

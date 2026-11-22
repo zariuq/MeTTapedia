@@ -18,7 +18,7 @@ region (`EntryToQuery.Traced`).
   read are exactly `(= (double 4) 8)` at position `1`: the query reads it and no other firing reads
   a row. PeTTa's run of the translation is the one request reading that row, and it answers `8`.
   So on this instance the whole-run triangle holds for rows read and for the answer, and the words
-  differ exactly by HE's none guards over declarations (`WholeRunWords.whole_run_guards`).
+  differ exactly by HE's absence guards over declarations (`WholeRunWords.whole_run_guards`).
 
 ## Controls
 

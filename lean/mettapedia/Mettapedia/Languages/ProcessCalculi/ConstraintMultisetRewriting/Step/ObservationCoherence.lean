@@ -413,34 +413,34 @@ open Classical in
 /-- **Unseen fresh names interfere**: for a client that has seen neither name, the two ends are one
 end, and the amplitudes add. -/
 theorem alternatives_interfere (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (missing : r' ∉ C.present) (same : label r' = label r) (unseen : r ∉ E) (unseen' : r' ∉ E)
+    (absent : r' ∉ C.present) (same : label r' = label r) (unseen : r ∉ E) (unseen' : r' ∉ E)
     (amp : Bool → Amplitude) :
     weight (fun _ => ()) (alternativeEnd A label E f C r r') amp Finset.univ () =
       born (amp false + amp true) :=
   weight_pair_shared _ ((privateEnd_eq_iff A label E (ConfigurationClass.mk A (f.result label C))
     (ConfigurationClass.mk A ((f.rename (Equiv.swap r r')).result label C))).mpr
-    (fresh_alternative_equivalent valid made missing same unseen unseen')) amp
+    (fresh_alternative_equivalent valid made absent same unseen unseen')) amp
 
 open Classical in
 /-- **A held fresh name records the alternative**: for a client holding the first name, the two
 ends differ, and the weights add. -/
 theorem alternatives_recorded (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (missing : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.selection.made) (seen : r ∈ E)
+    (absent : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.selection.made) (seen : r ∈ E)
     (amp : Bool → Amplitude) :
     weight (fun _ => ()) (alternativeEnd A label E f C r r') amp Finset.univ () =
       born (amp false) + born (amp true) :=
-  weight_pair_apart _ (fun ends => fresh_alternative_separated valid made missing same new seen
+  weight_pair_apart _ (fun ends => fresh_alternative_separated valid made absent same new seen
     ((privateEnd_eq_iff A label E (ConfigurationClass.mk A (f.result label C))
       (ConfigurationClass.mk A ((f.rename (Equiv.swap r r')).result label C))).mp ends)) amp
 
 /-- **The two ends are one exactly when neither name has escaped.** -/
 theorem alternativeEnd_eq_iff (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (missing : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.selection.made) :
+    (absent : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.selection.made) :
     alternativeEnd A label E f C r r' false = alternativeEnd A label E f C r r' true ↔
       r ∉ E ∧ r' ∉ E :=
   (privateEnd_eq_iff A label E (ConfigurationClass.mk A (f.result label C))
     (ConfigurationClass.mk A ((f.rename (Equiv.swap r r')).result label C))).trans
-    (fresh_alternative_equivalent_iff valid made missing same new)
+    (fresh_alternative_equivalent_iff valid made absent same new)
 
 end Interference
 

@@ -166,7 +166,7 @@ theorem tower_within_decided_of_firing
       run (withinTower.solver larger) problem larger = run (withinTower.solver budget) problem budget ∧
       ((∃ state finished, run (withinTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (withinTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (withinTower.solver larger) problem larger = .refuted absent)) :=
   read_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     (fun fuel _ problem => sortTower.round fuel problem) (fun fuel _ problem => towerWithin fuel problem)
@@ -185,7 +185,7 @@ theorem tower_within_decided_of_reads
       run (withinTower.solver larger) problem larger = run (withinTower.solver budget) problem budget ∧
       ((∃ state finished, run (withinTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (withinTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (withinTower.solver larger) problem larger = .refuted absent)) :=
   tower_within_decided_of_firing (fun held nonempty => by
     obtain ⟨bound, read⟩ := reads held nonempty
     refine ⟨bound, fun larger enough => ?_⟩
@@ -223,7 +223,7 @@ theorem tower_within_decided_of_uncovered
       run (withinTower.solver larger) problem larger = run (withinTower.solver budget) problem budget ∧
       ((∃ state finished, run (withinTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (withinTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (withinTower.solver larger) problem larger = .refuted absent)) :=
   tower_within_decided_of_reads (fun {_} {problem} permuted nonempty => by
       obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : MixedCoveredHead equation

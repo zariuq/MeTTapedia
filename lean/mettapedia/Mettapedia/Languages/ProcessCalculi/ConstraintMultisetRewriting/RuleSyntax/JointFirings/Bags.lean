@@ -27,7 +27,7 @@ From these alone:
   member this is `Firing.Fresh` word for word;
 * **the fit** (`Bag.Fits`): joint freshness, the taken rows of all members distinct, the made identities
   of all members distinct, and for every member one row per pattern;
-* the **guard predicate** (`Bag.Holds`): the guard predicate of every member, at one solution. The none query,
+* the **guard predicate** (`Bag.Holds`): the guard predicate of every member, at one solution. Absence,
   counts and collect query read the entry state, as they do for one firing;
 * the **result** (`Bag.result`): the extended frame, the joint information as knowledge, the store after
   the joint commit, and every made identity labelled by its opened made row.

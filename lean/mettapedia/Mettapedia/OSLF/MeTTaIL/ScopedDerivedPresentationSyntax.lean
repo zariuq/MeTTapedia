@@ -44,7 +44,7 @@ mutual
         rw [List.getElem?_append_left inPrefix] at lookup
         exact lookup
     | fvar lookup => exact .fvar lookup
-    | quote processTyped admitted =>
+    | quote processTyped =>
         rename_i process
         have processSafe :
             binderSafeAt presentation.quoteConstructor 0 process = true := by
@@ -58,7 +58,7 @@ mutual
               processTyped processSafe)
         exact .quote (by
           simpa using processClosed.weakenBoundRight
-            (List.replicate depth presentation.nameSort)) admitted
+            (List.replicate depth presentation.nameSort))
 
   /-- Process form of binder-prefix restriction. -/
   theorem procWellSorted_restrictToBinderPrefix

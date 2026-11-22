@@ -186,6 +186,42 @@ prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) ((
 rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite T0. reflexivity. } exact nat_0.
 Qed.
 
+Definition Lean_Nat_mrec : set -> (set -> set -> set) -> set -> set := fun h0 h1 t => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set =>
+    SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) t.
+Theorem Lean_Nat_miota0 : forall h0:set, forall h1:(set -> set -> set), Lean_Nat_mrec h0 h1 (Lean_Nat_zero_node) = h0.
+let h0 h1.
+prove IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) (IndNode Lean_Nat_K
+    Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 0 (TupArgs 0 SeqNil)) = h0.
+rewrite IndRec_iota Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct Lean_Nat_bounded Lean_Nat_arity (fun k a r:set => SeqAt (SeqCons (h0)
+    (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) 0 (ordsuccI1 1 0 (ordsuccI2 0)) (TupArgs 0 SeqNil) (Lean_Nat_zero_args ).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 0 SeqNil) 0) ((IndRes Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 0 (fun j => IndRec Lean_Nat_K
+    Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) ((TupArgs 0 SeqNil) j))) 0))) SeqNil))
+    0 = h0.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Nat_miota1 : forall h0:set, forall h1:(set -> set -> set), forall x0 :e Lean_Nat, Lean_Nat_mrec h0 h1 (Lean_Nat_succ_node x0) = (h1 x0 (Lean_Nat_mrec h0 h1 x0)).
+let h0 h1. let x0. assume H0: x0 :e Lean_Nat.
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+claim R0: (IndRes Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (fun j => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix
+    Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) ((TupArgs 1 (SeqCons (x0) SeqNil)) j))) 0 = Lean_Nat_mrec h0 h1 x0.
+{ rewrite IndRes_at Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (fun j => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix
+    Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) ((TupArgs 1 (SeqCons (x0) SeqNil)) j)) 0 (In_eq_rs 0 (Lean_Nat_N 1) 1 Lean_Nat_N1 (ordsuccI2
+    0)) Lean_Nat_R1_0. prove IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil))
+    k) ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) = IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a
+    0) (r 0))) SeqNil)) k) x0. rewrite T0. reflexivity. }
+prove IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) (IndNode Lean_Nat_K
+    Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (TupArgs 1 (SeqCons (x0) SeqNil))) = (h1 x0 (Lean_Nat_mrec h0 h1 x0)).
+rewrite IndRec_iota Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct Lean_Nat_bounded Lean_Nat_arity (fun k a r:set => SeqAt (SeqCons (h0)
+    (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) 1 (ordsuccI2 1) (TupArgs 1 (SeqCons (x0) SeqNil)) (Lean_Nat_succ_args x0 H0).
+prove SeqAt (SeqCons (h0) (SeqCons ((h1 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) ((IndRes Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 1 (fun j => IndRec
+    Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) ((TupArgs 1 (SeqCons (x0)
+    SeqNil)) j))) 0))) SeqNil)) 1 = (h1 x0 (Lean_Nat_mrec h0 h1 x0)).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite T0. reflexivity. } exact nat_0.
+Qed.
+
 Theorem Lean_Nat_HM0 : forall C:set -> set, forall h0 h1, h0 :e (C Lean_Nat_zero_node) -> forall a :e IndArgs Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B
     Lean_Nat_All 0, forall r:set -> set, (forall j :e Lean_Nat_N 0, Lean_Nat_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) 0 a (IndRes
     Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B 0 r) :e C (IndNode Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O
@@ -271,6 +307,11 @@ claim HM: forall k :e Lean_Nat_K, forall a :e IndArgs Lean_Nat_K Lean_Nat_T Lean
 let t. assume Ht: t :e Lean_Nat.
 exact IndRec_type Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B Lean_Nat_distinct Lean_Nat_bounded Lean_Nat_arity (fun k a r:set => SeqAt (SeqCons (h0)
     (SeqCons ((h1 (a 0) (r 0))) SeqNil)) k) C HM t (SepE1 Lean_Nat_All (fun x:set => IndIdx Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B x = 0) t Ht).
+Qed.
+
+Theorem Lean_Nat_rec_In : forall C:set, forall h0 :e C, forall h1 :e (Pi_ x0 :e Lean_Nat, (Pi_ y0 :e C, C)), forall t :e Lean_Nat, Lean_Nat_rec h0 h1 t :e C.
+let C.
+exact Lean_Nat_rec_type (fun _ => C).
 Qed.
 
 Definition Lean_Nat_casesOn : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B (fun k a r:set => SeqAt
@@ -381,6 +422,11 @@ exact IndRec_type Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Na
     (SeqCons ((h1 (a 0))) SeqNil)) k) C HM t (SepE1 Lean_Nat_All (fun x:set => IndIdx Lean_Nat_K Lean_Nat_T Lean_Nat_N Lean_Nat_R Lean_Nat_F Lean_Nat_Ix Lean_Nat_O Lean_Nat_B x = 0) t Ht).
 Qed.
 
+Theorem Lean_Nat_casesOn_In : forall C:set, forall h0 :e C, forall h1 :e (Pi_ x0 :e Lean_Nat, C), forall t :e Lean_Nat, Lean_Nat_casesOn h0 h1 t :e C.
+let C.
+exact Lean_Nat_casesOn_type (fun _ => C).
+Qed.
+
 Theorem Lean_Nat_ind : forall P:set -> prop, (P Lean_Nat_zero_node) -> (forall x0 :e Lean_Nat, P x0 -> P (Lean_Nat_succ_node x0)) -> forall t :e Lean_Nat, P t.
 let P. assume H0. assume H1.
 claim M0: 0 :e {z :e 1 | P Lean_Nat_zero_node}.
@@ -406,6 +452,7 @@ apply Lean_Nat_ind.
   - let x0. assume Hx0. assume IH0. exact (Pi_0_ap (motive x0) (fun y0 => (motive (Lean_Nat_succ_node x0))) (Pi_0_ap Lean_Nat (fun x0 => (Pi_ y0 :e (motive x0), (motive (Lean_Nat_succ_node x0)))) H1
     x0 Hx0) 0 IH0).
 Qed.
+
 
 
 Theorem Lean_Nat_noconf0_1 : forall y0, Lean_Nat_zero_node <> (Lean_Nat_succ_node y0).
@@ -645,6 +692,27 @@ prove SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) 1 = h1.
 rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
 Qed.
 
+Definition Lean_Bool_mrec : set -> set -> set -> set := fun h0 h1 t => IndRec Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons (h1) SeqNil)) k) t.
+Theorem Lean_Bool_miota0 : forall h0:set, forall h1:set, Lean_Bool_mrec h0 h1 (Lean_Bool_false_node) = h0.
+let h0 h1.
+prove IndRec Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) k) (IndNode Lean_Bool_K
+    Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B 0 (TupArgs 0 SeqNil)) = h0.
+rewrite IndRec_iota Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B Lean_Bool_distinct Lean_Bool_bounded Lean_Bool_arity (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons (h1) SeqNil)) k) 0 (ordsuccI1 1 0 (ordsuccI2 0)) (TupArgs 0 SeqNil) (Lean_Bool_false_args ).
+prove SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) 0 = h0.
+rewrite SeqAt_0. reflexivity.
+Qed.
+Theorem Lean_Bool_miota1 : forall h0:set, forall h1:set, Lean_Bool_mrec h0 h1 (Lean_Bool_true_node) = h1.
+let h0 h1.
+prove IndRec Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) k) (IndNode Lean_Bool_K
+    Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B 1 (TupArgs 0 SeqNil)) = h1.
+rewrite IndRec_iota Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B Lean_Bool_distinct Lean_Bool_bounded Lean_Bool_arity (fun k a r:set => SeqAt
+    (SeqCons (h0) (SeqCons (h1) SeqNil)) k) 1 (ordsuccI2 1) (TupArgs 0 SeqNil) (Lean_Bool_true_args ).
+prove SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) 1 = h1.
+rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0.
+Qed.
+
 Theorem Lean_Bool_HM0 : forall C:set -> set, forall h0 h1, h0 :e (C Lean_Bool_false_node) -> forall a :e IndArgs Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O
     Lean_Bool_B Lean_Bool_All 0, forall r:set -> set, (forall j :e Lean_Bool_N 0, Lean_Bool_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) (SeqCons (h1) SeqNil)) k) 0 a (IndRes
     Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix Lean_Bool_O Lean_Bool_B 0 r) :e C (IndNode Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Lean_Bool_Ix
@@ -717,6 +785,12 @@ exact IndRec_type Lean_Bool_K Lean_Bool_T Lean_Bool_N Lean_Bool_R Lean_Bool_F Le
     Ht).
 Qed.
 
+Theorem Lean_Bool_rec_In : forall C:set, forall h0 :e C, forall h1 :e C, forall t :e Lean_Bool, Lean_Bool_rec h0 h1 t :e C.
+let C.
+exact Lean_Bool_rec_type (fun _ => C).
+Qed.
+
+
 
 
 Theorem Lean_Bool_ind : forall P:set -> prop, (P Lean_Bool_false_node) -> (P Lean_Bool_true_node) -> forall t :e Lean_Bool, P t.
@@ -739,6 +813,7 @@ apply Lean_Bool_ind.
   - exact H0.
   - exact H1.
 Qed.
+
 
 
 Theorem Lean_Bool_noconf0_1 : Lean_Bool_false_node <> Lean_Bool_true_node.
@@ -960,6 +1035,26 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) (
 rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
 Qed.
 
+Definition Lean_Prod_mrec : (set -> set -> set) -> set -> set := fun h0 t => IndRec Lean_Prod_K Lean_Prod_T Lean_Prod_N Lean_Prod_R Lean_Prod_F Lean_Prod_Ix Lean_Prod_O Lean_Prod_B (fun k a r:set =>
+    SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) t.
+Theorem Lean_Prod_miota0 : forall h0:(set -> set -> set), forall x0 :e P0, forall x1 :e P1, Lean_Prod_mrec h0 (Lean_Prod_mk_node x0 x1) = (h0 x0 x1).
+let h0. let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P1.
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 (ordsuccI1 1 0 (ordsuccI2 0)). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 (ordsuccI2 1). exact U1. }
+prove IndRec Lean_Prod_K Lean_Prod_T Lean_Prod_N Lean_Prod_R Lean_Prod_F Lean_Prod_Ix Lean_Prod_O Lean_Prod_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) (IndNode Lean_Prod_K
+    Lean_Prod_T Lean_Prod_N Lean_Prod_R Lean_Prod_F Lean_Prod_Ix Lean_Prod_O Lean_Prod_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) = (h0 x0 x1).
+rewrite IndRec_iota Lean_Prod_K Lean_Prod_T Lean_Prod_N Lean_Prod_R Lean_Prod_F Lean_Prod_Ix Lean_Prod_O Lean_Prod_B Lean_Prod_distinct Lean_Prod_bounded Lean_Prod_arity (fun k a r:set => SeqAt
+    (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) 0 (ordsuccI2 0) (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) (Lean_Prod_mk_args x0 H0 x1 H1).
+prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1))) SeqNil) 0 = (h0 x0 x1).
+rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
+Qed.
+
 Theorem Lean_Prod_HM0 : forall C:set -> set, forall h0, h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P1, (C (Lean_Prod_mk_node x0 x1)))) -> forall a :e IndArgs Lean_Prod_K Lean_Prod_T Lean_Prod_N Lean_Prod_R
     Lean_Prod_F Lean_Prod_Ix Lean_Prod_O Lean_Prod_B Lean_Prod_All 0, forall r:set -> set, (forall j :e Lean_Prod_N 0, Lean_Prod_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a
     0) (a 1))) SeqNil) k) 0 a (IndRes Lean_Prod_K Lean_Prod_T Lean_Prod_N Lean_Prod_R Lean_Prod_F Lean_Prod_Ix Lean_Prod_O Lean_Prod_B 0 r) :e C (IndNode Lean_Prod_K Lean_Prod_T Lean_Prod_N
@@ -1013,6 +1108,12 @@ exact IndRec_type Lean_Prod_K Lean_Prod_T Lean_Prod_N Lean_Prod_R Lean_Prod_F Le
     Ht).
 Qed.
 
+Theorem Lean_Prod_rec_In : forall C:set, forall h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P1, C)), forall t :e Lean_Prod, Lean_Prod_rec h0 t :e C.
+let C.
+exact Lean_Prod_rec_type (fun _ => C).
+Qed.
+
+
 
 
 Theorem Lean_Prod_ind : forall P:set -> prop, (forall x0 :e P0, forall x1 :e P1, P (Lean_Prod_mk_node x0 x1)) -> forall t :e Lean_Prod, P t.
@@ -1035,6 +1136,19 @@ let motive. assume H0.
 apply Lean_Prod_ind.
   let x0. assume Hx0. let x1. assume Hx1. exact (Pi_0_ap P1 (fun x1 => (motive (Lean_Prod_mk_node x0 x1))) (Pi_0_ap P0 (fun x0 => (Pi_ x1 :e P1, (motive (Lean_Prod_mk_node x0 x1)))) H0 x0 Hx0) x1
     Hx1).
+Qed.
+
+Theorem Lean_Prod_field0_typed : forall s :e Lean_Prod, Lean_RecordField 0 s :e P0.
+apply Lean_Prod_ind.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P1.
+prove (proj1 (Lean_Prod_mk_node x0 x1)) 0 :e P0.
+rewrite Lean_Prod_mk_field0 x0 x1. exact H0.
+Qed.
+Theorem Lean_Prod_field1_typed : forall s :e Lean_Prod, Lean_RecordField 1 s :e P1.
+apply Lean_Prod_ind.
+let x0. assume H0: x0 :e P0. let x1. assume H1: x1 :e P1.
+prove (proj1 (Lean_Prod_mk_node x0 x1)) 1 :e P1.
+rewrite Lean_Prod_mk_field1 x0 x1. exact H1.
 Qed.
 
 
@@ -1841,6 +1955,179 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0)))
 rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite R1. rewrite T0. rewrite T1. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
 Qed.
 
+Definition Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec : (set -> set) -> (set -> set) -> (set -> set -> set -> set -> set) -> set -> set := fun h0 h1 h2 t => IndRec
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a
+    0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) t.
+Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_miota0 : forall h0:(set -> set), forall h1:(set -> set), forall h2:(set -> set -> set -> set -> set), forall x0 :e Lean_Nat,
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node x0) = (h0 x0).
+let h0 h1 h2. let x0. assume H0: x0 :e Lean_Nat.
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+prove IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) (IndNode Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B 0 (TupArgs 1 (SeqCons (x0) SeqNil))) = (h0 x0).
+rewrite IndRec_iota Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_distinct Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_bounded
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) 0
+    (ordsuccI1 2 0 (ordsuccI1 1 0 (ordsuccI2 0))) (TupArgs 1 (SeqCons (x0) SeqNil)) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_args x0 H0).
+prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h2 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) ((TupArgs 1 (SeqCons (x0)
+    SeqNil)) 1) ((IndRes Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    0 (fun j => IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs 1 (SeqCons (x0) SeqNil)) j))) 0) ((IndRes
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B 0 (fun j => IndRec
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a
+    0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs 1 (SeqCons (x0) SeqNil)) j))) 1))) SeqNil))) 0 = (h0 x0).
+rewrite SeqAt_0. rewrite T0. reflexivity.
+Qed.
+Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_miota1 : forall h0:(set -> set), forall h1:(set -> set), forall h2:(set -> set -> set -> set -> set), forall x0 :e Lean_Nat,
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node x0) = (h1 x0).
+let h0 h1 h2. let x0. assume H0: x0 :e Lean_Nat.
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+prove IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) (IndNode Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B 1 (TupArgs 1 (SeqCons (x0) SeqNil))) = (h1 x0).
+rewrite IndRec_iota Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_distinct Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_bounded
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) 1
+    (ordsuccI1 2 1 (ordsuccI2 1)) (TupArgs 1 (SeqCons (x0) SeqNil)) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_args x0 H0).
+prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h2 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0) ((TupArgs 1 (SeqCons (x0)
+    SeqNil)) 1) ((IndRes Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    1 (fun j => IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs 1 (SeqCons (x0) SeqNil)) j))) 0) ((IndRes
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B 1 (fun j => IndRec
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a
+    0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs 1 (SeqCons (x0) SeqNil)) j))) 1))) SeqNil))) 1 = (h1 x0).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite T0. reflexivity. } exact nat_0.
+Qed.
+Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_miota2 : forall h0:(set -> set), forall h1:(set -> set), forall h2:(set -> set -> set -> set -> set), forall x0 :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, forall x1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm,
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node x0 x1) = (h2 x0 x1
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 x0) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 x1)).
+let h0 h1 h2. let x0. assume H0: x0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm. let x1. assume H1: x1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm.
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 (ordsuccI1 1 0 (ordsuccI2 0)). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 (ordsuccI2 1). exact U1. }
+claim R0: (IndRes Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    2 (fun j => IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j))) 0 =
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 x0.
+{ rewrite IndRes_at Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    2 (fun j => IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j)) 0 (In_eq_rs 0
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N 2) 2 Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N2 (ordsuccI1 1 0 (ordsuccI2 0)))
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R2_0. prove IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs
+    2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) = IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) x0. rewrite T0. reflexivity. }
+claim R1: (IndRes Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    2 (fun j => IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j))) 1 =
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 x1.
+{ rewrite IndRes_at Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    2 (fun j => IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j)) 1 (In_eq_rs 1
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N 2) 2 Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N2 (ordsuccI2 1))
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R2_1. prove IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs
+    2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1) = IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) x1. rewrite T1. reflexivity. }
+prove IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) (IndNode Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B 2 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) = (h2 x0 x1
+    (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 x0) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 x1)).
+rewrite IndRec_iota Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_distinct Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_bounded
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) 2
+    (ordsuccI2 2) (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_args x0 H0 x1 H1).
+prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0))) (SeqCons ((h1 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0))) (SeqCons ((h2 ((TupArgs 2 (SeqCons (x0) (SeqCons
+    (x1) SeqNil))) 0) ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1) ((IndRes Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B 2 (fun j => IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs
+    2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j))) 0) ((IndRes Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    2 (fun j => IndRec Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) (SeqCons ((h2 (a 0) (a 1) (r 0) (r 1))) SeqNil))) k) ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) j))) 1))) SeqNil))) 2 =
+    (h2 x0 x1 (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 x0) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mrec h0 h1 h2 x1)).
+rewrite SeqAt_S. { rewrite SeqAt_S. { rewrite SeqAt_0. rewrite R0. rewrite R1. rewrite T0. rewrite T1. reflexivity. } exact nat_0. } exact (nat_ordsucc 0 nat_0).
+Qed.
+
 Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_HM0 : forall C:set -> set, forall h0 h1 h2, h0 :e (Pi_ x0 :e Lean_Nat, (C
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node x0))) -> forall a :e IndArgs Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_K
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R
@@ -2224,6 +2511,13 @@ exact IndRec_type Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_T Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_N Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_R
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_F Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_Ix Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_O
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B x = 0) t Ht).
+Qed.
+
+Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_rec_In : forall C:set, forall h0 :e (Pi_ x0 :e Lean_Nat, C), forall h1 :e (Pi_ x0 :e Lean_Nat, C), forall h2 :e (Pi_ x0 :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, (Pi_ x1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, (Pi_ y0 :e C, (Pi_ y1 :e C, C)))), forall t :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_rec h0 h1 h2 t :e C.
+let C.
+exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_rec_type (fun _ => C).
 Qed.
 
 Definition Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn : set -> set -> set -> set -> set := fun h0 h1 h2 t => IndRec
@@ -2656,6 +2950,13 @@ exact IndRec_type Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_B x = 0) t Ht).
 Qed.
 
+Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_In : forall C:set, forall h0 :e (Pi_ x0 :e Lean_Nat, C), forall h1 :e (Pi_ x0 :e Lean_Nat, C), forall h2 :e (Pi_ x0 :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, (Pi_ x1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, C)), forall t :e
+    Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn h0 h1 h2 t :e C.
+let C.
+exact Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_casesOn_type (fun _ => C).
+Qed.
+
 Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_ind : forall P:set -> prop, (forall x0 :e Lean_Nat, P (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node
     x0)) -> (forall x0 :e Lean_Nat, P (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_var_node x0)) -> (forall x0 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm,
     forall x1 :e Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, P x0 -> P x1 -> P (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node x0 x1)) -> forall t :e
@@ -2705,6 +3006,7 @@ apply Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_ind.
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, (Pi_ y0 :e (motive x0), (Pi_ y1 :e (motive x1), (motive (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node x0
     x1)))))) H2 x0 Hx0) x1 Hx1) 0 IH0) 0 IH1).
 Qed.
+
 
 
 Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_noconf0_1 : forall x0, forall y0, (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node x0) <>
@@ -3285,6 +3587,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 
 rewrite SeqAt_S. { rewrite SeqAt_0. rewrite T0. reflexivity. } exact nat_0.
 Qed.
 
+
 Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_HM0 : forall C:set -> set -> set -> set, forall h0 h1, h0 :e (Pi_ x0 :e
     Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm, (C (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_mul_node x0
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))) (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Tm_lit_node (LeanNum 0))
@@ -3830,6 +4133,9 @@ Qed.
 
 
 
+
+
+
 Theorem Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_noconf0_1 : forall x0, forall y0, (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node x0) <>
     (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroL_node y0).
 let x0 y0. assume H: (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroR_node x0) = (Lean_Mettapedia_GSLT_Dynamics_ProofDeterminedGeneralization_Deriv_mulZeroL_node y0).
@@ -4047,6 +4353,7 @@ prove SeqAt (SeqCons (h0) SeqNil) 0 = h0.
 rewrite SeqAt_0. reflexivity.
 Qed.
 
+
 Theorem Lean_Eq_HM0 : forall C:set -> set -> set, forall h0, h0 :e (C P1 Lean_Eq_refl_node) -> forall a :e IndArgs Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix Lean_Eq_O Lean_Eq_B
     Lean_Eq_All 0, forall r:set -> set, (forall j :e Lean_Eq_N 0, Lean_Eq_R 0 j -> r j :e (fun t:set => C (IndIdx Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix Lean_Eq_O Lean_Eq_B t)
     t) (a j)) -> (fun k a r:set => SeqAt (SeqCons (h0) SeqNil) k) 0 a (IndRes Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix Lean_Eq_O Lean_Eq_B 0 r) :e (fun t:set => C (IndIdx
@@ -4099,6 +4406,9 @@ exact In_fam_eq (fun z:set => C z t) (IndIdx Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_
     Lean_Eq_distinct Lean_Eq_bounded Lean_Eq_arity (fun k a r:set => SeqAt (SeqCons (h0) SeqNil) k) (fun t:set => C (IndIdx Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix Lean_Eq_O
     Lean_Eq_B t) t) HM t (SepE1 Lean_Eq_All (fun x:set => IndIdx Lean_Eq_K Lean_Eq_T Lean_Eq_N Lean_Eq_R Lean_Eq_F Lean_Eq_Ix Lean_Eq_O Lean_Eq_B x = i) t Ht)).
 Qed.
+
+
+
 
 
 
@@ -4512,6 +4822,39 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 
 rewrite SeqAt_S. { rewrite SeqAt_0. rewrite T0. reflexivity. } exact nat_0.
 Qed.
 
+Definition Lean_Decidable_mrec : (set -> set) -> (set -> set) -> set -> set := fun h0 h1 t => IndRec Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F
+    Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) SeqNil)) k) t.
+Theorem Lean_Decidable_miota0 : forall h0:(set -> set), forall h1:(set -> set), forall x0 :e (Pi_ ux :e P0, Lean_False_Prop), Lean_Decidable_mrec h0 h1 (Lean_Decidable_isFalse_node x0) = (h0 x0).
+let h0 h1. let x0. assume H0: x0 :e (Pi_ ux :e P0, Lean_False_Prop).
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+prove IndRec Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0)))
+    (SeqCons ((h1 (a 0))) SeqNil)) k) (IndNode Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B 0 (TupArgs 1
+    (SeqCons (x0) SeqNil))) = (h0 x0).
+rewrite IndRec_iota Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B Lean_Decidable_distinct
+    Lean_Decidable_bounded Lean_Decidable_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) SeqNil)) k) 0 (ordsuccI1 1 0 (ordsuccI2 0)) (TupArgs 1 (SeqCons (x0) SeqNil))
+    (Lean_Decidable_isFalse_args x0 H0).
+prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) SeqNil)) 0 = (h0 x0).
+rewrite SeqAt_0. rewrite T0. reflexivity.
+Qed.
+Theorem Lean_Decidable_miota1 : forall h0:(set -> set), forall h1:(set -> set), forall x0 :e P0, Lean_Decidable_mrec h0 h1 (Lean_Decidable_isTrue_node x0) = (h1 x0).
+let h0 h1. let x0. assume H0: x0 :e P0.
+claim U0: SeqAt (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 1 (SeqCons (x0) SeqNil) 0 = x0.
+{ rewrite TupArgs_at 1 (SeqCons (x0) SeqNil) 0 (ordsuccI2 0). exact U0. }
+prove IndRec Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0)))
+    (SeqCons ((h1 (a 0))) SeqNil)) k) (IndNode Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B 1 (TupArgs 1
+    (SeqCons (x0) SeqNil))) = (h1 x0).
+rewrite IndRec_iota Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B Lean_Decidable_distinct
+    Lean_Decidable_bounded Lean_Decidable_arity (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) SeqNil)) k) 1 (ordsuccI2 1) (TupArgs 1 (SeqCons (x0) SeqNil))
+    (Lean_Decidable_isTrue_args x0 H0).
+prove SeqAt (SeqCons ((h0 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) (SeqCons ((h1 ((TupArgs 1 (SeqCons (x0) SeqNil)) 0))) SeqNil)) 1 = (h1 x0).
+rewrite SeqAt_S. { rewrite SeqAt_0. rewrite T0. reflexivity. } exact nat_0.
+Qed.
+
 Theorem Lean_Decidable_HM0 : forall C:set -> set, forall h0 h1, h0 :e (Pi_ x0 :e (Pi_ ux :e P0, Lean_False_Prop), (C (Lean_Decidable_isFalse_node x0))) -> forall a :e IndArgs Lean_Decidable_K
     Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B Lean_Decidable_All 0, forall r:set -> set, (forall j :e Lean_Decidable_N 0,
     Lean_Decidable_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0))) (SeqCons ((h1 (a 0))) SeqNil)) k) 0 a (IndRes Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N
@@ -4605,6 +4948,12 @@ exact IndRec_type Lean_Decidable_K Lean_Decidable_T Lean_Decidable_N Lean_Decida
     Lean_Decidable_T Lean_Decidable_N Lean_Decidable_R Lean_Decidable_F Lean_Decidable_Ix Lean_Decidable_O Lean_Decidable_B x = 0) t Ht).
 Qed.
 
+Theorem Lean_Decidable_rec_In : forall C:set, forall h0 :e (Pi_ x0 :e (Pi_ ux :e P0, Lean_False_Prop), C), forall h1 :e (Pi_ x0 :e P0, C), forall t :e Lean_Decidable, Lean_Decidable_rec h0 h1 t :e C.
+let C.
+exact Lean_Decidable_rec_type (fun _ => C).
+Qed.
+
+
 
 
 Theorem Lean_Decidable_ind : forall P:set -> prop, (forall x0 :e (Pi_ ux :e P0, Lean_False_Prop), P (Lean_Decidable_isFalse_node x0)) -> (forall x0 :e P0, P (Lean_Decidable_isTrue_node x0)) -> forall
@@ -4632,6 +4981,7 @@ apply Lean_Decidable_ind.
   - let x0. assume Hx0. exact (Pi_0_ap (Pi_ ux :e P0, Lean_False_Prop) (fun x0 => (motive (Lean_Decidable_isFalse_node x0))) H0 x0 Hx0).
   - let x0. assume Hx0. exact (Pi_0_ap P0 (fun x0 => (motive (Lean_Decidable_isTrue_node x0))) H1 x0 Hx0).
 Qed.
+
 
 
 Theorem Lean_Decidable_noconf0_1 : forall x0, forall y0, (Lean_Decidable_isFalse_node x0) <> (Lean_Decidable_isTrue_node y0).
@@ -4881,6 +5231,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) (
 rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
 Qed.
 
+
 Theorem Lean_Exists_HM0 : forall C:set -> set, forall h0, h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, (C (Lean_Exists_intro_node x0 x1)))) -> forall a :e IndArgs Lean_Exists_K
     Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_Exists_F Lean_Exists_Ix Lean_Exists_O Lean_Exists_B Lean_Exists_All 0, forall r:set -> set, (forall j :e Lean_Exists_N 0, Lean_Exists_R 0 j -> r j
     :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) 0 a (IndRes Lean_Exists_K Lean_Exists_T Lean_Exists_N Lean_Exists_R Lean_Exists_F Lean_Exists_Ix Lean_Exists_O
@@ -4942,6 +5293,8 @@ Qed.
 
 
 
+
+
 Theorem Lean_Exists_ind : forall P:set -> prop, (forall x0 :e P0, forall x1 :e {z :e 1 | z :e (P1 x0)}, P (Lean_Exists_intro_node x0 x1)) -> forall t :e Lean_Exists, P t.
 let P. assume H0.
 claim M0: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, {z :e 1 | P (Lean_Exists_intro_node x0 x1)})).
@@ -4953,6 +5306,7 @@ claim M0: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e {z :e 1 | z :e (P1 x0)}, {z :e 1 | P (L
 let t. assume Ht: t :e Lean_Exists.
 exact SepE2 1 (fun z => P t) (Lean_Exists_rec 0 t) (Lean_Exists_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 
@@ -5241,6 +5595,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) (
 rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
 Qed.
 
+
 Theorem Lean_And_HM0 : forall C:set -> set, forall h0, h0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P1, (C (Lean_And_intro_node x0 x1)))) -> forall a :e IndArgs Lean_And_K Lean_And_T Lean_And_N Lean_And_R
     Lean_And_F Lean_And_Ix Lean_And_O Lean_And_B Lean_And_All 0, forall r:set -> set, (forall j :e Lean_And_N 0, Lean_And_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a
     1))) SeqNil) k) 0 a (IndRes Lean_And_K Lean_And_T Lean_And_N Lean_And_R Lean_And_F Lean_And_Ix Lean_And_O Lean_And_B 0 r) :e C (IndNode Lean_And_K Lean_And_T Lean_And_N Lean_And_R Lean_And_F
@@ -5294,6 +5649,8 @@ Qed.
 
 
 
+
+
 Theorem Lean_And_ind : forall P:set -> prop, (forall x0 :e P0, forall x1 :e P1, P (Lean_And_intro_node x0 x1)) -> forall t :e Lean_And, P t.
 let P. assume H0.
 claim M0: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P1, {z :e 1 | P (Lean_And_intro_node x0 x1)})).
@@ -5305,6 +5662,7 @@ claim M0: 0 :e (Pi_ x0 :e P0, (Pi_ x1 :e P1, {z :e 1 | P (Lean_And_intro_node x0
 let t. assume Ht: t :e Lean_And.
 exact SepE2 1 (fun z => P t) (Lean_And_rec 0 t) (Lean_And_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 
@@ -5408,3 +5766,4 @@ exact L w Hw.
 Qed.
 
 End Lean_And_Section.
+

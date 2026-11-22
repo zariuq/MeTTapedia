@@ -207,7 +207,7 @@ def ofSourceFVar {source : CIGSLT} {color : CostStaticColor}
     · simp [WellSorted.isObjectPattern]
     · exact typed.isWellScopedAt
     · intro presentation membership
-      simp [binderSafeAt]
+      simp
 
 end TypedCostStaticAtom
 

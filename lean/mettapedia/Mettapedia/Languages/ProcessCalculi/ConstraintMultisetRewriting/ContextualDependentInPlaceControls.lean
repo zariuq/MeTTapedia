@@ -15,7 +15,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 * **An occurs-check failure at depth is refused with a certificate.** Over
   `F : (A : U0) (c : A → A) (x : A) → A, P : Id _ F F`, where the later declaration `P` depends on
   `F`, the store `F A c x ≐ c (F A c x)` is refuted: strengthened past `P`, the occurs check refutes
-  it over `F`. The refutation carries the lack of solutions. The Π solver leaves it suspended.
+  it over `F`. The refutation carries the absence of solutions. The Π solver leaves it suspended.
 * **A solvable equation at the same depth commits**: `F A c x ≐ c x` over `F, P` is solved with a
   principal answer, `P`'s type instantiated.
 
@@ -255,7 +255,7 @@ theorem blocked_decided :
       run (inPlaceTower.solver larger) blockedStore larger = run (inPlaceTower.solver budget) blockedStore budget ∧
       ((∃ state finished, run (inPlaceTower.solver larger) blockedStore larger = .solved state finished ∧
           (frames setting.levels).Principal blockedStore state.answer) ∨
-        (∃ missing, run (inPlaceTower.solver larger) blockedStore larger = .refuted missing)) :=
+        (∃ absent, run (inPlaceTower.solver larger) blockedStore larger = .refuted absent)) :=
   blockedSettled.decided (Or.inr rfl)
 
 /-- **The witness is decided with a principal answer**, since it is solvable. -/
@@ -266,9 +266,9 @@ theorem blocked_decided_principal :
         (frames setting.levels).Principal blockedStore state.answer := by
   obtain ⟨budget, decided⟩ := blocked_decided
   refine ⟨budget, fun larger enough => ⟨(decided larger enough).1, ?_⟩⟩
-  rcases (decided larger enough).2 with principal | ⟨missing, _⟩
+  rcases (decided larger enough).2 with principal | ⟨absent, _⟩
   · exact principal
-  · exact absurd blocked_solvable missing
+  · exact absurd blocked_solvable absent
 
 /-- **The witness of R90, now decided**: in the fragment, solvable, and decided at one joint budget with a
 principal answer by the in-place family. -/
@@ -309,7 +309,7 @@ def deepAppliedStore : EquationStore (TotalTerm guarded) :=
 /-- **The in-place solver refutes the deep occurrence.** -/
 theorem deep_occurs_refuted : (run inPlaceOnly deepOccursStore 2).readout = .refuted := by decide +kernel
 
-/-- **The refutation is certified**: it carries the lack of solutions. -/
+/-- **The refutation is certified**: it carries the absence of solutions. -/
 theorem deep_occurs_unsolvable : ¬ (frames setting.levels).Solvable deepOccursStore :=
   drive_refuted inPlaceOnly 2 _ deep_occurs_refuted
 

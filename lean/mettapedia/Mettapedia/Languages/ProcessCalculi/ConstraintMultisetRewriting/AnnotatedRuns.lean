@@ -11,7 +11,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Inte
 A firing of the candidate step is a rule instance, its region queries and its selected
 occurrences. A region query (`PredicateQueryAdmission.RegionQuery`) has, at each solution, a region
 of labels and an observation of the occurrences in it, for example exactly a seen set (the predicate query of
-the admission form, `Query.toRegion`), a count, or a none query. Its admission is
+the admission form, `Query.toRegion`), a count, or an absence. Its admission is
 `PredicateQueryAdmission.RegionValid`: the firing's own admission, and every query asked at every
 solution of the firing's cut against the occurrences present before it. Its update is the existing
 `Selection.result`. A run is a word of firings, each admitted where its predecessors left the
@@ -980,7 +980,7 @@ theorem lift_swapStep {w : List (Firing T S O)} {l : List (Commit O T)}
 runs of the same firings, with fresh and pairwise distinct footprints, are trace equivalent:
 the trace of such a run is its set of firings, ordered by what they make and use. This carries
 `OccurrenceCommits.positive_runs_traceEq` from footprints to firings. With predicate queries it
-fails: a none query can be falsified and restored (`OccurrenceCommits.Controls.restored_none_two_traces`). -/
+fails: an absence can be falsified and restored (`OccurrenceCommits.Controls.restored_absence_two_traces`). -/
 theorem same_firings_traceEquiv {C : Configuration T O} {w₁ w₂ : List (Firing T S O)}
     (plain : ∀ f ∈ w₁, f.rule.checks = [] ∧ f.queries = [])
     (fresh : MeTTaCalculus.OccurrenceCommits.GloballyFresh C.present (footprints w₁))

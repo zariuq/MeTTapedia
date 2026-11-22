@@ -171,13 +171,13 @@ theorem inPlaceRound_view (fuel : Nat) {Θ : Context S.R} (problem : EquationSto
   split
   · rename_i update smaller computed
     simp only [computed, roundView, Option.or]
-  · rename_i missing computed
+  · rename_i absent computed
     simp only [computed, roundView, Option.or]
   · rename_i computed
     split
     · rename_i update smaller found
       simp only [computed, found, roundView, foundView, Option.or, Option.map_some]
-    · rename_i missing found
+    · rename_i absent found
       simp only [computed, found, roundView, foundView, Option.or, Option.map_some, Option.map_none]
     · rename_i found
       simp only [computed, found, roundView, foundView, Option.or, Option.map_none]

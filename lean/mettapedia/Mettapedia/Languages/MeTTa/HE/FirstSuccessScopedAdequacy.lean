@@ -5068,6 +5068,20 @@ structure ScopedConfigurationRel
   stack_rel : List.Forall₂ ScopedFrameRel wCfg.stack cCfg.stack
   emitted_rel : List.Forall₂ ScopedResultRel wCfg.emitted cCfg.emitted
 
+/-- The worker makes one silent step authorized by the contextual protocol.
+The local source step and the retained output relation remain available
+to proofs composing this square with later steps. -/
+abbrev ScopedSilentStepSquare (space : Space)
+    (dispatch : HE.GroundedDispatch) (hostDispatch : Spec.Eval.GroundedDispatch)
+    (policy : Policy) (wBefore wAfter : Configuration)
+    (cBefore cAfter : RecursiveTasks.Contextual.Configuration) : Prop :=
+    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
+    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
+      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
+    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
+      cBefore (some (.silent cAfter)) ∧
+    ScopedConfigurationRel wAfter cAfter
+
 /-- Granting extra depth (`wCfg.deepen extra`) to any worker configuration preserves
 `ScopedConfigurationRel` against the same contextual configuration. -/
 theorem ScopedConfigurationRel.deepen (extra : Nat)
@@ -5465,12 +5479,7 @@ theorem ScopedConfigurationRel.append_step
       ⟨space, .returning cResults, .append cTask :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work cTask, .prepend cResults :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .append, .internal .append,
    ⟨rfl, .work taskRel, .cons (.prepend resultsRel) stackRel, emittedRel⟩⟩
 
@@ -5496,12 +5505,7 @@ theorem ScopedConfigurationRel.prepend_step
       ⟨space, .returning cResults, .prepend cSelected :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (cSelected ++ cResults), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .prepend, .internal .prepend,
    ⟨rfl, .returning (ScopedResultRel.forall2_append selectedRel resultsRel), stackRel, emittedRel⟩⟩
 
@@ -5526,12 +5530,7 @@ theorem ScopedConfigurationRel.singleton_step
       ⟨space, .returning cResults, .singleton :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (cResults.map Completed.tupleSingleton), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .singleton, .internal .singleton,
    ⟨rfl, .returning (ScopedResultRel.forall2_tupleSingleton resultsRel), stackRel, emittedRel⟩⟩
 
@@ -5559,12 +5558,7 @@ theorem ScopedConfigurationRel.tupleTail_step
       ⟨space, .returning cResults, .tupleTail ctxHead :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (cResults.map (Completed.tuplePrepend ctxHead)), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .tupleTail, .internal .tupleTail,
    ⟨rfl, .returning (ScopedResultRel.forall2_tupleTail headEq resultsRel), stackRel, emittedRel⟩⟩
 
@@ -5590,12 +5584,7 @@ theorem ScopedConfigurationRel.calls_step
       ⟨space, .returning cRows, .calls live scope expected :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.calls live scope expected cRows), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .calls, .internal .calls,
    ⟨rfl, .work (.calls rowsRel), stackRel, emittedRel⟩⟩
 
@@ -5624,12 +5613,7 @@ theorem ScopedConfigurationRel.heads_step
       ⟨space, .returning cHeads, .functionHeads live scope requests :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.functionBranches live scope requests cHeads), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .functionHeads, .internal .functionHeads,
    ⟨rfl, .work (.heads argsEq headsRel), stackRel, emittedRel⟩⟩
 
@@ -5663,12 +5647,7 @@ theorem ScopedConfigurationRel.argumentHeads_step
       ⟨space, .returning cHeads, .arguments live scope ctxOrig requests :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.argumentBranches live scope ctxOrig requests cHeads), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .arguments, .internal .arguments,
    ⟨rfl, .work (.argumentHeads origEq remEq typesEq headsRel), stackRel, emittedRel⟩⟩
 
@@ -5697,12 +5676,7 @@ theorem ScopedConfigurationRel.tupleHeads_step
       ⟨space, .returning cHeads, .branches live scope ctxTail :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.branches live scope ctxTail cHeads), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .branches, .internal .branches,
    ⟨rfl, .work (.tupleHeads tailEq headsRel), stackRel, emittedRel⟩⟩
 
@@ -5734,12 +5708,7 @@ theorem ScopedConfigurationRel.invocationReturnOrdinary_step
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.boundaryBatch live scope caller (.returned ctxOrig expected) cRows),
         cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .boundaryBatch, .internal .boundaryBatch,
    ⟨rfl, .work (.returns origEq rowsRel), stackRel, emittedRel⟩⟩
 
@@ -5766,12 +5735,7 @@ theorem ScopedConfigurationRel.minimalResults_step
         .boundaryBatch live scope caller .producer :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.boundaryBatch live scope caller .producer cRows), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .boundaryBatch, .internal .boundaryBatch,
    ⟨rfl, .work (.minimals rowsRel), stackRel, emittedRel⟩⟩
 
@@ -5801,12 +5765,7 @@ theorem ScopedConfigurationRel.chainResults_step
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.boundaryBatch live scope caller (.chain name ctxTmpl) cRows),
         cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .boundaryBatch, .internal .boundaryBatch,
    ⟨rfl, .work (.chainRows tmplEq rowsRel), stackRel, emittedRel⟩⟩
 
@@ -5833,12 +5792,7 @@ theorem ScopedConfigurationRel.bodyResults_step
         .boundaryBatch live scope caller .body :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.boundaryBatch live scope caller .body cRows), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .boundaryBatch, .internal .boundaryBatch,
    ⟨rfl, .work (.bodyResults rowsRel), stackRel, emittedRel⟩⟩
 
@@ -5867,12 +5821,7 @@ theorem ScopedConfigurationRel.tupleNil_step
       ⟨space, .work (.tuple live scope [] cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [(.expression .active [], cFrame)], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .tupleNil, .internal .tupleNil,
    ⟨rfl, .returning (.cons ⟨by simp [Atom.unit, Entry.Value.erase], actRel⟩ .nil), stackRel, emittedRel⟩⟩
 
@@ -5903,12 +5852,7 @@ theorem ScopedConfigurationRel.tupleSingleton_task_step
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.atom live scope ctxSingle Atom.undefinedType cFrame),
         .singleton :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .tupleSingleton, .internal .tupleSingleton,
    ⟨rfl, .work (.atom singleEq actRel), .cons .tupleSingleton stackRel, emittedRel⟩⟩
 
@@ -5947,12 +5891,7 @@ theorem ScopedConfigurationRel.tupleCons_step
       ⟨space, .work (.atom (.expression ((ctxSecond :: ctxRem).map Entry.Value.erase) :: live)
           scope ctxHead Atom.undefinedType cFrame),
         .branches live scope (ctxSecond :: ctxRem) :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   have tailEq : (ctxSecond :: ctxRem).map Entry.Value.erase = second :: remaining := by
     simp [secondEq, remEq]
   refine ⟨rfl, .tupleCons, .internal .tupleCons, ?_⟩
@@ -5979,12 +5918,7 @@ theorem ScopedConfigurationRel.branchesNil_step
       ⟨space, .work (.branches live scope ctxTail []), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .branchesNil, .internal .branchesNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6011,12 +5945,7 @@ theorem ScopedConfigurationRel.argumentsNil_step
       ⟨space, .work (.arguments live scope [] cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [(Entry.Value.argumentPacket [], cFrame)], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .argumentsNil, .internal .argumentsNil,
    ⟨rfl, .returning (.cons ⟨by simp [argumentPacket, Entry.Value.argumentPacket, Entry.Value.erase], actRel⟩ .nil), stackRel, emittedRel⟩⟩
 
@@ -6041,12 +5970,7 @@ theorem ScopedConfigurationRel.argumentBranchesNil_step
       ⟨space, .work (.argumentBranches live scope ctxOrig requests []), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .argumentBranchesNil, .internal .argumentBranchesNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6071,12 +5995,7 @@ theorem ScopedConfigurationRel.functionBranchesNil_step
       ⟨space, .work (.functionBranches live scope requests []), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .functionBranchesNil, .internal .functionBranchesNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6103,12 +6022,7 @@ theorem ScopedConfigurationRel.invocationsNil_step
         cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .invocationsNil, .internal .invocationsNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6153,12 +6067,7 @@ theorem ScopedConfigurationRel.invocationsCons_step
         .calls live scope (Completed.invocationReturnType signature) ::
           .append (.invocations live scope expected signature ctxOp ctxArgs cRest) :: cStack,
         cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   refine ⟨rfl, .invocationsCons, .internal .invocationsCons, ?_⟩
   subst retTypeEq
   exact ⟨rfl, .work (.func opEq argsEq sigTypeEq headRel),
@@ -6184,12 +6093,7 @@ theorem ScopedConfigurationRel.callsNil_step
       ⟨space, .work (.calls live scope expected []), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .callsNil, .internal .callsNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6219,12 +6123,7 @@ theorem ScopedConfigurationRel.callsCons_step
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.call live scope cHead.1 expected cHead.2),
         .append (.calls live scope expected cRest) :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   rcases wHead with ⟨wVal, wB⟩
   rcases cHead with ⟨cVal, cFrame⟩
   rcases headRel with ⟨valEq, actRel⟩
@@ -6252,12 +6151,7 @@ theorem ScopedConfigurationRel.returnsNil_step
         cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .boundaryBatchNil, .internal .boundaryBatchNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6280,12 +6174,7 @@ theorem ScopedConfigurationRel.productionsNil_step
       ⟨space, .work (.boundaryBatch live scope caller .producer []), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .boundaryBatchNil, .internal .boundaryBatchNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6308,12 +6197,7 @@ theorem ScopedConfigurationRel.minimalsNil_step
       ⟨space, .work (.boundaryBatch live scope caller .producer []), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .boundaryBatchNil, .internal .boundaryBatchNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6338,12 +6222,7 @@ theorem ScopedConfigurationRel.chainRowsNil_step
         cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .boundaryBatchNil, .internal .boundaryBatchNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6366,12 +6245,7 @@ theorem ScopedConfigurationRel.bodyResultsNil_step
       ⟨space, .work (.boundaryBatch live scope caller .body []), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .boundaryBatchNil, .internal .boundaryBatchNil,
    ⟨rfl, .returning .nil, stackRel, emittedRel⟩⟩
 
@@ -6402,12 +6276,7 @@ theorem ScopedConfigurationRel.returnRefused_step
       ⟨space, .work (.returned live scope ctxOrig expected ctxVal cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [(ctxOrig, cFrame)], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .returnRefused refused, .internal (.returnRefused refused),
    ⟨rfl, .returning (.cons ⟨origEq.symm, actRel⟩ .nil), stackRel, emittedRel⟩⟩
 
@@ -6489,12 +6358,7 @@ theorem ScopedConfigurationRel.atomEmptyOrError_step
       ⟨space, .work (.atom live scope ctxVal expected cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [(cFrame.read policy ctxVal, cFrame)], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   have wStep : (Checked.machine dispatch scopedTypes).step
       ⟨space, .work (.atom value expected wB (fuel + 1) live), wStack, wEmitted⟩ =
       some (.silent ⟨space, .returning [(value, wB)], wStack, wEmitted⟩) := by
@@ -6542,12 +6406,7 @@ theorem ScopedConfigurationRel.atomTypePass_step
       ⟨space, .work (.atom live scope ctxVal expected cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [(cFrame.read policy ctxVal, cFrame)], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   have hPass :
       (expected = Atom.atomType ∨ expected = getMetaType value) ∨
         getMetaType value = Atom.variableType := by
@@ -6610,12 +6469,7 @@ theorem ScopedConfigurationRel.func_functionStart_step
           (scope ++ expectedApplicationScope (.expression ((ctxOp :: ctxArgs).map Entry.Value.erase)) expected)
           ctxOp signature.functionType cFrame),
         .functionHeads live scope (ctxArgs.zip signature.argumentTypes) :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   have hTask :
       ScopedTaskRel
@@ -6836,12 +6690,7 @@ theorem ScopedConfigurationRel.argsCons_step
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.atom (Completed.argumentScope requests ++ live) scope ctxVal ty cFrame),
         .arguments live scope ctxVal requests :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .argumentsCons, .internal .argumentsCons,
    ⟨rfl,
     .work (.atom valEq actRel fun name =>
@@ -6875,12 +6724,7 @@ theorem ScopedConfigurationRel.argsSingleton_step
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.atom live scope ctxVal ty cFrame),
         .arguments live scope ctxVal [] :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ScopedConfigurationRel.argsCons_step space dispatch hostDispatch policy
     value ty [] [] wB fuel live scope ctxVal [] cFrame wStack cStack wEmitted cEmitted
     valEq rfl rfl actRel stackRel emittedRel
@@ -6915,12 +6759,7 @@ theorem ScopedConfigurationRel.atomTypePass_step_with_live
       ⟨space, .work (.atom cLive scope ctxVal expected cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [(cFrame.read policy ctxVal, cFrame)], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   have hPass :
       (expected = Atom.atomType ∨ expected = getMetaType value) ∨
         getMetaType value = Atom.variableType := by
@@ -6973,12 +6812,7 @@ theorem ScopedConfigurationRel.functionTail_step
       ⟨space, .returning cResults, .functionAssemble ctxHead :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (cResults.map (Completed.functionAssemble ctxHead)), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .functionAssemble, .internal .functionAssemble,
    ⟨rfl, .returning (ScopedResultRel.forall2_functionTail headEq resultsRel), stackRel, emittedRel⟩⟩
 
@@ -7006,12 +6840,7 @@ theorem ScopedConfigurationRel.argumentTail_step
       ⟨space, .returning cResults, .argumentTail ctxHead :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (cResults.map (Completed.argumentPrepend ctxHead)), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .argumentTail, .internal .argumentTail,
    ⟨rfl, .returning (ScopedResultRel.forall2_argumentTail headEq resultsRel), stackRel, emittedRel⟩⟩
 
@@ -7054,12 +6883,7 @@ theorem ScopedConfigurationRel.headsContinue_step
       ⟨space, .work (.arguments (cHeadVal.erase :: live) scope requests cFrame),
         .functionAssemble cHeadVal ::
           .append (.functionBranches live scope requests cRest) :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   rcases headRel with ⟨valEq, actRel⟩
   dsimp only at valEq actRel
@@ -7220,12 +7044,7 @@ theorem ScopedConfigurationRel.argumentHeadsContinue_step
       ⟨space, .work (.arguments (cHeadVal.erase :: live) scope requests cFrame),
         .argumentTail cHeadVal ::
           .append (.argumentBranches live scope ctxOrig requests cRest) :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   rcases headRel with ⟨valEq, actRel⟩
   dsimp only at valEq actRel
@@ -7405,12 +7224,7 @@ theorem ScopedConfigurationRel.bodyStart_step
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.minimal live scope caller ctxVal cFrame),
         .boundaryBatch live scope caller .body :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ⟨rfl, .bodyStart, .internal .bodyStart,
    ⟨rfl, .work (.minimal valEq actRel), .cons .bodyResults stackRel, emittedRel⟩⟩
 
@@ -7568,12 +7382,7 @@ theorem ScopedConfigurationRel.prependDiagnostics_empty_step
       ⟨space, .returning [], .diagnostics errors cFrame :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (Completed.diagnosticResults errors cFrame), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wDiag wBefore wAfter cBefore cAfter
   have wStep : (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) := by
     simp [wBefore, wAfter, wDiag, Checked.machine, RecursiveMachine.Checked.guardMachine,
@@ -7614,12 +7423,7 @@ theorem ScopedConfigurationRel.prependDiagnostics_noErrors_step
       ⟨space, .returning cResults, .diagnostics [] cFrame :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning cResults, cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   have wStep : (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) := by
     simp [wBefore, wAfter, Checked.machine, RecursiveMachine.Checked.guardMachine,
@@ -7917,12 +7721,7 @@ theorem ScopedConfigurationRel.fallback_nonempty_step
       ⟨space, .returning (cHead :: cTail), .diagnostics [] cFrame :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (cHead :: cTail), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   have wStep : (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) := by
     simp [wBefore, wAfter, Checked.machine, RecursiveMachine.Checked.guardMachine,
@@ -7970,12 +7769,7 @@ theorem ScopedConfigurationRel.fallback_exhausted_step
       ⟨space, .returning [], .diagnostics errors cFrame :: cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (Completed.diagnosticResults errors cFrame), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   obtain ⟨hFrameReady, hFallbackEq⟩ :=
     fallback_exhausted_ready_and_eq space (invocationTypes wBefore)
@@ -8231,12 +8025,7 @@ theorem ScopedConfigurationRel.filter_publish_step
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (cSelected.map (Completed.publishResult policy original)),
         cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro cSelected wBefore wAfter cBefore cAfter
   have wStep : (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) := by
     simp [wBefore, wAfter, Checked.machine, RecursiveMachine.Checked.guardMachine,
@@ -8287,12 +8076,7 @@ theorem ScopedConfigurationRel.filter_publish_step_of_covered
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (cSelected.map (Completed.publishResult policy original)),
         cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ScopedConfigurationRel.filter_publish_step space dispatch hostDispatch policy original
     (wRaw.map fun (value, native) => (native.applyFull value depth, native)) cRaw
     wStack cStack wEmitted cEmitted
@@ -8331,12 +8115,7 @@ theorem ScopedConfigurationRel.filter_publish_step_of_covered_stable
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning (cSelected.map (Completed.publishResult policy original)),
         cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter :=
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter :=
   ScopedConfigurationRel.filter_publish_step space dispatch hostDispatch policy original
     wRaw cRaw wStack cStack wEmitted cEmitted
     (ScopedResultRel.forall2_materialized_readResult_stable policy rawRel depth covered stable)
@@ -8958,12 +8737,7 @@ theorem ScopedConfigurationRel.returnStopped_step
       ⟨space, .work (.returned live scope ctxOrig expected ctxVal cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [(ctxVal, cFrame)], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   have wStep : (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) := by
     simp [wBefore, wAfter, Checked.machine, RecursiveMachine.Checked.guardMachine, Checked.blocked,
@@ -9007,12 +8781,7 @@ theorem ScopedConfigurationRel.returnEvaluate_of_erase_step
       ⟨space, .work (.returned live scope ctxOrig expected ctxVal cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.atom live scope ctxVal expected cFrame), cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   have wStep : (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) := by
     simp [wBefore, wAfter, Checked.machine, RecursiveMachine.Checked.guardMachine, Checked.blocked,
@@ -9064,12 +8833,7 @@ theorem ScopedConfigurationRel.atomTypePass_of_covered_stable_step
       ⟨space, .work (.atom cLive scope ctxVal expected cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [(cFrame.read policy ctxVal, cFrame)], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   have hPass :
       (expected = Atom.atomType ∨ expected = getMetaType value) ∨
@@ -18929,12 +18693,7 @@ theorem ScopedConfigurationRel.minimalData_step
       ⟨space, .work (.minimal live scope caller ctxVal cFrame), cStack, cEmitted⟩
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .returning [(ctxVal, cFrame)], cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   intro wBefore wAfter cBefore cAfter
   have wStep : (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) := by
     simp [wBefore, wAfter, Checked.machine, RecursiveMachine.Checked.guardMachine,
@@ -20862,12 +20621,7 @@ theorem ScopedConfigurationRel.productionsCons_step
     let cAfter : RecursiveTasks.Contextual.Configuration :=
       ⟨space, .work (.boundary live scope caller .producer cHead.1 cHead.2),
         .append (.boundaryBatch live scope caller .producer cRest) :: cStack, cEmitted⟩
-    (Checked.machine dispatch scopedTypes).step wBefore = some (.silent wAfter) ∧
-    RecursiveMachine.Contextual.LocalStep space hostDispatch Completed.scopedLookup policy
-      (cBefore.control, cBefore.stack) (cAfter.control, cAfter.stack) ∧
-    RecursiveExecution.Contextual.Protocol.Rule hostDispatch Completed.scopedLookup policy
-      cBefore (some (.silent cAfter)) ∧
-    ScopedConfigurationRel wAfter cAfter := by
+    ScopedSilentStepSquare space dispatch hostDispatch policy wBefore wAfter cBefore cAfter := by
   rcases wHead with ⟨wVal, wB⟩
   rcases cHead with ⟨cVal, cFrame⟩
   rcases headRel with ⟨valEq, actRel⟩

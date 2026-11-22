@@ -23,7 +23,7 @@ the same state whose result is statically equivalent (`Static`) to its result.
 * **A sound proof method for every pair of programs** (`congruent_of_answersStatic`): mutual static
   answering gives congruence at every state, beside every program.
 * **Exact for programs that leave a constant unused** (`programs_iff`): for bounded `P`, `P'`
-  (finite programs are), congruence at every state is exactly mutual static answering. The none query and
+  (finite programs are), congruence at every state is exactly mutual static answering. Absence and
   count queries are allowed in `P` and `P'`: positivity is not needed. The proof is `static_of_congruent`
   applied to the results of a firing and its answer.
 * **Per state** (`answers_of_congruent`): congruent systems with bounded programs answer each other's

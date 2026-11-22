@@ -197,7 +197,7 @@ def originalAvailable {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true) :
     WellSorted.AvailableOpenArguments source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer parameters :=
@@ -214,7 +214,7 @@ def normalizedAvailable {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true) :
     WellSorted.AvailableOpenArguments source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer parameters :=
@@ -235,7 +235,7 @@ theorem originalAvailable_patterns {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true) :
     (trees.originalAvailable canonical objects scope).patterns = arguments :=
   rfl
@@ -250,7 +250,7 @@ theorem normalizedAvailable_patterns {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true) :
     (trees.normalizedAvailable canonical objects scope).patterns =
       trees.normalize.result.patterns :=
@@ -270,7 +270,7 @@ def originalAvailable {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true) :
     WellSorted.AvailableOpenElements source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer elementType :=
@@ -287,7 +287,7 @@ def normalizedAvailable {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true) :
     WellSorted.AvailableOpenElements source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer elementType :=
@@ -308,7 +308,7 @@ theorem originalAvailable_patterns {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true) :
     (trees.originalAvailable canonical objects scope).patterns = elements :=
   rfl
@@ -323,7 +323,7 @@ theorem normalizedAvailable_patterns {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true) :
     (trees.normalizedAvailable canonical objects scope).patterns =
       trees.normalize.result.patterns :=

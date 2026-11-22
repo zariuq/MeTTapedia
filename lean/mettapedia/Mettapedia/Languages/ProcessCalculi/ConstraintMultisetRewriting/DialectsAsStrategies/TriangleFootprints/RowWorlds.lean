@@ -14,7 +14,7 @@ firing (`RowStep`) that
 * **reads** the rows of its region, every one of them (`footRule`);
 * makes the **complete observation** of its region (`observation`): the predicate query of
   `PredicateQueryAdmission` saying that the region holds exactly the occurrences it read. So the
-  footprint of a complete query is the matched rows plus the none query of any other row there.
+  footprint of a complete query is the matched rows plus the absence of any other row there.
 
 A move whose region is empty reads nothing, and its observation cannot be spoiled.
 

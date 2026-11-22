@@ -8,17 +8,17 @@ Trees with a root and one child (`Worlds.Tree`), at the one frame of first-order
 (`RuleSyntax.Examples`).
 
 * `gained_below`: the root holds the row `x` and knows nothing; the child knows `x = 5`. What the
-  root sees is `Examples.openRequest`, what the child sees is `Examples.boundRequest`. **The none query
-  of `9` is refused at the root and admitted at the child**: a none query is not reflected upward.
-* `lost_below`: the child holds the row `9`. **The none query of `9` is admitted at the root and refused
-  at the child**: a none query is not inherited.
+  root sees is `Examples.openRequest`, what the child sees is `Examples.boundRequest`. **The absence
+  of `9` is refused at the root and admitted at the child**: an absence is not reflected upward.
+* `lost_below`: the child holds the row `9`. **The absence of `9` is admitted at the root and refused
+  at the child**: an absence is not inherited.
 * `may_not_inherited`: the row `x` may be read as `9` at the root, and not at the child that knows
   `x = 5`. `must_inherited`: it must be read as a term at both, an instance of `Tree.mustBarb_below`.
 * `dead_child_live_parent`: a child whose own store has no solution, under a root whose knowledge is
   solvable: a contradiction does not reach upward. `dead_root_dead_child`: it does hold below, an
   instance of `Tree.dead_below`.
-* `none_inherited`: a child that adds neither knowledge nor a row knows what its parent knows and
-  inherits the none query of `9`: instances of `Tree.known_child` and `Tree.none_below_of_no_new_row`.
+* `absence_inherited`: a child that adds neither knowledge nor a row knows what its parent knows and
+  inherits the absence of `9`: instances of `Tree.known_child` and `Tree.absent_below_of_no_new_row`.
 * `gathering_not_stable`: the rows at the root and below it are none before the child makes its row,
   and one after: a count over what the children have answered holds only while no child makes a row.
 -/
@@ -26,8 +26,8 @@ Trees with a root and one child (`Worlds.Tree`), at the one frame of first-order
 set_option autoImplicit false
 
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Examples
-  (Tm X E x c demo everywhere openRequest boundRequest noNineFiring noNine_fresh
-    noNine_admitted_when_bound noNine_refused_when_open)
+  (Tm X E x c demo everywhere openRequest boundRequest absentFiring absent_fresh
+    absent_admitted_when_bound absent_refused_when_open)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Controls (atoms)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Equivalence
   (Pattern MayBarb MustBarb)
@@ -77,14 +77,14 @@ theorem child_view : knowingChild.view true = boundRequest := by
   rw [knowingChild_visible]
   rfl
 
-/-- **A none query is not reflected upward**: the child is below the root; they see the states named; the
-none queries of `9` is refused at the root and admitted at the child. -/
+/-- **An absence is not reflected upward**: the child is below the root; they see the states named; the
+absence of `9` is refused at the root and admitted at the child. -/
 theorem gained_below :
     knowingChild.Below false true ∧ knowingChild.view false = openRequest ∧
       knowingChild.view true = boundRequest ∧
-      ¬ (step X ℕ E demo).Admits (s := openRequest) noNineFiring ∧
-      (step X ℕ E demo).Admits (s := boundRequest) noNineFiring :=
-  ⟨knowingChild_below, root_view, child_view, noNine_refused_when_open, noNine_admitted_when_bound⟩
+      ¬ (step X ℕ E demo).Admits (s := openRequest) absentFiring ∧
+      (step X ℕ E demo).Admits (s := boundRequest) absentFiring :=
+  ⟨knowingChild_below, root_view, child_view, absent_refused_when_open, absent_admitted_when_bound⟩
 
 /-- The pattern `9`. -/
 def nine : Pattern Tm := ⟨PUnit.unit, c 9⟩
@@ -178,9 +178,9 @@ theorem idleChild_visible (n : Bool) : idleChild.visible n = {0} := by
     refine ⟨inside, ?_⟩
     cases n <;> exact List.mem_cons_self
 
-/-- **A child that adds nothing knows what its parent knows, and inherits its none checks**: instances of
-`Tree.known_child` and of `Tree.none_below_of_no_new_row`, with the none query of `9`. -/
-theorem none_inherited :
+/-- **A child that adds nothing knows what its parent knows, and inherits its absences**: instances of
+`Tree.known_child` and of `Tree.absent_below_of_no_new_row`, with the absence of `9`. -/
+theorem absence_inherited :
     idleChild.known true = idleChild.known false ∧
       X.Entails (a := PUnit.unit) (idleChild.known true)
         (fun b σ => checkHolds X (a := PUnit.unit) (b := b) σ idleChild.label (idleChild.visible true)
@@ -196,7 +196,7 @@ theorem none_inherited :
     rw [bound] at nine
     exact absurd (Term.const.inj nine) (by decide)
   exact ⟨Tree.known_child rfl rfl,
-    Tree.none_below_of_no_new_row X idleChild_below
+    Tree.absent_below_of_no_new_row X idleChild_below
       ((idleChild_visible true).trans (idleChild_visible false).symm) (c 9) atRoot⟩
 
 /-! ## A child that holds a row -/
@@ -221,38 +221,38 @@ theorem holdingChild_root (made : Bool) : (holdingChild made).visible false = �
   · intro inside
     exact absurd inside (Finset.notMem_empty o)
 
-/-- **At the root the none query of `9` is admitted.** -/
-theorem none_at_root :
-    (step X ℕ E demo).Admits (s := (holdingChild true).view false) noNineFiring := by
-  show noNineFiring.Admits X ((holdingChild true).view false)
-  refine ⟨⟨noNine_fresh _, List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, rfl⟩, ?_, ?_, ?_⟩
-  · refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> simp [noNineFiring, Selection.commit]
+/-- **At the root the absence of `9` is admitted.** -/
+theorem absent_at_root :
+    (step X ℕ E demo).Admits (s := (holdingChild true).view false) absentFiring := by
+  show absentFiring.Admits X ((holdingChild true).view false)
+  refine ⟨⟨absent_fresh _, List.nodup_nil, List.nodup_nil, rfl, rfl, rfl, rfl⟩, ?_, ?_, ?_⟩
+  · refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> simp [absentFiring, Selection.commit]
   · exact ⟨PUnit.unit, Subst.id atoms, fun e inside => absurd inside List.not_mem_nil⟩
   · intro b σ _
     refine ⟨fun check inside => ?_, fun q inside => absurd inside List.not_mem_nil⟩
-    have isNone : check = Check.predicate .none (c 9) := List.mem_singleton.mp inside
-    subst isNone
+    have isAbsent : check = Check.predicate .none (c 9) := List.mem_singleton.mp inside
+    subst isAbsent
     intro o present
     exact absurd (Eq.mp (congrArg (fun s : Finset ℕ => o ∈ s) (holdingChild_root true)) present)
       (Finset.notMem_empty o)
 
 /-- **At the child, which holds the row `9`, it is refused.** -/
-theorem none_refused_at_child :
-    ¬ (step X ℕ E demo).Admits (s := (holdingChild true).view true) noNineFiring := by
+theorem absent_refused_at_child :
+    ¬ (step X ℕ E demo).Admits (s := (holdingChild true).view true) absentFiring := by
   intro admitted
-  obtain ⟨-, -, -, -, checks, -⟩ := (admits_iff noNineFiring).mp admitted
+  obtain ⟨-, -, -, -, checks, -⟩ := (admits_iff absentFiring).mp admitted
   have solved : X.Models (a := PUnit.unit) (b := PUnit.unit) (Subst.id atoms)
-      (noNineFiring.information X ((holdingChild true).view true)) :=
+      (absentFiring.information X ((holdingChild true).view true)) :=
     fun e inside => absurd inside List.not_mem_nil
   have holds := checks (.predicate .none (c 9)) (List.mem_singleton_self _) PUnit.unit _ solved
   exact holds 1 (Tree.mem_visible.mpr
     ⟨Finset.mem_singleton_self 1, List.mem_cons_of_mem _ List.mem_cons_self⟩) rfl
 
-/-- **A none query is not inherited**: admitted at the root, refused at the child that holds the row. -/
+/-- **An absence is not inherited**: admitted at the root, refused at the child that holds the row. -/
 theorem lost_below :
-    (step X ℕ E demo).Admits (s := (holdingChild true).view false) noNineFiring ∧
-      ¬ (step X ℕ E demo).Admits (s := (holdingChild true).view true) noNineFiring :=
-  ⟨none_at_root, none_refused_at_child⟩
+    (step X ℕ E demo).Admits (s := (holdingChild true).view false) absentFiring ∧
+      ¬ (step X ℕ E demo).Admits (s := (holdingChild true).view true) absentFiring :=
+  ⟨absent_at_root, absent_refused_at_child⟩
 
 /-- **What a collection gathers is not stable while a child makes rows**: the rows at the root and
 below it are none before the child makes its row, and one after. -/
@@ -282,9 +282,9 @@ theorem gathering_not_stable :
 #print axioms must_inherited
 #print axioms dead_child_live_parent
 #print axioms dead_root_dead_child
-#print axioms none_inherited
-#print axioms none_at_root
-#print axioms none_refused_at_child
+#print axioms absence_inherited
+#print axioms absent_at_root
+#print axioms absent_refused_at_child
 #print axioms lost_below
 #print axioms gathering_not_stable
 

@@ -32,8 +32,8 @@ neither and both are excluded: every guard must survive removing rows (`Antitone
 * **Completeness for the query-free fragment** (`step_of_framedStep`, `derives_reaches`): every
   derivation of a program of query-free firings is a run of the program, exactly, up to classes.
   So `derives_iff_reaches`.
-* Completeness fails with a none query, and soundness fails with a count guard
-  (`SeparationControls.completeness_fails_with_none`,
+* Completeness fails with an absence query, and soundness fails with a count guard
+  (`SeparationControls.completeness_fails_with_absence`,
   `SeparationControls.soundness_fails_with_count_guard`). Framing whole derivations instead of single
   steps is unsound even without queries, because made identities are fixed names
   (`SeparationControls.multi_step_frame_unsound`).

@@ -419,9 +419,9 @@ theorem millerGlb_decided {Θ : Context S.R} {original : EquationStore (TotalTer
               run (millerGlbSolver facts roots heads algebra rigid complete normalizes inh headTypingUnique glb spec)
                   original larger = .solved state finished ∧
                 (frames S.levels).Principal original state.answer) ∨
-          (∃ missing,
+          (∃ absent,
             run (millerGlbSolver facts roots heads algebra rigid complete normalizes inh headTypingUnique glb spec)
-              original larger = .refuted missing)) :=
+              original larger = .refuted absent)) :=
   (millerGlbFragment facts roots heads algebra rigid complete normalizes inh headTypingUnique glb spec total).decided
     inside
 
@@ -433,9 +433,9 @@ theorem principal_or_unsolvable_glb {Θ : Context S.R} {original : EquationStore
       ¬ (frames S.levels).Solvable original := by
   obtain ⟨fuel, decided⟩ :=
     millerGlb_decided facts roots heads algebra rigid complete normalizes inh headTypingUnique glb spec total inside
-  rcases (decided fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨missing, _⟩
+  rcases (decided fuel le_rfl).2 with ⟨state, _, _, principal⟩ | ⟨absent, _⟩
   · exact .inl ⟨_, _, principal⟩
-  · exact .inr missing
+  · exact .inr absent
 
 end Decided
 

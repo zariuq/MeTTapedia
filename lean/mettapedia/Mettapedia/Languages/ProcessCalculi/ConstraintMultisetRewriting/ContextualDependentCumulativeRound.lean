@@ -57,7 +57,7 @@ theorem cumulativeRound_eq_of_flex (fuel : Nat) {Θ : Context S.R} {problem : Eq
       certifyNormal headTypingUnique rootComplete fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the flexible-base family decides, the cumulative family decides with the same outcome.** -/
 theorem cumulative_run_of_flex (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -106,9 +106,9 @@ theorem cumulativeRound_not_stuck_of_rule (fuel : Nat) {Θ : Context S.R} {probl
       rw [computed]
       cases found with
       | solved update smaller => exact fun impossible => by cases impossible
-      | refuted missing => exact fun impossible => by cases impossible
+      | refuted absent => exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-! ## Eventual constancy -/
 
@@ -276,10 +276,10 @@ theorem cumulativeRound_view (fuel : Nat) {Θ : Context S.R} (problem : Equation
       | some found =>
           cases found with
           | solved update smaller => rfl
-          | refuted missing => rfl
+          | refuted absent => rfl
       | none => rfl
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 include stable in
 /-- **The cumulative round is eventually constant on every store.** -/

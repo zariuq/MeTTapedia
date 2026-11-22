@@ -422,10 +422,10 @@ theorem enabled_iff {s : State S O} (f : Firing s) :
   constructor
   · intro enabled present
     exact Finset.disjoint_left.mp enabled.fresh (by simp [Firing.selection, Selection.commit]) present
-  · intro missing
+  · intro absent
     refine ⟨by simp [Firing.selection, Selection.commit], by simp [Firing.selection, Selection.commit],
       by simp [Firing.selection, Selection.commit], ?_, by simp [Firing.selection, Selection.commit]⟩
-    simpa [Firing.selection, Selection.commit] using missing
+    simpa [Firing.selection, Selection.commit] using absent
 
 /-- **Admission of a helper firing**: solvable knowledge, a fresh occurrence, and guards that the
 knowledge asks. -/
@@ -436,8 +436,8 @@ theorem admits_iff {s : State S O} (f : Firing s) :
   · rintro ⟨-, enabled, solvable, asked⟩
     exact ⟨knowledge_solvable f solvable, (enabled_iff f).mp enabled,
       (entails_information_iff f f.guards).mp asked⟩
-  · rintro ⟨solvable, missing, asked⟩
-    exact ⟨List.nodup_singleton _, (enabled_iff f).mpr missing, information_solvable f solvable,
+  · rintro ⟨solvable, absent, asked⟩
+    exact ⟨List.nodup_singleton _, (enabled_iff f).mpr absent, information_solvable f solvable,
       (entails_information_iff f f.guards).mpr asked⟩
 
 /-! ## Transport -/

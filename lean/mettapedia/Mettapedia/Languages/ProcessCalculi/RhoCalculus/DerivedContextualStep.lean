@@ -4,6 +4,7 @@ import Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ScopedSemanticSubstitution
+import Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
 
 /-!
 # Rho contextual reduction derived from the authored rules
@@ -296,14 +297,14 @@ private theorem output_channel_congr
       exact StructuralCongruence.refl payload
 
 /-- Inversion of the derived rho process judgment at an input constructor. -/
-theorem rho_input_wellSorted_inv {scope : QuoteScope}
+theorem rho_input_wellSorted_inv
     {free : FreeSortContext} {bound : List String}
     {channel body : Pattern} {binder : Option String}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
+    (typed : ProcWellSorted rhoReflectivePresentation free bound
       (.apply "PInput" [channel, .lambda binder body])) :
     binder = none ∧
-      NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound channel ∧
-      ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free
+      NameWellSorted rhoReflectivePresentation free bound channel ∧
+      ProcWellSorted rhoReflectivePresentation free
         (rhoReflectivePresentation.nameSort :: bound) body := by
   generalize patternEq :
     (Pattern.apply "PInput" [channel, Pattern.lambda binder body]) = pattern at typed
@@ -329,13 +330,13 @@ private theorem input_body_congr
       | succ index => exact absurd leftBound (by simp)
 
 /-- Inversion of the derived rho process judgment at an output constructor. -/
-theorem rho_output_wellSorted_inv {scope : QuoteScope}
+theorem rho_output_wellSorted_inv
     {free : FreeSortContext} {bound : List String}
     {channel payload : Pattern}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
+    (typed : ProcWellSorted rhoReflectivePresentation free bound
       (.apply "POutput" [channel, payload])) :
-    NameWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound channel ∧
-      ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound payload := by
+    NameWellSorted rhoReflectivePresentation free bound channel ∧
+      ProcWellSorted rhoReflectivePresentation free bound payload := by
   generalize patternEq :
     (Pattern.apply "POutput" [channel, payload]) = pattern at typed
   cases typed <;> simp [rhoReflectivePresentation] at patternEq
@@ -907,10 +908,9 @@ theorem rhoStep_preserves_closed
   obtain ⟨fuel, bounded⟩ := step
   exact rhoStepAt_preserves_closed sourceTyped sourceSafe bounded
 
-/-- **The step preserves quote admission.** Rho declares that binders do not
-reach into quotations, so every quotation of a sorted process is closed code;
-every finite authored step from a sorted closed process ends at a process whose
-quotations are again closed code. -/
+/-- **The step preserves quote admission on quote-sealed sources.** Sorting
+alone does not give closed code; a finite authored step from a sorted, closed,
+quote-sealed process ends at a process whose quotations are closed code. -/
 theorem rhoStep_preserves_quotesClosed
     {free : FreeSortContext} {source target : Pattern}
     (sourceTyped :
@@ -918,7 +918,8 @@ theorem rhoStep_preserves_quotesClosed
     (sourceSafe : binderSafeAt "NQuote" 0 source = true)
     (step : RhoStep source target) :
     QuotesClosed rhoReflectivePresentation.toReflectivePresentationDecl target :=
-  (rhoStep_preserves_closed sourceTyped sourceSafe step).1.quotesClosed rfl (by decide)
+  Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission.quotesClosed_of_binderSafeAt
+    (rhoStep_preserves_closed sourceTyped sourceSafe step).2
 
 /-! ## Positive and negative operational controls -/
 

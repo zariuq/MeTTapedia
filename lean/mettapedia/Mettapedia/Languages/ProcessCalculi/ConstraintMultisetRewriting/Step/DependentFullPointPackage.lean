@@ -58,9 +58,9 @@ def witnessed : Witnessed Tower.rules where
   type := universe0
   witness := .head .legacyGround
   fresh := rfl
-  typesAvoidName := fun known => by cases known
+  typesAbsent := fun known => by cases known
   stepsStable := fun step => False.elim step
-  typeAvoidsName := rfl
+  typeAbsent := rfl
   universeHead := .sort (.succ Tower.zero)
   universeOk := LevelTower.IsUniverse.sort _
   typeTyped := Derivable.headType (LevelTower.HeadTyping.sort Tower.zero)

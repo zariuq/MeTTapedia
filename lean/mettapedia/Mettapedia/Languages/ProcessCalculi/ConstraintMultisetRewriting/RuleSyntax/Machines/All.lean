@@ -56,7 +56,7 @@ its steps are rewrites of the bag by finitely many rules, and one machine step i
   (`evenToZero_weak`) and, through the encoding by constants, one firing for one step by no finite list of rules
   (`evenToZero_not_oneStep`).
 
-No rule of these programs has a read, a tell, an equation guard, a none check, a count check or a query
+No rule of these programs has a read, a tell, an equation guard, an absence check, a count check or a query
 pattern. The correspondences are stated for the machines and systems above and for rewriting of bags by
 range-restricted positive rules.
 -/

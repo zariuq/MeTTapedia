@@ -379,7 +379,7 @@ theorem matvec_vectorOf (A : Matrix (Fin m) (Fin n) K) (v : Fin n → K) :
   · intro b
     simp [matvecRule]
 
-/-- **The sparse row traversal computes the firing**: on support-aware operands, read with zero for none queries. -/
+/-- **The sparse row traversal computes the firing**: on support-aware operands, read with zero for absence. -/
 theorem matvec_sparse (A : Value (Fin m × Fin n) K) (v : Value (Fin n) K) :
     vectorOf ((matvecRule m n).toRule.fire (matvecStore (matrixFill A) (fill 0 v)) (Set.toFinite _)) =
       matvec A v := by

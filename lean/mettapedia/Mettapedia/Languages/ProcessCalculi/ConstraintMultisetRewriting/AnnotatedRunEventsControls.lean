@@ -1,10 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunEventsOrder
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunsRestoredNone
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunsAbsence
 
 /-!
 # Controls for the events of the unfolding
 
-* **Restored none query, two configurations** (`restored_none_two_configurations`): the runs
+* **Restored absence, two configurations** (`restored_absence_two_configurations`): the runs
   `reader, maker, taker` and `maker, taker, reader` fire one set of firings, and their
   configurations differ. The reader's event differs too: in the first it has no cause, in the
   second the maker and the taker are its causes. In the order (`reader_prefix_of_one_trace`), the
@@ -51,14 +51,14 @@ theorem not_mem_causes_of_no_edge {T S O : Type*} {X : Config T S O} {a f : Firi
   | single edge => exact noEdge a edge
   | tail _ edge => exact noEdge _ edge
 
-/-! ## Restored none query: one set of firings, two configurations -/
+/-! ## Restored absence: one set of firings, two configurations -/
 
-namespace RestoredNone
+namespace RestoredAbsence
 
-open AnnotatedRuns.RestoredNoneControls (reader maker taker empty noPersistent query_first_runs
+open AnnotatedRuns.AbsenceControls (reader maker taker empty noPersistent query_first_runs
   query_last_runs)
 
-local notation "label" => AnnotatedRuns.RestoredNoneControls.label
+local notation "label" => AnnotatedRuns.AbsenceControls.label
 
 theorem reader_static : reader.Static :=
   ⟨rfl, by
@@ -136,8 +136,8 @@ theorem no_edge_into_reader_first (g : AnnotatedRuns.Controls.Run) :
   · simp [reader] at taken
   · exact not_precedes_head fragment_first.nodup before.1
 
-/-- **Restored none query: one set of firings, two configurations, two events of the reader.** -/
-theorem restored_none_two_configurations :
+/-- **Restored absence: one set of firings, two configurations, two events of the reader.** -/
+theorem restored_absence_two_configurations :
     IsConfiguration A label empty (configOf label [reader, maker, taker]) ∧
       IsConfiguration A label empty (configOf label [maker, taker, reader]) ∧
       (configOf label [reader, maker, taker]).firings = (configOf label [maker, taker, reader]).firings ∧
@@ -166,17 +166,17 @@ theorem restored_none_two_configurations :
       Or.inr (Or.inr ⟨precedes_cons.mpr (Or.inr (precedes_cons.mpr (Or.inl ⟨rfl, by simp⟩))),
         Or.inl taker_inhibits_reader⟩)⟩
   · intro equivalent
-    exact AnnotatedRuns.RestoredNoneControls.restored_none_two_traces.2.2.2.2.1 equivalent
+    exact AnnotatedRuns.AbsenceControls.restored_absence_two_traces.2.2.2.2.1 equivalent
 
 theorem reader_alone_runs : Executable A label empty [reader] :=
-  ⟨AnnotatedRuns.RestoredNoneControls.reader_valid_empty,
-    AnnotatedRuns.RestoredNoneControls.reader_valid_empty.firing.consistent⟩
+  ⟨AnnotatedRuns.AbsenceControls.reader_valid_empty,
+    AnnotatedRuns.AbsenceControls.reader_valid_empty.firing.consistent⟩
 
 theorem fragment_reader : Fragment empty [reader] :=
   ⟨by simpa using reader_static, List.nodup_singleton _, by intro f _ o _ present; simp [empty] at present,
     by intro g hg h hh ne; simp only [List.mem_singleton] at hg hh; exact absurd (hg.trans hh.symm) ne⟩
 
-/-- **Restored none query, in the order.** The history of the reader alone is an initial part of the
+/-- **Restored absence, in the order.** The history of the reader alone is an initial part of the
 first configuration and not of the second, although the second fires the same reader: there the
 reader has causes. So the reader-first history is a prefix of one trace and not of the other. -/
 theorem reader_prefix_of_one_trace :
@@ -203,7 +203,7 @@ theorem reader_prefix_of_one_trace :
   exact (prefix_iff_extends A label reader_alone_runs fragment_reader query_last_runs
     fragment_last).mp prefix_
 
-end RestoredNone
+end RestoredAbsence
 
 /-! ## Competing takes of one occurrence conflict -/
 
@@ -707,8 +707,8 @@ end Count
 
 #print axioms TransGen.source_mem
 #print axioms not_mem_causes_of_no_edge
-#print axioms RestoredNone.restored_none_two_configurations
-#print axioms RestoredNone.reader_prefix_of_one_trace
+#print axioms RestoredAbsence.restored_absence_two_configurations
+#print axioms RestoredAbsence.reader_prefix_of_one_trace
 #print axioms Conflict.competing_takes_conflict
 #print axioms Asymmetry.read_before_take_asymmetric
 #print axioms Joint.inconsistent_triple_no_configuration

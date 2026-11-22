@@ -454,11 +454,11 @@ theorem find?_spec {b : Bindings} {n : String} {e : String × Pattern} (found : 
 theorem mergeBindings_nil (b : Bindings) : mergeBindings b [] = some b := rfl
 
 theorem mergeBindings_cons_none {b : Bindings} {n : String} {v : Pattern} (rest : Bindings)
-    (missing : b.find? (·.1 == n) = none) :
+    (absent : b.find? (·.1 == n) = none) :
     mergeBindings b ((n, v) :: rest) = mergeBindings ((n, v) :: b) rest := by
   unfold mergeBindings
   rw [List.foldlM_cons]
-  simp [missing]
+  simp [absent]
 
 theorem mergeBindings_cons_some {b : Bindings} {n m : String} {v w : Pattern} (rest : Bindings)
     (found : b.find? (·.1 == n) = some (m, w)) (same : w = v) :
@@ -575,8 +575,8 @@ theorem find?_of_agrees {f : String → Option Pattern} {b : Bindings} (agrees :
     {v : Pattern} (member : (n, v) ∈ b) : b.find? (·.1 == n) = some (n, v) := by
   cases found : b.find? (·.1 == n) with
   | none =>
-      have missing := List.find?_eq_none.mp found (n, v) member
-      simp at missing
+      have absent := List.find?_eq_none.mp found (n, v) member
+      simp at absent
   | some entry =>
       obtain ⟨name, w⟩ := entry
       obtain ⟨named, present⟩ := find?_spec found
@@ -593,9 +593,9 @@ theorem applyBindings_fvar_some {b : Bindings} {n m : String} {v : Pattern}
     (found : b.find? (·.1 == n) = some (m, v)) : applyBindings b (.fvar n) = v := by
   simp [applyBindings, found]
 
-theorem applyBindings_fvar_none {b : Bindings} {n : String} (missing : b.find? (·.1 == n) = none) :
+theorem applyBindings_fvar_none {b : Bindings} {n : String} (absent : b.find? (·.1 == n) = none) :
     applyBindings b (.fvar n) = .fvar n := by
-  simp [applyBindings, missing]
+  simp [applyBindings, absent]
 
 theorem applyBindings_app (b : Bindings) (ts : Fin (rowArity .app) → Tm) :
     applyBindings b (termCode (.app .app ts)) =

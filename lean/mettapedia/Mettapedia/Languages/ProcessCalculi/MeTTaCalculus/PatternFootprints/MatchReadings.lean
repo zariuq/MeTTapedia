@@ -104,8 +104,8 @@ theorem oneAnswer_stillHas_iff (kind : Location) (answer : Answer) (live : Locat
   rw [publish_seeKind]
   constructor
   · rintro ⟨-, view, published, -⟩
-    by_contra missing
-    rw [if_neg missing] at published
+    by_contra absent
+    rw [if_neg absent] at published
     cases published
   · intro present
     exact ⟨List.mem_singleton_self _, live, if_pos present, rfl⟩
@@ -382,7 +382,7 @@ theorem answer_where_present :
   (oneAnswer_stillHas_iff _ _ _).mpr (by decide)
 
 /-- **Negative, one answer**: without an `a` it is not. -/
-theorem no_answer_in_noKinds :
+theorem no_answer_where_absent :
     ¬ (oneAnswer Kind.a ()).region.StillHas noKinds ((), oneAnswer Kind.a ()) := fun has =>
   absurd ((oneAnswer_stillHas_iff _ _ _).mp has) (by decide)
 
@@ -454,7 +454,7 @@ end ReadingControls
 #print axioms allAnswers_footprint
 #print axioms allAnswers_stillHas_iff_readsKept
 #print axioms ReadingControls.answer_where_present
-#print axioms ReadingControls.no_answer_in_noKinds
+#print axioms ReadingControls.no_answer_where_absent
 #print axioms ReadingControls.removal_of_its_kind_invalidates
 #print axioms ReadingControls.matchKinds_instances
 #print axioms ReadingControls.complete_read_instances

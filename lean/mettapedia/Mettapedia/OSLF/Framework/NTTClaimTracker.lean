@@ -186,7 +186,7 @@ def correctedBehaviorClaimList : List NTTClaim :=
       .proven⟩
   , ⟨"Native guard and firing contract",
       "Actual native positive images and negative predicates read admitted availability guards; full firings retain independently authored rule and premise occurrences",
-      "PresheafEventNone earns future-sensitive negation and its reflection qualification. NativeGuard.completeGuard_iff and finiteGuard_iff_matches read the actual operational Option-map guard, with explicit support identifiers. NativeFiring proves the full authored target conclusion and certificate substitution; NativeFiringOccurrences and NativeOccurrenceComparison retain the complete indexed inventory and earn natural split normalization. NativeOccurrenceControls separates three authored positions from two normalized addresses",
+      "PresheafEventAbsence earns future-sensitive negation and its reflection qualification. NativeGuard.completeGuard_iff and finiteGuard_iff_matches read the actual operational Option-map guard, with explicit support identifiers. NativeFiring proves the full authored target conclusion and certificate substitution; NativeFiringOccurrences and NativeOccurrenceComparison retain the complete indexed inventory and earn natural split normalization. NativeOccurrenceControls separates three authored positions from two normalized addresses",
       .proven⟩
   , ⟨"Deterministic cofree and congruence contract",
       "Actual cofree action trees give a distributive law recovering the operational lifting, and the actual final semantics has a context-congruent bisimulation kernel",

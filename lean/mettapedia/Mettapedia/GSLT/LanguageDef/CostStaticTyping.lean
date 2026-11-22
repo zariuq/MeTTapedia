@@ -431,19 +431,20 @@ theorem reflectiveScopeSafeAt_mapStatic
   rcases targetMembership with baseMembership | wrappedMembership
   · rcases List.mem_map.mp baseMembership with
       ⟨sourcePresentation, sourceMembership, rfl⟩
+    refine scopeSafeAt_mapQuoteScope (fun _ sealed => ?_) mappedOrdinaryScope
+      (sourceSafe sourcePresentation sourceMembership)
     cases color with
     | base =>
-        simpa [costBaseReflectivePresentationDecl,
-          mapReflectivePresentation, CostStaticColor.symbolsOf,
-          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-          costBaseLanguageDefSymbolMap] using
+        simpa [costBaseReflectivePresentationDecl, mapReflectivePresentation,
+          CostStaticColor.symbolsOf, costBaseStaticSymbols,
+          costBaseStaticReflectiveSymbols, costBaseLanguageDefSymbolMap] using
           (show binderSafeAt
               ((CostStaticColor.base.symbolsOf theory).constructor
                 sourcePresentation.quoteConstructor) depth
               (mapPattern (CostStaticColor.base.symbolsOf theory) pattern) = true
             from by
               rw [CostStaticColor.binderSafeAt_mapPattern_symbolsOf]
-              exact sourceSafe sourcePresentation sourceMembership)
+              exact sealed)
     | wrapped =>
         have scopeEquality :=
           WellSorted.binderSafeAt_mapPattern_of_constructor_avoids
@@ -453,13 +454,14 @@ theorem reflectiveScopeSafeAt_mapStatic
               costBaseConstructorName_ne_wrapped
                 sourcePresentation.quoteConstructor constructor equality.symm)
             depth pattern
-        simpa [costBaseReflectivePresentationDecl,
-          mapReflectivePresentation, CostStaticColor.symbolsOf,
-          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-          costBaseLanguageDefSymbolMap] using
+        simpa [costBaseReflectivePresentationDecl, mapReflectivePresentation,
+          CostStaticColor.symbolsOf, costBaseStaticSymbols,
+          costBaseStaticReflectiveSymbols, costBaseLanguageDefSymbolMap] using
           (scopeEquality.trans mappedOrdinaryScope)
   · rcases List.mem_map.mp wrappedMembership with
       ⟨sourcePresentation, sourceMembership, rfl⟩
+    refine scopeSafeAt_mapQuoteScope (fun _ sealed => ?_) mappedOrdinaryScope
+      (sourceSafe sourcePresentation sourceMembership)
     cases color with
     | base =>
         have scopeEquality :=
@@ -470,21 +472,20 @@ theorem reflectiveScopeSafeAt_mapStatic
               costBaseConstructorName_ne_wrapped constructor
                 sourcePresentation.quoteConstructor)
             depth pattern
-        simpa [costWrappedReflectivePresentationDecl,
-          mapReflectivePresentation, CostStaticColor.symbolsOf,
-          costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols] using
+        simpa [costWrappedReflectivePresentationDecl, mapReflectivePresentation,
+          CostStaticColor.symbolsOf, costWrappedStaticSymbols,
+          costWrappedStaticReflectiveSymbols] using
           (scopeEquality.trans mappedOrdinaryScope)
     | wrapped =>
-        simpa [costWrappedReflectivePresentationDecl,
-          mapReflectivePresentation, CostStaticColor.symbolsOf,
-          costWrappedStaticReflectiveSymbols] using
+        simpa [costWrappedReflectivePresentationDecl, mapReflectivePresentation,
+          CostStaticColor.symbolsOf, costWrappedStaticReflectiveSymbols] using
           (show binderSafeAt
               ((CostStaticColor.wrapped.symbolsOf theory).constructor
                 sourcePresentation.quoteConstructor) depth
               (mapPattern (CostStaticColor.wrapped.symbolsOf theory) pattern) = true
             from by
               rw [CostStaticColor.binderSafeAt_mapPattern_symbolsOf]
-              exact sourceSafe sourcePresentation sourceMembership)
+              exact sealed)
 
 
 @[simp]
@@ -503,11 +504,12 @@ theorem reflectiveIsQuoteConstructor_mapStatic
   | base =>
       rw [Bool.eq_iff_iff]
       simp only [List.any_map, Function.comp_apply, Bool.or_eq_true,
-        List.any_eq_true, beq_iff_eq]
+        List.any_eq_true, Bool.and_eq_true, beq_iff_eq]
       constructor
-      · rintro (⟨declaration, membership, equality⟩ |
-          ⟨declaration, _membership, equality⟩)
-        · refine ⟨declaration, membership, ?_⟩
+      · rintro (⟨declaration, membership, closed, equality⟩ |
+          ⟨declaration, _membership, _closed, equality⟩)
+        · refine ⟨declaration, membership, ?_, ?_⟩
+          · simpa [costBaseReflectivePresentationDecl, mapReflectivePresentation] using closed
           apply costBaseConstructorName_injective
           simpa [CostStaticColor.symbolsOf,
             costBaseReflectivePresentationDecl, mapReflectivePresentation,
@@ -524,9 +526,10 @@ theorem reflectiveIsQuoteConstructor_mapStatic
           exact False.elim
             (costBaseConstructorName_ne_wrapped constructor
               declaration.quoteConstructor impossible.symm)
-      · rintro ⟨declaration, membership, equality⟩
+      · rintro ⟨declaration, membership, closed, equality⟩
         left
-        refine ⟨declaration, membership, ?_⟩
+        refine ⟨declaration, membership, ?_, ?_⟩
+        · simp [costBaseReflectivePresentationDecl, mapReflectivePresentation, closed]
         simp [CostStaticColor.symbolsOf,
           costBaseReflectivePresentationDecl, mapReflectivePresentation,
           costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
@@ -534,10 +537,10 @@ theorem reflectiveIsQuoteConstructor_mapStatic
   | wrapped =>
       rw [Bool.eq_iff_iff]
       simp only [List.any_map, Function.comp_apply, Bool.or_eq_true,
-        List.any_eq_true, beq_iff_eq]
+        List.any_eq_true, Bool.and_eq_true, beq_iff_eq]
       constructor
-      · rintro (⟨declaration, _membership, equality⟩ |
-          ⟨declaration, membership, equality⟩)
+      · rintro (⟨declaration, _membership, _closed, equality⟩ |
+          ⟨declaration, membership, closed, equality⟩)
         · have impossible :
               costBaseConstructorName declaration.quoteConstructor =
                 costWrappedConstructorName constructor := by
@@ -549,15 +552,17 @@ theorem reflectiveIsQuoteConstructor_mapStatic
           exact False.elim
             (costBaseConstructorName_ne_wrapped
               declaration.quoteConstructor constructor impossible)
-        · refine ⟨declaration, membership, ?_⟩
+        · refine ⟨declaration, membership, ?_, ?_⟩
+          · simpa [costWrappedReflectivePresentationDecl, mapReflectivePresentation] using closed
           apply costWrappedConstructorName_injective
           simpa [CostStaticColor.symbolsOf,
             costWrappedReflectivePresentationDecl,
             mapReflectivePresentation, costWrappedStaticSymbols,
             costWrappedStaticReflectiveSymbols] using equality
-      · rintro ⟨declaration, membership, equality⟩
+      · rintro ⟨declaration, membership, closed, equality⟩
         right
-        refine ⟨declaration, membership, ?_⟩
+        refine ⟨declaration, membership, ?_, ?_⟩
+        · simp [costWrappedReflectivePresentationDecl, mapReflectivePresentation, closed]
         simp [CostStaticColor.symbolsOf,
           costWrappedReflectivePresentationDecl, mapReflectivePresentation,
           costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols,

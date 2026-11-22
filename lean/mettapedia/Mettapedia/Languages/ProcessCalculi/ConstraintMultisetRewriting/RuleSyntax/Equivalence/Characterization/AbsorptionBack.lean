@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 A firing of any rule at `fiveMore a d` is answered at `a` by `dropRow`, a positive rule: the same rule
 without its checks and collect query, whose takes and reads of the row `d` become tells of `5`, with the same
 opening; when the firing
-keeps `d`, the answer also makes one row `5` at an identity missing from everything
+keeps `d`, the answer also makes one row `5` at an identity absent from everything
 (`answer_backward`). The informations have the same equations (`mem_information_dropRow`), and the
 results are statically equivalent: equal when `d` is taken, and equal up to exchanging the made row
 with `d` when it is kept.

@@ -39,17 +39,17 @@ def seedCode : Nat → Pattern
 
 def allocatedName (index : Nat) : Pattern := .apply "NQuote" [seedCode index]
 
+theorem seedCode_typed (free : FreeSortContext) (index : Nat) :
+    ProcWellSorted rhoReflectivePresentation free [] (seedCode index) := by
+  induction index with
+  | zero => exact .unit
+  | succ index ih => exact .output (.quote ih) .unit
+
 theorem seedCode_safe (index depth : Nat) :
     binderSafeAt "NQuote" depth (seedCode index) = true := by
   induction index generalizing depth with
   | zero => rfl
   | succ index ih => simp [seedCode, binderSafeAt, binderSafeListAt, ih]
-
-theorem seedCode_typed (free : FreeSortContext) (index : Nat) :
-    ProcWellSorted rhoReflectivePresentation free [] (seedCode index) := by
-  induction index with
-  | zero => exact .unit
-  | succ index ih => exact .output (NameWellSorted.quoteOfSafe ih (seedCode_safe index 0)) .unit
 
 private theorem seedCode_not_drop (index : Nat) (name : Pattern) :
     seedCode index ≠ .apply "PDrop" [name] := by
@@ -137,7 +137,7 @@ theorem allocatedName_literal (index : Nat) : Mettapedia.OSLF.MeTTaIL.Reflective
 
 def seedChannel (free : FreeSortContext) (index : Nat) : Channel free where
   term := allocatedName index
-  typed := NameWellSorted.quoteOfSafe (seedCode_typed free index) (seedCode_safe index 0)
+  typed := .quote (seedCode_typed free index)
   safe := by simpa [allocatedName, binderSafeAt] using seedCode_safe index 0
   normalized := allocatedName_normalized index
   literal := allocatedName_literal index

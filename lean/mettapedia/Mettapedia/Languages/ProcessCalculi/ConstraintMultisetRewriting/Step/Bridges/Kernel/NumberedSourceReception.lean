@@ -7,7 +7,7 @@ This named sequential driver dispatches the actual raw header to the existing
 numbered declaration or proof reader. Each accepted record contributes one
 registered command, including a type definition with two ordered outputs.
 Intermediate registries, source conclusions and registered states are carried
-between calls. The driver selects a requested finite input window; a missing
+between calls. The driver selects a requested finite input window; an absent
 or unsupported record does not establish semantic refusal or termination.
 
 The source driver retains the fixed standard policy. Transform rule storage,

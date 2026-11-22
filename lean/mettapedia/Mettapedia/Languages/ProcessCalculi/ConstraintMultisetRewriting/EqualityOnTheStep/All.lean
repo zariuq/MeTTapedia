@@ -35,7 +35,7 @@ rows, as proof-relevant evidence made by firings, and is used by firings.
   frame `Omega`, transport is admitted and builds its member from the rows it reads; membership is an
   instance.
 * `Controls`: a predicate on codes and the intensional identity family of a set have no respect term
-  (the latter by η-long normal forms); the none query does not transport; transport only makes rows.
+  (the latter by η-long normal forms); absence does not transport; transport only makes rows.
 * `Quotient`: classes of sets as names; soundness as a firing that reads the evidence and tells only
   an equation between names; counting reads through it after, and not before.
 * `SetTheory`: comprehension, intersection (limit F4 is the commutativity of intersection),

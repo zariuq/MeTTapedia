@@ -41,8 +41,8 @@ Opaque Lean_Add_add Lean_Zero_zero Lean_Subtype_val Lean_Prod_fst Lean_Prod_snd 
     Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1
     Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel
     Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading Lean_Nat_primeFactorsList Lean_Multiset_map Lean_Multiset_filter LeanListMem LeanListPairwise LeanListNe
-    Lean_Multiset_Nodup Lean_Finset_All Lean_Finset_mk_node Lean_Finset_mk Lean_Finset_rec Lean_Finset_val Lean_Finset_sum Lean_Finset_card LeanPermRel Lean_Finset_range Lean_Finset_filter
-    LeanMergeBudget LeanMergeSort_split LeanMergeSort_half1 LeanMergeSort_half2 LeanNatBall LeanMinFacAux_rank LeanMinFacAux_step.
+    Lean_Multiset_Nodup Lean_Finset_All Lean_Finset_mk_node Lean_Finset_mk Lean_Finset_rec Lean_Finset_mrec Lean_Finset_val Lean_Finset_sum Lean_Finset_card LeanPermRel Lean_Finset_range
+    Lean_Finset_filter LeanMergeBudget LeanMergeSort_split LeanMergeSort_half1 LeanMergeSort_half2 LeanNatBall LeanMinFacAux_rank LeanMinFacAux_step.
 
 (** Test 1 of the code-equation slice: List.map (fun x => x + 1) [1, 2, 3] **)
 Theorem Lean_test_01 : (Lean_List_map Lean_Nat Lean_Nat (fun v_x :e Lean_Nat => (Lean_Nat_add v_x (LeanNum 1))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2)
@@ -1884,71 +1884,71 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2
     (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node
     Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9)
-    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7) F1)))))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3
-    :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 7) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat)
-    (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) 0)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat)
-    (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 7) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat)
-    (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) 0)))) (Lean_Prod_snd_In (Lean_List Lean_Nat)
-    (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
-    Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) 0))) (Lean_List_splitAt_In
-    Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (Lean_Nat_add_In (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6
-    (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node
-    (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node
+    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7) F1)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0)))
+    (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 7) (LeanNum 2)))) (Lean_Prod_snd
+    (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
+    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
+    Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) 0)))) 0)
+    (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 7) (LeanNum 2)))) (Lean_Prod_snd
+    (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
+    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
+    Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) 0))))
+    (Lean_Prod_snd_In (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat)
+    (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node
+    Lean_Nat)))))))) 0))) (Lean_List_splitAt_In Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (Lean_Nat_add_In
+    (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)))
+    (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat
+    v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node
+    Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9)
+    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) 0)) (Lean_Subtype_val_In (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List
+    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
+    Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) 0)
+    (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5)
+    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3
+    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat
+    (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat
+    (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8
+    (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat
+    (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node
+    Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 2)
+    (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc
+    6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))) 0
+    (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node
     Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) 0)) (Lean_Subtype_val_In (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun
-    v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node
-    Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
-    nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9)
-    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2
-    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat
-    (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5
-    (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
-    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))
-    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat
-    (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))))
-    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5
-    (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))) 0 (Lean_ProofField_intro ((fun v_l :e
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5)
+    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
+    Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (eq_sym_i ((fun v_l :e
     (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
     (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node
-    Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat
-    (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum
-    7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8)
-    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node
-    Lean_Nat))))))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8)
-    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node
-    Lean_Nat))))))))) (LeanNum 7)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7)) (beta (Lean_List Lean_Nat) (fun v_l =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8)
-    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node
-    Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat
-    (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))
+    Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
     (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node
-    Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3
-    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node Lean_Nat (LeanNum
-    9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8
-    (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 2)
+    Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
+    Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7)) (beta (Lean_List
+    Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 7))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node
+    Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7)
+    (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))
+    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4
+    (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat
+    (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node
+    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9
+    (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 2)
     (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node
     Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2
     (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node
@@ -2003,7 +2003,7 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node
     Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
     (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node
-    Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7) F1)))))).
+    Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7) F1)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))).
 rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1))
     (LeanNum 2)))) (Lean_Prod_fst (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 7) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List
     Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 7))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
@@ -2117,7 +2117,7 @@ rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat
     (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node
     Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
     (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node
-    Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7) F1))))).
+    Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))))))) (LeanNum 7) F1)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0)).
 claim A37: add_nat 7 1 = 8.
 { rewrite add_nat_SR 7 0 nat_0. rewrite add_nat_0R 7. reflexivity. }
 rewrite LeanNum_add_eq 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))) 1 (nat_ordsucc 0 nat_0) 8 A37.
@@ -2604,81 +2604,82 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
     nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node
     Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4) F2)))))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e
-    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 4) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat)
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4) F2)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0)))
+    (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 4) (LeanNum 2)))) (Lean_Prod_snd
+    (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
+    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 4))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
+    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) 0)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat
+    v_x3) (Lean_Nat_div (LeanNum 4) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (LeanNum
+    2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 4))) (Lean_Subtype_mk_node (Lean_List Lean_Nat)
+    (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) 0)))) (Lean_Prod_snd_In (Lean_List Lean_Nat) (Lean_List Lean_Nat)
     (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
     (Lean_List_length Lean_Nat v_x3) (LeanNum 4))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4)))
     (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
-    Lean_Nat))))) 0)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 4) (LeanNum
-    2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat)
-    (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 4))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8)
-    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) 0)))) (Lean_Prod_snd_In (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div
-    (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum
-    4))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5)
-    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) 0))) (Lean_List_splitAt_In Lean_Nat
-    (Lean_Nat_div (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (Lean_Nat_add_In (LeanNum 4) (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2
-    (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat)
-    (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 4))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8)
-    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) 0)) (Lean_Subtype_val_In (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_x3) (LeanNum 4))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
-    Lean_Nat))))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat
-    (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed
-    Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat
-    (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
-    nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc
-    7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))) 0 (Lean_ProofField_intro ((fun v_l :e (Lean_List
-    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat
-    (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5)
-    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) ((fun v_l :e
-    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    Lean_Nat))))) 0))) (Lean_List_splitAt_In Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (Lean_Nat_add_In
+    (LeanNum 4) (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 4))) (Lean_Subtype_mk_node
+    (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node
+    Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) 0)) (Lean_Subtype_val_In (Lean_List Lean_Nat) (fun v_x3
+    :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 4))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
     (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
-    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e
-    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node
-    Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4))
-    (beta (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4
-    (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum
-    1) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8)
-    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4
-    (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1)
-    (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat
-    (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4) F2)))))))
-    0 (Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_1 Lean_Nat (LeanNum 4) (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (Lean_Subtype_mk_node (Lean_List
-    Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum
-    3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List
-    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat
-    (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2
-    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
-    Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
-    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3
-    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1
-    (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))) 0 (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
-    Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_nil_node Lean_Nat)))))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
-    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node
-    Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (Lean_Eq_Prop
-    Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat
-    (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat
-    v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_nil_node Lean_Nat)))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node
-    Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) (beta (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length
-    Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))
-    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat
-    (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
+    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed
+    Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
     Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
     nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node
-    Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4) F2)))))).
+    Lean_Nat) (Lean_List_nil_typed Lean_Nat))))) 0 (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4)))
+    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
+    Lean_Nat)))))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat
+    (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l)
+    (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_nil_node Lean_Nat)))))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5)
+    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum
+    4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
+    Lean_Nat)))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) (beta (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum
+    4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
+    Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat
+    (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3
+    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed
+    Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node
+    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed
+    Lean_Nat)))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum
+    8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4) F2))))))) 0 (Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_1 Lean_Nat (LeanNum 4) (LeanNum_In 4
+    (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
+    Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_nil_node Lean_Nat))))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4)))
+    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
+    Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat
+    (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3
+    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed
+    Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node
+    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed
+    Lean_Nat))))) 0 (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5)
+    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5)
+    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (eq_sym_i ((fun v_l :e (Lean_List
+    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat
+    (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5)
+    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) (f_eq_i (fun
+    bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum 5)
+    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4)) (beta (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 4))) (Lean_List_cons_node Lean_Nat (LeanNum
+    5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat
+    (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum
+    8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7
+    (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))
+    (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length
+    Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4) F2)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))).
 rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (Lean_Nat_div (Lean_Nat_add (LeanNum 4) (LeanNum 1))
     (LeanNum 2)))) (Lean_Prod_fst (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 4) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List
     Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 4))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
@@ -2748,7 +2749,7 @@ rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat
     Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
     nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node
     Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4) F2))))).
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))))) (LeanNum 4) F2)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0)).
 claim A77: add_nat 4 1 = 5.
 { rewrite add_nat_SR 4 0 nat_0. rewrite add_nat_0R 4. reflexivity. }
 rewrite LeanNum_add_eq 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) 1 (nat_ordsucc 0 nat_0) 5 A77.
@@ -2971,35 +2972,35 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 5)
     (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed
     Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat
-    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F3)))))) (Lean_Subtype_mk_node
-    (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat)
-    (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
-    Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) 0)))) 0) (Lean_Subtype_mk_typed (Lean_List
-    Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List
-    Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop
-    Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l)
-    (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) 0)))) (Lean_Prod_snd_In (Lean_List Lean_Nat) (Lean_List Lean_Nat)
-    (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) 0))) (Lean_List_splitAt_In Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2)
-    (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (Lean_Nat_add_In (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (LeanNum 1) (LeanNum_In 1
-    (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) 0)) (Lean_Subtype_val_In (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat)
-    => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
-    Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun
-    v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))
-    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))
-    (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))) 0 (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (eq_sym_i ((fun v_l :e
-    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
-    (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node
-    Lean_Nat)))) (LeanNum 2)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node
+    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F3)))) 0 nat_0 (Lean_Nat_type_In 0
+    nat_0))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 2) (LeanNum 2))))
+    (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun
+    v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) 0)))) 0)
+    (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd
+    (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
+    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) 0)))) (Lean_Prod_snd_In
+    (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
+    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) 0))) (Lean_List_splitAt_In
+    Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (Lean_Nat_add_In (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
+    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) 0)) (Lean_Subtype_val_In
+    (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List
+    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node
+    Lean_Nat))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat
+    (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))) 0 (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (In_eq_r 0 (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) ((fun v_l :e (Lean_List
+    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node
+    Lean_Nat)))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node
+    Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3)
+    (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum
+    2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node
     Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (beta (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length
     Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 5)
     (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed
@@ -3022,7 +3023,8 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 5)
     (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed
     Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat
-    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F3)))))).
+    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F3)))) 0 nat_0 (Lean_Nat_type_In 0
+    nat_0))).
 rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1))
     (LeanNum 2)))) (Lean_Prod_fst (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List
     Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
@@ -3069,7 +3071,8 @@ rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat
     Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 5)
     (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed
     Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat
-    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F3))))).
+    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F3)))) 0 nat_0 (Lean_Nat_type_In 0
+    nat_0)).
 claim A105: add_nat 2 1 = 3.
 { rewrite add_nat_SR 2 0 nat_0. rewrite add_nat_0R 2. reflexivity. }
 rewrite LeanNum_add_eq 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)) 1 (nat_ordsucc 0 nat_0) 3 A105.
@@ -3589,58 +3592,58 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
     (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))
     (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat
-    (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F9)))))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat
-    v_x3) (Lean_Nat_div (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum
-    2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat)
-    (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_nil_node Lean_Nat))) 0)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div
-    (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val
-    (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List
-    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
-    Lean_Nat))) 0)))) (Lean_Prod_snd_In (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val
-    (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List
-    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
-    Lean_Nat))) 0))) (Lean_List_splitAt_In Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (Lean_Nat_add_In (LeanNum
-    2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val
-    (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List
-    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node
-    Lean_Nat))) 0)) (Lean_Subtype_val_In (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node
-    (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
-    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l)
-    (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8
-    (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))) 0
-    (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
-    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum
-    1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum
-    8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node
-    Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (beta
-    (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))
-    (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat
-    (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F9))))))) 0 (Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_1 Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0
-    nat_0))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum
-    8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat
-    (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat
-    (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))) 0
-    (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
-    Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum
-    1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum
-    8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node
-    Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))))
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (beta
-    (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))
-    (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat
-    (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F9)))))).
+    (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F9)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add
+    (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2)))
+    (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) 0)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum
+    2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2)))
+    (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) 0)))) (Lean_Prod_snd_In (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add
+    (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2)))
+    (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) 0))) (Lean_List_splitAt_In Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In
+    (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (Lean_Nat_add_In (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In
+    2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2)))
+    (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) 0)) (Lean_Subtype_val_In (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat)
+    => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))
+    (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat)
+    (Lean_List_nil_typed Lean_Nat))) 0 (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat
+    (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (f_eq_i (fun bridge_beta_0 =>
+    bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat
+    (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (beta (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4
+    (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1)
+    (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum
+    8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F9))))))) 0 (Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_1 Lean_Nat (LeanNum 2) (LeanNum_In 2
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat)
+    => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))
+    (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat)
+    (Lean_List_nil_typed Lean_Nat))) 0 (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat
+    (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (f_eq_i (fun bridge_beta_0 =>
+    bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat
+    (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 1)
+    (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (beta (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4
+    (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1)
+    (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum
+    8) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F9)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))).
 rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1))
     (LeanNum 2)))) (Lean_Prod_fst (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List
     Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
@@ -3688,7 +3691,7 @@ rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat
     (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
     (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))
     (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat
-    (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F9))))).
+    (LeanNum 1) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2) F9)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0)).
 claim A181: add_nat 2 1 = 3.
 { rewrite add_nat_SR 2 0 nat_0. rewrite add_nat_0R 2. reflexivity. }
 rewrite LeanNum_add_eq 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)) 1 (nat_ordsucc 0 nat_0) 3 A181.
@@ -4628,45 +4631,45 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc
     6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))) (Lean_Eq_proof_of
     Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))
-    (LeanNum 3) F14)))))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 3) (LeanNum
-    2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 3) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat)
-    (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7)
-    (Lean_List_nil_node Lean_Nat)))) 0)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div
-    (LeanNum 3) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 3) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val
-    (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List
-    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat
-    (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) 0)))) (Lean_Prod_snd_In (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 3) (LeanNum 1))
-    (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node (Lean_List
-    Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum
-    2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) 0))) (Lean_List_splitAt_In Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 3) (LeanNum 1)) (LeanNum 2))
-    (Lean_Nat_div_In (Lean_Nat_add (LeanNum 3) (LeanNum 1)) (Lean_Nat_add_In (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0
-    nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
-    Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) 0)) (Lean_Subtype_val_In (Lean_List
-    Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7)
-    (Lean_List_nil_node Lean_Nat)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3)))
-    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat
-    (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))))
-    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5
-    (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))) 0 (Lean_ProofField_intro ((fun v_l :e
-    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9)
-    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (LeanNum 3)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (LeanNum 3) F14)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3)
+    (Lean_Nat_div (LeanNum 3) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 3) (LeanNum 1)) (LeanNum 2))
+    (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun
+    v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) 0)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 3) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum
+    3) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 3)))
+    (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9)
+    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) 0)))) (Lean_Prod_snd_In (Lean_List Lean_Nat) (Lean_List Lean_Nat)
+    (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 3) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3)))
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) 0))) (Lean_List_splitAt_In Lean_Nat
+    (Lean_Nat_div (Lean_Nat_add (LeanNum 3) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 3) (LeanNum 1)) (Lean_Nat_add_In (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
+    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
     (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node
-    Lean_Nat))))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
-    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9)
-    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (LeanNum 3)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e
-    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
-    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (LeanNum 3)) (beta (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length
-    Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
-    nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2
-    (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6
-    (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))) (Lean_Eq_proof_of
+    Lean_Nat)))) 0)) (Lean_Subtype_val_In (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node
+    (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7)
+    (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat
+    (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7
+    (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))) 0
+    (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat
+    (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (LeanNum 3)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7)
+    (Lean_List_nil_node Lean_Nat))))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9)
+    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node
+    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (LeanNum 3)) (f_eq_i (fun bridge_beta_0 =>
+    bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat
+    (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9)
+    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))))) (LeanNum 3)) (beta (Lean_List Lean_Nat) (fun v_l => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node
+    Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 2)
+    (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc
+    6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))) (Lean_Eq_proof_of
     Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))
     (LeanNum 3) F14))))))) 0 (Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_1 Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_mk_node
     (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 3))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
@@ -4692,7 +4695,7 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc
     6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))) (Lean_Eq_proof_of
     Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))
-    (LeanNum 3) F14)))))).
+    (LeanNum 3) F14)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))).
 rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (Lean_Nat_div (Lean_Nat_add (LeanNum 3) (LeanNum 1))
     (LeanNum 2)))) (Lean_Prod_fst (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 3) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List
     Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 3))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
@@ -4753,7 +4756,7 @@ rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat
     (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6
     (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))) (Lean_Eq_proof_of
     Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_nil_node Lean_Nat)))))
-    (LeanNum 3) F14))))).
+    (LeanNum 3) F14)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0)).
 claim A355: add_nat 3 1 = 4.
 { rewrite add_nat_SR 3 0 nat_0. rewrite add_nat_0R 3. reflexivity. }
 rewrite LeanNum_add_eq 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) 1 (nat_ordsucc 0 nat_0) 4 A355.
@@ -4959,31 +4962,31 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat
     (LeanNum 2) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed
     Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat)))) (LeanNum
-    2) F15)))))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 2) (LeanNum 2))))
-    (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun
-    v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop
-    Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat))) 0)))) 0)
-    (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd
-    (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
-    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat))) 0)))) (Lean_Prod_snd_In
-    (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
-    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat))) 0))) (Lean_List_splitAt_In
-    Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (Lean_Nat_add_In (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e
-    (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat))) 0)) (Lean_Subtype_val_In
+    2) F15)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3)
+    (Lean_Nat_div (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2))
+    (Lean_Subtype_val (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun
+    v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
+    (Lean_List_nil_node Lean_Nat))) 0)))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (Lean_Nat_div
+    (LeanNum 2) (LeanNum 2)))) (Lean_Prod_snd (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val
     (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List
     Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node
-    Lean_Nat))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat
-    (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6
-    (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))) 0 (Lean_ProofField_intro ((fun v_l
-    :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
-    (Lean_List_nil_node Lean_Nat)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2)
-    (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9)
-    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat)))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
+    Lean_Nat))) 0)))) (Lean_Prod_snd_In (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val
+    (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List
+    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node
+    Lean_Nat))) 0))) (Lean_List_splitAt_In Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (Lean_Nat_add_In (LeanNum
+    2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val
+    (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List
+    Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node
+    Lean_Nat))) 0)) (Lean_Subtype_val_In (Lean_List Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node
+    (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat))) 0) (Lean_Subtype_mk_typed (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l)
+    (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9
+    (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 2)
+    (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))) 0
+    (Lean_ProofField_intro ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum
+    2) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum
+    9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat)))) (eq_sym_i ((fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2)))
     (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node
     Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat)))) (LeanNum 2)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List Lean_Nat) =>
     (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (LeanNum 2))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat))))
@@ -5011,7 +5014,7 @@ rewrite Lean_Prod_fst_mk (Lean_Subtype (Lean_List Lean_Nat) (fun v_l :e (Lean_Li
     (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat
     (LeanNum 2) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed
     Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat)))) (LeanNum
-    2) F15)))))).
+    2) F15)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))).
 rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_l) (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1))
     (LeanNum 2)))) (Lean_Prod_fst (Lean_List Lean_Nat) (Lean_List Lean_Nat) (Lean_List_splitAt Lean_Nat (Lean_Nat_div (Lean_Nat_add (LeanNum 2) (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List
     Lean_Nat) (fun v_x3 :e (Lean_List Lean_Nat) => (Lean_Eq_Prop Lean_Nat (Lean_List_length Lean_Nat v_x3) (LeanNum 2))) (Lean_Subtype_mk_node (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat) =>
@@ -5060,7 +5063,7 @@ rewrite Lean_Subtype_val_mk (Lean_List Lean_Nat) (fun v_l :e (Lean_List Lean_Nat
     (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat
     (LeanNum 2) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed
     Lean_Nat)))))) (Lean_Eq_proof_of Lean_Nat (Lean_List_length Lean_Nat (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_nil_node Lean_Nat)))) (LeanNum
-    2) F15))))).
+    2) F15)))) 0 nat_0 (Lean_Nat_type_In 0 nat_0)).
 claim A383: add_nat 2 1 = 3.
 { rewrite add_nat_SR 2 0 nat_0. rewrite add_nat_0R 2. reflexivity. }
 rewrite LeanNum_add_eq 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)) 1 (nat_ordsucc 0 nat_0) 3 A383.
@@ -50433,33 +50436,33 @@ rewrite Lean_Quot_lift_beta_value (Lean_List Lean_Nat) (fun v_a :e (Lean_List Le
     (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))
     (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
     nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 10) (LeanNum_In 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7
-    (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))))))))
-    (Lean_List_cons_node Lean_Nat (LeanNum 0) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node
-    Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8)
-    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 0) (LeanNum_In 0 nat_0)
-    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node
-    Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9)
-    (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node Lean_Nat
-    (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
-    Lean_Nat)))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum
-    4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat
-    (LeanNum 4) (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
-    Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat
-    (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10)
-    (Lean_List_nil_node Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 6) (LeanNum_In 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
-    Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat
-    (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat
-    (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6
-    (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 10) (LeanNum_In 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))))))).
+    (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))))))))
+    0 nat_0 0 nat_0 (Lean_Nat_type_In 0 nat_0) (Lean_Nat_type_In 0 nat_0)) (Lean_List_cons_node Lean_Nat (LeanNum 0) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum
+    2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node
+    Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))))))
+    (Lean_List_cons_typed Lean_Nat (LeanNum 0) (LeanNum_In 0 nat_0) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3)
+    (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node
+    Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1)
+    (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat
+    (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9)
+    (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))
+    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node
+    Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))))
+    (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5)
+    (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 4) (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))
+    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
+    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3
+    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 6) (LeanNum_In 6 (nat_ordsucc 5
+    (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
+    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5
+    (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3
+    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))
+    (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
+    nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 10) (LeanNum_In 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7
+    (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))))))).
 rewrite beta (Lean_List Lean_Nat) (fun v_l => (Lean_Multiset_ofList Lean_Nat (Lean_List_map Lean_Nat Lean_Nat (Sigma Lean_Nat (Lean_id Lean_Nat)) v_l))) (Lean_List_cons_node Lean_Nat (LeanNum 0)
     (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node
     Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9)
@@ -50823,64 +50826,65 @@ rewrite Lean_Quot_lift_beta_value (Lean_List Lean_Nat) (fun v_a :e (Lean_List Le
     (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6
     (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))
     (Lean_List_cons_typed Lean_Nat (LeanNum 10) (LeanNum_In 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))))))))) Lean_Nat_zero_node Lean_Nat_zero_typed (Lean_Quot_mk (Lean_List Lean_Nat) (fun v_x2 :e
-    (Lean_List Lean_Nat) => (Sigma (Lean_List Lean_Nat) (Lean_List_Perm_Prop Lean_Nat v_x2))) (Lean_List_cons_node Lean_Nat (LeanNum 0) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node
-    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
-    Lean_Nat))))))))))))) (Lean_Quot_mk_In (Lean_List Lean_Nat) (fun v_x2 :e (Lean_List Lean_Nat) => (Sigma (Lean_List Lean_Nat) (Lean_List_Perm_Prop Lean_Nat v_x2))) (lam_Pi (Lean_List Lean_Nat)
-    (fun v_x2 => (Pi_ ux :e (Lean_List Lean_Nat), LeanProp)) (fun v_x2 => (Sigma (Lean_List Lean_Nat) (Lean_List_Perm_Prop Lean_Nat v_x2))) (fun v_x2 Hv_x2 => (lam_Pi (Lean_List Lean_Nat) (fun v_x3
-    => LeanProp) (fun v_x3 => (Lean_List_Perm_Prop Lean_Nat v_x2 v_x3)) (fun v_x3 Hv_x3 => (Lean_List_Perm_Prop_prop Lean_Nat v_x2 v_x3))))) (Lean_List_cons_node Lean_Nat (LeanNum 0)
+    (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))))))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))) Lean_Nat_zero_node Lean_Nat_zero_typed (Lean_Quot_mk
+    (Lean_List Lean_Nat) (fun v_x2 :e (Lean_List Lean_Nat) => (Sigma (Lean_List Lean_Nat) (Lean_List_Perm_Prop Lean_Nat v_x2))) (Lean_List_cons_node Lean_Nat (LeanNum 0) (Lean_List_cons_node Lean_Nat
+    (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5)
+    (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
+    Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))))))) (Lean_Quot_mk_In (Lean_List Lean_Nat) (fun v_x2 :e (Lean_List Lean_Nat) => (Sigma (Lean_List Lean_Nat) (Lean_List_Perm_Prop
+    Lean_Nat v_x2))) (lam_Pi (Lean_List Lean_Nat) (fun v_x2 => (Pi_ ux :e (Lean_List Lean_Nat), LeanProp)) (fun v_x2 => (Sigma (Lean_List Lean_Nat) (Lean_List_Perm_Prop Lean_Nat v_x2))) (fun v_x2
+    Hv_x2 => (lam_Pi (Lean_List Lean_Nat) (fun v_x3 => LeanProp) (fun v_x3 => (Lean_List_Perm_Prop Lean_Nat v_x2 v_x3)) (fun v_x3 Hv_x3 => (Lean_List_Perm_Prop_prop Lean_Nat v_x2 v_x3)))))
+    (Lean_List_cons_node Lean_Nat (LeanNum 0) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node
+    Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 0) (LeanNum_In 0 nat_0)
     (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node
     Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9)
-    (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 0) (LeanNum_In 0 nat_0) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node
-    Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10)
-    (Lean_List_nil_node Lean_Nat))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat
-    (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))))) (Lean_List_cons_typed
-    Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat
-    (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9)
-    (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))
-    (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node
-    Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 4)
-    (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node
-    Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 6)
+    (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node Lean_Nat
+    (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
     (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
-    Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 6) (LeanNum_In 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))) (Lean_List_cons_node
-    Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))
+    Lean_Nat)))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum
+    4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
+    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7)
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat
+    (LeanNum 4) (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
+    Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat
+    (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10)
+    (Lean_List_nil_node Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 6) (LeanNum_In 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
+    Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))
     (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat
     (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat
     (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6
     (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))
     (Lean_List_cons_typed Lean_Nat (LeanNum 10) (LeanNum_In 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 0) (Lean_List_cons_node Lean_Nat (LeanNum 1)
-    (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node
-    Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10)
-    (Lean_List_nil_node Lean_Nat)))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 0) (LeanNum_In 0 nat_0) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2)
-    (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node
-    Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))))))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat
-    (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8)
-    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
-    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
-    Lean_Nat))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node
+    (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))))))) 0 nat_0 0 nat_0 (Lean_Nat_type_In 0 nat_0) (Lean_Nat_type_In 0 nat_0))
+    (Lean_List_cons_node Lean_Nat (LeanNum 0) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node
+    Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 0) (LeanNum_In 0 nat_0)
+    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node
     Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9)
-    (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 4) (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc
-    0 nat_0))))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8)
-    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4
-    (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum
-    8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 6) (LeanNum_In 6 (nat_ordsucc 5
-    (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5
-    (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
-    Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3
-    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
-    nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 10) (LeanNum_In 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7
-    (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))))))).
+    (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node Lean_Nat
+    (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
+    Lean_Nat)))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum
+    4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
+    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7)
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat
+    (LeanNum 4) (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
+    Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 5) (LeanNum_In 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))) (Lean_List_cons_node Lean_Nat
+    (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10)
+    (Lean_List_nil_node Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 6) (LeanNum_In 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node
+    Lean_Nat))))) (Lean_List_cons_typed Lean_Nat (LeanNum 7) (LeanNum_In 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))
+    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat)))) (Lean_List_cons_typed Lean_Nat
+    (LeanNum 8) (LeanNum_In 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))) (Lean_List_cons_node Lean_Nat
+    (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))) (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6
+    (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_nil_node Lean_Nat))
+    (Lean_List_cons_typed Lean_Nat (LeanNum 10) (LeanNum_In 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
+    (nat_ordsucc 0 nat_0))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))))))).
 rewrite beta (Lean_List Lean_Nat) (Lean_List_foldr Lean_Nat Lean_Nat (fun v_x1 :e Lean_Nat => (Sigma Lean_Nat (ap ((Lean_Add_add Lean_Nat (Lean_AddSemigroup_toAdd Lean_Nat
     (Lean_AddMonoid_toAddSemigroup Lean_Nat (Lean_AddMonoid_mk_node Lean_Nat (Lean_AddSemigroup_mk_node Lean_Nat (Lean_Add_mk_node Lean_Nat (fun v_a :e Lean_Nat => (Sigma Lean_Nat (Lean_Nat_add
     v_a)))) 0) (Lean_Zero_mk_node Lean_Nat Lean_Nat_zero_node) 0 0 (Lean_NSMul_mk_node Lean_Nat (fun v_m :e Lean_Nat => (Sigma Lean_Nat (Lean_Nat_mul v_m)))) 0 0)))) v_x1)))) Lean_Nat_zero_node)
@@ -52391,42 +52395,42 @@ rewrite Lean_Finset_filter_unfold Lean_Nat (fun v_x :e Lean_Nat => (Lean_Eq_Prop
 rewrite Lean_Finset_card_unfold Lean_Nat (Lean_Finset_mk_node Lean_Nat (Lean_Multiset_filter Lean_Nat (fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (fun
     v_a :e Lean_Nat => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (Lean_Finset_val Lean_Nat (Lean_Finset_mk_node Lean_Nat (Lean_Multiset_range (LeanNum 20)) 0))) 0).
 rewrite Lean_Finset_val_mk Lean_Nat (Lean_Multiset_filter Lean_Nat (fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (fun v_a :e Lean_Nat =>
-    (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (Lean_Finset_val Lean_Nat (Lean_Finset_mk_node Lean_Nat (Lean_Multiset_range (LeanNum 20)) 0))) (Lean_Multiset_filter_In
-    Lean_Nat (fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (lam_Pi Lean_Nat (fun v_x => LeanProp) (fun v_x => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x
-    (LeanNum 3)) (LeanNum 0))) (fun v_x Hv_x => (Lean_Eq_Prop_prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0)))) (fun v_a :e Lean_Nat => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum
-    3)) (LeanNum 0))) (In_eq_r (fun v_a :e Lean_Nat => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (Pi_ v_a :e Lean_Nat, (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod
-    v_a (LeanNum 3)) (LeanNum 0)))) (Pi_ v_a :e Lean_Nat, (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (eq_sym_i (Pi_ v_a :e
-    Lean_Nat, (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (Pi_ v_a :e Lean_Nat, (Lean_Decidable (Lean_Eq_Prop Lean_Nat
-    (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (Pi_family_eq Lean_Nat (fun v_a => (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0)))
-    v_a))) (fun v_a => (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (fun v_a bridge_bound_64 => (f_eq_i (fun bridge_hole_63 => (Lean_Decidable bridge_hole_63))
-    ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a) (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)) (f_eq_i (fun bridge_beta_0 =>
-    bridge_beta_0) ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a) (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)) (beta Lean_Nat
-    (fun v_x => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a bridge_bound_64)))))) (lam_Pi Lean_Nat (fun v_a => (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a
-    (LeanNum 3)) (LeanNum 0)))) (fun v_a => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (fun v_a Hv_a => (Lean_instDecidableEqNat_In (Lean_Nat_mod v_a (LeanNum 3))
-    (Lean_Nat_mod_In v_a Hv_a (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (LeanNum 0) (LeanNum_In 0 nat_0))))) (Lean_Finset_val Lean_Nat (Lean_Finset_mk_node
-    Lean_Nat (Lean_Multiset_range (LeanNum 20)) 0)) (Lean_Finset_val_In Lean_Nat (Lean_Finset_mk_node Lean_Nat (Lean_Multiset_range (LeanNum 20)) 0) (Lean_Finset_mk_typed Lean_Nat
-    (Lean_Multiset_range (LeanNum 20)) (Lean_Multiset_range_In (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc 16 (nat_ordsucc 15 (nat_ordsucc 14 (nat_ordsucc
-    13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0)))))))))))))))))))))) 0 (Lean_Finset_range_eq_1_proof_0 (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc 16 (nat_ordsucc 15
-    (nat_ordsucc 14 (nat_ordsucc 13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3
-    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))))))))))))))))))) 0 (Lean_Finset_filter_eq_1_proof_0 Lean_Nat (fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum
-    3)) (LeanNum 0))) (lam_Pi Lean_Nat (fun v_x => LeanProp) (fun v_x => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (fun v_x Hv_x => (Lean_Eq_Prop_prop Lean_Nat (Lean_Nat_mod
-    v_x (LeanNum 3)) (LeanNum 0)))) (fun v_a :e Lean_Nat => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (In_eq_r (fun v_a :e Lean_Nat => (Lean_instDecidableEqNat
-    (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (Pi_ v_a :e Lean_Nat, (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (Pi_ v_a :e Lean_Nat, (Lean_Decidable ((fun
-    v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (eq_sym_i (Pi_ v_a :e Lean_Nat, (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat
-    (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (Pi_ v_a :e Lean_Nat, (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (Pi_family_eq Lean_Nat (fun v_a =>
-    (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (fun v_a => (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum
-    3)) (LeanNum 0)))) (fun v_a bridge_bound_64 => (f_eq_i (fun bridge_hole_63 => (Lean_Decidable bridge_hole_63)) ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3))
-    (LeanNum 0))) v_a) (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod
-    v_x (LeanNum 3)) (LeanNum 0))) v_a) (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)) (beta Lean_Nat (fun v_x => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum
-    0))) v_a bridge_bound_64)))))) (lam_Pi Lean_Nat (fun v_a => (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (fun v_a => (Lean_instDecidableEqNat (Lean_Nat_mod
-    v_a (LeanNum 3)) (LeanNum 0))) (fun v_a Hv_a => (Lean_instDecidableEqNat_In (Lean_Nat_mod v_a (LeanNum 3)) (Lean_Nat_mod_In v_a Hv_a (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1
-    (nat_ordsucc 0 nat_0))))) (LeanNum 0) (LeanNum_In 0 nat_0))))) (Lean_Finset_mk_node Lean_Nat (Lean_Multiset_range (LeanNum 20)) 0) (Lean_Finset_mk_typed Lean_Nat (Lean_Multiset_range (LeanNum
-    20)) (Lean_Multiset_range_In (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc 16 (nat_ordsucc 15 (nat_ordsucc 14 (nat_ordsucc 13 (nat_ordsucc 12
-    (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
-    nat_0)))))))))))))))))))))) 0 (Lean_Finset_range_eq_1_proof_0 (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc 16 (nat_ordsucc 15 (nat_ordsucc 14
-    (nat_ordsucc 13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2
-    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))))))))))))))))).
+    (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (Lean_Finset_val Lean_Nat (Lean_Finset_mk_node Lean_Nat (Lean_Multiset_range (LeanNum 20)) 0))) (Lean_Multiset_filter_In 0
+    nat_0 Lean_Nat (Lean_Nat_type_In 0 nat_0) (fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (lam_Pi Lean_Nat (fun v_x => LeanProp) (fun v_x =>
+    (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (fun v_x Hv_x => (Lean_Eq_Prop_prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0)))) (fun v_a :e Lean_Nat =>
+    (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (In_eq_r (fun v_a :e Lean_Nat => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (Pi_ v_a :e Lean_Nat,
+    (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (Pi_ v_a :e Lean_Nat, (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x
+    (LeanNum 3)) (LeanNum 0))) v_a))) (eq_sym_i (Pi_ v_a :e Lean_Nat, (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (Pi_ v_a :e
+    Lean_Nat, (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (Pi_family_eq Lean_Nat (fun v_a => (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat
+    (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (fun v_a => (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (fun v_a bridge_bound_64 => (f_eq_i (fun
+    bridge_hole_63 => (Lean_Decidable bridge_hole_63)) ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a) (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a
+    (LeanNum 3)) (LeanNum 0)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a) (Lean_Eq_Prop Lean_Nat
+    (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)) (beta Lean_Nat (fun v_x => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a bridge_bound_64)))))) (lam_Pi Lean_Nat (fun v_a =>
+    (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (fun v_a => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (fun v_a Hv_a =>
+    (Lean_instDecidableEqNat_In (Lean_Nat_mod v_a (LeanNum 3)) (Lean_Nat_mod_In v_a Hv_a (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (LeanNum 0) (LeanNum_In 0
+    nat_0))))) (Lean_Finset_val Lean_Nat (Lean_Finset_mk_node Lean_Nat (Lean_Multiset_range (LeanNum 20)) 0)) (Lean_Finset_val_In Lean_Nat (Lean_Finset_mk_node Lean_Nat (Lean_Multiset_range (LeanNum
+    20)) 0) (Lean_Finset_mk_typed Lean_Nat (Lean_Multiset_range (LeanNum 20)) (Lean_Multiset_range_In (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc 16
+    (nat_ordsucc 15 (nat_ordsucc 14 (nat_ordsucc 13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4
+    (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))))))))))))))) 0 (Lean_Finset_range_eq_1_proof_0 (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc
+    17 (nat_ordsucc 16 (nat_ordsucc 15 (nat_ordsucc 14 (nat_ordsucc 13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5
+    (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))))))))))))))))))) 0 (Lean_Finset_filter_eq_1_proof_0 Lean_Nat (fun v_x :e Lean_Nat => (Lean_Eq_Prop
+    Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (lam_Pi Lean_Nat (fun v_x => LeanProp) (fun v_x => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) (fun v_x Hv_x =>
+    (Lean_Eq_Prop_prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0)))) (fun v_a :e Lean_Nat => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (In_eq_r (fun v_a :e
+    Lean_Nat => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (Pi_ v_a :e Lean_Nat, (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (Pi_
+    v_a :e Lean_Nat, (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (eq_sym_i (Pi_ v_a :e Lean_Nat, (Lean_Decidable ((fun v_x :e
+    Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (Pi_ v_a :e Lean_Nat, (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))))
+    (Pi_family_eq Lean_Nat (fun v_a => (Lean_Decidable ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a))) (fun v_a => (Lean_Decidable (Lean_Eq_Prop
+    Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (fun v_a bridge_bound_64 => (f_eq_i (fun bridge_hole_63 => (Lean_Decidable bridge_hole_63)) ((fun v_x :e Lean_Nat => (Lean_Eq_Prop Lean_Nat
+    (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a) (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_x :e Lean_Nat =>
+    (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a) (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)) (beta Lean_Nat (fun v_x => (Lean_Eq_Prop Lean_Nat
+    (Lean_Nat_mod v_x (LeanNum 3)) (LeanNum 0))) v_a bridge_bound_64)))))) (lam_Pi Lean_Nat (fun v_a => (Lean_Decidable (Lean_Eq_Prop Lean_Nat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0)))) (fun v_a
+    => (Lean_instDecidableEqNat (Lean_Nat_mod v_a (LeanNum 3)) (LeanNum 0))) (fun v_a Hv_a => (Lean_instDecidableEqNat_In (Lean_Nat_mod v_a (LeanNum 3)) (Lean_Nat_mod_In v_a Hv_a (LeanNum 3)
+    (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (LeanNum 0) (LeanNum_In 0 nat_0))))) (Lean_Finset_mk_node Lean_Nat (Lean_Multiset_range (LeanNum 20)) 0)
+    (Lean_Finset_mk_typed Lean_Nat (Lean_Multiset_range (LeanNum 20)) (Lean_Multiset_range_In (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc 16 (nat_ordsucc
+    15 (nat_ordsucc 14 (nat_ordsucc 13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3
+    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))))))))))))))) 0 (Lean_Finset_range_eq_1_proof_0 (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc
+    16 (nat_ordsucc 15 (nat_ordsucc 14 (nat_ordsucc 13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4
+    (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))))))))))))))))))) 0 nat_0 (Lean_Nat_type_In 0 nat_0)).
 rewrite Lean_Finset_val_mk Lean_Nat (Lean_Multiset_range (LeanNum 20)) (Lean_Multiset_range_In (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc 16 (nat_ordsucc
     15 (nat_ordsucc 14 (nat_ordsucc 13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3
     (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))))))))))))))) 0 (Lean_Finset_range_eq_1_proof_0 (LeanNum 20) (LeanNum_In 20 (nat_ordsucc 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc
@@ -53364,30 +53368,30 @@ rewrite Lean_Quot_lift_beta_value (Lean_List Lean_Nat) (fun v_a :e (Lean_List Le
     10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))))))))))))
     (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 19) (LeanNum_In 19 (nat_ordsucc 18 (nat_ordsucc 17 (nat_ordsucc 16 (nat_ordsucc
     15 (nat_ordsucc 14 (nat_ordsucc 13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3
-    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))))))))))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 0)
-    (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node
+    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))))))))))))) (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))))))))))))))))) 0 nat_0 (Lean_Nat_type_In 0 nat_0))
+    (Lean_List_cons_node Lean_Nat (LeanNum 0) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node
+    Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_cons_node Lean_Nat (LeanNum 11) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node
+    Lean_Nat (LeanNum 13) (Lean_List_cons_node Lean_Nat (LeanNum 14) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 16) (Lean_List_cons_node Lean_Nat (LeanNum 17)
+    (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node Lean_Nat))))))))))))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 0) (LeanNum_In 0
+    nat_0) (Lean_List_cons_node Lean_Nat (LeanNum 1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node
     Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9)
     (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_cons_node Lean_Nat (LeanNum 11) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 13) (Lean_List_cons_node
     Lean_Nat (LeanNum 14) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 16) (Lean_List_cons_node Lean_Nat (LeanNum 17) (Lean_List_cons_node Lean_Nat (LeanNum 18)
-    (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node Lean_Nat))))))))))))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 0) (LeanNum_In 0 nat_0) (Lean_List_cons_node Lean_Nat (LeanNum
-    1) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node
-    Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10)
-    (Lean_List_cons_node Lean_Nat (LeanNum 11) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 13) (Lean_List_cons_node Lean_Nat (LeanNum 14) (Lean_List_cons_node
-    Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 16) (Lean_List_cons_node Lean_Nat (LeanNum 17) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_cons_node Lean_Nat (LeanNum 19)
-    (Lean_List_nil_node Lean_Nat)))))))))))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node Lean_Nat (LeanNum 2) (Lean_List_cons_node
-    Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7)
-    (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_cons_node Lean_Nat (LeanNum 11) (Lean_List_cons_node
-    Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 13) (Lean_List_cons_node Lean_Nat (LeanNum 14) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 16)
-    (Lean_List_cons_node Lean_Nat (LeanNum 17) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node Lean_Nat)))))))))))))))))))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4)
-    (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_cons_node Lean_Nat (LeanNum 11) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 13)
-    (Lean_List_cons_node Lean_Nat (LeanNum 14) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 16) (Lean_List_cons_node Lean_Nat (LeanNum 17) (Lean_List_cons_node
-    Lean_Nat (LeanNum 18) (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node Lean_Nat)))))))))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2
-    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat
-    (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_cons_node Lean_Nat (LeanNum 11)
-    (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 13) (Lean_List_cons_node Lean_Nat (LeanNum 14) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node
-    Lean_Nat (LeanNum 16) (Lean_List_cons_node Lean_Nat (LeanNum 17) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node
+    (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node Lean_Nat)))))))))))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0)) (Lean_List_cons_node
+    Lean_Nat (LeanNum 2) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_cons_node
+    Lean_Nat (LeanNum 11) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 13) (Lean_List_cons_node Lean_Nat (LeanNum 14) (Lean_List_cons_node Lean_Nat (LeanNum 15)
+    (Lean_List_cons_node Lean_Nat (LeanNum 16) (Lean_List_cons_node Lean_Nat (LeanNum 17) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node
+    Lean_Nat))))))))))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))) (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat
+    (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8)
+    (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_cons_node Lean_Nat (LeanNum 11) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node
+    Lean_Nat (LeanNum 13) (Lean_List_cons_node Lean_Nat (LeanNum 14) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 16) (Lean_List_cons_node Lean_Nat (LeanNum 17)
+    (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node Lean_Nat)))))))))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3
+    (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 4) (Lean_List_cons_node Lean_Nat (LeanNum 5) (Lean_List_cons_node Lean_Nat (LeanNum 6)
+    (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 10) (Lean_List_cons_node
+    Lean_Nat (LeanNum 11) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 13) (Lean_List_cons_node Lean_Nat (LeanNum 14) (Lean_List_cons_node Lean_Nat (LeanNum 15)
+    (Lean_List_cons_node Lean_Nat (LeanNum 16) (Lean_List_cons_node Lean_Nat (LeanNum 17) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_cons_node Lean_Nat (LeanNum 19) (Lean_List_nil_node
     Lean_Nat))))))))))))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 4) (LeanNum_In 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))) (Lean_List_cons_node Lean_Nat (LeanNum 5)
     (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 7) (Lean_List_cons_node Lean_Nat (LeanNum 8) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node
     Lean_Nat (LeanNum 10) (Lean_List_cons_node Lean_Nat (LeanNum 11) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 13) (Lean_List_cons_node Lean_Nat (LeanNum 14)
@@ -56037,14 +56041,14 @@ rewrite Lean_Quot_lift_beta_value (Lean_List Lean_Nat) (fun v_x2 :e (Lean_List L
     (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_nil_node
     Lean_Nat)) (Lean_List_cons_typed Lean_Nat (LeanNum 18) (LeanNum_In 18 (nat_ordsucc 17 (nat_ordsucc 16 (nat_ordsucc 15 (nat_ordsucc 14 (nat_ordsucc 13 (nat_ordsucc 12 (nat_ordsucc 11 (nat_ordsucc
     10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))))))))))))))))))
-    (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat)))))))))) (Lean_List_cons_node Lean_Nat Lean_Nat_zero_node (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat
-    (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 18)
-    (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat Lean_Nat_zero_node Lean_Nat_zero_typed (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node Lean_Nat (LeanNum 6)
+    (Lean_List_nil_node Lean_Nat) (Lean_List_nil_typed Lean_Nat))))))))) 0 nat_0 (Lean_Nat_type_In 0 nat_0)) (Lean_List_cons_node Lean_Nat Lean_Nat_zero_node (Lean_List_cons_node Lean_Nat (LeanNum 3)
+    (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node
+    Lean_Nat (LeanNum 18) (Lean_List_nil_node Lean_Nat)))))))) (Lean_List_cons_typed Lean_Nat Lean_Nat_zero_node Lean_Nat_zero_typed (Lean_List_cons_node Lean_Nat (LeanNum 3) (Lean_List_cons_node
+    Lean_Nat (LeanNum 6) (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 18)
+    (Lean_List_nil_node Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 6)
     (Lean_List_cons_node Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_nil_node
-    Lean_Nat))))))) (Lean_List_cons_typed Lean_Nat (LeanNum 3) (LeanNum_In 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_List_cons_node Lean_Nat (LeanNum 6) (Lean_List_cons_node
-    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_nil_node Lean_Nat))))))
-    (Lean_List_cons_typed Lean_Nat (LeanNum 6) (LeanNum_In 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))) (Lean_List_cons_node Lean_Nat
-    (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_nil_node Lean_Nat)))))
+    Lean_Nat)))))) (Lean_List_cons_typed Lean_Nat (LeanNum 6) (LeanNum_In 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0))))))) (Lean_List_cons_node
+    Lean_Nat (LeanNum 9) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_nil_node Lean_Nat)))))
     (Lean_List_cons_typed Lean_Nat (LeanNum 9) (LeanNum_In 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3 (nat_ordsucc 2 (nat_ordsucc 1 (nat_ordsucc 0
     nat_0)))))))))) (Lean_List_cons_node Lean_Nat (LeanNum 12) (Lean_List_cons_node Lean_Nat (LeanNum 15) (Lean_List_cons_node Lean_Nat (LeanNum 18) (Lean_List_nil_node Lean_Nat))))
     (Lean_List_cons_typed Lean_Nat (LeanNum 12) (LeanNum_In 12 (nat_ordsucc 11 (nat_ordsucc 10 (nat_ordsucc 9 (nat_ordsucc 8 (nat_ordsucc 7 (nat_ordsucc 6 (nat_ordsucc 5 (nat_ordsucc 4 (nat_ordsucc 3
@@ -56208,5 +56212,5 @@ Transparent Lean_Add_add Lean_Zero_zero Lean_Subtype_val Lean_Prod_fst Lean_Prod
     Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_2 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_1
     Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel_method1_0 Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_sourceFuel
     Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_PrimeFactorsList_reading Lean_Nat_primeFactorsList Lean_Multiset_map Lean_Multiset_filter LeanListMem LeanListPairwise LeanListNe
-    Lean_Multiset_Nodup Lean_Finset_All Lean_Finset_mk_node Lean_Finset_mk Lean_Finset_rec Lean_Finset_val Lean_Finset_sum Lean_Finset_card LeanPermRel Lean_Finset_range Lean_Finset_filter
-    LeanMergeBudget LeanMergeSort_split LeanMergeSort_half1 LeanMergeSort_half2 LeanNatBall LeanMinFacAux_rank LeanMinFacAux_step.
+    Lean_Multiset_Nodup Lean_Finset_All Lean_Finset_mk_node Lean_Finset_mk Lean_Finset_rec Lean_Finset_mrec Lean_Finset_val Lean_Finset_sum Lean_Finset_card LeanPermRel Lean_Finset_range
+    Lean_Finset_filter LeanMergeBudget LeanMergeSort_split LeanMergeSort_half1 LeanMergeSort_half2 LeanNatBall LeanMinFacAux_rank LeanMinFacAux_step.

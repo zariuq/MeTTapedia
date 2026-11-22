@@ -34,7 +34,9 @@ partial def term : FTerm → Format
   | .pi name domain codomain => form [word "pi", word (egalVar name), term domain, term codomain]
   | .prop => form [word "prop"]
   | .sort level => form [word "sort", word level.atom]
-  | .proof => form [word "proof"]
+  | .proof | .proofBy _ => form [word "proof"]
+  | .cite name arguments => form [word "cite", named name, form (arguments.map term)]
+  | .level level => form [word "level", word level.atom]
 
 def read (name : Name) (expression : Expr) : MetaM FTerm := do
   let prepared ← Sym.foldProjs expression

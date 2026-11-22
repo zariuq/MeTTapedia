@@ -104,4 +104,56 @@ theorem Completion.no_support {s : Partial} {a : Masses} (h : Completion s a)
   rw [empty] at read
   contradiction
 
+theorem Partial.interval_complete (s : Partial) (p : s.unseen.positive = 0)
+    (n : s.unseen.negative = 0) (support : 0 < s.found.support) :
+    s.interval = some (s.found.posterior, s.found.posterior) := by
+  simp only [interval, posCap, negCap, p, n, add_zero]
+  by_cases hp : s.found.positive = 0
+  · have hn : s.found.negative ≠ 0 := by
+      intro hn
+      simp [Masses.support, hp, hn] at support
+    simp [hp, hn, Masses.posterior]
+  · by_cases hn : s.found.negative = 0
+    · simp [hp, hn, Masses.posterior, Masses.support]
+    · simp [hp, hn, Masses.posterior, Masses.support]
+
+theorem endpoints_attained (s : Partial) {lo hi : ℚ} (read : s.interval = some (lo, hi)) :
+    (∃ a, Completion s a ∧ 0 < a.support ∧ a.posterior = lo) ∧
+      (∃ a, Completion s a ∧ 0 < a.support ∧ a.posterior = hi) := by
+  by_cases hp : s.posCap = 0
+  · have hn : s.negCap ≠ 0 := by
+      intro empty
+      simp [Partial.interval, hp, empty] at read
+    have neg := lt_of_le_of_ne (negCap_nonneg s) (Ne.symm hn)
+    let cap : Masses := ⟨s.posCap, s.negCap, posCap_nonneg s, negCap_nonneg s⟩
+    have valid : Completion s cap :=
+      ⟨le_add_of_nonneg_right s.unseen.pos_nonneg, le_add_of_nonneg_right s.unseen.neg_nonneg,
+        le_rfl, le_rfl⟩
+    simp only [Partial.interval, if_pos hp, if_neg hn, Option.some.injEq, Prod.mk.injEq] at read
+    have support : 0 < cap.support := by simpa [cap, Masses.support, hp] using neg
+    have point : cap.posterior = 0 := by simp [cap, Masses.posterior, hp]
+    exact ⟨⟨cap, valid, support, point.trans read.1⟩, ⟨cap, valid, support, point.trans read.2⟩⟩
+  · have pos := lt_of_le_of_ne (posCap_nonneg s) (Ne.symm hp)
+    by_cases hn : s.negCap = 0
+    · let cap : Masses := ⟨s.posCap, s.negCap, posCap_nonneg s, negCap_nonneg s⟩
+      have valid : Completion s cap :=
+        ⟨le_add_of_nonneg_right s.unseen.pos_nonneg, le_add_of_nonneg_right s.unseen.neg_nonneg,
+          le_rfl, le_rfl⟩
+      simp only [Partial.interval, if_neg hp, if_pos hn, Option.some.injEq, Prod.mk.injEq] at read
+      have support : 0 < cap.support := by simpa [cap, Masses.support, hn] using pos
+      have point : cap.posterior = 1 := by simp [cap, Masses.posterior, Masses.support, hn, hp]
+      exact ⟨⟨cap, valid, support, point.trans read.1⟩, ⟨cap, valid, support, point.trans read.2⟩⟩
+    · exact rectangle_attains s pos (lt_of_le_of_ne (negCap_nonneg s) (Ne.symm hn)) read
+
+/-- Any refinement of the feasible mass set narrows the reported posterior. -/
+theorem interval_narrow {inner outer : Partial}
+    (refines : ∀ a, Completion inner a → Completion outer a)
+    {lo hi : ℚ} (read : inner.interval = some (lo, hi)) :
+    ∃ oldLo oldHi, outer.interval = some (oldLo, oldHi) ∧ oldLo ≤ lo ∧ hi ≤ oldHi := by
+  obtain ⟨⟨low, lvalid, ls, leq⟩, ⟨high, hvalid, hs, heq⟩⟩ := endpoints_attained _ read
+  obtain ⟨l, u, outerRead, lower, _⟩ := (refines low lvalid).interval_sound ls
+  obtain ⟨l', u', outerRead', _, upper⟩ := (refines high hvalid).interval_sound hs
+  have endpoints := Prod.mk.inj (Option.some.inj (outerRead.symm.trans outerRead'))
+  exact ⟨l, u, outerRead, leq ▸ lower, endpoints.2 ▸ heq ▸ upper⟩
+
 end Mettapedia.ProbabilityTheory.StochasticInference.ResidualMass

@@ -1,0 +1,26 @@
+Nat
+Nat.le
+Bool
+PUnit
+Option
+List
+True
+False
+And
+Or
+Iff
+Exists
+Eq
+HEq
+Decidable
+List.Mem
+List.Pairwise
+List.Sublist
+List.Perm
+# Needed by the transported theorems (needs.txt): structures, and the families of structural recursion.
+PProd
+LeftCommutative
+Finset
+List.Mem.below
+List.Pairwise.below
+List.Sublist.below

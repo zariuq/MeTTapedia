@@ -18,56 +18,56 @@ Definition LeanMergeSort_half2 : set -> set -> set := fun A l =>
   Lean_Subtype_val (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))
     (Lean_Prod_snd (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l)).
 
-Theorem LeanMergeSort_split_In : forall A, forall l :e (Lean_List A),
+Theorem LeanMergeSort_split_In : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A),
   LeanMergeSort_split A l :e Lean_Prod (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))).
-let A l. assume Hl: l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 claim Lrefl: Lean_List_length A l = Lean_List_length A l.
 { reflexivity. }
 claim L0: 0 :e Lean_ProofField ((fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l).
 { apply Lean_ProofField_intro ((fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l).
   rewrite beta (Lean_List A) (fun v_l => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l Hl.
   exact Lean_Eq_proof_of Lean_Nat (Lean_List_length A l) (Lean_List_length A l) Lrefl. }
-exact Lean_List_MergeSort_Internal_splitInTwo_In A (Lean_List_length A l) (Lean_List_length_In A l Hl)
+exact Lean_List_MergeSort_Internal_splitInTwo_In u Hu A HA (Lean_List_length A l) (Lean_List_length_In A l Hl)
   (Lean_Subtype_mk_node (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l 0)
   (Lean_Subtype_mk_typed (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l Hl 0 L0).
 Qed.
 
-Theorem LeanMergeSort_half1_In : forall A, forall l :e (Lean_List A), LeanMergeSort_half1 A l :e (Lean_List A).
-let A l. assume Hl: l :e (Lean_List A).
+Theorem LeanMergeSort_half1_In : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A), LeanMergeSort_half1 A l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 exact Lean_Subtype_val_In (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))
   (Lean_Prod_fst (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l))
-  (Lean_Prod_fst_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l) (LeanMergeSort_split_In A l Hl)).
+  (Lean_Prod_fst_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l) (LeanMergeSort_split_In u Hu A HA l Hl)).
 Qed.
 
-Theorem LeanMergeSort_half2_In : forall A, forall l :e (Lean_List A), LeanMergeSort_half2 A l :e (Lean_List A).
-let A l. assume Hl: l :e (Lean_List A).
+Theorem LeanMergeSort_half2_In : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A), LeanMergeSort_half2 A l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 exact Lean_Subtype_val_In (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))
   (Lean_Prod_snd (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l))
-  (Lean_Prod_snd_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l) (LeanMergeSort_split_In A l Hl)).
+  (Lean_Prod_snd_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l) (LeanMergeSort_split_In u Hu A HA l Hl)).
 Qed.
 
 (** The lengths of the halves, from the type of splitInTwo. **)
-Theorem LeanMergeSort_half1_length : forall A, forall l :e (Lean_List A),
+Theorem LeanMergeSort_half1_length : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A),
   Lean_List_length A (LeanMergeSort_half1 A l) = Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2).
-let A l. assume Hl: l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 exact LeanSubtype_length_val A (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2))
   (Lean_Prod_fst (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l))
-  (Lean_Prod_fst_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l) (LeanMergeSort_split_In A l Hl)).
+  (Lean_Prod_fst_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l) (LeanMergeSort_split_In u Hu A HA l Hl)).
 Qed.
 
-Theorem LeanMergeSort_half2_length : forall A, forall l :e (Lean_List A),
+Theorem LeanMergeSort_half2_length : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A),
   Lean_List_length A (LeanMergeSort_half2 A l) = Lean_Nat_div (Lean_List_length A l) (LeanNum 2).
-let A l. assume Hl: l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 exact LeanSubtype_length_val A (Lean_Nat_div (Lean_List_length A l) (LeanNum 2))
   (Lean_Prod_snd (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l))
-  (Lean_Prod_snd_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l) (LeanMergeSort_split_In A l Hl)).
+  (Lean_Prod_snd_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l) (LeanMergeSort_split_In u Hu A HA l Hl)).
 Qed.
 
 (** Each half of a list of at least two elements is shorter than the list. **)
-Theorem LeanMergeSort_halves_below : forall A, forall a :e A, forall b :e A, forall xs :e (Lean_List A),
+Theorem LeanMergeSort_halves_below : forall u, nat_p u -> forall A :e LeanUniv u, forall a :e A, forall b :e A, forall xs :e (Lean_List A),
   LeanNat_ord (Lean_List_length A (LeanMergeSort_half1 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)))) :e LeanNat_ord (Lean_List_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)))
   /\ LeanNat_ord (Lean_List_length A (LeanMergeSort_half2 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)))) :e LeanNat_ord (Lean_List_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))).
-let A a. assume Ha: a :e A. let b. assume Hb: b :e A. let xs. assume Hxs: xs :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let a. assume Ha: a :e A. let b. assume Hb: b :e A. let xs. assume Hxs: xs :e (Lean_List A).
 claim Hl: (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) :e (Lean_List A).
 { exact Lean_List_cons_typed A a Ha (Lean_List_cons_node A b xs) (Lean_List_cons_typed A b Hb xs Hxs). }
 apply Lean_Nat_num (Lean_List_length A xs) (Lean_List_length_In A xs Hxs).
@@ -78,8 +78,8 @@ claim Hn: nat_p (ordsucc (ordsucc j)).
 claim Ll: Lean_List_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) = LeanNum (ordsucc (ordsucc j)).
 { exact LeanListLength_cons_num A a Ha (Lean_List_cons_node A b xs) (Lean_List_cons_typed A b Hb xs Hxs)
     (ordsucc j) (nat_ordsucc j Hj1) (LeanListLength_cons_num A b Hb xs Hxs j Hj1 Hj2). }
-rewrite LeanMergeSort_half1_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl.
-rewrite LeanMergeSort_half2_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl.
+rewrite LeanMergeSort_half1_length u Hu A HA (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl.
+rewrite LeanMergeSort_half2_length u Hu A HA (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl.
 rewrite Ll.
 apply LeanNat_halves (ordsucc (ordsucc j)) Hn.
 let p. assume Hp: nat_p p /\ (exists q, nat_p q /\ (ordsucc (ordsucc j) = add_nat p q
@@ -213,11 +213,11 @@ apply LeanList_cases2 A (fun x =>
   { exact Lean_List_cons_typed A a Ha (Lean_List_cons_node A b xs) (Lean_List_cons_typed A b Hb xs Hxs). }
   rewrite LeanMergeSort_level_at (LeanNum k) (LeanNum_In k Hk) u Hu A HA le Hle a Ha b Hb xs Hxs.
   rewrite LeanMergeSort_level_at (LeanNum m) (LeanNum_In m Hm) u Hu A HA le Hle a Ha b Hb xs Hxs.
-  apply LeanMergeSort_halves_below A a Ha b Hb xs Hxs.
+  apply LeanMergeSort_halves_below u Hu A HA a Ha b Hb xs Hxs.
   assume Hb1: LeanNat_ord (Lean_List_length A (LeanMergeSort_half1 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)))) :e LeanNat_ord (Lean_List_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))).
   assume Hb2: LeanNat_ord (Lean_List_length A (LeanMergeSort_half2 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)))) :e LeanNat_ord (Lean_List_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))).
-  rewrite Hagree (LeanMergeSort_half1 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))) (LeanMergeSort_half1_In A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl) Hb1.
-  rewrite Hagree (LeanMergeSort_half2 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))) (LeanMergeSort_half2_In A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl) Hb2.
+  rewrite Hagree (LeanMergeSort_half1 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))) (LeanMergeSort_half1_In u Hu A HA (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl) Hb1.
+  rewrite Hagree (LeanMergeSort_half2 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))) (LeanMergeSort_half2_In u Hu A HA (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl) Hb2.
   reflexivity.
 Qed.
 
@@ -280,12 +280,12 @@ prove Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel (Le
       (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel (Lean_Nat_succ_node (Lean_List_length v_u945 (LeanMergeSort_half2 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))))) v_u945 (LeanMergeSort_half2 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) v_x)
       v_x.
 rewrite LeanMergeSort_level_at (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) Hlen l_u_1 Hu v_u945 HA v_x Hle v_a Ha v_b Hb v_xs Hxs.
-apply LeanMergeSort_halves_below v_u945 v_a Ha v_b Hb v_xs Hxs.
+apply LeanMergeSort_halves_below l_u_1 Hu v_u945 HA v_a Ha v_b Hb v_xs Hxs.
 assume Hb1: LeanNat_ord (Lean_List_length v_u945 (LeanMergeSort_half1 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs)))) :e LeanNat_ord (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))).
 assume Hb2: LeanNat_ord (Lean_List_length v_u945 (LeanMergeSort_half2 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs)))) :e LeanNat_ord (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))).
 rewrite LeanMergeSort_at_length l_u_1 Hu v_u945 HA v_x Hle (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) Hlen
-  (LeanMergeSort_half1 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (LeanMergeSort_half1_In v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs)) Hl) Hb1.
+  (LeanMergeSort_half1 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (LeanMergeSort_half1_In l_u_1 Hu v_u945 HA (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs)) Hl) Hb1.
 rewrite LeanMergeSort_at_length l_u_1 Hu v_u945 HA v_x Hle (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) Hlen
-  (LeanMergeSort_half2 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (LeanMergeSort_half2_In v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs)) Hl) Hb2.
+  (LeanMergeSort_half2 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (LeanMergeSort_half2_In l_u_1 Hu v_u945 HA (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs)) Hl) Hb2.
 reflexivity.
 Qed.

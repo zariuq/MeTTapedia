@@ -267,9 +267,9 @@ theorem pending_empty_iff (catalogue : List (Firing T S O)) (check : Firing T S 
     cases result : check firing with
     | none => exact False.elim (closed firing ⟨member, result⟩)
     | some answer => exact ⟨answer, rfl⟩
-  · intro closed firing ⟨member, missing⟩
+  · intro closed firing ⟨member, absent⟩
     obtain ⟨answer, result⟩ := closed firing member
-    rw [missing] at result
+    rw [absent] at result
     cases result
 
 /-- Calibration of completed Boolean replies only. It grants no result to

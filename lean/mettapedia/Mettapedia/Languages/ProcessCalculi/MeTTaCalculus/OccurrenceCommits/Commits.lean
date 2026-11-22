@@ -21,7 +21,7 @@ with application conditions.
 * `queries` are its **predicate queries**: each names a region, a predicate on labels, and the
   set of occurrences the query saw there. A predicate query holds at a store when the region's
   occurrences are exactly the ones seen, so its answer depends on every occurrence that satisfies
-  the predicate, including one made there after the query looked. The none query is the predicate query
+  the predicate, including one made there after the query looked. Absence is the predicate query
   that saw nothing; uniqueness, counts, folds and the rows of `every` are predicate queries of a
   region that bind what they saw.
 
@@ -36,7 +36,7 @@ every predicate query holds. Firing removes what is taken and adds what is made 
 * **The frame law for positive commits** (`Enabled.frame`, `fire_union_frame`): a commit without
   predicate queries stays enabled when the store grows by occurrences it does not make, and fires
   to the same result plus that growth. A predicate query fails the law: an occurrence added inside
-  its region disables it (`Controls.none_not_framed`). This is the separation that makes
+  its region disables it (`Controls.absence_not_framed`). This is the separation that makes
   predicate queries a primitive of their own.
 * **Counted, a firing is the resource-system firing** (`labels_fire`): the labels of the result
   are the labels of the store, minus those taken, plus those made.
@@ -53,9 +53,9 @@ The commits `Commit.takeOne`, `Commit.keepOne` and `Commit.makeOne` touch one oc
 
 `Controls` uses natural-number identities and three atoms. A reader and a taker of one
 occurrence are both enabled at a one-occurrence store (`reader_enabled`, `taker_enabled`); a
-commit that reads and takes one occurrence is not (`read_take_same_not_enabled`); the none query
+commit that reads and takes one occurrence is not (`read_take_same_not_enabled`); the absence
 read of a region holds at a store without it and fails once one occurrence is added
-(`none_holds_empty`, `none_not_framed`).
+(`absence_holds_empty`, `absence_not_framed`).
 -/
 
 set_option autoImplicit false
@@ -263,7 +263,7 @@ theorem regionOf_fire_subset_of_no_make {region : R → Bool}
   · rw [noMake o made] at inRegion; exact absurd inRegion (by decide)
 
 /-- **A commit that takes nothing from a region only grows it** (`restrict_subset_fire_of_takesOutside`,
-`InteractionTypes.restrict_subset_fire_of_noReceive`, `none_woken_by_take`). -/
+`InteractionTypes.restrict_subset_fire_of_noReceive`, `absence_woken_by_take`). -/
 theorem regionOf_subset_fire_of_no_take {region : R → Bool}
     (noTake : ∀ o ∈ c.taken, region (label o) = false) :
     regionOf label store region ⊆ regionOf label (fire store c) region := by
@@ -373,7 +373,7 @@ A predicate query is answered from the **matches** of its region: the occurrence
 inside it (`regionOf`). Collected with their labels they form one bag, `matchBag`, which is the
 answer of `all`. Every order-blind fold of the matches, a fold through a commutative monoid, is
 computed from that bag alone (`sum_regionOf_eq_matchBag`). A count is the size of the bag
-(`card_regionOf_eq_card_matchBag`), the none query is the empty bag (`regionOf_eq_empty_iff`), and
+(`card_regionOf_eq_card_matchBag`), absence is the empty bag (`regionOf_eq_empty_iff`), and
 uniqueness is a bag of size one (`exists_regionOf_eq_singleton_iff`). A predicate query that holds
 fixes the bag to the labels of what it saw (`PredicateQuery.matchBag_eq_of_holds`), and so fixes
 every such fold; this is why any take or make inside the region spoils it. -/
@@ -399,7 +399,7 @@ theorem card_regionOf_eq_card_matchBag (label : O → R) (store : Finset O) (reg
   simp [matchBag, labels]
 
 omit [DecidableEq O] in
-/-- **The none query is the empty bag.** -/
+/-- **Absence is the empty bag.** -/
 theorem regionOf_eq_empty_iff (label : O → R) (store : Finset O) (region : R → Bool) :
     regionOf label store region = ∅ ↔ matchBag label store region = 0 := by
   rw [← Finset.card_eq_zero, card_regionOf_eq_card_matchBag, Multiset.card_eq_zero]
@@ -475,8 +475,8 @@ theorem read_take_same_not_enabled (store : Finset ℕ) : ¬ Enabled label store
     have := enabled.apart
     simp [readTakeSame] at this
 
-/-- Positive none query control: the none read holds at a store without a lock. -/
-theorem none_holds_empty : Enabled label {0} unlessLocked where
+/-- Positive absence control: the absence read holds at a store without a lock. -/
+theorem absence_holds_empty : Enabled label {0} unlessLocked where
   taken_subset := by decide
   kept_subset := by decide
   apart := by decide
@@ -487,9 +487,9 @@ theorem none_holds_empty : Enabled label {0} unlessLocked where
     subst member
     decide
 
-/-- **Negative frame control**: adding a lock to the store disables the none read. The frame
+/-- **Negative frame control**: adding a lock to the store disables the absence read. The frame
 law fails for predicate queries. -/
-theorem none_not_framed : ¬ Enabled label ({0} ∪ {1}) unlessLocked := fun enabled => by
+theorem absence_not_framed : ¬ Enabled label ({0} ∪ {1}) unlessLocked := fun enabled => by
   have holds := enabled.queries_hold ⟨isLock, ∅⟩ (by simp [unlessLocked])
   revert holds
   decide
@@ -503,7 +503,7 @@ theorem reader_framed : Enabled label ({0} ∪ {1}) reader :=
 /-- **Positive control**: the reader has no predicate query. -/
 theorem reader_positive : reader.Positive := rfl
 
-/-- **Negative control**: the lock-none commit has a predicate query, so it is not positive. -/
+/-- **Negative control**: the lock-absence commit has a predicate query, so it is not positive. -/
 theorem unlessLocked_not_positive : ¬ unlessLocked.Positive := by
   simp [Commit.Positive, unlessLocked]
 
@@ -514,7 +514,7 @@ theorem reader_monotone : reader.Monotone := ⟨rfl, rfl⟩
 theorem taker_not_monotone : ¬ taker.Monotone := by
   simp [Commit.Monotone, taker]
 
-/-- **Negative control**: the lock-none commit takes nothing but has a predicate query. -/
+/-- **Negative control**: the lock-absence commit takes nothing but has a predicate query. -/
 theorem unlessLocked_not_monotone : ¬ unlessLocked.Monotone := by
   simp [Commit.Monotone, unlessLocked]
 

@@ -212,13 +212,13 @@ def wrappedNonemptyPayload : CostTerm String :=
 /-- Positive: the nontrivial copying receiver is authored and well sorted. -/
 theorem authored_copy_receiver_sorted :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] authoredCopyReceiver := by
-  exact .input (.quote .unit (by decide))
+  exact .input (.quote .unit)
     (.parallel (.cons (.drop (.bvar rfl)) (.cons (.drop (.bvar rfl)) .nil)))
 
 /-- Positive: a communicated output is nonempty authored process code. -/
 theorem authored_nonempty_payload_sorted :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] authoredNonemptyPayload :=
-  .output (.quote .unit (by decide)) .unit
+  .output (.quote .unit) .unit
 
 /-- Positive: both nontrivial authored terms have genuine compiler images. -/
 theorem authored_examples_compile :

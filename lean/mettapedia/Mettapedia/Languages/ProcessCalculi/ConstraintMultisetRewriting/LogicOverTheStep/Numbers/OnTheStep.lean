@@ -20,8 +20,8 @@ action for every table (`action`); the step itself is the tree's, unchanged.
   value lens** (`identifies_variants_iff`; `TableRespects`, and its reading as `Respects` of the
   observer concepts, `tableRespects_iff`).
 * **Representation independence on the step**, with a table that respects the value lens:
-  - re-storing any numerals of a query changes no count and no none answer
-    (`answer_count_variant`, `answer_none_variant`; position by position for programs too, in the
+  - re-storing any numerals of a query changes no count and no absence answer
+    (`answer_count_variant`, `answer_absent_variant`; position by position for programs too, in the
     module `Variants`);
   - re-storing every numeral of a program, of its labels, of its knowledge and of its query by a
     re-storing `ρ` (`Tower.Restoring`) changes no answer (`answer_restore`), carries every step to a
@@ -419,9 +419,9 @@ theorem answer_count_variant {G : Table} (respects : TableRespects G) (label : O
     exact answered σ solved
 
 omit [DecidableEq O] in
-/-- **Re-storing the numerals of a query changes no none answer**, with a table that respects
+/-- **Re-storing the numerals of a query changes no absence answer**, with a table that respects
 the value lens. -/
-theorem answer_none_variant {G : Table} (respects : TableRespects G) (label : O → NTerm Stored)
+theorem answer_absent_variant {G : Table} (respects : TableRespects G) (label : O → NTerm Stored)
     (C : Configuration (NTerm Stored) O) {p p' : NTerm Stored} (same : Variant p p') :
     Answer G label C (.predicate .none p) ↔ Answer G label C (.predicate .none p') := by
   have rows : ∀ σ o, Identified G (p.subst σ) ((label o).subst σ) ↔
@@ -494,7 +494,7 @@ theorem holds_restore {G : Table} (respects : TableRespects G) {ρ : Stored → 
 
 omit [DecidableEq O] in
 /-- **Re-storing every numeral changes no answer**: of the knowledge, the labels and the query,
-for counts, none queries and equations alike. -/
+for counts, absence and equations alike. -/
 theorem answer_restore {G : Table} (respects : TableRespects G) {ρ : Stored → Stored}
     (restoring : Restoring ρ) (label : O → NTerm Stored) (C : Configuration (NTerm Stored) O)
     (check : Check (NTerm Stored)) :
@@ -962,7 +962,7 @@ theorem incr_restored :
 #print axioms answers_of_identified_call
 #print axioms identifies_variants_iff
 #print axioms answer_count_variant
-#print axioms answer_none_variant
+#print axioms answer_absent_variant
 #print axioms answer_restore
 #print axioms step_restore
 #print axioms step_restore_back

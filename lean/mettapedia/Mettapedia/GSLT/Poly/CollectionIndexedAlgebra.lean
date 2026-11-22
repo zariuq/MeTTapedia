@@ -307,7 +307,7 @@ theorem quoted_not_algebra : ¬ AlgebraCong quotedOutput procOutput := by
 
 theorem quotedOutput_process :
     ProcWellSorted rhoReflectivePresentation FreeSortContext.empty [] quotedOutput :=
-  .output (.quote procDrop_process (by decide)) .unit
+  .output (.quote procDrop_process) .unit
 
 theorem quotedOutput_safe : binderSafeAt "NQuote" 0 quotedOutput = true := by
   decide

@@ -268,9 +268,9 @@ theorem comm_tracks (label : O → Pattern) (C : Configuration Pattern O) (comp 
       ((commFiring t u channel P Q (renameBy g) first second made₁ made₂).result X
         (embed label C)).label o = label o := by
     intro o other₁ other₂
-    have missing : o ∉ (commFiring t u channel P Q (renameBy g) first second made₁ made₂).selection.made := by
+    have absent : o ∉ (commFiring t u channel P Q (renameBy g) first second made₁ made₂).selection.made := by
       simp [commFiring, commSelection, other₁, other₂]
-    exact (Firing.result_label_other (X := X) (s := embed label C) _ missing).trans (psubst_none (label o))
+    exact (Firing.result_label_other (X := X) (s := embed label C) _ absent).trans (psubst_none (label o))
   have groundP := applyDot_ground gp P foP closedP
   have groundQ := applyDot_ground gp Q foQ closedQ
   refine ⟨((commFiring t u channel P Q (renameBy g) first second made₁ made₂).result X (embed label C)).label,

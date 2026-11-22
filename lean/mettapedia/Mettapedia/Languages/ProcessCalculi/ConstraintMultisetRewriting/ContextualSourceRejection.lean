@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConditionalClauses
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveNone
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualConjunctiveAbsence
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualPatternTermination
 
 /-!
@@ -49,8 +49,8 @@ abbrev Candidate (request : Request locals before) :=
   (Fin request.plan.rule.take.length → O) × (Fin request.plan.rule.read.length → O)
 
 def candidates (request : Request locals before) : Finset request.Candidate :=
-  (ContextualConjunctiveNone.candidates before.present request.plan.rule.take.length) ×ˢ
-    (ContextualConjunctiveNone.candidates before.present request.plan.rule.read.length)
+  (ContextualConjunctiveAbsence.candidates before.present request.plan.rule.take.length) ×ˢ
+    (ContextualConjunctiveAbsence.candidates before.present request.plan.rule.read.length)
 
 def selection (request : Request locals before) (chosen : request.Candidate) : Selection O :=
   ⟨List.ofFn chosen.1, List.ofFn chosen.2, request.made⟩
@@ -82,10 +82,10 @@ theorem covers_selection (request : Request locals before) {picked : Selection O
   let chosen : request.Candidate :=
     ⟨coordinates picked.taken admitted.take_shape, coordinates picked.read admitted.read_shape⟩
   refine ⟨chosen, Finset.mem_product.mpr ⟨?_, ?_⟩, ?_⟩
-  · apply (ContextualConjunctiveNone.mem_candidates before.present _).mpr
+  · apply (ContextualConjunctiveAbsence.mem_candidates before.present _).mpr
     intro port
     exact admitted.taken_present (List.mem_toFinset.mpr (List.get_mem _ _))
-  · apply (ContextualConjunctiveNone.mem_candidates before.present _).mpr
+  · apply (ContextualConjunctiveAbsence.mem_candidates before.present _).mpr
     intro port
     exact admitted.read_present (List.mem_toFinset.mpr (List.get_mem _ _))
   · simp only [selection, chosen, ofFn_coordinates]
@@ -184,8 +184,8 @@ theorem rejected_of_no_admission (request : Request locals before) (chosen : req
       · by_contra unrejected
         apply denied
         have positions := Finset.mem_product.mp present
-        have takePresent := (ContextualConjunctiveNone.mem_candidates before.present chosen.1).mp positions.1
-        have readPresent := (ContextualConjunctiveNone.mem_candidates before.present chosen.2).mp positions.2
+        have takePresent := (ContextualConjunctiveAbsence.mem_candidates before.present chosen.1).mp positions.1
+        have readPresent := (ContextualConjunctiveAbsence.mem_candidates before.present chosen.2).mp positions.2
         refine ⟨distinct, request.distinct, by simp [selection], by simp [selection], request.length,
           ?_, ?_, apart, request.fresh, solvable, ?_⟩
         · intro occurrence member

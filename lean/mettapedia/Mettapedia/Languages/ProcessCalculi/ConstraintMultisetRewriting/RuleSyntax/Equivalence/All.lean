@@ -19,7 +19,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 # When two programs may replace each other: reduction-closed barbed congruence on the step of a program
 
 **Systems, contexts, barbs** (`Systems`). A system is a program with a state; it reduces by
-`RuleSyntax.step` of its program. Contexts add rows (at missing identities), add rules, tell
+`RuleSyntax.step` of its program. Contexts add rows (at absent identities), add rules, tell
 equations, or extend the frame; running beside another system is the composite of the three first
 kinds. The barb is the may-barb of a pattern: whether some present row can be read against it at some
 solution of the knowledge. It is the admission of the observer rule that reads the pattern

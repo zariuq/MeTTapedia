@@ -53,9 +53,9 @@ state, and compares the ways of choosing the bag.
 
 * `Members`, `OneAfterAnother` (`peel`, `run_of_admitsOwn`, `admitsOwn_of_fixed`), `Independent`
   (`admitsOwn_iff_members`, `any_order`, `SharedUnknown`), `Runs` (`ownCorrespondence`,
-  `jointCorrespondence`, `none_breaks_forward`, `knowledge_breaks_forward`).
+  `jointCorrespondence`, `absence_breaks_forward`, `knowledge_breaks_forward`).
 * `Knowledge` (`stopped_and_fires`: with guards at the joint information, a bag is admitted that no
-  member can begin), `SynchronousUpdate` (`Synchronous.no_run_reaches`: none queries judged at the entry state;
+  member can begin), `SynchronousUpdate` (`Synchronous.no_run_reaches`: absence judged at the entry state;
   `Between`: a neighbour sees the state between two members).
 * `OneActiveRow`: on the machine of the partial recursive functions, whose states have one row, the bag
   step is the step of the program (`Partrec.bag_halts_iff`).

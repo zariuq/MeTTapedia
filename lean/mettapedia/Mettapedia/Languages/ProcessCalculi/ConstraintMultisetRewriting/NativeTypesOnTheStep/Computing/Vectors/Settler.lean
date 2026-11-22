@@ -171,7 +171,7 @@ def vecSolver (fuel : Nat) : ContextualDependentWorklist.Solver vecS.levels wher
 
 /-- **The round never refutes**: a store it cannot solve is stuck, never refuted. -/
 theorem vecRound_never_refutes (fuel : Nat) {Γ : Context vecS.R} {problem : EquationStore (TotalTerm Γ)}
-    (missing : ¬ (frames vecS.levels).Solvable problem) : vecRound fuel problem ≠ .refuted missing := by
+    (absent : ¬ (frames vecS.levels).Solvable problem) : vecRound fuel problem ≠ .refuted absent := by
   unfold vecRound
   split
   · exact fun same => by cases same

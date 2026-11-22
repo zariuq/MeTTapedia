@@ -109,7 +109,7 @@ theorem lookup_bind_self (rebuilding : Entry.RebuildPolicy) (env : Entry.Value.E
   simp [Entry.Value.bind]
 
 theorem lookup_filter_map_none {env : Entry.Value.Environment} {name other : String}
-    {transform : Entry.Value → Entry.Value} (missing : env.lookup name = none) :
+    {transform : Entry.Value → Entry.Value} (absent : env.lookup name = none) :
     ((env.filter fun row => row.1 != other).map fun row => (row.1, transform row.2)).lookup name =
       none := by
   induction env with
@@ -118,22 +118,22 @@ theorem lookup_filter_map_none {env : Entry.Value.Environment} {name other : Str
       rcases row with ⟨key, value⟩
       by_cases same : name = key
       · subst same
-        simp [List.lookup] at missing
+        simp [List.lookup] at absent
       · have different : (name == key) = false := by simp [same]
-        have restMissing : rest.lookup name = none := by
-          simpa [List.lookup, different] using missing
+        have restAbsent : rest.lookup name = none := by
+          simpa [List.lookup, different] using absent
         by_cases kept : (key != other) = true
-        · simp [List.filter, kept, List.lookup, different, ih restMissing]
+        · simp [List.filter, kept, List.lookup, different, ih restAbsent]
         · simp only [Bool.not_eq_true] at kept
-          simp [List.filter, kept, ih restMissing]
+          simp [List.filter, kept, ih restAbsent]
 
 theorem lookup_bind_unbound {rebuilding : Entry.RebuildPolicy} {env : Entry.Value.Environment}
     {name other : String} {value : Entry.Value} (different : name ≠ other)
-    (missing : env.lookup name = none) :
+    (absent : env.lookup name = none) :
     (Entry.Value.bind rebuilding env other value).lookup name = none := by
   have notEq : (name == other) = false := by simp [different]
   simp only [Entry.Value.bind, List.lookup, notEq]
-  exact lookup_filter_map_none missing
+  exact lookup_filter_map_none absent
 
 /-- After binding `p` to a closed value and then another name `q`, `p` still reads that value. -/
 theorem lookup_bind_bind {rebuilding : Entry.RebuildPolicy} {env : Entry.Value.Environment}

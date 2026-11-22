@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.SourceLanguage.Semantics
 
 /-!
-# What a configuration shows: answers, refusals, and waiting as a typed none query
+# What a configuration shows: answers, refusals, and waiting as a typed absence
 
 An alternative's store changes only by its own moves, so a live alternative that cannot move waits
 forever. The bag of answers (`Config.answers`) counts finished live alternatives only, so a waiting
@@ -15,7 +15,7 @@ live alternatives wait on:
 * `mixed v T`: a `check` of type `T` at the value `v`, some of whose readings `T` admits and some not.
 
 Waiting is not an error: nothing is made to fail, and every law about runs is unchanged. It is a
-typed none query in what a configuration shows.
+typed absence in what a configuration shows.
 
 * **Exactly three ways to wait** (`moves_or_rests`): a live alternative moves, or it is finished, or
   it is refused, or it waits on one of the three reasons; and an alternative with a reason does not
@@ -108,7 +108,7 @@ theorem stuck_of_reason {w : World κ Γ star} {b : Branch κ Γ star D.Ty} {r :
       simp only [reason] at waits
       rw [if_pos ⟨h, addressed⟩] at waits
       cases waits
-  | removeMissing K sp t k fs ps h addressed none =>
+  | removeAbsent K sp t k fs ps h addressed none =>
       simp only [reason] at waits
       rw [if_pos ⟨h, addressed⟩] at waits
       cases waits
@@ -179,7 +179,7 @@ theorem moves_or_rests (w : World κ Γ star) (b : Branch κ Γ star D.Ty) :
             · obtain ⟨r, member, hr⟩ := fits
               obtain ⟨rest, split⟩ := Multiset.exists_cons_of_mem member
               exact .inl ⟨_, _, .remove w K sp t k frames pending h hh r rest split hr⟩
-            · exact .inl ⟨_, _, .removeMissing w K sp t k frames pending h hh
+            · exact .inl ⟨_, _, .removeAbsent w K sp t k frames pending h hh
                 fun r member live => fits ⟨r, member, live⟩⟩
           · refine .inr (.inr (.inr ⟨.address sp, ?_⟩))
             simp only [reason]

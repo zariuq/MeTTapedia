@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Nati
 /-!
 # Joined qualification: compiled clauses are admitted exactly as native firings of the step
 
-A compiled clause (`ContextualNativeBodies.Body`) carries the original-cut guard and the none query results of
+A compiled clause (`ContextualNativeBodies.Body`) carries the original-cut guard and absence results of
 the native lane. Its admission is already characterized by one constructed native firing with
 predicate queries (`ContextualNativeBodies.Body.Producer.source_iff_native_body_admission`). This
 module states that firing as a firing of the candidate step's native instance `Interface.native`,
@@ -16,7 +16,7 @@ with no publication recipes:
 * `admitted_iff_native`: the clause is admitted exactly when that firing is admitted by
   `Interface.native`.
 
-So the none query, count and original-cut verdicts of the compiled clauses are verdicts of the native
+So the absence, count and original-cut verdicts of the compiled clauses are verdicts of the native
 instance's `Holds` at the binding state. Result-level agreement depends on each clause kind's
 publication contract and is not claimed here.
 

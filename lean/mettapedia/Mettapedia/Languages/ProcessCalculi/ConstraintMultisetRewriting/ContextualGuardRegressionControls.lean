@@ -94,7 +94,7 @@ theorem forgetting_the_removal_gives_the_wrong_count :
   rw [entry_region, created_region]
   decide +kernel
 
-theorem removing_the_only_match_establishes_none :
+theorem removing_the_only_match_establishes_absence :
     Holds locals images exitRows (world \ removed) (.predicate .none pattern) := by
   intro occurrence member
   have one : occurrence = 1 := by
@@ -103,10 +103,10 @@ theorem removing_the_only_match_establishes_none :
   subst occurrence
   exact the_retained_condition_excludes_an_extra_match
 
-theorem making_a_matching_row_refutes_none :
+theorem making_a_matching_row_refutes_absence :
     ¬ Holds locals images exitRows ((world \ removed) ∪ created) (.predicate .none pattern) := by
-  intro missing
-  exact missing 2 (by decide +kernel) shared_match
+  intro absent
+  exact absent 2 (by decide +kernel) shared_match
 
 def incorrectRows (occurrence : Nat) : Row locals captures [] () :=
   if occurrence = 1 then forgettingConditions else exitRows occurrence

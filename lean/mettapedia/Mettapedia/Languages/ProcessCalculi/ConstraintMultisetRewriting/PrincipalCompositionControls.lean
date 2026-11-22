@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Compositi
 
 The first step binds the selected call while two reads share occurrence 1.
 The second step sees two remaining equal-valued occurrences and observes that
-the consumed call is not present. The compiled conditional pair preserves admission
+the consumed call is absent. The compiled conditional pair preserves admission
 under its actual principal answer. A later binding cannot supply the principal
 interface of an earlier empty equation prefix.
 -/

@@ -636,7 +636,7 @@ private theorem malformedQuoteDrop_not_typed :
     exact .head _
   obtain ⟨dropPattern, dropTyped, dropShape, dropSafe⟩ :=
     typed.selectedQuoteArgument binderOccurrenceLanguage_valid
-      binderOccurrenceProfile_valid declarationMembership safe
+      binderOccurrenceProfile_valid declarationMembership rfl safe
   have dropPatternEq : dropPattern = .apply "PDrop" [zeroProcess] := by
     simpa using (congrArg List.head? dropShape).symm
   subst dropPattern

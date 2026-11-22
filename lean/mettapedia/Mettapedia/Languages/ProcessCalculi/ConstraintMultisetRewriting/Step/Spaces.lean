@@ -34,7 +34,7 @@ its occurrences with handle `h` (`fiber`), and a commit restricted to `h` is `co
 ## The first-order step with located occurrences (`located`)
 
 Labels are pairs of a handle and a payload under `LocatedSubstitution.action`, which keeps handles
-rigid. A firing is **at `h`** (`At`) when its take, read and produce patterns, its none query and count
+rigid. A firing is **at `h`** (`At`) when its take, read and produce patterns, its absence and count
 guards and its predicate queries all name `h`.
 
 * **A query over one space is not affected by other spaces** (`checkAt_holds_iff`,

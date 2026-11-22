@@ -2,24 +2,24 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTh
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Presentation.Boundary
 
 /-!
-# A translation of the none-guarded step into a presentation that tests rows
+# A translation of the absence-guarded step into a presentation that tests rows
 
 `RuleSyntax.Presentation.wholeStore` is a presentation in the tree's format with one rewrite, which
 makes the row `12` where no row of the store is `11`: its premise asks a relation environment
-(`noneRelation`) that decides this of the bag, a test of rows. As a calculus with a parallel
+(`absenceRelation`) that decides this of the bag, a test of rows. As a calculus with a parallel
 composition (`wholeCalculus`, the tree's `presentationCalculus` of that presentation) its composition is
 the presentation's juxtaposition `beside`, two terms side by side in a bag `{p, q}`; its success is that
 the row `12` is a component, modulo the equations; its static equivalence is the equations.
 
 * `wholeCalculus_succeeds_iff`: from a store of rows, success is reachable exactly when `12` is a row or
   `11` is not.
-* `source_succeeds_iff`: reachable success of the none-guarded step is exactly: `T` is present, or the
+* `source_succeeds_iff`: reachable success of the absence-guarded step is exactly: `T` is present, or the
   knowledge has identical sides and no `U` is present.
 * `interpret`: a configuration goes to the store of its rows, each renamed by `rename` (`T` to the
   presentation's made row `12`, `W` to `10`, every other row to itself); when its knowledge has an
   equation with distinct sides, the row `11` is added. It is defined from the rows and a check of the
   knowledge, not from success. The target is the same one-rule program, "make the row where the
-  blocker is not present", with its none test as a whole-store premise: `interpret` is a renaming of
+  blocker is absent", with its absence test as a whole-store premise: `interpret` is a renaming of
   one program into its own presentation together with a check of the knowledge, not an interpreter of
   the step.
 * **It preserves and reflects reachable success** (`interpret_succeeds_iff`).
@@ -50,7 +50,7 @@ open NamesOnTheStep NamesOnTheStep.IssuingControls
 open MeTTaCalculus.OccurrenceCommits (Enabled fire mem_fire)
 open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.Composition
   (unionOf)
-open RuleSyntax.Presentation (wholeStore noneRelation spawnWhole storeCode rowCode rowCode_injective
+open RuleSyntax.Presentation (wholeStore absenceRelation spawnWhole storeCode rowCode rowCode_injective
   besideRest binderFree_besideRest applyBindings_besideRest premises_whole whole_noncontextual
   whole_semanticStep_iff whole_equations whole_noAlgebra storeCode_of_equationEquiv)
 
@@ -59,7 +59,7 @@ open RuleSyntax.Presentation (wholeStore noneRelation spawnWhole storeCode rowCo
 /-- **The whole-store presentation as a calculus with a parallel composition**: composition is
 juxtaposition (`beside`), success "the row `12` is a component modulo the equations". -/
 abbrev wholeCalculus : ParallelCalculus :=
-  presentationCalculus (engineBasePremises noneRelation) wholeStore .hashBag (rowCode (.sym 12))
+  presentationCalculus (engineBasePremises absenceRelation) wholeStore .hashBag (rowCode (.sym 12))
 
 /-- Reachable success of a presentation is read up to its equations. -/
 theorem presentation_respects {base : BasePremiseEvaluator} {language : LanguageDef} {kind : CollType}
@@ -117,24 +117,24 @@ theorem wholeCalculus_succeeds_iff (rows : List Expr) :
       obtain ⟨others, rfl, perm⟩ := storeCode_of_equationEquiv whole_equations whole_noAlgebra equivalent
       exact Or.inl (perm.symm.subset (component_storeCode.mp component))
     · exact Or.inr (whole_semanticStep_iff.mp first).1
-  · rintro (made | missing)
+  · rintro (made | absent)
     · exact ParallelCalculus.succeeds_of_success _
         ⟨storeCode rows, Relation.EqvGen.refl _, component_storeCode.mpr made⟩
     · exact ⟨storeCode (.sym 12 :: rows),
-        .single (whole_semanticStep_iff.mpr ⟨missing, Relation.EqvGen.refl _⟩),
+        .single (whole_semanticStep_iff.mpr ⟨absent, Relation.EqvGen.refl _⟩),
         storeCode (.sym 12 :: rows), Relation.EqvGen.refl _,
         component_storeCode.mpr List.mem_cons_self⟩
 
 /-- **At any bag with no row `11`, the rewrite makes `12`**, whatever else the bag holds. -/
-theorem whole_step_bag {elements : List Pattern} (missing : rowCode (.sym 11) ∉ elements) :
-    Mettapedia.OSLF.MeTTaIL.ContextualStep.Step (engineBasePremises noneRelation) wholeStore
+theorem whole_step_bag {elements : List Pattern} (absent : rowCode (.sym 11) ∉ elements) :
+    Mettapedia.OSLF.MeTTaIL.ContextualStep.Step (engineBasePremises absenceRelation) wholeStore
       (.collection .hashBag elements none) (.collection .hashBag (rowCode (.sym 12) :: elements) none) := by
   rw [step_iff_rootStep_of_noncontextualRules whole_noncontextual]
   refine ⟨spawnWhole, List.mem_singleton_self _, [("rest", .collection .hashBag elements none)], ?_,
     [("rest", .collection .hashBag elements none)], ?_, ?_⟩
   · rw [matchPatternForRule_eq_syntactic, matchPattern_iff_matchRel]
     exact .collection (by decide) .nilRest
-  · rw [premises_whole, if_neg missing]
+  · rw [premises_whole, if_neg absent]
     exact List.mem_singleton_self _
   · rw [applyBindingsForRule_eq_syntactic, applyRuleBindings_eq_applyBindings _ _
       (ruleDepthAligned_of_binderFree _ (binderFree_besideRest _) (binderFree_besideRest _))]
@@ -145,10 +145,10 @@ theorem whole_step_bag {elements : List Pattern} (missing : rowCode (.sym 11) �
 /-- **Two stores side by side succeed**: a bag of two bags has no row `11`, so the rewrite fires. -/
 theorem beside_stores_succeed (rows rows' : List Expr) :
     wholeCalculus.Succeeds (wholeCalculus.par (storeCode rows) (storeCode rows')) := by
-  have missing : rowCode (.sym 11) ∉ [storeCode rows, storeCode rows'] := by
+  have absent : rowCode (.sym 11) ∉ [storeCode rows, storeCode rows'] := by
     simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
     exact ⟨rowCode_ne_collection _ _ _ _, rowCode_ne_collection _ _ _ _⟩
-  exact ⟨_, .single ⟨_, _, Relation.EqvGen.refl _, whole_step_bag missing, Relation.EqvGen.refl _⟩, _,
+  exact ⟨_, .single ⟨_, _, Relation.EqvGen.refl _, whole_step_bag absent, Relation.EqvGen.refl _⟩, _,
     Relation.EqvGen.refl _, .inside List.mem_cons_self .here⟩
 
 /-! ## The source's reachable success -/
@@ -156,7 +156,7 @@ theorem beside_stores_succeed (rows rows' : List Expr) :
 /-- `spawn`, making `T` with a copy number above every present one. -/
 def spawnAbove (C : Conf) : Fir := ⟨Separations.spawn, [], ⟨[], [], [(factT, Monotone.bound C.present)]⟩⟩
 
-/-- **The reachable success of the none-guarded step**: `T` is present, or the knowledge has
+/-- **The reachable success of the absence-guarded step**: `T` is present, or the knowledge has
 identical sides and no `U` is present. -/
 theorem source_succeeds_iff (C : Conf) :
     source.Succeeds C ↔ (∃ o ∈ C.present, o.1 = factT) ∨
@@ -196,7 +196,7 @@ theorem source_succeeds_iff (C : Conf) :
         intro c member
         simp only [Separations.spawn, rule, List.mem_singleton] at member
         subst member
-        exact none_holds clearU
+        exact absent_holds clearU
       refine ⟨_, .single ⟨spawnAbove C, Or.inl rfl, admitted, rfl⟩, (factT, Monotone.bound C.present),
         ?_, rfl⟩
       change (factT, Monotone.bound C.present) ∈ fire C.present ((spawnAbove C).selection.commit (T := Expr))
@@ -230,7 +230,7 @@ theorem mem_rowsOf {C : Conf} {e : Expr} : e ∈ rowsOf C ↔ ∃ o ∈ C.presen
   simp [rowsOf]
 
 /-- **The translation**: the store of the renamed rows, with the row `11` added when the knowledge
-has an equation with distinct sides. It renames the one none-guarded program into its own
+has an equation with distinct sides. It renames the one absence-guarded program into its own
 presentation (`wholeStore` is the same rule, "make `12` where no `11`") and checks the knowledge; it
 interprets no other program. -/
 noncomputable def interpret (C : Conf) : Pattern :=
@@ -255,9 +255,9 @@ theorem interpret_succeeds_iff (C : Conf) : wholeCalculus.Succeeds (interpret C)
   split_ifs with knowledge
   · rw [wholeCalculus_succeeds_iff, twelve, eleven]
     constructor
-    · rintro (now | missing)
+    · rintro (now | absent)
       · exact Or.inl now
-      · exact Or.inr ⟨knowledge, fun o member isU => missing ⟨o, member, isU⟩⟩
+      · exact Or.inr ⟨knowledge, fun o member isU => absent ⟨o, member, isU⟩⟩
     · rintro (now | ⟨-, clearU⟩)
       · exact Or.inl now
       · exact Or.inr fun ⟨o, member, isU⟩ => clearU o member isU
@@ -268,9 +268,9 @@ theorem interpret_succeeds_iff (C : Conf) : wholeCalculus.Succeeds (interpret C)
       exact ⟨fun inside => inside.resolve_right (by decide), Or.inl⟩
     rw [made]
     constructor
-    · rintro (now | missing)
+    · rintro (now | absent)
       · exact Or.inl now
-      · exact absurd blocked missing
+      · exact absurd blocked absent
     · rintro (now | ⟨solvable, -⟩)
       · exact Or.inl now
       · exact absurd solvable knowledge

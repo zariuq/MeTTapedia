@@ -143,7 +143,7 @@ def synSolver (fuel : Nat) : ContextualDependentWorklist.Solver synS.levels wher
 
 /-- **The round never refutes.** -/
 theorem synRound_never_refutes (fuel : Nat) {Γ : Context synS.R} {problem : EquationStore (TotalTerm Γ)}
-    (missing : ¬ (frames synS.levels).Solvable problem) : synRound fuel problem ≠ .refuted missing := by
+    (absent : ¬ (frames synS.levels).Solvable problem) : synRound fuel problem ≠ .refuted absent := by
   unfold synRound
   split
   · exact fun same => by cases same

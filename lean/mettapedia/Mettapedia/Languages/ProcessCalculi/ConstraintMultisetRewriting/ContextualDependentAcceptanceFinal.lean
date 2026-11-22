@@ -83,7 +83,7 @@ theorem tower_skeleton_decided_of_uncovered
       run (skeletonTower.solver larger) problem larger = run (skeletonTower.solver budget) problem budget ∧
       ((∃ state finished, run (skeletonTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (skeletonTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (skeletonTower.solver larger) problem larger = .refuted absent)) :=
   tower_skeleton_decided_of_skeletonReads (fun permuted nonempty => by
       obtain ⟨threshold, constant, equation, member, normal, head⟩ := tower_stable_classified_head permuted nonempty
       by_cases covered : CoveredHead equation
@@ -141,7 +141,7 @@ theorem tower_skeleton_decided_of_uncovered_kinds
       run (skeletonTower.solver larger) problem larger = run (skeletonTower.solver budget) problem budget ∧
       ((∃ state finished, run (skeletonTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (skeletonTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (skeletonTower.solver larger) problem larger = .refuted absent)) :=
   tower_skeleton_decided_of_uncovered (fun {_} {problem} permuted nonempty threshold constant equation member normal
       head covered => by
       have prepared := ContextualDependentCumulativeClosure.prepare_keeps (S := setting) (fun _ => none)

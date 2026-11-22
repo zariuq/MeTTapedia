@@ -43,7 +43,7 @@ escaped identities (`mono`), and it descends to configuration classes (`ClassEqu
 ## Clients respect it
 
 A **probe** (`Probe`) observes a state through a held reference (is it present?), a predicate query
-(the existing `PredicateQueryAdmission.Query.Ask`), or a guard (`Check`: an equation, a none query or a count,
+(the existing `PredicateQueryAdmission.Query.Ask`), or a guard (`Check`: an equation, an absence or a count,
 asked at every solution). Its names are the reference or the identities the query claims to have seen.
 
 * **Equivariance of probes** (`Probe.observes_rename`), from `holds_rename` and `queryHolds_rename`.
@@ -509,7 +509,7 @@ end Firings
 /-! ## Clients respect private equivalence -/
 
 /-- **A probe of a client**: whether a held reference is present, a predicate query asked at every
-solution of the knowledge, or a guard (an equation, a none query or a count) asked at every
+solution of the knowledge, or a guard (an equation, an absence or a count) asked at every
 solution. -/
 inductive Probe (T : Type uT) (S : Type uS) (O : Type uO) where
   | present (reference : O)
@@ -741,37 +741,37 @@ theorem made_fresh (valid : f.Valid A label C) (made : r ∈ f.selection.made) :
   Finset.disjoint_left.mp valid.firing.occurrences.fresh (by simpa [Selection.commit] using made)
 
 theorem swap_fixes_state (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (missing : r' ∉ C.present) : renameConfiguration (Equiv.swap r r') C = C := by
+    (absent : r' ∉ C.present) : renameConfiguration (Equiv.swap r r') C = C := by
   obtain ⟨equations, present⟩ := C
   show (⟨equations, present.map (Equiv.swap r r').toEmbedding⟩ : Configuration T O) = ⟨equations, present⟩
   rw [finset_map_eq_self _ fun o member => Equiv.swap_apply_of_ne_of_ne
     (fun isR => made_fresh valid made (by rw [← isR]; exact member))
-    (fun isR' => missing (by rw [← isR']; exact member))]
+    (fun isR' => absent (by rw [← isR']; exact member))]
 
 /-- **The alternative under a fresh name is admitted at the same state.** -/
 theorem fresh_alternative_valid (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (missing : r' ∉ C.present) (same : label r' = label r) :
+    (absent : r' ∉ C.present) (same : label r' = label r) :
     (f.rename (Equiv.swap r r')).Valid A label C := by
   have admitted := (Firing.valid_rename A (swap_keeps same) f C).mpr valid
-  rwa [swap_fixes_state valid made missing] at admitted
+  rwa [swap_fixes_state valid made absent] at admitted
 
 /-- **Its result is the renamed result.** -/
 theorem fresh_alternative_result (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (missing : r' ∉ C.present) (same : label r' = label r) :
+    (absent : r' ∉ C.present) (same : label r' = label r) :
     (f.rename (Equiv.swap r r')).result label C =
       renameConfiguration (Equiv.swap r r') (f.result label C) := by
   have result := Firing.result_rename (swap_keeps same) f C
-  rwa [swap_fixes_state valid made missing] at result
+  rwa [swap_fixes_state valid made absent] at result
 
 /-- **Unseen fresh names interfere**: for every set of escaped identities containing neither name,
 the original's result and the alternative's are privately equivalent. -/
 theorem fresh_alternative_equivalent (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (missing : r' ∉ C.present) (same : label r' = label r) (unseen : r ∉ E) (unseen' : r' ∉ E) :
+    (absent : r' ∉ C.present) (same : label r' = label r) (unseen : r ∉ E) (unseen' : r' ∉ E) :
     PrivatelyEquivalent A label E (f.result label C) ((f.rename (Equiv.swap r r')).result label C) := by
   refine ⟨Equiv.swap r r', ⟨swap_keeps same, fun o escaped => ?_⟩, ?_⟩
   · exact Equiv.swap_apply_of_ne_of_ne (fun isR => unseen (isR ▸ escaped))
       (fun isR' => unseen' (isR' ▸ escaped))
-  · rw [fresh_alternative_result valid made missing same]
+  · rw [fresh_alternative_result valid made absent same]
     exact SameUpTo.refl A _
 
 theorem result_present_iff {o : O} :
@@ -782,12 +782,12 @@ theorem result_present_iff {o : O} :
 /-- **A seen fresh name records the alternative**: a client holding `r` separates the original's
 result from the alternative's when `r'` is not another made identity. -/
 theorem fresh_alternative_separated (valid : f.Valid A label C) (made : r ∈ f.selection.made)
-    (missing : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.selection.made) (seen : r ∈ E) :
+    (absent : r' ∉ C.present) (same : label r' = label r) (new : r' ∉ f.selection.made) (seen : r ∈ E) :
     ¬ PrivatelyEquivalent A label E (f.result label C) ((f.rename (Equiv.swap r r')).result label C) := by
   intro h
   have here : r ∈ (f.result label C).present := result_present_iff.mpr (Or.inr made)
   have there := (h.escaped_iff seen).mp here
-  rw [fresh_alternative_result valid made missing same] at there
+  rw [fresh_alternative_result valid made absent same] at there
   obtain ⟨a, member, moved⟩ := Finset.mem_map.mp there
   have isR' : a = r' := by
     rw [Equiv.coe_toEmbedding, Equiv.swap_apply_eq_iff, Equiv.swap_apply_left] at moved
@@ -795,7 +795,7 @@ theorem fresh_alternative_separated (valid : f.Valid A label C) (made : r ∈ f.
   rw [isR'] at member
   have notMade : r' ∉ f.selection.made := new
   rcases result_present_iff.mp member with ⟨present, -⟩ | inMade
-  · exact missing present
+  · exact absent present
   · exact notMade inMade
 
 end Alternatives

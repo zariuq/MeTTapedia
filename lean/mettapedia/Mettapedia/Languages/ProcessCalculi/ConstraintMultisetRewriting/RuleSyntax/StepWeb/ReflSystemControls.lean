@@ -2668,7 +2668,7 @@ private theorem sibling_is_dormant (result : Pattern) : ¬ BagStep conventional 
 row 2. The run starts at the canonical one-row encoding. Row 2 has no
 source step: the QN instance can make its open pattern agree modulo
 the quoted bag equations, but the source principal matcher cannot.
-This separates ownership even with the actual opening none guards. -/
+This separates ownership even with the actual opening absence guards. -/
 theorem admitted_run_can_close_an_unopened_sibling :
     HostedNode twoReflections ∧ (∀ p, ¬ BagStep conventional siblingRow p) ∧
     ∃ (heating opening : PSubst) (pr tk : ℕ),

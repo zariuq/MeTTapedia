@@ -76,7 +76,7 @@ theorem millerGlbTower_decided {Θ : Context setting.R} {original : EquationStor
       run millerGlbTower original larger = run millerGlbTower original fuel ∧
         ((∃ state finished, run millerGlbTower original larger = .solved state finished ∧
             (frames setting.levels).Principal original state.answer) ∨
-          (∃ missing, run millerGlbTower original larger = .refuted missing)) :=
+          (∃ absent, run millerGlbTower original larger = .refuted absent)) :=
   millerGlb_decided TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentGeneralPattern.DispatchControls.tower_normalizes towerInh

@@ -51,7 +51,7 @@ def decidedKind {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)
 theorem principal_of_decided {Θ : Context setting.R} {problem : EquationStore (TotalTerm Θ)}
     {found : Option (Decided problem)} (solved : decidedKind found = 1) :
     ∃ (Δ : Context setting.R) (answer : Δ ⟶ Θ), (frames setting.levels).Principal problem answer := by
-  rcases found with _ | ⟨update, finished⟩ | missing
+  rcases found with _ | ⟨update, finished⟩ | absent
   · simp [decidedKind] at solved
   · exact ⟨update.target, update.answer, update.completed finished⟩
   · simp [decidedKind] at solved
@@ -78,9 +78,9 @@ theorem met_settles : Settles metStore :=
 /-- **A principal answer.** -/
 theorem met_principal : ∃ (Δ : Context setting.R) (answer : Δ ⟶ ctxMet),
     (frames setting.levels).Principal metStore answer := by
-  rcases met_settles.principal_or_unsolvable with found | missing
+  rcases met_settles.principal_or_unsolvable with found | absent
   · exact found
-  · exact absurd met_solvable missing
+  · exact absurd met_solvable absent
 
 /-- **The second phase is a Miller store**: `y ≐ y'` over the instantiated telescope `y y' : Π (_ : U0). U0`, in
 η-long form, read by the mixed reader. -/

@@ -182,11 +182,11 @@ def reading (terms : List (DeclName × Tower.Tm 0)) : Bodies Tower.Head := fun n
 
 /-- A constant that is not listed is read as itself. -/
 theorem reading_other {terms : List (DeclName × Tower.Tm 0)} {name : DeclName}
-    (missing : ∀ entry ∈ terms, entry.1 ≠ name) : reading terms name = .const name := by
+    (absent : ∀ entry ∈ terms, entry.1 ≠ name) : reading terms name = .const name := by
   have none : terms.find? (·.1 == name) = none := by
     rw [List.find?_eq_none]
     intro entry member
-    simpa using missing entry member
+    simpa using absent entry member
   unfold reading
   rw [none]
 
@@ -684,14 +684,14 @@ abbrev addAppendReading : Bodies Tower.Head := reading [(addName, addTerm), (app
 theorem addAppend_read : rulesRead 40 addAppendReading addAppendRows = true := by decide +kernel
 
 /-- The reading reads every constant outside the development as itself. -/
-theorem addAppend_others (d : DeclName) (missing : ∀ e ∈ addAppendDev, e.1 ≠ d) :
+theorem addAppend_others (d : DeclName) (absent : ∀ e ∈ addAppendDev, e.1 ≠ d) :
     addAppendReading d = .const d := by
   refine reading_other ?_
   intro entry member
   simp only [List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl
-  · exact missing (addName, addDef) (List.mem_cons_self ..)
-  · exact missing (appendName, appendOnAddDef) (List.mem_cons_of_mem _ (List.mem_cons_self ..))
+  · exact absent (addName, addDef) (List.mem_cons_self ..)
+  · exact absent (appendName, appendOnAddDef) (List.mem_cons_of_mem _ (List.mem_cons_self ..))
 
 /-- **Every conversion of the package extended by addition and append by rows, read at the compiled
 terms, is a conversion of the package**, for all terms. -/

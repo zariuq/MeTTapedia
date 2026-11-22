@@ -62,7 +62,7 @@ theorem vecZeroUnit_progress_exists :
   revert progresses
   cases vecRound 16 vecZeroUnitStore with
   | progress update smaller => exact fun _ => ⟨update, smaller, rfl⟩
-  | refuted missing => exact fun progresses => by cases progresses
+  | refuted absent => exact fun progresses => by cases progresses
   | stuck => exact fun progresses => by cases progresses
 
 end NativeTypesOnTheStep.Computing.Vectors

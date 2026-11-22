@@ -40,8 +40,8 @@ def brokenSharing : RowClosure atoms :=
 theorem broken_sharing_reads_another_value :
     brokenSharing.ReadsAt QuantifierControls.X (b := PUnit.unit) (point 5) (c 6) := by
   refine ⟨fun name => if name = 0 then c 5 else c 6, ?_, .cons rfl .nil, rfl⟩
-  intro equation missing
-  cases missing
+  intro equation absent
+  cases absent
 
 theorem renaming_only_the_value_is_not_alpha : key captured ≠ key brokenSharing := by
   intro same

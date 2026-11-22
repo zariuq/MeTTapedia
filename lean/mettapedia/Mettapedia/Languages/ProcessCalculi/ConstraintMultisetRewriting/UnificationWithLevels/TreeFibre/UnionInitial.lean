@@ -62,9 +62,9 @@ theorem union_initial {Θ : Context S.R} {original : EquationStore (TotalTerm Θ
   cases k with
   | miller =>
       rcases Miller.millerGlb_initial facts roots heads algebra rigid complete normalizes inh headsTyped glb spec
-          glbTotal inPiece with found | missing
+          glbTotal inPiece with found | absent
       · exact found
-      · exact absurd solvable missing
+      · exact absurd solvable absent
   | arrows =>
       exact arrowsCod_initial choices glb spec facts roots heads algebra rigid complete headsTyped declared
         strengthening inh glbTotal inPiece families solvable

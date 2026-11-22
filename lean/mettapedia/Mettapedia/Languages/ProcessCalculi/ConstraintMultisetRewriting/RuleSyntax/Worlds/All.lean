@@ -44,7 +44,7 @@ is recovered by the explicit local family `events X O E`. None replaces `RuleSyn
 * `Merging`: at the twin-binder frames, the composition of the calculus of systems is the merge; what
   side by side and the merge do to the two switching witnesses; the calculus of systems under the
   tensor has no uniform translation into the calculus of worlds side by side.
-* `Controls`, `Interaction`: on first-order atoms, the two notions of a shared row, what a none query
+* `Controls`, `Interaction`: on first-order atoms, the two notions of a shared row, what an absence
   check reads, the joint information of a used premise, and where worlds interact.
 
 ## Located rows, and worlds as a tree

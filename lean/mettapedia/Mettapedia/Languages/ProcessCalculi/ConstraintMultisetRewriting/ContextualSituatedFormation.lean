@@ -9,7 +9,7 @@ This interface adds situated formation to the existing contextual firing.
 The actual root inventory covers incoming equations, shared rows, retained
 continuations and stored template captures. Location lists describe authored
 ports. Observation sites are declared regions, including empty regions; they
-must cover all occurrences inspected by each whole-world none queries/count ask.
+must cover all occurrences inspected by each whole-world absence/count ask.
 
 Authority is separate from availability. Having a receive facet cannot make
 a missing row present, and a present row cannot supply a missing facet.

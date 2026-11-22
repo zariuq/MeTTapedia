@@ -176,9 +176,9 @@ theorem SynRowResultsRel.sound {live : List Atom} {query : Atom} {incoming : Bin
       SynRowResultsRel live query incoming position row block →
       EquationRowResultsRel live query incoming position row block
   | _, _, _, .irrelevant position row notEquation => .irrelevant position row notEquation
-  | _, _, _, .miss position left right pattern body alpha missing =>
+  | _, _, _, .miss position left right pattern body alpha absent =>
       .miss position left right pattern body alpha fun otherPattern otherBody other matched output
-        both => missing otherPattern otherBody other matched
+        both => absent otherPattern otherBody other matched
           ⟨both.1, logical_iff.mp ⟨output, both.2⟩⟩
   | _, _, _, .hit position left right pattern body matched alpha matching satisfiable =>
       .hit position left right pattern body matched _ alpha matching (merge_logical satisfiable)
@@ -199,9 +199,9 @@ theorem row_syntactic {live : List Atom} {query : Atom} {incoming : Bindings} :
       EquationRowResultsRel live query incoming position row block →
       SynWorksAt query incoming block → SynRowResultsRel live query incoming position row block
   | _, _, _, .irrelevant position row notEquation, _ => .irrelevant position row notEquation
-  | _, _, _, .miss position left right pattern body alpha missing, _ =>
+  | _, _, _, .miss position left right pattern body alpha absent, _ =>
       .miss position left right pattern body alpha fun otherPattern otherBody other matched both =>
-        missing otherPattern otherBody other matched _ ⟨both.1, merge_logical both.2⟩
+        absent otherPattern otherBody other matched _ ⟨both.1, merge_logical both.2⟩
   | _, _, _, .hit position left right pattern body matched output alpha matching merged,
       syntactic => by
       obtain ⟨matched', matching', same⟩ := syntactic _ List.mem_cons_self
@@ -216,9 +216,9 @@ theorem row_represented {live : List Atom} {query : Atom} {incoming : Bindings} 
       ∃ block', SynRowResultsRel live query incoming position row block' ∧
         List.Forall₂ SameWork block block'
   | _, _, _, .irrelevant position row notEquation => ⟨[], .irrelevant position row notEquation, .nil⟩
-  | _, _, _, .miss position left right pattern body alpha missing =>
+  | _, _, _, .miss position left right pattern body alpha absent =>
       ⟨[], .miss position left right pattern body alpha fun otherPattern otherBody other matched
-        both => missing otherPattern otherBody other matched _ ⟨both.1, merge_logical both.2⟩, .nil⟩
+        both => absent otherPattern otherBody other matched _ ⟨both.1, merge_logical both.2⟩, .nil⟩
   | _, _, _, .hit position left right pattern body matched output alpha matching merged => by
       obtain ⟨v, model⟩ := merged.2
       exact ⟨_, .hit position left right pattern body matched alpha matching

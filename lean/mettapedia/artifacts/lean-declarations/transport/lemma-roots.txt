@@ -1,0 +1,13 @@
+# Theorems whose proofs are carried into the Egal kernel (scripts/ExportLeanTransport.lean).
+# The lemmas the reading cites where the document proves them by hand.
+Nat.add_zero
+Finset.nodup
+Multiset.Nodup.filter
+List.Perm.length_eq
+List.Perm.foldr_eq
+Multiset.nodup_range
+List.Perm.map
+List.Perm.filter
+List.Perm.nodup_iff
+# Universe controls: a theorem true only of a type in its universe.
+Mettapedia.Languages.Lean.Declarations.UniverseControls.type_witness

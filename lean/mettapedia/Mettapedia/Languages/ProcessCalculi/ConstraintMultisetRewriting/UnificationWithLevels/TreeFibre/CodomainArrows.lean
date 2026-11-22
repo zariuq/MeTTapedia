@@ -181,7 +181,7 @@ theorem occursCod_solved {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : F
   · refine ⟨(occursCod_cons e rest i).mpr (.inr ?_), ne⟩
     simp only [occursCod, List.any_eq_true, Bool.or_eq_true, decide_eq_true_eq]
     exact ⟨e', inRest, .inr h⟩
-  · exact ⟨(occursCod_cons e rest i).mpr (.inl (.inr h)), fun same => ok.notMem (same ▸ h)⟩
+  · exact ⟨(occursCod_cons e rest i).mpr (.inl (.inr h)), fun same => ok.absent (same ▸ h)⟩
 
 /-- **Narrowing and solving lowers the rank.** -/
 theorem codRank_solved {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (v : FlexCod e) (ok : CodSolvable glb v)
@@ -430,8 +430,8 @@ def swapRoundCod {Θ : Context S.R} {e : Equation (TotalTerm Θ)} {rest : Equati
         change ContextualDependentWorklist.Below (codRank update.remaining) (codRank (e :: rest))
         rw [← same]
         exact smaller)
-  | .refuted missing =>
-      .refuted (fun ⟨Δ, σ, models⟩ => missing ⟨Δ, σ, (swap_equivalent e rest Δ σ).mp models⟩)
+  | .refuted absent =>
+      .refuted (fun ⟨Δ, σ, models⟩ => absent ⟨Δ, σ, (swap_equivalent e rest Δ σ).mp models⟩)
   | .stuck => .stuck
 
 /-- **The step on two rigid sides**: equal heads, decomposition into domains and codomains, or a clash. -/
@@ -818,9 +818,9 @@ theorem arrowsCod_decided {Θ : Context S.R} {original : EquationStore (TotalTer
               run (arrowCodSolver choices glb spec facts roots heads algebra rigid complete headTypingUnique declared
                   strengthening) original larger = .solved state finished ∧
                 (frames S.levels).Principal original state.answer) ∨
-          (∃ missing,
+          (∃ absent,
             run (arrowCodSolver choices glb spec facts roots heads algebra rigid complete headTypingUnique declared
-              strengthening) original larger = .refuted missing)) :=
+              strengthening) original larger = .refuted absent)) :=
   (arrowCodFragment choices glb spec facts roots heads algebra rigid complete headTypingUnique declared strengthening
     total).decided inside
 

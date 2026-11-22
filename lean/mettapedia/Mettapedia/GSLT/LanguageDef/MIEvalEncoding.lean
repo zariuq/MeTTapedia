@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.GuardedEvaluation
 import Mettapedia.Languages.MeTTa.LeaTTa.Corpus.SelfInterp
 import Mettapedia.GSLT.LanguageDef.LFEngineShiftSim
 
@@ -2862,38 +2863,8 @@ theorem cong_eval_match_active_mi (F : AST → AST)
       oneStep pMI s = some s' → oneStep pMI (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v → IsNormal pMI v →
       (∀ k, k < N → MatchActiveShape (eval pMI k s)) →
-      ∃ M, eval pMI M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _ _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v hs hv hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : MatchActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n → MatchActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM⟩ := ih hs hv hactive'
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hsActive hstep]
-          exact hM
+      ∃ M, eval pMI M (F s) = F v :=
+  fun N _ _ h _ => GuardedEvaluation.eval_result pMI pMI F MatchActiveShape hcong N h
 
 theorem cong_eval_match_active_with_guard_mi (F : AST → AST)
     (hwrap : ∀ s, MatchActiveShape s → MatchActiveShape (F s))
@@ -2902,51 +2873,9 @@ theorem cong_eval_match_active_with_guard_mi (F : AST → AST)
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v →
       (∀ k, k < N → MatchActiveShape (eval pMI k s)) →
         ∃ M, eval pMI M (F s) = F v ∧
-          ∀ k, k < M → MatchActiveShape (eval pMI k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : MatchActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n → MatchActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM, hMactive⟩ := ih hs hactive'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hsActive hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsActive
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal :
-                    eval pMI (Nat.succ k) (F s) = eval pMI k (F s') := by
-                  simp only [eval, hcong s s' hsActive hstep]
-                rw [htotal]
-                exact hMactive k hkM
+          ∀ k, k < M → MatchActiveShape (eval pMI k (F s)) :=
+  GuardedEvaluation.eval_with_guard pMI pMI F
+    MatchActiveShape MatchActiveShape hwrap hcong
 
 theorem cong_eval_to_match_active_with_guard_mi (F : AST → AST)
     (hwrap : ∀ s, MatchActiveShape (F s))
@@ -2954,41 +2883,9 @@ theorem cong_eval_to_match_active_with_guard_mi (F : AST → AST)
       oneStep pMI (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v → IsNormal pMI v →
       ∃ M, eval pMI M (F s) = F v ∧
-        ∀ k, k < M → MatchActiveShape (eval pMI k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hv
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          obtain ⟨M, hM, hMactive⟩ := ih hs hv
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal :
-                    eval pMI (Nat.succ k) (F s) = eval pMI k (F s') := by
-                  simp only [eval, hcong s s' hstep]
-                rw [htotal]
-                exact hMactive k hkM
+        ∀ k, k < M → MatchActiveShape (eval pMI k (F s)) :=
+  fun N _ _ h _ =>
+    GuardedEvaluation.eval_with_wrapper pMI pMI F MatchActiveShape hwrap hcong N h
 
 theorem miMatchListK_tail_active_eval_of (ps ts ts' r : AST)
     (tailFuel : Nat)
@@ -5559,28 +5456,8 @@ theorem eval_normal_unique_mi {s u v : AST} {N M : Nat}
 theorem cong_eval_mi (F : AST → AST)
     (hcong : ∀ s s', oneStep pMI s = some s' → oneStep pMI (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v → IsNormal pMI v →
-      ∃ M, eval pMI M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v hs hv
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at hs
-          obtain ⟨M, hM⟩ := ih hs hv
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hstep]
-          exact hM
+      ∃ M, eval pMI M (F s) = F v :=
+  fun N _ _ h _ => GuardedEvaluation.eval_result_of_step pMI pMI F hcong N h
 
 theorem os_MICons_head_step (x x' xs : AST)
     (hstep : oneStep pMI x = some x') :
@@ -9464,41 +9341,9 @@ theorem cong_eval_to_step_active_with_guard_mi (F : AST → AST)
       oneStep pMI (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v → IsNormal pMI v →
       ∃ M, eval pMI M (F s) = F v ∧
-        ∀ k, k < M → StepActiveShape (eval pMI k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hv
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          obtain ⟨M, hM, hMactive⟩ := ih hs hv
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal :
-                    eval pMI (Nat.succ k) (F s) = eval pMI k (F s') := by
-                  simp only [eval, hcong s s' hstep]
-                rw [htotal]
-                exact hMactive k hkM
+        ∀ k, k < M → StepActiveShape (eval pMI k (F s)) :=
+  fun N _ _ h _ =>
+    GuardedEvaluation.eval_with_wrapper pMI pMI F StepActiveShape hwrap hcong N h
 
 theorem baseReducts_miEvalK_step_active_raw
     (rules term fuelArg r : AST) (hactive : StepActiveShape r) :
@@ -9547,39 +9392,8 @@ theorem cong_eval_step_active_fuel_mi (F : AST → AST)
       oneStep pMI s = some s' → oneStep pMI (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v →
       (∀ k, k < N → StepActiveShape (eval pMI k s)) →
-      ∃ M, eval pMI M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v hs hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : StepActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n →
-              StepActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM⟩ := ih hs hactive'
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hsActive hstep]
-          exact hM
+      ∃ M, eval pMI M (F s) = F v :=
+  GuardedEvaluation.eval_result pMI pMI F StepActiveShape hcong
 
 theorem miEvalK_eval_of_step_active_step
     (rules term fuelArg r rawNext : AST) (stepFuel : Nat)
@@ -9918,39 +9732,8 @@ theorem cong_eval_args_active_fuel_mi (F : AST → AST)
       oneStep pMI s = some s' → oneStep pMI (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v →
       (∀ k, k < N → ArgsActiveShape (eval pMI k s)) →
-      ∃ M, eval pMI M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v hs hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : ArgsActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n →
-              ArgsActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM⟩ := ih hs hactive'
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hsActive hstep]
-          exact hM
+      ∃ M, eval pMI M (F s) = F v :=
+  GuardedEvaluation.eval_result pMI pMI F ArgsActiveShape hcong
 
 theorem cong_eval_args_active_with_guard_mi (F : AST → AST)
     (hwrap : ∀ s, ArgsActiveShape s → ArgsActiveShape (F s))
@@ -9959,52 +9742,9 @@ theorem cong_eval_args_active_with_guard_mi (F : AST → AST)
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v →
       (∀ k, k < N → ArgsActiveShape (eval pMI k s)) →
         ∃ M, eval pMI M (F s) = F v ∧
-          ∀ k, k < M → ArgsActiveShape (eval pMI k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : ArgsActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n →
-              ArgsActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM, hMactive⟩ := ih hs hactive'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hsActive hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsActive
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal :
-                    eval pMI (Nat.succ k) (F s) = eval pMI k (F s') := by
-                  simp only [eval, hcong s s' hsActive hstep]
-                rw [htotal]
-                exact hMactive k hkM
+          ∀ k, k < M → ArgsActiveShape (eval pMI k (F s)) :=
+  GuardedEvaluation.eval_with_guard pMI pMI F
+    ArgsActiveShape ArgsActiveShape hwrap hcong
 
 theorem cong_eval_args_to_step_active_with_guard_mi (F : AST → AST)
     (hwrap : ∀ s, ArgsActiveShape s → StepActiveShape (F s))
@@ -10013,52 +9753,9 @@ theorem cong_eval_args_to_step_active_with_guard_mi (F : AST → AST)
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v →
       (∀ k, k < N → ArgsActiveShape (eval pMI k s)) →
         ∃ M, eval pMI M (F s) = F v ∧
-          ∀ k, k < M → StepActiveShape (eval pMI k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : ArgsActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n →
-              ArgsActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM, hMactive⟩ := ih hs hactive'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hsActive hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsActive
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal :
-                    eval pMI (Nat.succ k) (F s) = eval pMI k (F s') := by
-                  simp only [eval, hcong s s' hsActive hstep]
-                rw [htotal]
-                exact hMactive k hkM
+          ∀ k, k < M → StepActiveShape (eval pMI k (F s)) :=
+  GuardedEvaluation.eval_with_guard pMI pMI F
+    ArgsActiveShape StepActiveShape hwrap hcong
 
 theorem cong_eval_step_to_args_active_with_guard_mi (F : AST → AST)
     (hwrap : ∀ s, StepActiveShape s → ArgsActiveShape (F s))
@@ -10067,52 +9764,9 @@ theorem cong_eval_step_to_args_active_with_guard_mi (F : AST → AST)
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v →
       (∀ k, k < N → StepActiveShape (eval pMI k s)) →
         ∃ M, eval pMI M (F s) = F v ∧
-          ∀ k, k < M → ArgsActiveShape (eval pMI k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : StepActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n →
-              StepActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM, hMactive⟩ := ih hs hactive'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hsActive hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsActive
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal :
-                    eval pMI (Nat.succ k) (F s) = eval pMI k (F s') := by
-                  simp only [eval, hcong s s' hsActive hstep]
-                rw [htotal]
-                exact hMactive k hkM
+          ∀ k, k < M → ArgsActiveShape (eval pMI k (F s)) :=
+  GuardedEvaluation.eval_with_guard pMI pMI F
+    StepActiveShape ArgsActiveShape hwrap hcong
 
 theorem miStepAppK_eval_of_args_active_step_named (h : String)
     (r argsOut : AST) (argsFuel : Nat)
@@ -11373,78 +11027,16 @@ theorem cong_eval_root_active_mi (F : AST → AST)
       oneStep pMI s = some s' → oneStep pMI (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v → IsNormal pMI v →
       (∀ k, k < N → RootActiveShape (eval pMI k s)) →
-      ∃ M, eval pMI M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _ _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v hs hv hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : RootActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n →
-              RootActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM⟩ := ih hs hv hactive'
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hsActive hstep]
-          exact hM
+      ∃ M, eval pMI M (F s) = F v :=
+  fun N _ _ h _ => GuardedEvaluation.eval_result pMI pMI F RootActiveShape hcong N h
 
 theorem cong_eval_root_active_fuel_mi (F : AST → AST)
     (hcong : ∀ s s', RootActiveShape s →
       oneStep pMI s = some s' → oneStep pMI (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v →
       (∀ k, k < N → RootActiveShape (eval pMI k s)) →
-      ∃ M, eval pMI M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v hs hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : RootActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n →
-              RootActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM⟩ := ih hs hactive'
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hsActive hstep]
-          exact hM
+      ∃ M, eval pMI M (F s) = F v :=
+  GuardedEvaluation.eval_result pMI pMI F RootActiveShape hcong
 
 theorem cong_eval_root_to_step_active_with_guard_mi (F : AST → AST)
     (hwrap : ∀ s, RootActiveShape s → StepActiveShape (F s))
@@ -11453,52 +11045,9 @@ theorem cong_eval_root_to_step_active_with_guard_mi (F : AST → AST)
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v →
       (∀ k, k < N → RootActiveShape (eval pMI k s)) →
         ∃ M, eval pMI M (F s) = F v ∧
-          ∀ k, k < M → StepActiveShape (eval pMI k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : RootActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n →
-              RootActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM, hMactive⟩ := ih hs hactive'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hsActive hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsActive
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal :
-                    eval pMI (Nat.succ k) (F s) = eval pMI k (F s') := by
-                  simp only [eval, hcong s s' hsActive hstep]
-                rw [htotal]
-                exact hMactive k hkM
+          ∀ k, k < M → StepActiveShape (eval pMI k (F s)) :=
+  GuardedEvaluation.eval_with_guard pMI pMI F
+    RootActiveShape StepActiveShape hwrap hcong
 
 theorem cong_eval_match_to_root_active_with_guard_mi (F : AST → AST)
     (hwrap : ∀ s, MatchActiveShape s → RootActiveShape (F s))
@@ -11507,52 +11056,9 @@ theorem cong_eval_match_to_root_active_with_guard_mi (F : AST → AST)
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v →
       (∀ k, k < N → MatchActiveShape (eval pMI k s)) →
         ∃ M, eval pMI M (F s) = F v ∧
-          ∀ k, k < M → RootActiveShape (eval pMI k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hactive
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          have hsActive : MatchActiveShape s := by
-            have h0 := hactive 0 (Nat.zero_lt_succ n)
-            simpa only [eval] using h0
-          have hactive' : ∀ k, k < n →
-              MatchActiveShape (eval pMI k s') := by
-            intro k hk
-            have hk' : Nat.succ k < Nat.succ n := Nat.succ_lt_succ hk
-            have hnext := hactive (Nat.succ k) hk'
-            have heval : eval pMI (Nat.succ k) s = eval pMI k s' := by
-              simp only [eval, hstep]
-            simpa only [heval] using hnext
-          obtain ⟨M, hM, hMactive⟩ := ih hs hactive'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hsActive hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsActive
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal :
-                    eval pMI (Nat.succ k) (F s) = eval pMI k (F s') := by
-                  simp only [eval, hcong s s' hsActive hstep]
-                rw [htotal]
-                exact hMactive k hkM
+          ∀ k, k < M → RootActiveShape (eval pMI k (F s)) :=
+  GuardedEvaluation.eval_with_guard pMI pMI F
+    MatchActiveShape RootActiveShape hwrap hcong
 
 theorem os_miRootK_active_term_step (rest term term' rhs r : AST)
     (hrest : IsNormal pMI rest) (hactive : MatchActiveShape r)
@@ -11577,41 +11083,9 @@ theorem cong_eval_to_root_active_with_guard_mi (F : AST → AST)
       oneStep pMI (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pMI N s = v → IsNormal pMI v →
       ∃ M, eval pMI M (F s) = F v ∧
-        ∀ k, k < M → RootActiveShape (eval pMI k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v hs _
-      simp only [eval] at hs
-      subst hs
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v hs hv
-      simp only [eval] at hs
-      cases hstep : oneStep pMI s with
-      | none =>
-          rw [hstep] at hs
-          subst hs
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at hs
-          obtain ⟨M, hM, hMactive⟩ := ih hs hv
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal :
-                    eval pMI (Nat.succ k) (F s) = eval pMI k (F s') := by
-                  simp only [eval, hcong s s' hstep]
-                rw [htotal]
-                exact hMactive k hkM
+        ∀ k, k < M → RootActiveShape (eval pMI k (F s)) :=
+  fun N _ _ h _ =>
+    GuardedEvaluation.eval_with_wrapper pMI pMI F RootActiveShape hwrap hcong N h
 
 theorem miRootK_active_term_eval_of (rest term termOut rhs r : AST)
     (fuel : Nat)

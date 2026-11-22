@@ -25,7 +25,7 @@ stated below.
   run, soundness is proved for `ReadyLocatedRunN` (resp. `ReadyLocatedRunC`) runs, which assume
   readiness before every firing, not at the terminal constructor. Readiness is not preserved
   by every firing from encoded states (`Controls.Readiness.admitted_heating_loses_readiness`).
-  `BackwardReadyN` includes restrictions on pairs of inputs and the none query of
+  `BackwardReadyN` includes restrictions on pairs of inputs and the absence of
   aliasing between child locations, and `ReflSystemControls.cross_reflection_capture_control`
   shows a state where the aliasing occurs.
 * **Conservativity on `REFL`-free processes** (`NoReflectNode`, `openRoot_refused_of_noReflect`,

@@ -37,10 +37,10 @@ theorem certDecider_equal_iff (q : Q) (k : ℕ) :
   rw [anyBelow_iff]
   constructor
   · intro equal
-    by_contra noneAll
+    by_contra absentAll
     have undecided : (certDecider R).verdict k q = .undecided := by
       refine (certDecider R).verdict_undecided_iff.mpr fun j le => ?_
-      have notFound : ¬ R j q = true := fun found => noneAll ⟨j, Nat.lt_succ_of_le le, found⟩
+      have notFound : ¬ R j q = true := fun found => absentAll ⟨j, Nat.lt_succ_of_le le, found⟩
       simp [certDecider, notFound]
     have same : (certDecider R).procedure.verdict k q = (certDecider R).verdict k q := rfl
     rw [same, undecided] at equal
@@ -48,10 +48,10 @@ theorem certDecider_equal_iff (q : Q) (k : ℕ) :
   · rintro ⟨n, lt, found⟩
     have decided : (certDecider R).procedure.verdict k q ≠ .undecided := by
       intro undecided
-      have missing := ((certDecider R).verdict_undecided_iff.mp undecided) n (Nat.le_of_lt_succ lt)
+      have absent := ((certDecider R).verdict_undecided_iff.mp undecided) n (Nat.le_of_lt_succ lt)
       have present : (certDecider R).attempt n q = some ⟨n, found⟩ := dif_pos found
-      rw [present] at missing
-      exact Option.some_ne_none _ missing
+      rw [present] at absent
+      exact Option.some_ne_none _ absent
     have notDifferent : (certDecider R).procedure.verdict k q ≠ .different :=
       (certDecider R).verdict_ne_different (fun _ => rfl) k
     cases h : (certDecider R).procedure.verdict k q with

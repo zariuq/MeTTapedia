@@ -8,10 +8,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 Controls for `RoundTwoPresentations` and `RoundEveryOrder`. Each breaks one hypothesis, or keeps all but
 one, at the one-frame action on first-order terms over numerals (`RuleSyntax.Controls.action`).
 
-* **Positivity** (`none_separates`): two members whose none checks ask that the row the other makes
-  not be present. The bag is admitted on its own; under the labels of its round its image is not a round of the
+* **Positivity** (`absence_separates`): two members whose absence checks ask that the row the other makes
+  be absent. The bag is admitted on its own; under the labels of its round its image is not a round of the
   base layer; and it is no runtime round, since no run of the one-match step reaches its result.
-* **Positivity is not necessary** (`ninePair_round`): two members whose none checks read a pattern apart
+* **Positivity is not necessary** (`ninePair_round`): two members whose absence checks read a pattern apart
   from every row the other makes. The rules are not positive, and the image is a round: the hypothesis of
   `round_image_iff` is the write-ignorance, not positivity.
 * **Joint freshness** (`twins_round`, `twins_not_image`): at a state that mentions only fixed terms, two
@@ -33,7 +33,7 @@ one, at the one-frame action on first-order terms over numerals (`RuleSyntax.Con
   form a runtime round, and the count does not ignore the refresh's writes, so the image is not a round.
   So for rules that are not positive three notions part: at an embedded state, a round of jointly fresh
   images is a runtime round (`runtimeRound_of_round`), and a runtime round is a bag admitted on its own
-  (`admitsOwn_of_runtimeRound`); this control and `none_separates` show both inclusions strict.
+  (`admitsOwn_of_runtimeRound`); this control and `absence_separates` show both inclusions strict.
 -/
 
 set_option autoImplicit false
@@ -51,7 +51,7 @@ open _root_.Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Rule
 open _root_.Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Controls
   (atoms action)
 
-/-! ## Positivity: none checks where the two presentations part -/
+/-! ## Positivity: absence checks where the two presentations part -/
 
 /-- The two members of the synchronous bag: make a `1` unless a `2` is present, make a `2` unless a `1`
 is present. -/
@@ -61,7 +61,7 @@ abbrev unlessPair : List (OneMember action ℕ Synchronous.program) :=
 /-- **Without positivity a bag admitted on its own need not be a round.** The bag is admitted on its own at
 the empty state; under the labels of its round its image is not a round of the base layer; and it is no
 runtime round. -/
-theorem none_separates :
+theorem absence_separates :
     Bag.AdmitsOwn X Synchronous.empty (bagOf action unlessPair) ∧
       ¬ AnnotatedRuns.Round action (roundLabel action Synchronous.empty unlessPair)
           (configurationOf Synchronous.empty) (image action unlessPair) ∧
@@ -84,7 +84,7 @@ theorem none_separates :
       Synchronous.both_admitted.2.1] at run
     exact Synchronous.no_run_reaches run
 
-/-! ## Positivity is not necessary: none checks apart from what the others make -/
+/-! ## Positivity is not necessary: absence checks apart from what the others make -/
 
 /-- **The program**: make a `1` unless a `9` is present; make a `2` unless a `9` is present. -/
 def unlessNine : Program Tm := {Synchronous.addUnless 1 9, Synchronous.addUnless 2 9}
@@ -127,7 +127,7 @@ theorem ninePair_admitted : Bag.AdmitsOwn X Synchronous.empty (bagOf action nine
   · rcases ninePair_members inside with rfl | rfl <;> exact absurd member List.not_mem_nil
 
 /-- **The rules are not positive, and the image of the bag, under the labels of its round, is a round of
-the base layer**: each none check reads `9`, apart from the row the other member makes. -/
+the base layer**: each absence check reads `9`, apart from the row the other member makes. -/
 theorem ninePair_round :
     ¬ (∀ m ∈ ninePair, Positive m.rule) ∧
       AnnotatedRuns.Round action (roundLabel action Synchronous.empty ninePair)
@@ -580,7 +580,7 @@ theorem refresh_separates :
     subst listed
     rfl
 
-#print axioms none_separates
+#print axioms absence_separates
 #print axioms ninePair_admitted
 #print axioms ninePair_round
 #print axioms tokenState_fixed

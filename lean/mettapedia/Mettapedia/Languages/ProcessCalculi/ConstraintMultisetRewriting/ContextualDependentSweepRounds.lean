@@ -49,7 +49,7 @@ def orElseW {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
   match first with
   | .stuck => second ()
   | .progress update smaller => .progress update smaller
-  | .refuted missing => .refuted missing
+  | .refuted absent => .refuted absent
 
 theorem orElseW_eq {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
     (first : Round S.levels (weightRank facts roots heads algebra rigid complete) problem)
@@ -61,7 +61,7 @@ theorem orElseW_eq {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
 def refutedRoundW {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)} :
     Option (PLift (¬ (frames S.levels).Solvable problem)) →
       Round S.levels (weightRank facts roots heads algebra rigid complete) problem
-  | some missing => .refuted missing.down
+  | some absent => .refuted absent.down
   | none => .stuck
 
 theorem refutedRoundW_eq {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
@@ -304,7 +304,7 @@ theorem ending_drive (fuel : Nat) : ∀ (rounds : Nat) {Γ : Context setting.R} 
             rw [ending_cons fuel rounds notEmpty]
             split at decided
             · cases decided
-            · rename_i missing isRefuted
+            · rename_i absent isRefuted
               cases decided
               rw [(towerRound_eq fuel state.remaining).trans isRefuted]
               rfl
@@ -359,7 +359,7 @@ theorem unsolvable_of_ending {fuel rounds : Nat} {Γ : Context setting.R} {store
     (read : ending fuel rounds Γ store = .refuted) : ¬ (frames setting.levels).Solvable store := by
   rw [← ending_run] at read
   cases outcome : run (baseTower.solver fuel) store rounds with
-  | refuted missing => exact missing
+  | refuted absent => exact absent
   | solved _ _ => rw [outcome] at read; cases read
   | stuck _ => rw [outcome] at read; cases read
   | cutoff _ => rw [outcome] at read; cases read

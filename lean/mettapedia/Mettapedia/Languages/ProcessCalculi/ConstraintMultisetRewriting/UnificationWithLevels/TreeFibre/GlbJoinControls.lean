@@ -86,7 +86,7 @@ theorem glbJoinTower_decided {Θ : Context setting.R} {original : EquationStore 
       run glbJoinTowerSolver original larger = run glbJoinTowerSolver original fuel ∧
         ((∃ state finished, run glbJoinTowerSolver original larger = .solved state finished ∧
             (frames setting.levels).Principal original state.answer) ∨
-          (∃ missing, run glbJoinTowerSolver original larger = .refuted missing)) :=
+          (∃ absent, run glbJoinTowerSolver original larger = .refuted absent)) :=
   glbJoinK_decided TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentNormalCheckingTower.head_typing_unique towerJoin towerJoin_sound LevelGlb.towerGlb

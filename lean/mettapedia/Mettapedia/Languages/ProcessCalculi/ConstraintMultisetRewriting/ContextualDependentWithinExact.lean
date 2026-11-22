@@ -113,7 +113,7 @@ theorem tower_within_decided_of_uncovered_exact
       run (withinTower.solver larger) problem larger = run (withinTower.solver budget) problem budget ∧
       ((∃ state finished, run (withinTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (withinTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (withinTower.solver larger) problem larger = .refuted absent)) :=
   (Settled.ofConst withinTower (fun problem => tower_withinRound_const problem)
     (fun problem => ExactReached problem)
     (fun {_} {problem} held nonempty => by

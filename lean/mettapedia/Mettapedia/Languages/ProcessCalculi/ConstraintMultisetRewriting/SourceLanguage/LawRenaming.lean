@@ -375,9 +375,9 @@ theorem move_rename {w w' : World mkeys [] ()} {b : Branch mkeys [] () D.Ty} {bs
       rw [π.rWorld_setSpace w h rest (w.scope + 1) w.handles]
       rw [← rStore_rowUse, ← rStore_append] at moved
       exact moved
-  | removeMissing K sp t k fs ps h addressed none =>
+  | removeAbsent K sp t k fs ps h addressed none =>
       have addressed' := (determines_rename inverse K sp h).mpr addressed
-      refine .removeMissing _ _ _ _ _ _ _ h addressed' fun r' member live => ?_
+      refine .removeAbsent _ _ _ _ _ _ _ h addressed' fun r' member live => ?_
       have member' : r' ∈ (w.spaces h).map π.rRow := member
       obtain ⟨r, inside, rfl⟩ := Multiset.mem_map.mp member'
       apply none r inside

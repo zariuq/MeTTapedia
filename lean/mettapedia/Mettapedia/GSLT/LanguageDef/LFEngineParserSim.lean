@@ -8,6 +8,7 @@ bricks needed by the eventual mutual `parser_sim` / `lfrec_sim` theorem.
 
 Integrity: 0 sorry / 0 native_decide.
 -/
+import Mettapedia.GSLT.LanguageDef.GuardedEvaluation
 import Mettapedia.GSLT.LanguageDef.LFEngineResolveSim
 
 namespace Mettapedia.GSLT.LanguageDef.LFParserSim
@@ -1239,34 +1240,8 @@ theorem cong_eval_raw_until_result (F : AST → AST)
       oneStep pLF (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pLF N s = v →
       (∀ k, k < N → ¬ ParserResultShape (eval pLF k s)) →
-        ∃ M, eval pLF M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h _
-      simp only [eval] at h
-      subst h
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v h hguard
-      simp only [eval] at h
-      cases hstep : oneStep pLF s with
-      | none =>
-          rw [hstep] at h
-          subst h
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at h
-          have hsnot : ¬ ParserResultShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguard' : ∀ k, k < n → ¬ ParserResultShape (eval pLF k s') := by
-            intro k hk
-            have hk' : k + 1 < n + 1 := Nat.succ_lt_succ hk
-            simpa only [eval, hstep] using hguard (k + 1) hk'
-          obtain ⟨M, hM⟩ := ih h hguard'
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hsnot hstep]
-          exact hM
+        ∃ M, eval pLF M (F s) = F v :=
+  GuardedEvaluation.eval_result pLF pLF F (fun s => ¬ ParserResultShape s) hcong
 
 theorem first_matches_bind {r : Option (LF.Term × List LF.Tok)} {call : AST}
     (F : AST → AST) (Goal : AST → Prop)
@@ -1290,34 +1265,8 @@ theorem cong_eval_active (F : AST → AST)
       oneStep pLF (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pLF N s = v →
       (∀ k, k < N → ParserActiveShape (eval pLF k s)) →
-        ∃ M, eval pLF M (F s) = F v := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h _
-      simp only [eval] at h
-      subst h
-      exact ⟨0, rfl⟩
-  | succ n ih =>
-      intro s v h hguard
-      simp only [eval] at h
-      cases hstep : oneStep pLF s with
-      | none =>
-          rw [hstep] at h
-          subst h
-          exact ⟨0, rfl⟩
-      | some s' =>
-          rw [hstep] at h
-          have hsactive : ParserActiveShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguard' : ∀ k, k < n → ParserActiveShape (eval pLF k s') := by
-            intro k hk
-            have hk' : k + 1 < n + 1 := Nat.succ_lt_succ hk
-            simpa only [eval, hstep] using hguard (k + 1) hk'
-          obtain ⟨M, hM⟩ := ih h hguard'
-          refine ⟨M + 1, ?_⟩
-          simp only [eval, hcong s s' hsactive hstep]
-          exact hM
+        ∃ M, eval pLF M (F s) = F v :=
+  GuardedEvaluation.eval_result pLF pLF F ParserActiveShape hcong
 
 theorem first_active_bind {r : Option (LF.Term × List LF.Tok)} {call : AST}
     (F : AST → AST) (Goal : AST → Prop)
@@ -1343,46 +1292,8 @@ theorem cong_eval_active_with_guard (F : AST → AST)
     ∀ (N : Nat) {s v : AST}, eval pLF N s = v →
       (∀ k, k < N → ParserActiveShape (eval pLF k s)) →
         ∃ M, eval pLF M (F s) = F v ∧
-          ∀ k, k < M → ParserActiveShape (eval pLF k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h _
-      simp only [eval] at h
-      subst h
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v h hguard
-      simp only [eval] at h
-      cases hstep : oneStep pLF s with
-      | none =>
-          rw [hstep] at h
-          subst h
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at h
-          have hsactive : ParserActiveShape s := by
-            simpa only [eval] using hguard 0 (Nat.zero_lt_succ n)
-          have hguard' : ∀ k, k < n → ParserActiveShape (eval pLF k s') := by
-            intro k hk
-            have hk' : k + 1 < n + 1 := Nat.succ_lt_succ hk
-            simpa only [eval, hstep] using hguard (k + 1) hk'
-          obtain ⟨M, hM, hMguard⟩ := ih h hguard'
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hsactive hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s hsactive
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal : eval pLF (Nat.succ k) (F s) = eval pLF k (F s') := by
-                  simp only [eval, hcong s s' hsactive hstep]
-                rw [htotal]
-                exact hMguard k hkM
+          ∀ k, k < M → ParserActiveShape (eval pLF k (F s)) :=
+  GuardedEvaluation.eval_with_guard pLF pLF F ParserActiveShape ParserActiveShape hwrap hcong
 
 theorem cong_eval_with_active_wrapper (F : AST → AST)
     (hwrap : ∀ s, ParserActiveShape (F s))
@@ -1390,40 +1301,8 @@ theorem cong_eval_with_active_wrapper (F : AST → AST)
       oneStep pLF (F s) = some (F s')) :
     ∀ (N : Nat) {s v : AST}, eval pLF N s = v →
         ∃ M, eval pLF M (F s) = F v ∧
-          ∀ k, k < M → ParserActiveShape (eval pLF k (F s)) := by
-  intro N
-  induction N with
-  | zero =>
-      intro s v h
-      simp only [eval] at h
-      subst h
-      exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-  | succ n ih =>
-      intro s v h
-      simp only [eval] at h
-      cases hstep : oneStep pLF s with
-      | none =>
-          rw [hstep] at h
-          subst h
-          exact ⟨0, rfl, fun k hk => False.elim (Nat.not_lt_zero k hk)⟩
-      | some s' =>
-          rw [hstep] at h
-          obtain ⟨M, hM, hMguard⟩ := ih h
-          refine ⟨M + 1, ?_, ?_⟩
-          · simp only [eval, hcong s s' hstep]
-            exact hM
-          · intro k hk
-            cases k with
-            | zero =>
-                simpa only [eval] using hwrap s
-            | succ k =>
-                have hkM : k < M := by
-                  exact Nat.succ_lt_succ_iff.mp (by
-                    simpa [Nat.succ_eq_add_one] using hk)
-                have htotal : eval pLF (Nat.succ k) (F s) = eval pLF k (F s') := by
-                  simp only [eval, hcong s s' hstep]
-                rw [htotal]
-                exact hMguard k hkM
+          ∀ k, k < M → ParserActiveShape (eval pLF k (F s)) :=
+  GuardedEvaluation.eval_with_wrapper pLF pLF F ParserActiveShape hwrap hcong
 
 theorem first_active_bind_active {r q : Option (LF.Term × List LF.Tok)} {call : AST}
     (F : AST → AST)
@@ -1443,22 +1322,7 @@ theorem first_active_bind_active {r q : Option (LF.Term × List LF.Tok)} {call :
       eval_trans pLF Mctx Nend _ _ _ hMctx rfl
     rw [htotal]
     exact hendRaw
-  · intro k hk
-    by_cases hkctx : k < Mctx
-    · exact hMguard k hkctx
-    · have hge : Mctx ≤ k := Nat.le_of_not_gt hkctx
-      let j := k - Mctx
-      have hjlt : j < Nend := by
-        omega
-      have hk_eq : k = Mctx + j := by
-        omega
-      have hshift : eval pLF k (F call) = eval pLF j (F (eval pLF Nchild call)) := by
-        have htotal : eval pLF (Mctx + j) (F call)
-            = eval pLF j (F (eval pLF Nchild call)) :=
-          eval_trans pLF Mctx j _ _ _ hMctx rfl
-        simpa [hk_eq] using htotal
-      rw [hshift]
-      exact hendGuard j hjlt
+  · exact GuardedEvaluation.eval_guard_append pLF hMctx hMguard hendGuard
 
 theorem first_active_shiftable_bind_active {r q : Option (LF.Term × List LF.Tok)} {call : AST}
     (F : AST → AST)
@@ -1478,20 +1342,7 @@ theorem first_active_shiftable_bind_active {r q : Option (LF.Term × List LF.Tok
       eval_trans pLF Mctx Nend _ _ _ hMctx rfl
     rw [htotal]
     exact hendRaw
-  · intro k hk
-    by_cases hkctx : k < Mctx
-    · exact hMguard k hkctx
-    · have hge : Mctx ≤ k := Nat.le_of_not_gt hkctx
-      let j := k - Mctx
-      have hjlt : j < Nend := by omega
-      have hk_eq : k = Mctx + j := by omega
-      have hshift : eval pLF k (F call) = eval pLF j (F (eval pLF Nchild call)) := by
-        have htotal : eval pLF (Mctx + j) (F call)
-            = eval pLF j (F (eval pLF Nchild call)) :=
-          eval_trans pLF Mctx j _ _ _ hMctx rfl
-        simpa [hk_eq] using htotal
-      rw [hshift]
-      exact hendGuard j hjlt
+  · exact GuardedEvaluation.eval_guard_append pLF hMctx hMguard hendGuard
 
 theorem hcong_Ok : ∀ s s', oneStep pLF s = some s' →
     oneStep pLF (Ok s) = some (Ok s') := by

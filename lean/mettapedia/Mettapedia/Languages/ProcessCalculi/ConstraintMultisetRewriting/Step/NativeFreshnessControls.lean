@@ -2,14 +2,14 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Nati
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.NativeResidualExample
 
 /-!
-# Control: fresh under missing-only freshness, not fresh from the born identities
+# Control: fresh under absent-only freshness, not fresh from the born identities
 
-Native admission asks that the identities a firing makes be **missing** from the present store; the
+Native admission asks that the identities a firing makes be **absent** from the present store; the
 commit protocol asks that they were **never born** (`Step/NativeFreshness`). This control separates the
 two on a concrete native run.
 
 * **The native run** (`makerRun`): the maker of occurrence `0` at the state with no occurrences
-  (`NativeResidualExample.initial`), one firing. It is admitted: `0` is not present.
+  (`NativeResidualExample.initial`), one firing. It is admitted: `0` is absent.
 * **A reachable protocol history that has born `0` and consumed it** (`history_run`): from the initial
   protocol state (`start`), transaction `0` makes the occurrence `0` and transaction `1` takes it. The
   store is then empty again, the store the native state holds, and `0` is born.
@@ -19,7 +19,7 @@ two on a concrete native run.
   never born, the protocol realizes the same native run.
 
 Both protocol states hold the same store, the present occurrences of the native state; only their
-born ledgers differ. Missing-only freshness cannot tell them apart; the runtime can.
+born ledgers differ. Absent-only freshness cannot tell them apart; the runtime can.
 -/
 
 set_option autoImplicit false
@@ -37,9 +37,9 @@ noncomputable def makerRun :
     Interface.Step.Run (native (S := tiny) (O := ℕ) (Γ := ([] : Ctx tiny)) (sort := ())).toStep initial :=
   .cons (maker 0 none).toNative (maker_realized 0 none) (.nil _)
 
-/-- **The native run is fresh under missing-only freshness**: the identity it makes is missing from the
+/-- **The native run is fresh under absent-only freshness**: the identity it makes is absent from the
 present occurrences. -/
-theorem maker_fresh : Disjoint (maker 0 none).selection.made.toFinset initial.state.present := by
+theorem maker_absent : Disjoint (maker 0 none).selection.made.toFinset initial.state.present := by
   show Disjoint [0].toFinset (∅ : Finset ℕ)
   simp
 
@@ -115,7 +115,7 @@ theorem maker_realized_from_start :
 
 end NativeFreshnessControls
 
-#print axioms NativeFreshnessControls.maker_fresh
+#print axioms NativeFreshnessControls.maker_absent
 #print axioms NativeFreshnessControls.history_run
 #print axioms NativeFreshnessControls.maker_not_fresh
 #print axioms NativeFreshnessControls.maker_not_realized

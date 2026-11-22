@@ -31,7 +31,7 @@ integer, or a fraction that may happen to be whole, read through its value.
 * `OnTheStep`: a grounded table inside the knowledge of the first-order step; the knowledge
   identifies stored numbers of equal value, and identifies every pair of storage variants exactly
   when the table respects the value lens; then re-storing every numeral of a program, its knowledge
-  and its query changes no answer, for counts and for none queries, over every run; the converse by a
+  and its query changes no answer, for counts and for absence, over every run; the converse by a
   one-row program; a computing rule that fires, with its answer, as witness.
 * `Decision`: evaluation commutes with substitution; under the value law the knowledge's equality is
   one evaluation and one comparison, and without it that test is not even stable under substitution.

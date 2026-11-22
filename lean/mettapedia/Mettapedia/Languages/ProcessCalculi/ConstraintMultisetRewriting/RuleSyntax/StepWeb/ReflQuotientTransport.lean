@@ -16,7 +16,7 @@ compared modulo the bag laws. Here the finite program of `FiniteComm` runs at it
 * `quotient_admits`: for every rule without checks and collect query, an admitted firing at `X` is admitted at `QX`,
   with the same result. Every rule of the finite program is such a rule (`program_quotient_admits`): the
   transitions of the syntactic step are transitions of the quotient step, a functional simulation. The
-  hypothesis excludes checks and collect query: a none check asks that no row be equal to a pattern, and `QX`
+  hypothesis excludes checks and collect query: an absence check asks that no row be equal to a pattern, and `QX`
   equates more terms than `X`.
 
 ## COMM at the quotient frame
@@ -700,9 +700,9 @@ theorem comm_one_transition_bag (label : O → Pattern) (t u channel A B : Patte
     fun o other₁ other₂ => ?_, ⟨σ, solvedσ⟩, reads⟩
   · show fire C.present ((commSelection first second made₁ made₂).commit (T := Unit)) = _
     simp [fire, Selection.commit, commSelection]
-  · have missing : o ∉ (commAtQ ρ first second made₁ made₂).selection.made := by
+  · have absent : o ∉ (commAtQ ρ first second made₁ made₂).selection.made := by
       simp [commAtQ, commSelection, other₁, other₂]
-    exact (Firing.result_label_other (X := QX) (s := embed label C) _ missing).trans (psubst_none (label o))
+    exact (Firing.result_label_other (X := QX) (s := embed label C) _ absent).trans (psubst_none (label o))
 
 #print axioms quotientMap
 #print axioms quotientMap_not_reflects

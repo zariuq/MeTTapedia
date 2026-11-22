@@ -3,16 +3,16 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 /-!
 # A premise over the whole store presents every question of the store
 
-`Boundary.whole_presents_none` presents "make `12` where `11` is not present" by one rewrite `{...rest} ⟶ {12,
+`Boundary.whole_presents_absence` presents "make `12` where `11` is absent" by one rewrite `{...rest} ⟶ {12,
 ...rest}` whose premise asks a relation environment of the whole store. A relation environment of the framework
 is an arbitrary function of a relation's name and its instantiated arguments (`RelationEnv.tuples`). With the same
 rewrite and the same proof, it presents "make `made` where `allowed` holds of the store" for **every** Boolean
 predicate `allowed` on stores (`oracle_step_iff`; modulo the equations, for every predicate that does not depend
-on the order of the store, `oracle_semanticStep_iff`): none queries, the count of `Examples.countOne`
+on the order of the store, `oracle_semanticStep_iff`): absence, the count of `Examples.countOne`
 (`count_presented`), or any other question of the whole store.
 
 So a presentation whose premises may ask the relation environment about the whole store is a presentation by an
-oracle on the store: what it shows about none queries it shows about every collect query, and it marks no limit of the format.
+oracle on the store: what it shows about absence it shows about every collect query, and it marks no limit of the format.
 The boundary of `Boundary` is a boundary of presentations whose rewrites ask nothing of the store beyond what they
 match.
 -/

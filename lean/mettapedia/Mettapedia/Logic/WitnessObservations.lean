@@ -39,7 +39,7 @@ theorem covers_iff_count_eq (visible world : Finset W) (predicate : W → Prop) 
   exact ⟨congrArg Finset.card,
     fun same => Finset.eq_of_subset_of_card_le (matchingWitnesses_subset visible world predicate included) (by omega)⟩
 
-theorem none_iff_witness_retention (visible world : Finset W) (predicate : W → Prop) [DecidablePred predicate]
+theorem absence_iff_witness_retention (visible world : Finset W) (predicate : W → Prop) [DecidablePred predicate]
     (included : visible ⊆ world) :
     (matchingWitnesses visible predicate = ∅ ↔ matchingWitnesses world predicate = ∅) ↔
       ((matchingWitnesses world predicate).Nonempty → (matchingWitnesses visible predicate).Nonempty) := by
@@ -48,8 +48,8 @@ theorem none_iff_witness_retention (visible world : Finset W) (predicate : W →
   simp only [← Finset.not_nonempty_iff_eq_empty, not_iff_not]
   exact ⟨Iff.mpr, fun backward => ⟨forward, backward⟩⟩
 
-/-- All witness-selective none observations recover exact coverage. -/
-theorem covers_iff_all_filtered_none (visible world : Finset W) (predicate : W → Prop)
+/-- All witness-selective absence observations recover exact coverage. -/
+theorem covers_iff_all_filtered_absence (visible world : Finset W) (predicate : W → Prop)
     (included : visible ⊆ world) :
     Covers visible world predicate ↔ ∀ test : W → Prop,
       (¬ ∃ witness ∈ visible, predicate witness ∧ test witness) ↔
@@ -58,10 +58,10 @@ theorem covers_iff_all_filtered_none (visible world : Finset W) (predicate : W �
   constructor
   · intro covered test
     constructor
-    · intro missing ⟨witness, member, accepted, observed⟩
-      exact missing ⟨witness, covered witness member accepted, accepted, observed⟩
-    · intro missing ⟨witness, member, accepted, observed⟩
-      exact missing ⟨witness, included member, accepted, observed⟩
+    · intro absent ⟨witness, member, accepted, observed⟩
+      exact absent ⟨witness, covered witness member accepted, accepted, observed⟩
+    · intro absent ⟨witness, member, accepted, observed⟩
+      exact absent ⟨witness, included member, accepted, observed⟩
   · intro observations witness member accepted
     by_contra omitted
     have noneVisible : ¬ ∃ value ∈ visible, predicate value ∧ value = witness := by
@@ -69,7 +69,7 @@ theorem covers_iff_all_filtered_none (visible world : Finset W) (predicate : W �
       exact omitted present
     exact (observations (· = witness)).mp noneVisible ⟨witness, member, accepted, rfl⟩
 
-theorem none_does_not_force_coverage :
+theorem absence_does_not_force_coverage :
     let visible : Finset Bool := {false}
     let world : Finset Bool := {false, true}
     visible ⊆ world ∧
@@ -79,7 +79,7 @@ theorem none_does_not_force_coverage :
   simp only [Covers]
   decide +kernel
 
-theorem missing_only_witness_changes_none :
+theorem missing_only_witness_changes_absence :
     matchingWitnesses (∅ : Finset Bool) (· = true) = ∅ ∧ matchingWitnesses {true} (· = true) ≠ ∅ := by
   decide +kernel
 

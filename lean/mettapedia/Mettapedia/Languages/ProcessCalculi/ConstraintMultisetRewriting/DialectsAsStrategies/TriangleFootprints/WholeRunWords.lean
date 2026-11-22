@@ -18,7 +18,7 @@ observation guards.
   each firing reads (`heRows`), against the rows of PeTTa's complete call request (`pettaRows`),
   both in store order, each positioned row once.
 * *Guards*: the region each firing observes completely. A region of no row is vacuous; a region
-  that holds no row of the program but could hold one is a none guard.
+  that holds no row of the program but could hold one is an absence guard.
 
 ## Results
 
@@ -29,7 +29,7 @@ observation guards.
 * `whole_run_guards` (**the exact difference**): every row an HE firing before the query guards is
   a declaration `(: a T)` of an atom `a` of the call, PeTTa's call request guards no declaration,
   and HE's entry guard is not vacuous: it holds `(: f T)` for every `T`. So the words differ by
-  HE's none guards over the call's declarations: the type-directed entry (the declarations of
+  HE's absence guards over the call's declarations: the type-directed entry (the declarations of
   `f` and of the arguments, observed together) and one cast guard per atom of the call (`f` again,
   and each argument; a grounded argument's guard is vacuous).
 * `declaration_race`: the difference is observable. A commit that adds `(: f T)` spoils HE's entry

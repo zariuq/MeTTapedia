@@ -106,7 +106,7 @@ theorem normal_iff_no_program_firing (configuration : ComputationProfile.Configu
   · intro halted result reduction
     obtain ⟨instruction, _⟩ := source_complete (presentation := program.presentation) reduction
     exact halted ⟨instruction.compile qualified configuration.fresh,
-      (instruction.admitted_iff qualified _).mpr configuration.fresh_not_present,
+      (instruction.admitted_iff qualified _).mpr configuration.fresh_absent,
       instruction_permitted program qualified instruction configuration.fresh⟩
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.ComputationProgram

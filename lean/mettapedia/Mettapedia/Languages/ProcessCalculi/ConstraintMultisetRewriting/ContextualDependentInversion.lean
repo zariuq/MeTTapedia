@@ -53,8 +53,8 @@ theorem lookup_complete {n m : Nat} (forward : Ren n m) (injective : Function.In
     (source : Fin n) : lookup forward (forward source) = some source := by
   cases found : lookup forward (forward source) with
   | none =>
-      have notMem := (List.find?_eq_none.mp found) source (List.mem_finRange source)
-      simp at notMem
+      have absent := (List.find?_eq_none.mp found) source (List.mem_finRange source)
+      simp at absent
   | some other => exact congrArg some (injective (lookup_sound forward found))
 
 theorem lookup_exact {n m : Nat} (forward : Ren n m) (injective : Function.Injective forward) :
@@ -206,10 +206,10 @@ theorem invert_eq_none_iff {n m : Nat} (forward : Ren n m) (inverse : Partial n 
     have found := (invert_eq_some_iff forward inverse exact target body).mpr same
     rw [missing] at found
     cases found
-  · intro notMem
+  · intro absent
     cases found : invert inverse target with
     | none => rfl
-    | some body => exact False.elim (notMem ⟨body, invert_sound target forward inverse exact body found⟩)
+    | some body => exact False.elim (absent ⟨body, invert_sound target forward inverse exact body found⟩)
 
 end ContextualDependentInversion
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

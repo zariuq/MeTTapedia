@@ -186,7 +186,8 @@ def rhoTypedDepthSensitiveAtom (color : CostStaticColor) :
     · simp [WellSorted.isObjectPattern]
     · rfl
     · intro presentation membership
-      simp [Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt]
+      exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+        simp [Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt])
 
 /-- The typed witness is genuinely depth-sensitive: inserting it one binder
 above its retained support preserves index zero, while inserting it three

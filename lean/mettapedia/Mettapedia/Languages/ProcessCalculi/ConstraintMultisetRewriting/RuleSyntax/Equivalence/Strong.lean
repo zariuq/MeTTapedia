@@ -8,11 +8,11 @@ A candidate lets the right side choose fresh identities for the rows a context a
 Law 2 that choice is immaterial:
 
 * **Restoring identities** (`exists_perm_restore`): when the identities `ids` and their renaming
-  `π ids` are both missing from `W`, some permutation fixes `W` pointwise and sends each `π o` back to
+  `π ids` are both absent from `W`, some permutation fixes `W` pointwise and sends each `π o` back to
   `o`; it is a product of transpositions.
 * **Rows with the same identities** (`Congruent.addRows_same`): congruent systems with the same rows
-  added at the same identities, missing from both, are congruent. The proof renames the right side's
-  rows back (Law 1) and forgets the labels of missing identities (Law 2).
+  added at the same identities, absent from both, are congruent. The proof renames the right side's
+  rows back (Law 1) and forgets the labels of absent identities (Law 2).
 * **Every context with the same identities** (`Congruent.basic_same`, `Congruent.applyAll_same`), and
   hence **soundness for contextual equivalence** in its plain form (`congruent_contextual`): under every
   composite context applying to both, congruent systems reach the same barbs.
@@ -35,7 +35,7 @@ section Permutations
 
 variable {O : Type uOcc} [DecidableEq O]
 
-/-- **Restoring identities**: when `ids` and its renaming are missing from `W`, a permutation fixes `W`
+/-- **Restoring identities**: when `ids` and its renaming are absent from `W`, a permutation fixes `W`
 and sends each renamed identity back. -/
 theorem exists_perm_restore (π : Equiv.Perm O) (W : Finset O) (ids : Finset O) :
     Disjoint ids W → Disjoint (ids.map π.toEmbedding) W →
@@ -81,7 +81,7 @@ variable {X : Frames Tm Hom} {O : Type uOcc} [DecidableEq O] {E : Extensions.{uO
   {B : Type uB} {obs : B → State Tm O → Prop}
 
 /-- **The same rows at two sets of fresh identities**: adding them at `ids` or at the renamed `π ids`,
-both missing from the state, gives congruent systems. -/
+both absent from the state, gives congruent systems. -/
 theorem rows_rename_congruent
     (invariantRename : ∀ (π : Equiv.Perm O) β s, obs β (renameState π s) ↔ obs β s)
     (modulo : ∀ {s t : State Tm O}, Modulo X s t → ∀ β, obs β s → obs β t)

@@ -167,7 +167,7 @@ theorem underRoundAt_eq_of_dead (fuel : Nat) : ∀ (depth : Nat) {Θ : Context S
           certifyNormal headTypingUnique rootComplete strengthening fuel problem with
       | stuck => exact absurd computed moving
       | progress update smaller => rfl
-      | refuted missing => rfl
+      | refuted absent => rfl
 
 /-- **Every run that the dead-binder family decides, the under-binder family decides with the same outcome.** -/
 theorem under_run_of_dead (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -215,7 +215,7 @@ theorem underRoundAt_view (fuel depth : Nat) {Θ : Context S.R} (problem : Equat
       headTypingUnique rootComplete strengthening fuel problem with
   | stuck => rfl
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
   Keeps (reducer fuel term) (reducer (fuel + 1) term))
@@ -358,7 +358,7 @@ theorem underSearch_keeps (fuel : Nat) {Θ : Context S.R}
               exact underAt_keeps facts roots heads algebra rigid complete declared choices reducer strengthening sn
                 fuel inner keeps _ first firstSmaller (permuted.perm (List.rotate_perm problem k).symm) computed)
             fired
-      | refuted missing =>
+      | refuted absent =>
           rw [computed] at fired
           cases fired
 
@@ -385,7 +385,7 @@ theorem underStep_keeps (fuel : Nat) {Θ : Context S.R}
       rw [computed] at fired
       cases fired
       exact keepsDead problem _ _ permuted computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
 
@@ -447,9 +447,9 @@ theorem under_decided_of_firing
       ((∃ state finished, run ((underFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((underFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((underFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (underSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -490,7 +490,7 @@ theorem tower_under_decided_of_firing
       run (underTower.solver larger) problem larger = run (underTower.solver budget) problem budget ∧
       ((∃ state finished, run (underTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (underTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (underTower.solver larger) problem larger = .refuted absent)) :=
   under_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices

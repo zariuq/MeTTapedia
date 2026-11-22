@@ -326,7 +326,7 @@ theorem mixedRound_eq_of_base (fuel : Nat) {Θ : Context S.R} {problem : Equatio
       certifyNormal headTypingUnique rootComplete strengthening fuel problem with
   | stuck => exact absurd computed moving
   | progress update smaller => rfl
-  | refuted missing => rfl
+  | refuted absent => rfl
 
 /-- **Every run that the base family decides, the mixed family decides with the same outcome.** -/
 theorem mixed_run_of_base (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -363,7 +363,7 @@ theorem mixedRound_not_stuck_of_normal (fuel : Nat) {Θ : Context S.R} {problem 
       rw [computed]
       exact fun impossible => by cases impossible
   | progress update smaller => exact fun impossible => by cases impossible
-  | refuted missing => exact fun impossible => by cases impossible
+  | refuted absent => exact fun impossible => by cases impossible
 
 /-- **The mixed family's readers**: a reader of the base family, or the decomposition between elimination spines of
 the η-long prepared store. -/
@@ -482,7 +482,7 @@ theorem mixedRound_closure (fuel : Nat) :
       cases fired
       exact baseRound_closure facts roots heads algebra rigid complete declared choices reducer root normalizes
         certifyNormal headTypingUnique rootComplete strengthening sn directed fuel _ _ _ permuted computed
-  | refuted missing =>
+  | refuted absent =>
       rw [computed] at fired
       cases fired
 
@@ -508,9 +508,9 @@ theorem mixed_decided_of_firing
       ((∃ state finished, run ((mixedFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
               .solved state finished ∧ (frames S.levels).Principal problem state.answer) ∨
-        (∃ missing, run ((mixedFamily facts roots heads algebra rigid complete declared choices reducer root
+        (∃ absent, run ((mixedFamily facts roots heads algebra rigid complete declared choices reducer root
             normalizes certifyNormal headTypingUnique rootComplete strengthening).solver larger) problem larger =
-              .refuted missing)) :=
+              .refuted absent)) :=
   (mixedSettledOfConst facts roots heads algebra rigid complete declared choices reducer root normalizes
     certifyNormal headTypingUnique rootComplete strengthening stable (fun problem => PermutedMiller S.levels problem)
     (fun held nonempty => by
@@ -576,7 +576,7 @@ theorem tower_mixed_decided_of_firing
       run (mixedTower.solver larger) problem larger = run (mixedTower.solver budget) problem budget ∧
       ((∃ state finished, run (mixedTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (mixedTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (mixedTower.solver larger) problem larger = .refuted absent)) :=
   mixed_decided_of_firing (S := setting) TowerModel.facts TowerModel.roots TowerModel.heads TowerModel.algebra
     ContextualDependentPiSpine.Controls.rigid TowerModel.complete
     ContextualDependentInversion.Controls.declarations_formed ExecutableTowerChoices.choices
@@ -599,7 +599,7 @@ theorem tower_mixed_decided_of_mixedReads
       run (mixedTower.solver larger) problem larger = run (mixedTower.solver budget) problem budget ∧
       ((∃ state finished, run (mixedTower.solver larger) problem larger = .solved state finished ∧
           (frames setting.levels).Principal problem state.answer) ∨
-        (∃ missing, run (mixedTower.solver larger) problem larger = .refuted missing)) :=
+        (∃ absent, run (mixedTower.solver larger) problem larger = .refuted absent)) :=
   tower_mixed_decided_of_firing (fun permuted nonempty => by
       obtain ⟨bound, eventually⟩ := reads permuted nonempty
       exact ⟨bound, fun larger enough => mixedRound_not_stuck_of_mixedReads (S := setting) TowerModel.facts

@@ -50,20 +50,20 @@ open Mettapedia.OSLF.MeTTaIL.Reflection
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 
 /-- **The divergence.**  In a profile carrying two presentations with
-distinct quote constructors, the quote of one presentation is a
-restoration boundary for the profile while *not* being a canonicalization
-boundary for the other presentation's declaration. -/
+distinct quote constructors, the quote of a presentation that keeps quoted
+code closed is a restoration boundary for the profile while *not* being a
+canonicalization boundary for the other presentation's declaration. -/
 theorem quoteBoundary_diverges
     (profile : ReflectionProfile)
     (owner other : ReflectivePresentationDecl)
     (ownerMem : owner ∈ profile.presentations)
+    (ownerClosed : owner.quoteScope = .closed)
     (distinct : owner.quoteConstructor ≠ other.quoteConstructor) :
     ReflectiveContextSupport.isQuoteConstructor profile
         owner.quoteConstructor = true ∧
       (owner.quoteConstructor == other.quoteConstructor) = false := by
   constructor
-  · unfold ReflectiveContextSupport.isQuoteConstructor
-    exact List.any_eq_true.mpr ⟨owner, ownerMem, beq_self_eq_true _⟩
+  · exact ReflectiveContextSupport.isQuoteConstructor_of_mem ownerMem ownerClosed
   · exact beq_eq_false_iff_ne.mpr distinct
 
 /-- **The consequence for keyed canonicalization.**  At a foreign quote
@@ -124,6 +124,7 @@ theorem restorationDepth_ne_keyDepth_at_foreignQuote
     (profile : ReflectionProfile)
     (owner declaration : ReflectivePresentationDecl)
     (ownerMem : owner ∈ profile.presentations)
+    (ownerClosed : owner.quoteScope = .closed)
     (foreign : owner.quoteConstructor ≠ declaration.quoteConstructor)
     (depth : Nat) (positive : depth ≠ 0) :
     (if ReflectiveContextSupport.isQuoteConstructor profile
@@ -132,15 +133,23 @@ theorem restorationDepth_ne_keyDepth_at_foreignQuote
         then 0 else depth) := by
   have restoration :
       ReflectiveContextSupport.isQuoteConstructor profile
-        owner.quoteConstructor = true := by
-    unfold ReflectiveContextSupport.isQuoteConstructor
-    exact List.any_eq_true.mpr ⟨owner, ownerMem, beq_self_eq_true _⟩
+        owner.quoteConstructor = true :=
+    ReflectiveContextSupport.isQuoteConstructor_of_mem ownerMem ownerClosed
   have keying :
       (owner.quoteConstructor == declaration.quoteConstructor) = false :=
     beq_eq_false_iff_ne.mpr foreign
   rw [restoration, keying]
   simp only [if_true, if_false, Bool.false_eq_true]
   exact fun contra => positive contra.symm
+
+/-- **A reaching presentation draws no restoration boundary.**  Its binders
+reach into its quotations, so its quote constructor is an ordinary
+constructor for supported substitution. -/
+example (presentation : ReflectivePresentationDecl)
+    (reaching : presentation.quoteScope = .reaching .apply) :
+    ReflectiveContextSupport.isQuoteConstructor
+        { presentations := [presentation] } presentation.quoteConstructor = false := by
+  simp [ReflectiveContextSupport.isQuoteConstructor, reaching]
 
 /-- Restated as the design consequence: the two disciplines agree exactly
 when the constructor's status is the same under both readings — which,

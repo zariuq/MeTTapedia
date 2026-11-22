@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mathlib.Data.List.Sort
+import Mettapedia.Data.List.CachedMergeSort
 
 /-!
 # A lexicographic order on patterns that a MeTTa runtime can evaluate
@@ -255,6 +256,24 @@ instance : Std.Antisymm PatternLe :=
 
 /-- Insertion sort by the lexicographic order. -/
 def sortLex (patterns : List Pattern) : List Pattern := patterns.insertionSort PatternLe
+
+/-- The lexicographic value agrees with merge sort using the same keys. -/
+theorem sortLex_eq_mergeSort (patterns : List Pattern) :
+    sortLex patterns = patterns.mergeSort (fun x y => lexLe (ser x) (ser y)) := by
+  have compare_eq (first second : Pattern) :
+      decide (PatternLe first second) = lexLe (ser first) (ser second) := by
+    change decide (lexLe (ser first) (ser second) = true) = lexLe (ser first) (ser second)
+    cases lexLe (ser first) (ser second) <;> rfl
+  simpa only [sortLex, compare_eq] using
+    (List.mergeSort_eq_insertionSort PatternLe patterns).symm
+
+private def sortLexCached (patterns : List Pattern) : List Pattern :=
+  List.mergeSortWithOrderedCheck ser lexLe patterns
+
+@[csimp] theorem sortLex_eq_cached : sortLex = sortLexCached := by
+  funext patterns
+  exact (sortLex_eq_mergeSort patterns).trans
+    (List.mergeSortWithOrderedCheck_eq ser lexLe lexLe_trans patterns).symm
 
 theorem sortLex_perm (patterns : List Pattern) : List.Perm (sortLex patterns) patterns :=
   List.perm_insertionSort PatternLe patterns

@@ -52,12 +52,12 @@ in its statement, with the composition of systems named in the statement of the 
   states; the tensor is neither commutative, associative nor unital on the nose, and is all three up
   to weak barbed bisimilarity on represented states.
 * `RhoTarget`: the faithful calculus is persistent, and is a target of the separation for the
-  none-guarded and the positive-tell sources of `NullsOnTheStep.ParallelClosed`.
+  absence-guarded and the positive-tell sources of `NullsOnTheStep.ParallelClosed`.
 * `Strict`: the strict separation under the uniform criterion, with composition of systems restricted
   to solvable joint knowledge (`strict_separation_solvable`): the reflective calculus embeds into the
   step, and the step does not embed into it, for every relation on the reflective side that respects
   reachable success (`no_translation_any`); the negative half is witnessed by a rule guarded by the
-  none queries of a row.
+  absence of a row.
 * `Junk`: the control for the restriction: with every pair composable, knowledge without a solution
   switches off every system, the translation of a process included, and the same criterion separates
   the reflective calculus from the states of its own four-rule program
@@ -67,7 +67,7 @@ in its statement, with the composition of systems named in the statement of the 
   `0` is not a unit.
 * `DividingLine`: in the restricted composition, a system whose rules have only equation checks and
   no collect pattern is switched off by no composable neighbour, whatever the neighbour's rows and
-  rules (`succeeds_beside`); so every switch has a none check, a count check or a collect pattern
+  rules (`succeeds_beside`); so every switch has an absence check, a count check or a collect pattern
   in the switched system (`switched_has_guard`). The calculus of such systems is not switchable, and
   is not persistent in the sense of `ParallelClosed`, whose persistence quantifies over every pair.
 * `DividingLineControls`: a neighbour's rule takes the system's success row (rules cross; success,
@@ -81,14 +81,14 @@ in its statement, with the composition of systems named in the statement of the 
   holes at top level beside a coordinating process; with a guarded hole the argument fails in the
   faithful calculus, and Gorla's Proposition 5.6 is the missing step.
 * `Witnesses`: restricting composition strengthens the negative half; a count check and a collect query
-  pattern witness the separation as well as none queries.
+  pattern witness the separation as well as absence.
 * `TwoFirings`: an instance of `succeeds_beside` whose success needs two replayed firings, beside a
   rival for the same row.
 * `GroundCollect`: a collect query over a ground pattern is switched off by a neighbour whose row has an
   unknown of its own, and not by a ground row.
 * `MustReading`: with success read on every maximal run, a positive system is switched off by a
   positive neighbour; `succeeds_beside` is about success that may be reached.
-* `Counting`, `Idempotence`, `Cancellation`: under this criterion the systems with no none check,
+* `Counting`, `Idempotence`, `Cancellation`: under this criterion the systems with no absence check,
   count check or collect pattern do not embed into the reflective calculus either, for two reasons
   that come from a program being a set of rules: there are uncountably many programs and countably
   many processes; and a program beside itself is the program, while the equations of the reflective

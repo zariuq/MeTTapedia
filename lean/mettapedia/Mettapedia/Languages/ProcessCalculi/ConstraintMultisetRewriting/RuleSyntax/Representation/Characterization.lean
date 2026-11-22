@@ -41,7 +41,7 @@ finiteness and no effectiveness. So with programs of any size, far too many rela
 * **Second controls.** Finite programs also consume boundedly: `allAtOnce_not_finite`, the frame-closed relation
   "some number of copies of `a` become as many copies of `b`, at once" is the rewriting of no finite list of
   rules, of any kind. And frame closure is needed: `wholeStore_not_presented`, the relation that rewrites the
-  store `{a}` to `{b}` and no other store is the rewriting of no set of positive rules; a none check is what
+  store `{a}` to `{b}` and no other store is the rewriting of no set of positive rules; an absence check is what
   such a relation needs (`Presentation.spawn_refused_beside`, `Presentation.Boundary`).
 
 ## What is not characterized

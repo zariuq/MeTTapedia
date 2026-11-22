@@ -1006,7 +1006,7 @@ theorem translate_covers {free : FreeSortContext}
     exact ⟨nameOf t, by rw [tName.eq_1, ht, Option.map_some]⟩
   · intro bound name _ _ d Γ ρ _ _
     exact ⟨freeT name, tName.eq_2 ρ name⟩
-  · intro bound process _ _ ih hb d Γ ρ _ safe
+  · intro bound process _ ih hb d Γ ρ _ safe
     change binderSafeAt "NQuote" d (.apply "NQuote" [process]) = true at safe
     show ∃ c, tName ρ (.apply "NQuote" [process]) = some c
     have safe0 := safe_quote safe

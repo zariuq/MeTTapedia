@@ -114,23 +114,8 @@ theorem infer_lifted_rule_empty_on_drop_record
     or_false] at membership
   rcases membership with rfl | rfl | rfl | rfl | rfl
   all_goals
-    apply generic_lifted_record_rule_empty_of_decode_mismatch host _ record
-      rest nodes nextId root serviceState
-      (DerivationCheckMachineLanguageDef.a "dcm:infer"
-        [v "id", v "rule", v "parents", v "evidence", v "conclusion",
-         v "relevance"])
-      (DerivationCheckMachineLanguageDef.a "dcm:drop" [id])
-    · simp [sourceInstruction?,
-        DerivationCheckMachineLanguageDef.inferIndexFaultTransition,
-        DerivationCheckMachineLanguageDef.inferRelevanceFaultTransition,
-        DerivationCheckMachineLanguageDef.inferParentFaultTransition,
-        DerivationCheckMachineLanguageDef.inferRuleFaultTransition,
-        DerivationCheckMachineLanguageDef.inferAcceptTransition,
-        DerivationCheckMachineLanguageDef.run,
-        DerivationCheckMachineLanguageDef.instructionsCons,
-        DerivationCheckMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.v,
-        DerivationWordMachineLanguageDef.v]
+    refine generic_lifted_record_rule_empty_of_decode_mismatch host _ record
+      rest nodes nextId root serviceState _ _ rfl ?_ recordDecoded ?_
     · simp [liftLeft, liftPattern,
         DerivationCheckMachineLanguageDef.inferIndexFaultTransition,
         DerivationCheckMachineLanguageDef.inferRelevanceFaultTransition,
@@ -142,10 +127,8 @@ theorem infer_lifted_rule_empty_on_drop_record
         DerivationCheckMachineLanguageDef.a,
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
-    · exact recordDecoded
-    · simp [decoded,
-        DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
+    · simp [decoded, DerivationWordMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.a, matchPattern, matchArgs]
 
 #print axioms infer_lifted_rule_empty_on_drop_record
 

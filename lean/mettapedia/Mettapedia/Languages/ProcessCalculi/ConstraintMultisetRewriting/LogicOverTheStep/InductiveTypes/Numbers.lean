@@ -34,7 +34,7 @@ rights and installs the junk schema. Three systems:
   (`withShortcut_membership`): the exact need of membership is that every row written is generated;
   the constructor discipline is the condition checkable at each firing without deciding membership.
   What the shortcut breaks is that a made row's premises are present when it is made: it makes the
-  row of two where the row of one is not present (`shortcut_skips_premise`).
+  row of two where the row of one is absent (`shortcut_skips_premise`).
 
 **Existence**: every generated row is reached from the empty store by a run of the owner
 (`owner_reaches`), so each "every run" statement above speaks of runs that exist.
@@ -394,9 +394,9 @@ theorem twoWriters_not_owned (k : Bool) :
     ctor_fires (activate := activate) (place := place) (process := owner) (d := ([], natRow zeroE))
       rfl (List.mem_cons_self ..) (x := []) rfl plain_empty
       fun _ member => absurd member List.not_mem_nil
-  have missing : ClosedBy contents (fun e => inNum (place e)) ∅ ProgramAdequacy.emptyStore :=
+  have absent : ClosedBy contents (fun e => inNum (place e)) ∅ ProgramAdequacy.emptyStore :=
     closedBy_empty _ _
-  have := survives (!k) (by cases k <;> decide) ∅ _ _ moved missing (natRow zeroE)
+  have := survives (!k) (by cases k <;> decide) ∅ _ _ moved absent (natRow zeroE)
     (by rw [exact]; exact Set.mem_insert _ _) rfl
   exact Set.notMem_empty _ this
 
@@ -480,7 +480,7 @@ theorem withShortcut_membership {C : Conf}
   exact natRules_generated_iff.mp (invariant r present inside)
 
 /-- **What the shortcut breaks**: from the empty store it makes the row of two while the row of one,
-its premise, is not present; a writer through the constructors leaves every row's premises present when
+its premise, is absent; a writer through the constructors leaves every row's premises present when
 it made it. -/
 theorem shortcut_skips_premise :
     ∃ C, processStep activate place shortcutWriter ProgramAdequacy.emptyStore C ∧

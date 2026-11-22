@@ -127,12 +127,12 @@ theorem process_reduction_does_not_become_equality :
         (drop (quote visible)) visible :=
   ⟨suspended_not_visible, process_drop_source_step visible⟩
 
-theorem output_payload_reaction_permission_is_not_granted :
+theorem output_payload_reaction_permission_is_absent :
     ¬ RhoScopedEquationEventControls.parallelPermission Srt.pr Op.out 1 := by
   intro impossible
   exact impossible
 
-theorem input_body_reaction_permission_is_not_granted :
+theorem input_body_reaction_permission_is_absent :
     ¬ RhoScopedEquationEventControls.parallelPermission Srt.pr Op.inp 1 := by
   intro impossible
   exact impossible
@@ -206,10 +206,10 @@ theorem visible_normalizes_to_one_occurrence : normalized visible = {visible} :=
   rw [RhoScopedConstructorInventory.output_components]
   rfl
 
-/-- A public none observer distinguishes the two stages. A comparison
+/-- A public absence observer distinguishes the two stages. A comparison
 that hides this intermediate state must state that restriction or arrange
 private preparation/atomic publication; endpoint agreement is insufficient. -/
-theorem public_none_distinguishes_staging
+theorem public_absence_distinguishes_staging
     (middle after : Configuration (Process []) (ContextualCommunicationProfiles.Occurrence []))
     (middleRep : Represents middle suspended) (afterRep : Represents after visible) :
     Check.Holds (ContextualCommunicationProfiles.action []) (ContextualCommunicationProfiles.action []).identity
@@ -228,18 +228,18 @@ theorem public_none_distinguishes_staging
     rw [mid, Multiset.mem_singleton] at member
     simp only [SubstitutionAction.apply_identity, member]
     exact Ne.symm suspended_not_visible
-  · intro missing
+  · intro absent
     have member : visible ∈ labels ContextualCommunicationProfiles.label after.present := by
       rw [final]
       exact Multiset.mem_singleton_self _
     obtain ⟨occurrence, present, same⟩ := Multiset.mem_map.mp member
-    have refused := missing occurrence present
+    have refused := absent occurrence present
     simp only [SubstitutionAction.apply_identity, same] at refused
     exact refused rfl
 
 /-- At the closed source context, the separating observation is also the
 actual universal guard entailment required by the CMR step. -/
-theorem public_none_entailment_distinguishes_staging
+theorem public_absence_entailment_distinguishes_staging
     (middle after : Configuration (Process []) (ContextualCommunicationProfiles.Occurrence []))
     (middleRep : Represents middle suspended) (afterRep : Represents after visible) :
     (ContextualCommunicationProfiles.action []).Entails middle.equations
@@ -248,7 +248,7 @@ theorem public_none_entailment_distinguishes_staging
     ¬ (ContextualCommunicationProfiles.action []).Entails after.equations
       (fun assignment => Check.Holds (ContextualCommunicationProfiles.action []) assignment
         ContextualCommunicationProfiles.label after.present (.predicate .none visible)) := by
-  obtain ⟨beforeCheck, afterCheck⟩ := public_none_distinguishes_staging middle after middleRep afterRep
+  obtain ⟨beforeCheck, afterCheck⟩ := public_absence_distinguishes_staging middle after middleRep afterRep
   constructor
   · intro assignment _
     have identity : assignment = (ContextualCommunicationProfiles.action []).identity := by

@@ -13,7 +13,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 
 ## Each hypothesis of a law is needed
 
-* **Law 1, new rows at missing identities** (`overlap_separates`): a row added at an identity present
+* **Law 1, new rows at absent identities** (`overlap_separates`): a row added at an identity present
   at one side only overwrites it there, and the barbs then differ.
 * **Law 2, the same support** (`support_separates`): the empty knowledge and the knowledge `y = y`
   have the same solutions. A rule with its own unknown, opened as `y` where `y` is not mentioned, binds
@@ -134,7 +134,7 @@ theorem guard_example (s : State Tm ℕ) :
   entailedGuard_congruent (fun _ h told => told (x, c 5) (List.mem_singleton_self _))
     (by simp [tellX, Rule.terms]) (by simp [tellX, Rule.terms]) ∅ s
 
-/-! ## Law 1 needs new rows at missing identities -/
+/-! ## Law 1 needs new rows at absent identities -/
 
 /-- **A context that overwrites a present identity separates a state from its renamed copy.** -/
 theorem overlap_separates :

@@ -286,7 +286,7 @@ def NormalizationSound {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         arguments = true),
     WellSorted.AvailableOpenArguments.EquationForall₂
       source.costWholeReflectionProfile source.costWholeLanguage targetFree
@@ -310,7 +310,7 @@ def NormalizationSound {source : CIGSLT}
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-      binderSafeListAt presentation.quoteConstructor available.length
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
         elements = true),
     WellSorted.AvailableOpenElements.EquationForall₂
       source.costWholeReflectionProfile source.costWholeLanguage targetFree
@@ -549,21 +549,12 @@ theorem CostSemanticTree.normalizationSound
         simpa [current, WellSorted.isObjectPattern] using object
       have argumentScope : ∀ presentation ∈
           source.costWholeReflectionProfile.presentations,
-          binderSafeListAt presentation.quoteConstructor available'.length
+          scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available'.length
             arguments = true := by
         intro presentation presentationMembership
-        have notThisQuote : rule.label ≠ presentation.quoteConstructor := by
-          intro labelEquality
-          have detected : ReflectiveContextSupport.isQuoteConstructor
-              source.costWholeReflectionProfile rule.label = true := by
-            unfold ReflectiveContextSupport.isQuoteConstructor
-            rw [List.any_eq_true]
-            exact ⟨presentation, presentationMembership, by simp [labelEquality]⟩
-          rw [detected] at ordinary
-          contradiction
-        exact binderSafeListAt_of_binderSafeAt_apply_of_ne
-          presentation.quoteConstructor rule.label available'.length arguments
-          notThisQuote (scope presentation presentationMembership)
+        have notThisQuote :=
+          ReflectiveContextSupport.not_sealing_of_ordinary presentationMembership ordinary
+        exact scopeSafeListAt_of_apply notThisQuote (scope presentation presentationMembership)
       have assembled := (childrenSound argumentCanonical argumentObjects
         argumentScope).assembleOrdinary membership notBareCollection ordinary
       have leftEndpoint :
@@ -619,7 +610,7 @@ theorem CostSemanticTree.normalizationSound
             source.costWholeReflectionProfile
             (available' ++ outer').length (.apply rule.label arguments) := by
         intro presentation presentationMembership
-        exact binderSafeAt_mono presentation.quoteConstructor
+        exact scopeSafeAt_mono
           (scope presentation presentationMembership) (by simp)
       have argumentsTyped :
           WellSorted.ArgumentsHaveTypes source.costWholeLanguage targetFree
@@ -912,7 +903,7 @@ theorem CostSemanticTree.normalizationSound
             simpa [current, WellSorted.isObjectPattern] using object
           have elementScope : ∀ presentation ∈
               source.costWholeReflectionProfile.presentations,
-              binderSafeListAt presentation.quoteConstructor available'.length
+              scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available'.length
                 elements = true := by
             intro presentation presentationMembership
             simpa [binderSafeAt] using scope presentation presentationMembership
@@ -980,19 +971,19 @@ theorem CostSemanticTree.normalizationSound
         source.costWholeReflectionProfile available'.length argument := by
       intro presentation presentationMembership
       have parts :
-          binderSafeAt presentation.quoteConstructor available'.length argument = true ∧
-            binderSafeListAt presentation.quoteConstructor available'.length
+          scopeSafeAt presentation.quoteScope presentation.quoteConstructor available'.length argument = true ∧
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available'.length
               arguments = true := by
         simpa [binderSafeListAt] using scope presentation presentationMembership
       exact parts.1
     have tailScope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available'.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available'.length
           arguments = true := by
       intro presentation presentationMembership
       have parts :
-          binderSafeAt presentation.quoteConstructor available'.length argument = true ∧
-            binderSafeListAt presentation.quoteConstructor available'.length
+          scopeSafeAt presentation.quoteScope presentation.quoteConstructor available'.length argument = true ∧
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available'.length
               arguments = true := by
         simpa [binderSafeListAt] using scope presentation presentationMembership
       exact parts.2
@@ -1056,19 +1047,19 @@ theorem CostSemanticTree.normalizationSound
         source.costWholeReflectionProfile available'.length element := by
       intro presentation presentationMembership
       have parts :
-          binderSafeAt presentation.quoteConstructor available'.length element = true ∧
-            binderSafeListAt presentation.quoteConstructor available'.length
+          scopeSafeAt presentation.quoteScope presentation.quoteConstructor available'.length element = true ∧
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available'.length
               elements = true := by
         simpa [binderSafeListAt] using scope presentation presentationMembership
       exact parts.1
     have tailScope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
-        binderSafeListAt presentation.quoteConstructor available'.length
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available'.length
           elements = true := by
       intro presentation presentationMembership
       have parts :
-          binderSafeAt presentation.quoteConstructor available'.length element = true ∧
-            binderSafeListAt presentation.quoteConstructor available'.length
+          scopeSafeAt presentation.quoteScope presentation.quoteConstructor available'.length element = true ∧
+            scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available'.length
               elements = true := by
         simpa [binderSafeListAt] using scope presentation presentationMembership
       exact parts.2

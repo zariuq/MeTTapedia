@@ -1,6 +1,7 @@
 import Mathlib.Data.Fintype.EquivFin
 import Mettapedia.OSLF.MeTTaIL.ReflectiveInstantiation
 import Mettapedia.OSLF.MeTTaIL.ReflectiveQuoteAdmission
+import Mettapedia.OSLF.MeTTaIL.QuoteScopeSafety
 
 /-!
 # Contextual quotation: the core of reflective substitution and its views
@@ -1917,6 +1918,22 @@ theorem substituteUnder_scoped (scope : QuoteScope) {depth : Nat} {replacement b
       replacementSafe
   · rw [substituteUnder_closure]
     simpa using closureView_scoped (declaration := declaration) context bodySafe' replacementSafe
+
+/-- **The scope safety a declared scope asks is what its substitution needs.**
+A closed scope asks quotation sealing, which admits the body; a reaching scope
+asks only ordinary scope, which is all its view needs (`applyView_scoped`,
+`freezeView_scoped`, `closureView_scoped`). -/
+theorem substituteUnder_scoped_of_scopeSafeAt (scope : QuoteScope) {depth : Nat}
+    {replacement body : Pattern}
+    (safe : scopeSafeAt scope declaration.quoteConstructor (depth + 1) body = true)
+    (replacementSafe : replacement.isWellScopedAt 0 = true) :
+    (substituteUnder declaration scope depth replacement body).isWellScopedAt depth = true := by
+  have bodySafe := isWellScopedAt_of_scopeSafeAt safe
+  cases scope with
+  | closed =>
+      exact substituteUnder_scoped .closed
+        (sealed_of_quotesClosed (quotesClosed_of_binderSafeAt safe) depth) bodySafe replacementSafe
+  | reaching view => exact substituteUnder_scoped (.reaching view) rfl bodySafe replacementSafe
 
 end Declared
 

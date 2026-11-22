@@ -72,18 +72,18 @@ theorem discharge_preserves_later_models (A : SubstitutionAction T S)
   ResidualChecks.discharge_correct _ probe
     (fun check b ready => sound check b ready σ (refinement σ model)) checks
 
-/-- Definite the none query is exactly non-unifiability of every occurrence under
+/-- Definite absence is exactly non-unifiability of every occurrence under
 the same current equations. This is stable under equation refinement only
 while the occurrence world and the equality theory stay fixed. -/
-theorem entails_none_iff_apart (A : SubstitutionAction T S) (equations : EquationStore T)
+theorem entails_absent_iff_apart (A : SubstitutionAction T S) (equations : EquationStore T)
     (label : O → T) (world : Finset O) (pattern : T) :
     A.Entails equations (fun σ => (Check.predicate .none pattern).Holds A σ label world) ↔
       ∀ o ∈ world, A.Apart equations pattern (label o) := by
   constructor
-  · intro missing o member
+  · intro absent o member
     rintro ⟨σ, solved⟩
     obtain ⟨old, equation⟩ := (A.models_append _ _ _).mp solved
-    exact missing σ old o member (equation (pattern, label o) (by simp))
+    exact absent σ old o member (equation (pattern, label o) (by simp))
   · intro apart σ solved o member same
     apply apart o member
     refine ⟨σ, (A.models_append _ _ _).mpr ⟨solved, ?_⟩⟩
@@ -141,7 +141,7 @@ theorem region_eq_of_covered [DecidableEq O] (A : SubstitutionAction T S)
 
 /-- A negative scan is sound only with the coverage argument. Equations and
 the observed occurrence world are the same on both sides. -/
-theorem entails_none_iff_of_covered (A : SubstitutionAction T S)
+theorem entails_absent_iff_of_covered (A : SubstitutionAction T S)
     {equations : EquationStore T} {label : O → T} {visible world : Finset O} {pattern : T}
     (included : visible ⊆ world) (covered : CoversMatches A equations label visible world pattern) :
     A.Entails equations (fun σ => (predicate .none pattern).Holds A σ label visible) ↔
@@ -168,16 +168,16 @@ theorem entails_count_iff_of_covered [DecidableEq O] (A : SubstitutionAction T S
 
 /-- Equation refinement and adding only provably nonmatching occurrences
 preserve a negative observation. Adding an arbitrary row is not allowed. -/
-theorem none_after_refinement_and_extension [DecidableEq O] (A : SubstitutionAction T S)
+theorem absent_after_refinement_and_extension [DecidableEq O] (A : SubstitutionAction T S)
     {early late : EquationStore T} (refinement : A.Refines late early)
     {label : O → T} {world added : Finset O} {pattern : T}
-    (noneNow : A.Entails early (fun σ => (predicate .none pattern).Holds A σ label world))
+    (absentNow : A.Entails early (fun σ => (predicate .none pattern).Holds A σ label world))
     (newApart : ∀ o ∈ added, A.Apart late pattern (label o)) :
     A.Entails late (fun σ => (predicate .none pattern).Holds A σ label (world ∪ added)) := by
   intro σ model o member
   rcases Finset.mem_union.mp member with old | new
-  · exact noneNow σ (refinement σ model) o old
-  · exact ((entails_none_iff_apart A late label added pattern).mpr newApart) σ model o new
+  · exact absentNow σ (refinement σ model) o old
+  · exact ((entails_absent_iff_apart A late label added pattern).mpr newApart) σ model o new
 
 /-- A resource update cannot change this check's matching occurrences under
 the stated joint constraints. Equality checks do not inspect occurrences. -/

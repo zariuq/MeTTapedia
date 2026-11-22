@@ -89,7 +89,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
   `PredicateQueryAdmission`). For a world-local machine this is a strong bisimulation, and what a
   firing reads is exactly its region's rows.
 * `HEFootprints`: HE's read-only machine with honest footprints. An equation query reads the rows
-  that are not inert for it, together with the none guard of its region; moves through the cast
+  that are not inert for it, together with the absence guard of its region; moves through the cast
   lookup, the argument admission service, the context payload or a completed native return read the
   whole space; every other move reads nothing. All 81 transition rules depend on the space only
   through their footprint, so the bisimulation of `HEOnTheStep` is kept.
@@ -123,7 +123,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsA
 * `EntryToQuery`: HE's run from its entry configuration of a flat ground call reaches and fires the
   equation query, with HE's own services, and with the declared region of every firing.
 * `WholeRunWords`: on the literal-head ground fragment of flat calls, the rows HE reads from the
-  entry through the query are PeTTa's request rows; the words differ exactly by HE's none guards
+  entry through the query are PeTTa's request rows; the words differ exactly by HE's absence guards
   over the call's declarations, and adding a declaration races with HE but commutes with PeTTa.
 * `HonestWrites`: rows with stable identities on HE's world machine: add and remove write exactly
   one row, and the race holds on HE's world machine. Positions are no identities: a removal

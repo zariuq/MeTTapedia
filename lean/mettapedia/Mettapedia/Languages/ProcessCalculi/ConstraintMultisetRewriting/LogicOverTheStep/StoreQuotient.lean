@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.LogicOver
 # Adding a store, on the bisimilarity quotient
 
 `ContextGrades.beside D` puts a store beside the current one. Whether it is a map on the quotient by
-bisimilarity depends on what the observations see, and on identities, not on none queries.
+bisimilarity depends on what the observations see, and on identities, not on absence.
 
 ## Where it is well defined
 
@@ -14,12 +14,12 @@ On the ground first-order step under any rule set, observing the knowledge and t
 
 * `exists_renaming_of_bag`: stores with the same bag of labels differ by a label-keeping
   permutation of identities;
-* **`bisimilar_iff_renamed`**: bisimilarity is renaming, for every rule set, none queries-checking or not;
+* **`bisimilar_iff_renamed`**: bisimilarity is renaming, for every rule set, absence-checking or not;
 * `beside_renamed`, **`beside_respects_bisimilar`**: putting a store beside two bisimilar stores,
   fresh for both, gives bisimilar stores. So `beside D` is a map on the quotient for every program.
 
-The none query does not break this map; it breaks the map's preservation of steps, exactly outside the
-grade (`ContextGrades.noneChecks_union_iff`, `ContextGrades.none_invalidated_beside`), while positive
+Absence does not break this map; it breaks the map's preservation of steps, exactly outside the
+grade (`ContextGrades.absences_union_iff`, `ContextGrades.absence_invalidated_beside`), while positive
 firings are always kept (`ContextGrades.positive_possible_beside`).
 
 ## Controls
@@ -29,7 +29,7 @@ firings are always kept (`ContextGrades.positive_possible_beside`).
 * `coarse_breaks`: observing the knowledge only, a positive program that reads `T` and `U` makes a
   store of `W` and a store of `T` bisimilar (both dead), and beside a store of `U` only the second
   can fire. On a quotient that forgets labels, adding a store is not well defined, even without
-  none queries.
+  absence.
 -/
 
 set_option autoImplicit false

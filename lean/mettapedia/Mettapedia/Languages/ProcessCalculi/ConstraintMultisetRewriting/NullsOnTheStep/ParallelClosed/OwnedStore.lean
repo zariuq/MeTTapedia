@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTh
 The separation is about translations homomorphic on parallel composition. A presentation whose one
 term holds the whole store can test that whole term in one premise.
 
-`ownedStore` has one constructor, `Store`, holding a bag of rows, and one rule, `SpawnIfNone`:
+`ownedStore` has one constructor, `Store`, holding a bag of rows, and one rule, `SpawnIfAbsent`:
 `Store {...rows} ~> Store {T, ...rows}` provided the name `U` occurs nowhere in the rows. The
 premise is the format's freshness premise, an occurs check of a name over a term.
 
@@ -14,7 +14,7 @@ premise is the format's freshness premise, an occurs check of a name over a term
   nowhere in the rows**, under the engine's premise evaluator with every relation environment.
 * **An occurs check, not a test of rows** (`nested_blocks`, `other_fires`): at the store whose only
   row is `g(U)`, no row is `U` and the rule does not fire; at the store whose only row is `h`, it
-  fires. The none check of the step reads rows: a row that mentions `U` without being `U` does not
+  fires. The absence check of the step reads rows: a row that mentions `U` without being `U` does not
   refuse it.
 * `ownedStore_no_parallelContextRule`: the presentation has no parallel context rule, so the
   relation-level theorem does not apply to it, as it must not.
@@ -22,8 +22,8 @@ premise is the format's freshness premise, an occurs check of a name over a term
 No translation of the step into this presentation is stated here. A presentation whose rule tests the
 rows is `RuleSyntax.Presentation.wholeStore`: its one rewrite makes `12` where no row of the store is
 `11`, by a premise that asks a relation environment deciding that of the bag; read on composition
-terms its step is exactly the none step (`RuleSyntax.Presentation.whole_presents_none`). The
-translation of the none-guarded step into it, built from the rows, is `Interpreter.interpret`.
+terms its step is exactly the absence step (`RuleSyntax.Presentation.whole_presents_absence`). The
+translation of the absence-guarded step into it, built from the rows, is `Interpreter.interpret`.
 -/
 
 set_option autoImplicit false
@@ -47,9 +47,9 @@ def madeRow : Pattern := .apply "T" []
 /-- The whole store, as a pattern binding its rows to `rows`. -/
 def storeRows : Pattern := .collection .hashBag [] (some "rows")
 
-/-- **Make `T` where the name `U` is missing from the whole store.** -/
-def spawnIfNone : RewriteRule where
-  name := "SpawnIfNone"
+/-- **Make `T` where the name `U` is absent from the whole store.** -/
+def spawnIfAbsent : RewriteRule where
+  name := "SpawnIfAbsent"
   typeContext := []
   premises := [.freshness ⟨"U", storeRows⟩]
   left := .apply "Store" [storeRows]
@@ -68,20 +68,20 @@ def ownedStore : LanguageDef where
   types := ["Store", "Row"]
   terms := [storeConstructor]
   equations := []
-  rewrites := [spawnIfNone]
+  rewrites := [spawnIfAbsent]
 
 /-- The bindings of a store term. -/
 abbrev rowsBinding (rows : List Pattern) : Bindings := [("rows", .collection .hashBag rows none)]
 
 /-- The rule's left side matches a store term, binding its rows. -/
 theorem store_match (rows : List Pattern) :
-    rowsBinding rows ∈ matchPattern spawnIfNone.left (store rows) :=
+    rowsBinding rows ∈ matchPattern spawnIfAbsent.left (store rows) :=
   matchPattern_iff_matchRel.mpr
     (.apply (.cons (.collection (by decide) .nilRest) .nil (by simp [mergeBindings])) rfl)
 
 /-- That is the only match. -/
 theorem store_match_unique {rows : List Pattern} {bindings : Bindings}
-    (matched : bindings ∈ matchPattern spawnIfNone.left (store rows)) :
+    (matched : bindings ∈ matchPattern spawnIfAbsent.left (store rows)) :
     bindings = rowsBinding rows := by
   have relation := matchPattern_iff_matchRel.mp matched
   cases relation with
@@ -107,11 +107,11 @@ theorem freshness_premise (relEnv : RelationEnv) (rows : List Pattern) :
 
 /-- The contractum of the rule at a store term. -/
 theorem contractum (rows : List Pattern) :
-    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule ownedStore spawnIfNone
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule ownedStore spawnIfAbsent
       (rowsBinding rows) = store (madeRow :: rows) := by
   rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
     applyRuleBindings, applyBindingsScoped_zero_of_binderFree _ _ _ (by decide)]
-  simp [applyBindings, spawnIfNone, store, madeRow]
+  simp [applyBindings, spawnIfAbsent, store, madeRow]
 
 /-- **The rule fires exactly when the name `U` occurs nowhere in the store's rows**: from a store
 term, the reduction adds `T` exactly then. -/
@@ -144,7 +144,7 @@ theorem ownedStore_step_iff (relEnv : RelationEnv) (rows : List Pattern) (result
                 rw [applyBindings_storeRows] at fresh
                 exact ⟨fresh, (contractum rows).symm.trans applied |>.symm⟩
   · rintro ⟨fresh, rfl⟩
-    refine ⟨1, .rule (rule := spawnIfNone) (initialBindings := rowsBinding rows)
+    refine ⟨1, .rule (rule := spawnIfAbsent) (initialBindings := rowsBinding rows)
       (finalBindings := rowsBinding rows)
       (by simp [ownedStore]) ?_ (.cons (.freshness ?_) (.nil _)) (contractum rows)⟩
     · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic]
@@ -196,7 +196,7 @@ theorem ownedStore_no_parallelContextRule (kind : CollType) :
   rintro ⟨rule, member, source, target, rest, _, _, _, premises, _, _⟩
   simp only [ownedStore, List.mem_singleton] at member
   subst member
-  simp [spawnIfNone] at premises
+  simp [spawnIfAbsent] at premises
 
 #print axioms store_match_unique
 #print axioms freshness_premise

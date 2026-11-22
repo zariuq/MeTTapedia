@@ -79,7 +79,7 @@ theorem only_two_slots_needed : start.state.present ∪ middle.state.present ∪
 
 theorem wrong_freshness_refused : ¬ (step setting.levels Nat).Admits (first.compile qualified 0) := by
   rw [first.admitted_iff qualified 0]
-  exact fun missing => missing start.present
+  exact fun absent => absent start.present
 
 theorem first_result_typed : Typed pkg .nil middle.code numC :=
   (qualified.subjectReduction (empty pkg).formed (.single first.reduction)

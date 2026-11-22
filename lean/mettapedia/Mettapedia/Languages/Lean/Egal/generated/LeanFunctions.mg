@@ -5358,6 +5358,7 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) (
 rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
 Qed.
 
+
 Theorem Lean_Irreducible_HM0 : forall C:set -> set, forall h0, h0 :e (Pi_ x0 :e (Pi_ ux :e (((Lean_IsUnit P0) P1) P2), Lean_False_Prop), (Pi_ x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_
     q2 :e (((Lean_Eq_Prop P0) P2) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) q0) q1)), ((Lean_Or_Prop (((Lean_IsUnit P0) P1) q0)) (((Lean_IsUnit P0) P1) q1)))))}, (C (Lean_Irreducible_mk_node x0
     x1)))) -> forall a :e IndArgs Lean_Irreducible_K Lean_Irreducible_T Lean_Irreducible_N Lean_Irreducible_R Lean_Irreducible_F Lean_Irreducible_Ix Lean_Irreducible_O Lean_Irreducible_B
@@ -5433,6 +5434,8 @@ Qed.
 
 
 
+
+
 Theorem Lean_Irreducible_ind : forall P:set -> prop, (forall x0 :e (Pi_ ux :e (((Lean_IsUnit P0) P1) P2), Lean_False_Prop), forall x1 :e {z :e 1 | z :e (Pi_ q0 :e P0, (Pi_ q1 :e P0, (Pi_ q2 :e
     (((Lean_Eq_Prop P0) P2) ((((proj1 ((proj1 ((proj1 P1) 0)) 0)) 0) q0) q1)), ((Lean_Or_Prop (((Lean_IsUnit P0) P1) q0)) (((Lean_IsUnit P0) P1) q1)))))}, P (Lean_Irreducible_mk_node x0 x1)) ->
     forall t :e Lean_Irreducible, P t.
@@ -5449,6 +5452,7 @@ claim M0: 0 :e (Pi_ x0 :e (Pi_ ux :e (((Lean_IsUnit P0) P1) P2), Lean_False_Prop
 let t. assume Ht: t :e Lean_Irreducible.
 exact SepE2 1 (fun z => P t) (Lean_Irreducible_rec 0 t) (Lean_Irreducible_rec_type (fun t => {z :e 1 | P t}) 0 M0 t Ht).
 Qed.
+
 
 
 
@@ -7799,12 +7803,12 @@ exact Lean_Subtype_ind (Lean_List A) (fun x :e Lean_List A => Lean_Eq_Prop Lean_
 Qed.
 
 (** Lean's theorem _private.Init.Data.List.Sort.Basic.0.List.MergeSort.Internal.splitInTwo._proof_3: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_List_MergeSort_Internal_splitInTwo__proof_3_proof : forall v_u945, forall v_n :e Lean_Nat, forall v_l :e (Lean_Subtype (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop
-    Lean_Nat (Lean_List_length v_u945 v_x3) v_n))), 0 :e (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 (Lean_Prod_fst (Lean_List v_u945) (Lean_List v_u945) (Lean_List_splitAt v_u945 (Lean_Nat_div
-    (Lean_Nat_add v_n (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l))))
-    (Lean_Nat_div (Lean_Nat_add v_n (LeanNum 1)) (LeanNum 2))).
-let v_u945. let v_n. assume Hn: v_n :e Lean_Nat. let v_l.
-assume Hl: v_l :e (Lean_Subtype (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n))).
+Theorem Lean_List_MergeSort_Internal_splitInTwo__proof_3_proof : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_n :e Lean_Nat, forall v_l :e (Lean_Subtype (Lean_List v_u945)
+    (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n))), 0 :e (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 (Lean_Prod_fst (Lean_List v_u945) (Lean_List
+    v_u945) (Lean_List_splitAt v_u945 (Lean_Nat_div (Lean_Nat_add v_n (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length v_u945 v_x3) v_n)) v_l)))) (Lean_Nat_div (Lean_Nat_add v_n (LeanNum 1)) (LeanNum 2))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_n. assume Hn: v_n :e Lean_Nat. let v_l. assume Hl: v_l :e (Lean_Subtype (Lean_List v_u945) (fun
+    v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n))).
 apply Lean_Eq_proof_of.
 apply LeanListSplitAt_halves v_u945 v_n Hn (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l)
   (Lean_Subtype_val_In (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l Hl)
@@ -7817,12 +7821,12 @@ exact H1.
 Qed.
 
 (** Lean's theorem _private.Init.Data.List.Sort.Basic.0.List.MergeSort.Internal.splitInTwo._proof_4: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_List_MergeSort_Internal_splitInTwo__proof_4_proof : forall v_u945, forall v_n :e Lean_Nat, forall v_l :e (Lean_Subtype (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop
-    Lean_Nat (Lean_List_length v_u945 v_x3) v_n))), 0 :e (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 (Lean_Prod_snd (Lean_List v_u945) (Lean_List v_u945) (Lean_List_splitAt v_u945 (Lean_Nat_div
-    (Lean_Nat_add v_n (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l))))
-    (Lean_Nat_div v_n (LeanNum 2))).
-let v_u945. let v_n. assume Hn: v_n :e Lean_Nat. let v_l.
-assume Hl: v_l :e (Lean_Subtype (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n))).
+Theorem Lean_List_MergeSort_Internal_splitInTwo__proof_4_proof : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_n :e Lean_Nat, forall v_l :e (Lean_Subtype (Lean_List v_u945)
+    (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n))), 0 :e (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 (Lean_Prod_snd (Lean_List v_u945) (Lean_List
+    v_u945) (Lean_List_splitAt v_u945 (Lean_Nat_div (Lean_Nat_add v_n (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length v_u945 v_x3) v_n)) v_l)))) (Lean_Nat_div v_n (LeanNum 2))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_n. assume Hn: v_n :e Lean_Nat. let v_l. assume Hl: v_l :e (Lean_Subtype (Lean_List v_u945) (fun
+    v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n))).
 apply Lean_Eq_proof_of.
 apply LeanListSplitAt_halves v_u945 v_n Hn (Lean_Subtype_val (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l)
   (Lean_Subtype_val_In (Lean_List v_u945) (fun v_x3 :e (Lean_List v_u945) => (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_x3) v_n)) v_l Hl)
@@ -7843,83 +7847,85 @@ Definition Lean_List_MergeSort_Internal_splitInTwo : set -> set -> set -> set :=
     a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List
     a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) 0)).
 Theorem Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_0 : forall a0, forall a1 :e Lean_Nat, forall a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1))), 0 :e (Lean_ProofField ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum
-    2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))))).
-let a0. let a1. assume H1: a1 :e Lean_Nat. let a2. assume H2: a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))). exact
-    (Lean_ProofField_intro ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0)
+    (Lean_List_length a0 v_x3) a1))), forall l_u_1, nat_p l_u_1 -> a0 :e LeanUniv l_u_1 -> 0 :e (Lean_ProofField ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3)
+    (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
+    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))))).
+let a0. let a1. assume H1: a1 :e Lean_Nat. let a2. assume H2: a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))). let l_u_1.
+    assume H_l_u_1: nat_p l_u_1. assume H_a0: a0 :e LeanUniv l_u_1. exact (Lean_ProofField_intro ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div
+    (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val
+    (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_fst (Lean_List a0)
     (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1)) a2)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1
-    (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1))
-    (LeanNum 2))) ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List
-    a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0
-    v_x3) a1)) a2)))) (eq_sym_i ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List
+    (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))) ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div
+    (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val
+    (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (eq_sym_i ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0
+    v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
+    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_fst (Lean_List
     a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1))
-    (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum
-    2))) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))))
+    (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1
+    (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0
     (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div
-    (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div
-    (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))) (beta (Lean_List a0) (fun v_x3 => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))))
-    (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) (Lean_Prod_fst_In (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
-    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)) (Lean_List_splitAt_In a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1))
-    (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add a1 (LeanNum 1)) (Lean_Nat_add_In a1 H1 (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0
-    nat_0)))) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2) (Lean_Subtype_val_In (Lean_List a0) (fun v_x3 :e (Lean_List
-    a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2 H2)))))) (Lean_List_MergeSort_Internal_splitInTwo__proof_3_proof a0 a1 H1 a2 H2))).
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))) (beta (Lean_List a0) (fun v_x3 => (Lean_Eq_Prop Lean_Nat (Lean_List_length
+    a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
+    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) (Lean_Prod_fst_In (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0
+    (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))
+    (Lean_List_splitAt_In a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add a1 (LeanNum 1)) (Lean_Nat_add_In a1 H1 (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0
+    nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))
+    a2) (Lean_Subtype_val_In (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2 H2)))))) (Lean_List_MergeSort_Internal_splitInTwo__proof_3_proof
+    l_u_1 H_l_u_1 a0 H_a0 a1 H1 a2 H2))).
 Qed.
 Theorem Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_1 : forall a0, forall a1 :e Lean_Nat, forall a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1))), 0 :e (Lean_ProofField ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List
-    a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1)) a2))))).
-let a0. let a1. assume H1: a1 :e Lean_Nat. let a2. assume H2: a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))). exact
-    (Lean_ProofField_intro ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0)
+    (Lean_List_length a0 v_x3) a1))), forall l_u_1, nat_p l_u_1 -> a0 :e LeanUniv l_u_1 -> 0 :e (Lean_ProofField ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3)
+    (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun
+    v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))))).
+let a0. let a1. assume H1: a1 :e Lean_Nat. let a2. assume H2: a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))). let l_u_1.
+    assume H_l_u_1: nat_p l_u_1. assume H_a0: a0 :e LeanUniv l_u_1. exact (Lean_ProofField_intro ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1
+    (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List
+    a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0
+    (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))))
+    (Lean_Nat_div a1 (LeanNum 2))) ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0)
     (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3)
-    a1)) a2)))) (In_eq_r 0 (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
-    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div a1 (LeanNum 2))) ((fun v_x3 :e (Lean_List a0) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1))
-    (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (eq_sym_i ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop
-    Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
-    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_snd (Lean_List
-    a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div a1 (LeanNum 2))) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0
-    v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0)
-    (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_snd (Lean_List a0) (Lean_List a0)
+    a1)) a2)))) (eq_sym_i ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0)
     (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3)
-    a1)) a2)))) (Lean_Nat_div a1 (LeanNum 2))) (beta (Lean_List a0) (fun v_x3 => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0)
-    (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1)) a2))) (Lean_Prod_snd_In (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List
-    a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)) (Lean_List_splitAt_In a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In
-    (Lean_Nat_add a1 (LeanNum 1)) (Lean_Nat_add_In a1 H1 (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val
-    (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2) (Lean_Subtype_val_In (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1)) a2 H2)))))) (Lean_List_MergeSort_Internal_splitInTwo__proof_4_proof a0 a1 H1 a2 H2))).
+    a1)) a2)))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
+    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div a1 (LeanNum 2))) (f_eq_i (fun bridge_beta_0 =>
+    bridge_beta_0) ((fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0
+    (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))))
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val
+    (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)))) (Lean_Nat_div a1 (LeanNum 2))) (beta (Lean_List a0) (fun v_x3 => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
+    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) (Lean_Prod_snd_In (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0
+    (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))
+    (Lean_List_splitAt_In a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add a1 (LeanNum 1)) (Lean_Nat_add_In a1 H1 (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0
+    nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))
+    a2) (Lean_Subtype_val_In (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2 H2)))))) (Lean_List_MergeSort_Internal_splitInTwo__proof_4_proof
+    l_u_1 H_l_u_1 a0 H_a0 a1 H1 a2 H2))).
 Qed.
-Theorem Lean_List_MergeSort_Internal_splitInTwo_In : forall a0, forall a1 :e Lean_Nat, forall a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1))), Lean_List_MergeSort_Internal_splitInTwo a0 a1 a2 :e (Lean_Prod (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0
-    v_x3) (Lean_Nat_div a1 (LeanNum 2)))))).
-let a0. let a1. assume H1: a1 :e Lean_Nat. let a2. assume H2: a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))). exact
-    (Lean_Prod_mk_typed (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))))
-    (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2))))) (Lean_Subtype_mk_node (Lean_List a0) (fun v_x3 :e
-    (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0
-    (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) 0)
-    (Lean_Subtype_mk_typed (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst
-    (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1)) a2))) (Lean_Prod_fst_In (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List
-    a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)) (Lean_List_splitAt_In a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In
-    (Lean_Nat_add a1 (LeanNum 1)) (Lean_Nat_add_In a1 H1 (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val
-    (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2) (Lean_Subtype_val_In (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_x3) a1)) a2 H2))) 0 (Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_0 a0 a1 H1 a2 H2)) (Lean_Subtype_mk_node (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop
-    Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
-    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) 0) (Lean_Subtype_mk_typed (Lean_List a0) (fun v_x3 :e (Lean_List a0)
-    => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1))
-    (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) (Lean_Prod_snd_In (Lean_List a0) (Lean_List a0)
-    (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3)
-    a1)) a2)) (Lean_List_splitAt_In a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add a1 (LeanNum 1)) (Lean_Nat_add_In a1 H1 (LeanNum 1) (LeanNum_In 1
-    (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
-    a0 v_x3) a1)) a2) (Lean_Subtype_val_In (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2 H2))) 0
-    (Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_1 a0 a1 H1 a2 H2))).
+Theorem Lean_List_MergeSort_Internal_splitInTwo_In : forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e Lean_Nat, forall a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List
+    a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))), Lean_List_MergeSort_Internal_splitInTwo a0 a1 a2 :e (Lean_Prod (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) =>
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2)))))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H1: a1 :e Lean_Nat. let a2. assume H2: a2 :e (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0)
+    => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))). exact (Lean_Prod_mk_typed (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3)
+    (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum
+    2))))) (Lean_Subtype_mk_node (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))))
+    (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) =>
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) 0) (Lean_Subtype_mk_typed (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3)
+    (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2))
+    (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) (Lean_Prod_fst_In (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0
+    (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))
+    (Lean_List_splitAt_In a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add a1 (LeanNum 1)) (Lean_Nat_add_In a1 H1 (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0
+    nat_0))) (LeanNum 2) (LeanNum_In 2 (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1))
+    a2) (Lean_Subtype_val_In (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2 H2))) 0 (Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_0 a0
+    a1 H1 a2 H2 l_u_1 H_l_u_1 H_a0)) (Lean_Subtype_mk_node (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) (Lean_Nat_div a1 (LeanNum 2))))
+    (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) =>
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) 0) (Lean_Subtype_mk_typed (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3)
+    (Lean_Nat_div a1 (LeanNum 2)))) (Lean_Prod_snd (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun
+    v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2))) (Lean_Prod_snd_In (Lean_List a0) (Lean_List a0) (Lean_List_splitAt a0 (Lean_Nat_div (Lean_Nat_add a1
+    (LeanNum 1)) (LeanNum 2)) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2)) (Lean_List_splitAt_In a0 (Lean_Nat_div
+    (Lean_Nat_add a1 (LeanNum 1)) (LeanNum 2)) (Lean_Nat_div_In (Lean_Nat_add a1 (LeanNum 1)) (Lean_Nat_add_In a1 H1 (LeanNum 1) (LeanNum_In 1 (nat_ordsucc 0 nat_0))) (LeanNum 2) (LeanNum_In 2
+    (nat_ordsucc 1 (nat_ordsucc 0 nat_0)))) (Lean_Subtype_val (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2) (Lean_Subtype_val_In (Lean_List
+    a0) (fun v_x3 :e (Lean_List a0) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_x3) a1)) a2 H2))) 0 (Lean_List_MergeSort_Internal_splitInTwo_eq_1_proof_1 a0 a1 H1 a2 H2 l_u_1 H_l_u_1 H_a0))).
 Qed.
 (** Receipt: List.MergeSort.Internal.splitInTwo.eq_1 is the source of the MeTTa rule for List.MergeSort.Internal.splitInTwo, statement digest 2624791718. **)
 Theorem Lean_List_MergeSort_Internal_splitInTwo_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_n :e Lean_Nat, forall v_l :e (Lean_Subtype (Lean_List v_u945) (fun v_x3
@@ -7952,10 +7958,10 @@ Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_m
 let a1. let a3. let a2. assume H: a2 :e (Lean_List a1).
 exact beta (Lean_List a1) (fun a2 => (Lean_List_nil_node a1)) a2 H.
 Qed.
-Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0_In : forall a1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)),
-    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 a1 a3) :e (Pi_ a2 :e (Lean_List a1), (Lean_List a1)).
-let a1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). exact lam_Pi (Lean_List a1) (fun a2 => (Lean_List a1)) (fun a2 => (Lean_List_nil_node a1)) (fun a2 Ha2 =>
-    (Lean_List_nil_typed a1)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0_In : forall l_u_1, nat_p l_u_1 -> forall a1 :e LeanUniv l_u_1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1,
+    Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 a1 a3) :e (Pi_ a2 :e (Lean_List a1), (Lean_List a1)).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a1. assume H_a1: a1 :e LeanUniv l_u_1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). exact lam_Pi (Lean_List a1) (fun a2 =>
+    (Lean_List a1)) (fun a2 => (Lean_List_nil_node a1)) (fun a2 Ha2 => (Lean_List_nil_typed a1)).
 Qed.
 Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2 : set -> set -> set -> set -> set := fun a1 a3 y0 r0 => (fun a2 :e (Lean_List a1) => (Lean_List_casesOn a1
     (Lean_List_nil_node a1) (fun c1_1_0 :e a1 => (Sigma (Lean_List a1) (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_nil_node a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1)
@@ -8004,93 +8010,12 @@ exact beta (Lean_List a1) (fun a2 => (Lean_List_casesOn a1 (Lean_List_nil_node a
     (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
     (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3)))))) a2)) a2 H.
 Qed.
-Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2_In : forall a1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)), forall y0 :e Lean_Nat, forall r0 :e
-    (Pi_ ux :e (Lean_List a1), (Lean_List a1)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2 a1 a3 y0 r0) :e (Pi_ a2 :e (Lean_List a1), (Lean_List a1)).
-let a1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let y0. assume Hy0: y0 :e Lean_Nat. let r0. assume Hr0: r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)). exact lam_Pi
-    (Lean_List a1) (fun a2 => (Lean_List a1)) (fun a2 => (Lean_List_casesOn a1 (Lean_List_nil_node a1) (fun c1_1_0 :e a1 => (Sigma (Lean_List a1) (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_nil_node a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst
-    (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node
-    a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun
-    v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))
-    (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1
-    c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3)))))) a2)) (fun a2
-    Ha2 => (Lean_List_casesOn_type a1 (fun _ => (Lean_List a1)) (Lean_List_nil_node a1) (Lean_List_nil_typed a1) (fun c1_1_0 :e a1 => (Sigma (Lean_List a1) (Lean_List_casesOn a1 (Lean_List_cons_node
-    a1 c1_1_0 (Lean_List_nil_node a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
-    Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))
-    (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1
-    c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val
-    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
-    c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length
-    a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))
-    0))))) a3)))))) (lam_Pi a1 (fun c1_1_0 => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) (fun c1_1_0 => (Sigma (Lean_List a1) (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_nil_node
-    a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1)
-    (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
-    c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun
-    v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))
-    (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1
-    c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3)))))) (fun c1_1_0
-    Hc1_1_0 => (lam_Pi (Lean_List a1) (fun c1_1_1 => (Lean_List a1)) (fun c1_1_1 => (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_nil_node a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e
-    (Lean_List a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum
-    2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
-    (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
-    c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1)
-    (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
-    c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3))) c1_1_1)) (fun c1_1_1 Hc1_1_1 =>
-    (Lean_List_casesOn_type a1 (fun _ => (Lean_List a1)) (Lean_List_cons_node a1 c1_1_0 (Lean_List_nil_node a1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_nil_node a1) (Lean_List_nil_typed
-    a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1)
-    (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
-    c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun
-    v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))
-    (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1
-    c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3))) (lam_Pi a1 (fun
-    c2_1_0 => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) (fun c2_1_0 => (fun c2_1_1 :e (Lean_List a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum
-    2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))
-    0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
-    (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
-    (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e
-    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3))) (fun c2_1_0 Hc2_1_0 => (lam_Pi (Lean_List a1) (fun c2_1_1 => (Lean_List a1)) (fun c2_1_1 => (Lean_List_merge a1 (r0 (Lean_Subtype_val
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2_In : forall l_u_1, nat_p l_u_1 -> forall a1 :e LeanUniv l_u_1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1,
+    Lean_Bool)), forall y0 :e Lean_Nat, forall r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2 a1 a3 y0 r0) :e (Pi_
+    a2 :e (Lean_List a1), (Lean_List a1)).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a1. assume H_a1: a1 :e LeanUniv l_u_1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let y0. assume Hy0: y0 :e Lean_Nat. let r0.
+    assume Hr0: r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)). exact lam_Pi (Lean_List a1) (fun a2 => (Lean_List a1)) (fun a2 => (Lean_List_casesOn a1 (Lean_List_nil_node a1) (fun c1_1_0 :e a1 =>
+    (Sigma (Lean_List a1) (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_nil_node a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val
     (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node
     a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
     (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
@@ -8103,96 +8028,178 @@ let a1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let 
     (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
     c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List
     a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3)) (fun c2_1_1 Hc2_1_1 => (Lean_List_merge_In a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum
-    2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))
-    0))))) (ap_Pi (Lean_List a1) (fun _ => (Lean_List a1)) r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
-    (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e
-    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
-    (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1
-    c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
-    c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0)))) Hr0 (Lean_Subtype_val_In (Lean_List a1) (fun v_l :e (Lean_List a1) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum
-    2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))
-    0))) (Lean_Prod_fst_In (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))
-    (Lean_List_MergeSort_Internal_splitInTwo_In a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length_In a1 (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1)))
-    (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
-    c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0) (Lean_Subtype_mk_typed (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))
-    (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1)) 0 (In_eq_r 0 (Lean_ProofField (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
-    (Lean_ProofField ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (eq_sym_i (Lean_ProofField ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (Lean_ProofField
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
-    c2_1_0 c2_1_1))))) (f_eq_i (fun bridge_hole_64 => (Lean_ProofField bridge_hole_64)) ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (f_eq_i (fun bridge_beta_0 =>
-    bridge_beta_0) ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (beta (Lean_List a1) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length
-    a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1)))))) (Lean_ProofField_intro (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1
-    c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (Lean_Eq_refl_proof_ok Lean_Nat (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))))))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3)))))) a2)) (fun a2 Ha2 => (Lean_List_casesOn_type a1 (fun _ => (Lean_List a1)) (Lean_List_nil_node a1)
+    (Lean_List_nil_typed a1) (fun c1_1_0 :e a1 => (Sigma (Lean_List a1) (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_nil_node a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List
+    a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))))
+    (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node
+    a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node
+    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
     (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
     (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum
     2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
     (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
     (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
-    c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (ap_Pi (Lean_List a1) (fun _ => (Lean_List a1)) r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e
-    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))
-    (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1
-    c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0)))) Hr0
-    (Lean_Subtype_val_In (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3)))))) (lam_Pi a1 (fun c1_1_0 => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) (fun c1_1_0 =>
+    (Sigma (Lean_List a1) (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_nil_node a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val
+    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node
+    a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
+    (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
+    (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e
+    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length
+    a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype
+    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
+    c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List
+    a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3)))))) (fun c1_1_0 Hc1_1_0 => (lam_Pi (Lean_List a1) (fun c1_1_1 => (Lean_List a1)) (fun c1_1_1 =>
+    (Lean_List_casesOn a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_nil_node a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun
+    v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
+    (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
+    (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e
+    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length
+    a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype
+    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
+    c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List
+    a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3))) c1_1_1)) (fun c1_1_1 Hc1_1_1 => (Lean_List_casesOn_type a1 (fun _ => (Lean_List a1)) (Lean_List_cons_node a1
+    c1_1_0 (Lean_List_nil_node a1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_nil_node a1) (Lean_List_nil_typed a1)) (fun c2_1_0 :e a1 => (fun c2_1_1 :e (Lean_List a1) => (Lean_List_merge a1
+    (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
+    (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e
+    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
+    (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e
+    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length
+    a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype
+    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
+    c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List
+    a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3))) (lam_Pi a1 (fun c2_1_0 => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) (fun c2_1_0 => (fun c2_1_1 :e (Lean_List
+    a1) => (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))))
+    (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node
+    a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node
+    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
+    (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum
+    2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
+    (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
+    c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3))) (fun c2_1_0 Hc2_1_0 => (lam_Pi (Lean_List a1) (fun c2_1_1 => (Lean_List a1)) (fun c2_1_1 =>
+    (Lean_List_merge a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))))
+    (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node
+    a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node
+    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
+    (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum
+    2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
+    (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
+    c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) a3)) (fun c2_1_1 Hc2_1_1 => (Lean_List_merge_In a1 (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l
+    :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
+    (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
+    (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e
+    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (ap_Pi (Lean_List a1) (fun _ => (Lean_List a1)) r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst
+    (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node
+    a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0)))) Hr0 (Lean_Subtype_val_In (Lean_List a1) (fun
+    v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
+    (LeanNum 1)) (LeanNum 2)))) (Lean_Prod_fst (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
+    (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e
+    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))) (Lean_Prod_fst_In (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
+    (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
+    (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e
+    (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0)) (Lean_List_MergeSort_Internal_splitInTwo_In l_u_1 H_l_u_1 a1 H_a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
+    c2_1_1))) (Lean_List_length_In a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)
+    (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0) (Lean_Subtype_mk_typed (Lean_List a1) (fun v_l
+    :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1)) 0 (In_eq_r 0
+    (Lean_ProofField (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_ProofField ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (eq_sym_i (Lean_ProofField ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
+    c2_1_1)))) (Lean_ProofField (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (f_eq_i (fun bridge_hole_64 => (Lean_ProofField bridge_hole_64)) ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (f_eq_i
+    (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
+    c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
+    c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (beta (Lean_List a1) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1
+    c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1)))))) (Lean_ProofField_intro (Lean_Eq_Prop Lean_Nat (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (Lean_Eq_refl_proof_ok
+    Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))))))))) (r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype
+    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node
+    a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))))) (ap_Pi (Lean_List a1) (fun _ => (Lean_List
+    a1)) r0 (Lean_Subtype_val (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
     (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
     (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
     (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
     (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e
     (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))) (Lean_Prod_snd_In (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
-    (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0)))) Hr0 (Lean_Subtype_val_In (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))) (Lean_Prod_snd (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2)))))
+    (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node
+    a1 c2_1_0 c2_1_1))) (LeanNum 2))))) (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node
+    (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0))) (Lean_Prod_snd_In (Lean_Subtype (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length
+    a1 v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 1)) (LeanNum 2))))) (Lean_Subtype (Lean_List a1) (fun v_l
+    :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_Nat_div (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (LeanNum 2)))))
     (Lean_List_MergeSort_Internal_splitInTwo a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e
     (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0)) (Lean_List_MergeSort_Internal_splitInTwo_In a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
-    (Lean_List_length_In a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed
-    a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node
-    a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0) (Lean_Subtype_mk_typed (Lean_List a1) (fun v_l :e (Lean_List a1) =>
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node
-    a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1)) 0 (In_eq_r 0 (Lean_ProofField
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
-    c2_1_0 c2_1_1))))) (Lean_ProofField ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
-    c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (eq_sym_i (Lean_ProofField ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1
-    v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (Lean_ProofField
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
-    c2_1_0 c2_1_1))))) (f_eq_i (fun bridge_hole_64 => (Lean_ProofField bridge_hole_64)) ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (f_eq_i (fun bridge_beta_0 =>
-    bridge_beta_0) ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))))
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))
-    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (beta (Lean_List a1) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length
-    a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0
-    (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1)))))) (Lean_ProofField_intro (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1
-    c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (Lean_Eq_refl_proof_ok Lean_Nat (Lean_List_length a1
-    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))))))))) a3 H3))))) c1_1_1 Hc1_1_1))))) a2 Ha2)).
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0)) (Lean_List_MergeSort_Internal_splitInTwo_In l_u_1 H_l_u_1 a1 H_a1 (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
+    c2_1_1))) (Lean_List_length_In a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)
+    (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1))) (Lean_Subtype_mk_node (Lean_List a1) (fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) 0) (Lean_Subtype_mk_typed (Lean_List a1) (fun v_l
+    :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1 c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1)) 0 (In_eq_r 0
+    (Lean_ProofField (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_ProofField ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (eq_sym_i (Lean_ProofField ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop
+    Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0
+    c2_1_1)))) (Lean_ProofField (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0
+    (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (f_eq_i (fun bridge_hole_64 => (Lean_ProofField bridge_hole_64)) ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (f_eq_i
+    (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List a1) => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
+    c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1
+    c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (beta (Lean_List a1) (fun v_l => (Lean_Eq_Prop Lean_Nat (Lean_List_length a1 v_l)
+    (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))) (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)) (Lean_List_cons_typed a1
+    c1_1_0 Hc1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1) (Lean_List_cons_typed a1 c2_1_0 Hc2_1_0 c2_1_1 Hc2_1_1)))))) (Lean_ProofField_intro (Lean_Eq_Prop Lean_Nat (Lean_List_length a1
+    (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))) (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1)))) (Lean_Eq_refl_proof_ok
+    Lean_Nat (Lean_List_length a1 (Lean_List_cons_node a1 c1_1_0 (Lean_List_cons_node a1 c2_1_0 c2_1_1))))))))))) a3 H3))))) c1_1_1 Hc1_1_1))))) a2 Ha2)).
 Qed.
 Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1 : set -> set -> set -> set := fun a1 a3 y0 => (fun r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)) =>
     (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2 a1 a3 y0 r0)).
@@ -8201,11 +8208,12 @@ Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_m
 let a1. let a3. let y0. let r0. assume H: r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)).
 exact beta (Pi_ ux :e (Lean_List a1), (Lean_List a1)) (fun r0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2 a1 a3 y0 r0)) r0 H.
 Qed.
-Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1_In : forall a1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)), forall y0 :e Lean_Nat,
-    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1 a1 a3 y0) :e (Pi_ r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)), (Pi_ a2 :e (Lean_List a1), (Lean_List a1))).
-let a1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let y0. assume Hy0: y0 :e Lean_Nat. exact lam_Pi (Pi_ ux :e (Lean_List a1), (Lean_List a1)) (fun r0 => (Pi_ a2 :e
-    (Lean_List a1), (Lean_List a1))) (fun r0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2 a1 a3 y0 r0)) (fun r0 Hr0 =>
-    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2_In a1 a3 H3 y0 Hy0 r0 Hr0)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1_In : forall l_u_1, nat_p l_u_1 -> forall a1 :e LeanUniv l_u_1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1,
+    Lean_Bool)), forall y0 :e Lean_Nat, (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1 a1 a3 y0) :e (Pi_ r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)), (Pi_ a2
+    :e (Lean_List a1), (Lean_List a1))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a1. assume H_a1: a1 :e LeanUniv l_u_1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let y0. assume Hy0: y0 :e Lean_Nat. exact lam_Pi
+    (Pi_ ux :e (Lean_List a1), (Lean_List a1)) (fun r0 => (Pi_ a2 :e (Lean_List a1), (Lean_List a1))) (fun r0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2 a1
+    a3 y0 r0)) (fun r0 Hr0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2_In l_u_1 H_l_u_1 a1 H_a1 a3 H3 y0 Hy0 r0 Hr0)).
 Qed.
 Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 : set -> set -> set := fun a1 a3 => (fun y0 :e Lean_Nat =>
     (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1 a1 a3 y0)).
@@ -8214,28 +8222,29 @@ Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_m
 let a1. let a3. let y0. assume H: y0 :e Lean_Nat.
 exact beta Lean_Nat (fun y0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1 a1 a3 y0)) y0 H.
 Qed.
-Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0_In : forall a1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)),
-    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 a1 a3) :e (Pi_ y0 :e Lean_Nat, (Pi_ r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)), (Pi_ a2 :e (Lean_List a1),
-    (Lean_List a1)))).
-let a1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). exact lam_Pi Lean_Nat (fun y0 => (Pi_ r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)), (Pi_ a2 :e (Lean_List a1),
-    (Lean_List a1)))) (fun y0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1 a1 a3 y0)) (fun y0 Hy0 =>
-    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1_In a1 a3 H3 y0 Hy0)).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0_In : forall l_u_1, nat_p l_u_1 -> forall a1 :e LeanUniv l_u_1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1,
+    Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 a1 a3) :e (Pi_ y0 :e Lean_Nat, (Pi_ r0 :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)), (Pi_ a2 :e
+    (Lean_List a1), (Lean_List a1)))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a1. assume H_a1: a1 :e LeanUniv l_u_1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). exact lam_Pi Lean_Nat (fun y0 => (Pi_ r0 :e (Pi_
+    ux :e (Lean_List a1), (Lean_List a1)), (Pi_ a2 :e (Lean_List a1), (Lean_List a1)))) (fun y0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1 a1 a3 y0)) (fun y0
+    Hy0 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1_In l_u_1 H_l_u_1 a1 H_a1 a3 H3 y0 Hy0)).
 Qed.
 Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel : set -> set -> set -> set -> set := fun a0 a1 a2 a3 => (Lean_Nat_rec
     (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 a1 a3) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 a1 a3) a0 a2).
-Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_recIn : forall a1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)), forall t :e Lean_Nat, Lean_Nat_rec
-    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 a1 a3) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 a1 a3) t :e (Pi_ ux :e
-    (Lean_List a1), (Lean_List a1)).
-let a1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let t. assume Ht: t :e Lean_Nat.
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_recIn : forall l_u_1, nat_p l_u_1 -> forall a1 :e LeanUniv l_u_1, forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1,
+    Lean_Bool)), forall t :e Lean_Nat, Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 a1 a3)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 a1 a3) t :e (Pi_ ux :e (Lean_List a1), (Lean_List a1)).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a1. assume H_a1: a1 :e LeanUniv l_u_1. let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). let t. assume Ht: t :e Lean_Nat.
 exact Lean_Nat_rec_type (fun _ => (Pi_ ux :e (Lean_List a1), (Lean_List a1))) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 a1 a3)
-    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0_In a1 a3 H3) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 a1 a3)
-    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0_In a1 a3 H3) t Ht.
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0_In l_u_1 H_l_u_1 a1 H_a1 a3 H3) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0
+    a1 a3) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0_In l_u_1 H_l_u_1 a1 H_a1 a3 H3) t Ht.
 Qed.
-Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_In : forall a0 :e Lean_Nat, forall a1, forall a2 :e (Lean_List a1), forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1,
-    Lean_Bool)), Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel a0 a1 a2 a3 :e (Lean_List a1).
-let a0. assume H0: a0 :e Lean_Nat. let a1. let a2. assume H2: a2 :e (Lean_List a1). let a3. assume H3: a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)). exact (ap_Pi (Lean_List a1) (fun _ =>
-    (Lean_List a1)) (Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 a1 a3)
-    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 a1 a3) a0) a2 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_recIn a1 a3 H3 a0 H0) H2).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_In : forall l_u_1, nat_p l_u_1 -> forall a0 :e Lean_Nat, forall a1 :e LeanUniv l_u_1, forall a2 :e (Lean_List a1),
+    forall a3 :e (Pi_ ux :e a1, (Pi_ ux :e a1, Lean_Bool)), Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel a0 a1 a2 a3 :e (Lean_List a1).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H0: a0 :e Lean_Nat. let a1. assume H_a1: a1 :e LeanUniv l_u_1. let a2. assume H2: a2 :e (Lean_List a1). let a3. assume H3: a3 :e (Pi_ ux :e a1,
+    (Pi_ ux :e a1, Lean_Bool)). exact (ap_Pi (Lean_List a1) (fun _ => (Lean_List a1)) (Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 a1 a3)
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 a1 a3) a0) a2 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_recIn l_u_1 H_l_u_1 a1 H_a1
+    a3 H3 a0 H0) H2).
 Qed.
 Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_split0 : forall l_u_1, nat_p l_u_1 -> forall s1 :e LeanUniv l_u_1, forall s2 :e (Lean_List s1), forall s3 :e (Pi_ ux :e
     s1, (Pi_ ux :e s1, Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel Lean_Nat_zero_node s1 s2 s3) = (Lean_List_nil_node s1).
@@ -8288,7 +8297,8 @@ rewrite Lean_Nat_iota1 (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeS
     s3) t0 H_t0.
 rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0_ap s1 s3 t0 H_t0.
 rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_1_ap s1 s3 t0 (Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 s1
-    s3) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 s1 s3) t0) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_recIn s1 s3 H_s3 t0 H_t0).
+    s3) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 s1 s3) t0) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_recIn l_u_1 H_l_u_1 s1
+    H_s1 s3 H_s3 t0 H_t0).
 rewrite Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_2_ap s1 s3 t0 (Lean_Nat_rec (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method0_0 s1
     s3) (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_method1_0 s1 s3) t0) s2 H_s2.
 reflexivity.
@@ -8899,10 +8909,11 @@ Qed.
 (** Mettapedia.Languages.Lean.Recursion.FuelCore.MergeSort.reading, from its equation theorem **)
 Definition Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading : set -> set -> set -> set := fun a0 a1 a2 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel
     (Lean_Nat_succ_node (Lean_List_length a0 a1)) a0 a1 a2).
-Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading_In : forall a0, forall a1 :e (Lean_List a0), forall a2 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)),
-    Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading a0 a1 a2 :e (Lean_List a0).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)). exact (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_In
-    (Lean_Nat_succ_node (Lean_List_length a0 a1)) (Lean_Nat_succ_typed (Lean_List_length a0 a1) (Lean_List_length_In a0 a1 H1)) a0 a1 H1 a2 H2).
+Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading_In : forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e (Lean_List a0), forall a2 :e (Pi_ ux :e a0,
+    (Pi_ ux :e a0, Lean_Bool)), Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading a0 a1 a2 :e (Lean_List a0).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)). exact
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel_In l_u_1 H_l_u_1 (Lean_Nat_succ_node (Lean_List_length a0 a1)) (Lean_Nat_succ_typed (Lean_List_length a0 a1)
+    (Lean_List_length_In a0 a1 H1)) a0 H_a0 a1 H1 a2 H2).
 Qed.
 Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_xs :e (Lean_List v_u945), forall v_le :e (Pi_
     ux :e v_u945, (Pi_ ux :e v_u945, Lean_Bool)), (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading v_u945 v_xs v_le) =
@@ -9147,9 +9158,10 @@ Qed.
 
 (** List.mergeSort, from its equation theorem **)
 Definition Lean_List_mergeSort : set -> set -> set -> set := fun a0 a1 a2 => (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading a0 a1 a2).
-Theorem Lean_List_mergeSort_In : forall a0, forall a1 :e (Lean_List a0), forall a2 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)), Lean_List_mergeSort a0 a1 a2 :e (Lean_List a0).
-let a0. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)). exact (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading_In a0
-    a1 H1 a2 H2).
+Theorem Lean_List_mergeSort_In : forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e (Lean_List a0), forall a2 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)), Lean_List_mergeSort a0
+    a1 a2 :e (Lean_List a0).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H1: a1 :e (Lean_List a0). let a2. assume H2: a2 :e (Pi_ ux :e a0, (Pi_ ux :e a0, Lean_Bool)). exact
+    (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading_In l_u_1 H_l_u_1 a0 H_a0 a1 H1 a2 H2).
 Qed.
 Theorem Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_bridge : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_xs :e (Lean_List v_u945), forall v_le :e (Pi_ ux :e
     v_u945, (Pi_ ux :e v_u945, Lean_Bool)), (Lean_List_mergeSort v_u945 v_xs v_le) = (Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_reading v_u945 v_xs v_le).
@@ -9644,9 +9656,9 @@ reflexivity.
 Qed.
 
 (** Lean's theorem Multiset.sum._proof_1: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_Multiset_sum__proof_1_proof : forall v_M, forall v_inst :e (Lean_AddCommMonoid v_M), 0 :e (Lean_LeftCommutative_Prop v_M v_M (fun v_x1 :e v_M => (Sigma v_M (ap ((Lean_Add_add v_M
-    (Lean_AddSemigroup_toAdd v_M (Lean_AddMonoid_toAddSemigroup v_M (Lean_AddCommMonoid_toAddMonoid v_M v_inst)))) v_x1))))).
-let M inst. assume Hinst: inst :e Lean_AddCommMonoid M.
+Theorem Lean_Multiset_sum__proof_1_proof : forall l_u_1, nat_p l_u_1 -> forall v_M :e LeanUniv l_u_1, forall v_inst :e (Lean_AddCommMonoid v_M), 0 :e (Lean_LeftCommutative_Prop v_M v_M (fun v_x1 :e
+    v_M => (Sigma v_M (ap ((Lean_Add_add v_M (Lean_AddSemigroup_toAdd v_M (Lean_AddMonoid_toAddSemigroup v_M (Lean_AddCommMonoid_toAddMonoid v_M v_inst)))) v_x1))))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let M. assume H_M: M :e LeanUniv l_u_1. let inst. assume Hinst: inst :e Lean_AddCommMonoid M.
 claim Hop: forall x y :e M,
   (fun x1 :e M => (fun x2 :e M => (LeanAddOf M inst) x1 x2)) x y = LeanAddOf M inst x y.
 { let x. assume Hx: x :e M. let y. assume Hy: y :e M.
@@ -9661,10 +9673,10 @@ exact LeanAddOf_left_comm M inst Hinst x Hx y Hy v Hv.
 Qed.
 
 (** Lean's theorem List.Perm.length_eq: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_List_Perm_length_eq_proof : forall v_u945, forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322 :e (Lean_List v_u945), 0 :e (Lean_List_Perm_Prop v_u945 v_lu8321 v_lu8322) -> 0 :e
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_lu8321) (Lean_List_length v_u945 v_lu8322)).
-let A xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
-assume H: 0 :e Lean_List_Perm_Prop A xs ys.
+Theorem Lean_List_Perm_length_eq_proof : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322 :e (Lean_List v_u945), 0 :e
+    (Lean_List_Perm_Prop v_u945 v_lu8321 v_lu8322) -> 0 :e (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 v_lu8321) (Lean_List_length v_u945 v_lu8322)).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let A. assume H_A: A :e LeanUniv l_u_1. let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A. assume H: 0 :e Lean_List_Perm_Prop A xs
+    ys.
 exact Lean_Eq_proof_of Lean_Nat (Lean_List_length A xs) (Lean_List_length A ys)
   (LeanListPerm_length_any A xs ys (LeanListPerm_from_prop A xs ys H)).
 Qed.
@@ -9672,48 +9684,49 @@ Qed.
 (** Multiset.card, from its equation theorem **)
 Definition Lean_Multiset_card : set -> set -> set := fun a0 a1 => (Lean_Quot_lift (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) Lean_Nat (Sigma
     (Lean_List a0) (Lean_List_length a0)) 0 a1).
-Theorem Lean_Multiset_card_eq_1_proof_0 : forall a0, forall a1 :e (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2)))), 0 :e (Pi_ v_a :e
-    (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List
-    a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b))))).
-let a0. let a1. assume H1: a1 :e (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2)))). exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0), (Pi_ v_b
-    :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List
-    a0), (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma
-    (Lean_List a0) (Lean_List_length a0)) v_b))))) (eq_sym_i (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b))))) (Pi_ v_a :e (Lean_List
-    a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))))) (Pi_family_eq (Lean_List a0) (fun v_a
-    => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0)
-    (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat
-    (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))))) (fun v_a bridge_bound_64 => (Pi_family_eq (Lean_List a0) (fun v_b => (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b)))) (fun v_b => (Pi_ ux :e
-    (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b)))) (fun v_b bridge_bound_63 => (eq_i_tra (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) =>
-    (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b))) (Pi_
-    ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))) (Pi_ ux :e
-    (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))) (Pi_family_eq ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_x2))) v_a v_b) (fun bridge_arrow_62 => (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b)))
-    (fun bridge_arrow_62 => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))) (fun bridge_arrow_62 bridge_bound_62 => (eq_i_tra (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List
-    a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b)) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b))
-    (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b)) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop Lean_Nat bridge_hole_61 ((Sigma (Lean_List a0) (Lean_List_length a0))
-    v_b))) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) (Lean_List_length a0 v_a) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a)
-    (Lean_List_length a0 v_a) (beta (Lean_List a0) (Lean_List_length a0) v_a bridge_bound_64))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) bridge_hole_61))
-    ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b) (Lean_List_length a0 v_b) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b) (Lean_List_length a0
-    v_b) (beta (Lean_List a0) (Lean_List_length a0) v_b bridge_bound_63)))))) (f_eq_i (fun bridge_domain_62 => (Pi_ ux :e bridge_domain_62, (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a)
-    (Lean_List_length a0 v_b)))) ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b) (Lean_List_Perm_Prop a0 v_a v_b) (eq_i_tra ((fun v_x2 :e (Lean_List a0)
-    => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (f_eq_i (fun bridge_beta_0 =>
-    (bridge_beta_0 v_b)) ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a) (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) (beta (Lean_List a0) (fun v_x2
-    => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a bridge_bound_64)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b)
-    (Lean_List_Perm_Prop a0 v_a v_b) (beta (Lean_List a0) (Lean_List_Perm_Prop a0 v_a) v_b bridge_bound_63)))))))))) (Pi_0_In (Lean_List a0) (fun v__lu8321 => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e
-    (Lean_List_Perm_Prop a0 v__lu8321 v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v__lu8321) (Lean_List_length a0 v_b))))) (fun v__lu8321 Hv__lu8321 => (Pi_0_In (Lean_List a0) (fun v__lu8322 =>
-    (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v__lu8321) (Lean_List_length a0 v__lu8322)))) (fun v__lu8322 Hv__lu8322 => (Pi_0_In
-    (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (fun v_p => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v__lu8321) (Lean_List_length a0 v__lu8322))) (fun v_p Hv_p => (Lean_List_Perm_length_eq_proof
-    a0 v__lu8321 Hv__lu8321 v__lu8322 Hv__lu8322 (Lean_prop_0_of (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (Lean_List_Perm_Prop_prop a0 v__lu8321 v__lu8322) v_p Hv_p))))))))).
+Theorem Lean_Multiset_card_eq_1_proof_0 : forall a0, forall a1 :e (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2)))), forall l_u_1, nat_p
+    l_u_1 -> a0 :e LeanUniv l_u_1 -> 0 :e (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a
+    v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b))))).
+let a0. let a1. assume H1: a1 :e (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2)))). let l_u_1. assume H_l_u_1: nat_p l_u_1. assume H_a0:
+    a0 :e LeanUniv l_u_1. exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a)
+    (Lean_List_length a0 v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b),
+    (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b))))) (eq_sym_i (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0),
+    (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma
+    (Lean_List a0) (Lean_List_length a0)) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0
+    v_a) (Lean_List_length a0 v_b))))) (Pi_family_eq (Lean_List a0) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0
+    v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux
+    :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))))) (fun v_a bridge_bound_64 => (Pi_family_eq (Lean_List a0) (fun v_b => (Pi_ ux :e
+    ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0)
+    (Lean_List_length a0)) v_b)))) (fun v_b => (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b)))) (fun v_b bridge_bound_63 =>
+    (eq_i_tra (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a)
+    ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b))) (Pi_ ux :e ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b), (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))) (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))) (Pi_family_eq ((fun
+    v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b) (fun bridge_arrow_62 => (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma
+    (Lean_List a0) (Lean_List_length a0)) v_b))) (fun bridge_arrow_62 => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b))) (fun bridge_arrow_62 bridge_bound_62 => (eq_i_tra
+    (Lean_Eq_Prop Lean_Nat ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b)) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) ((Sigma (Lean_List
+    a0) (Lean_List_length a0)) v_b)) (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v_a) (Lean_List_length a0 v_b)) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop Lean_Nat bridge_hole_61 ((Sigma
+    (Lean_List a0) (Lean_List_length a0)) v_b))) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_a) (Lean_List_length a0 v_a) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0)
+    (Lean_List_length a0)) v_a) (Lean_List_length a0 v_a) (beta (Lean_List a0) (Lean_List_length a0) v_a bridge_bound_64))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0
+    v_a) bridge_hole_61)) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b) (Lean_List_length a0 v_b) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_length a0)) v_b)
+    (Lean_List_length a0 v_b) (beta (Lean_List a0) (Lean_List_length a0) v_b bridge_bound_63)))))) (f_eq_i (fun bridge_domain_62 => (Pi_ ux :e bridge_domain_62, (Lean_Eq_Prop Lean_Nat
+    (Lean_List_length a0 v_a) (Lean_List_length a0 v_b)))) ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b) (Lean_List_Perm_Prop a0 v_a v_b) (eq_i_tra
+    ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a v_b) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (f_eq_i
+    (fun bridge_beta_0 => (bridge_beta_0 v_b)) ((fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a) (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) (beta
+    (Lean_List a0) (fun v_x2 => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) v_a bridge_bound_64)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0
+    v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (beta (Lean_List a0) (Lean_List_Perm_Prop a0 v_a) v_b bridge_bound_63)))))))))) (Pi_0_In (Lean_List a0) (fun v__lu8321 => (Pi_ v_b :e (Lean_List a0),
+    (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v_b), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v__lu8321) (Lean_List_length a0 v_b))))) (fun v__lu8321 Hv__lu8321 => (Pi_0_In (Lean_List a0) (fun
+    v__lu8322 => (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322), (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v__lu8321) (Lean_List_length a0 v__lu8322)))) (fun v__lu8322 Hv__lu8322 =>
+    (Pi_0_In (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (fun v_p => (Lean_Eq_Prop Lean_Nat (Lean_List_length a0 v__lu8321) (Lean_List_length a0 v__lu8322))) (fun v_p Hv_p =>
+    (Lean_List_Perm_length_eq_proof l_u_1 H_l_u_1 a0 H_a0 v__lu8321 Hv__lu8321 v__lu8322 Hv__lu8322 (Lean_prop_0_of (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (Lean_List_Perm_Prop_prop a0 v__lu8321
+    v__lu8322) v_p Hv_p))))))))).
 Qed.
-Theorem Lean_Multiset_card_In : forall a0, forall a1 :e (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2)))), Lean_Multiset_card a0 a1 :e
-    Lean_Nat.
-let a0. let a1. assume H1: a1 :e (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2)))). exact (Lean_Quot_lift_In (Lean_List a0) (fun v_x2 :e
-    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) (lam_Pi (Lean_List a0) (fun v_x2 => (Pi_ ux :e (Lean_List a0), LeanProp)) (fun v_x2 => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_x2))) (fun v_x2 Hv_x2 => (lam_Pi (Lean_List a0) (fun v_x3 => LeanProp) (fun v_x3 => (Lean_List_Perm_Prop a0 v_x2 v_x3)) (fun v_x3 Hv_x3 => (Lean_List_Perm_Prop_prop a0
-    v_x2 v_x3))))) Lean_Nat (Sigma (Lean_List a0) (Lean_List_length a0)) (lam_Pi (Lean_List a0) (fun v_x2 => Lean_Nat) (fun v_x2 => (Lean_List_length a0 v_x2)) (fun v_x2 Hv_x2 => (Lean_List_length_In
-    a0 v_x2 Hv_x2))) 0 (Lean_Multiset_card_eq_1_proof_0 a0 a1 H1) a1 H1).
+Theorem Lean_Multiset_card_In : forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_x2)))), Lean_Multiset_card a0 a1 :e Lean_Nat.
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H1: a1 :e (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_x2)))). exact (Lean_Quot_lift_In (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) (lam_Pi (Lean_List a0) (fun v_x2 =>
+    (Pi_ ux :e (Lean_List a0), LeanProp)) (fun v_x2 => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))) (fun v_x2 Hv_x2 => (lam_Pi (Lean_List a0) (fun v_x3 => LeanProp) (fun v_x3 =>
+    (Lean_List_Perm_Prop a0 v_x2 v_x3)) (fun v_x3 Hv_x3 => (Lean_List_Perm_Prop_prop a0 v_x2 v_x3))))) Lean_Nat (Sigma (Lean_List a0) (Lean_List_length a0)) (lam_Pi (Lean_List a0) (fun v_x2 =>
+    Lean_Nat) (fun v_x2 => (Lean_List_length a0 v_x2)) (fun v_x2 Hv_x2 => (Lean_List_length_In a0 v_x2 Hv_x2))) 0 (Lean_Multiset_card_eq_1_proof_0 a0 a1 H1 l_u_1 H_l_u_1 H_a0) a1 H1).
 Qed.
 (** Receipt: Multiset.card.eq_1 is the source of the MeTTa rule for Multiset.card, statement digest 4290227001. Read pointwise: Lean states it between functions, here at 1 more argument(s). **)
 Theorem Lean_Multiset_card_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_a :e (Lean_Quot (Lean_List v_u945) (fun v_x2 :e (Lean_List v_u945) => (Sigma (Lean_List
@@ -9729,10 +9742,11 @@ let a0 a1. reflexivity.
 Qed.
 
 (** Lean's theorem _private.Init.Data.List.Sort.Basic.0.List.mergeSort._unary._proof_1: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_List_mergeSort__unary__proof_1_proof : forall v_u945, forall v_a :e v_u945, forall v_b :e v_u945, forall v_xs :e (Lean_List v_u945), 0 :e (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945
-    (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs)))).
-let v_u945. let v_a. assume Ha: v_a :e v_u945. let v_b. assume Hb: v_b :e v_u945.
-let v_xs. assume Hxs: v_xs :e (Lean_List v_u945).
+Theorem Lean_List_mergeSort__unary__proof_1_proof : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_a :e v_u945, forall v_b :e v_u945, forall v_xs :e (Lean_List v_u945), 0 :e
+    (Lean_Eq_Prop Lean_Nat (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a
+    (Lean_List_cons_node v_u945 v_b v_xs)))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_1. let v_a. assume Ha: v_a :e v_u945. let v_b. assume Hb: v_b :e v_u945. let v_xs. assume Hxs: v_xs :e
+    (Lean_List v_u945).
 apply Lean_Eq_proof_of.
 reflexivity.
 Qed.
@@ -9906,14 +9920,12 @@ exact Lean_False_Prop_empty (0 (0 v_n 0)) (ap_Pi (v_P v_n 0) (fun _ => Lean_Fals
 Qed.
 
 (** Lean's theorem List.Perm.foldr_eq: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_List_Perm_foldr_eq_proof : forall v_u945, forall v_u946, forall v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e v_u946, v_u946)), forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322 :e
-    (Lean_List v_u945), 0 :e (Lean_LeftCommutative_Prop v_u945 v_u946 v_f) -> 0 :e (Lean_List_Perm_Prop v_u945 v_lu8321 v_lu8322) -> forall v_b :e v_u946, 0 :e (Lean_Eq_Prop v_u946 (Lean_List_foldr
-    v_u945 v_u946 v_f v_b v_lu8321) (Lean_List_foldr v_u945 v_u946 v_f v_b v_lu8322)).
-let A B f. assume Hf: f :e (Pi_ ux :e A, (Pi_ ux :e B, B)).
-let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
-assume Hlc: 0 :e Lean_LeftCommutative_Prop A B f.
-assume Hperm: 0 :e Lean_List_Perm_Prop A xs ys.
-let b. assume Hb: b :e B.
+Theorem Lean_List_Perm_foldr_eq_proof : forall l_u_1, nat_p l_u_1 -> forall l_u_2, nat_p l_u_2 -> forall v_u945 :e LeanUniv l_u_1, forall v_u946 :e LeanUniv l_u_2, forall v_f :e (Pi_ ux :e v_u945,
+    (Pi_ ux :e v_u946, v_u946)), forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322 :e (Lean_List v_u945), 0 :e (Lean_LeftCommutative_Prop v_u945 v_u946 v_f) -> 0 :e (Lean_List_Perm_Prop v_u945
+    v_lu8321 v_lu8322) -> forall v_b :e v_u946, 0 :e (Lean_Eq_Prop v_u946 (Lean_List_foldr v_u945 v_u946 v_f v_b v_lu8321) (Lean_List_foldr v_u945 v_u946 v_f v_b v_lu8322)).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let A. assume H_A: A :e LeanUniv l_u_1. let B. assume H_B: B :e LeanUniv l_u_2. let f. assume Hf: f :e (Pi_ ux :e A,
+    (Pi_ ux :e B, B)). let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A. assume Hlc: 0 :e Lean_LeftCommutative_Prop A B f. assume Hperm: 0 :e Lean_List_Perm_Prop A xs ys.
+    let b. assume Hb: b :e B.
 exact Lean_Eq_proof_of B (Lean_List_foldr A B f b xs) (Lean_List_foldr A B f b ys)
   (LeanListPerm_foldr A B f Hf
     (fun x Hx y Hy value Hvalue => LeanLeftCommutative_elim A B f Hlc y Hy x Hx value Hvalue)
@@ -9924,52 +9936,55 @@ Qed.
 Definition Lean_Multiset_foldr : set -> set -> set -> set -> set -> set -> set := fun a0 a1 a2 a3 a4 a5 => (Lean_Quot_liftOn (Lean_List a0) a1 (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
     (Lean_List_Perm_Prop a0 v_a))) a5 (Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) 0).
 Theorem Lean_Multiset_foldr_eq_1_proof_0 : forall a0, forall a1, forall a2 :e (Pi_ ux :e a0, (Pi_ ux :e a1, a1)), forall a3 :e (Lean_LeftCommutative_Prop a0 a1 a2), forall a4 :e a1, forall a5 :e
-    (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), 0 :e (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e
-    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0)
-    (Lean_List_foldr a0 a1 a2 a4)) v_b))))).
+    (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), forall l_v, nat_p l_v -> forall l_u_1, nat_p l_u_1 -> a0 :e LeanUniv l_u_1 -> a1 :e
+    LeanUniv l_v -> 0 :e (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop
+    a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b))))).
 let a0. let a1. let a2. assume H2: a2 :e (Pi_ ux :e a0, (Pi_ ux :e a1, a1)). let a3. assume H3: a3 :e (Lean_LeftCommutative_Prop a0 a1 a2). let a4. assume H4: a4 :e a1. let a5. assume H5: a5 :e
-    (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e
-    (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun
-    v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0)
-    (Lean_List_foldr a0 a1 a2 a4)) v_b))))) (eq_sym_i (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0
-    v_a))) v_a v_b), (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e
-    (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))))) (Pi_family_eq (Lean_List a0) (fun v_a => (Pi_
-    v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2
-    a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0
-    a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))))) (fun v_a bridge_bound_64 => (Pi_family_eq (Lean_List a0) (fun v_b => (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b)))) (fun v_b => (Pi_
-    ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b)))) (fun v_b bridge_bound_63 => (eq_i_tra (Pi_ ux :e ((fun v_a :e
+    (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). let l_v. assume H_l_v: nat_p l_v. let l_u_1. assume H_l_u_1: nat_p l_u_1. assume
+    H_a0: a0 :e LeanUniv l_u_1. assume H_a1: a1 :e LeanUniv l_v. exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop a1
+    (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b))))) (eq_sym_i (Pi_
+    v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 ((Sigma (Lean_List a0)
+    (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a
+    v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))))) (Pi_family_eq (Lean_List a0) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e
     (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0)
-    (Lean_List_foldr a0 a1 a2 a4)) v_b))) (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a)
-    (Lean_List_foldr a0 a1 a2 a4 v_b))) (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))) (Pi_family_eq ((fun v_a :e
-    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (fun bridge_arrow_62 => (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma
-    (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b))) (fun bridge_arrow_62 => (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))) (fun bridge_arrow_62
-    bridge_bound_62 => (eq_i_tra (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b)) (Lean_Eq_Prop a1
-    (Lean_List_foldr a0 a1 a2 a4 v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b)) (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b)) (f_eq_i (fun
-    bridge_hole_61 => (Lean_Eq_Prop a1 bridge_hole_61 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b))) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) (Lean_List_foldr a0 a1 a2
-    a4 v_a) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) (Lean_List_foldr a0 a1 a2 a4 v_a) (beta (Lean_List a0) (Lean_List_foldr a0 a1 a2
-    a4) v_a bridge_bound_64))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) bridge_hole_61)) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b)
-    (Lean_List_foldr a0 a1 a2 a4 v_b) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b) (Lean_List_foldr a0 a1 a2 a4 v_b) (beta (Lean_List a0)
-    (Lean_List_foldr a0 a1 a2 a4) v_b bridge_bound_63)))))) (f_eq_i (fun bridge_domain_62 => (Pi_ ux :e bridge_domain_62, (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2
-    a4 v_b)))) ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (Lean_List_Perm_Prop a0 v_a v_b) (eq_i_tra ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List
-    a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (f_eq_i (fun bridge_beta_0 => (bridge_beta_0 v_b)) ((fun v_a
-    :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a) (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) (beta (Lean_List a0) (fun v_a => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a))) v_a bridge_bound_64)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (beta
-    (Lean_List a0) (Lean_List_Perm_Prop a0 v_a) v_b bridge_bound_63)))))))))) (Pi_0_In (Lean_List a0) (fun v__lu8321 => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v_b),
-    (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v__lu8321) (Lean_List_foldr a0 a1 a2 a4 v_b))))) (fun v__lu8321 Hv__lu8321 => (Pi_0_In (Lean_List a0) (fun v__lu8322 => (Pi_ ux :e
-    (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v__lu8321) (Lean_List_foldr a0 a1 a2 a4 v__lu8322)))) (fun v__lu8322 Hv__lu8322 => (Pi_0_In
-    (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (fun v_p => (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v__lu8321) (Lean_List_foldr a0 a1 a2 a4 v__lu8322))) (fun v_p Hv_p =>
-    (Lean_List_Perm_foldr_eq_proof a0 a1 a2 H2 v__lu8321 Hv__lu8321 v__lu8322 Hv__lu8322 (Lean_prop_0_of (Lean_LeftCommutative_Prop a0 a1 a2) (Lean_LeftCommutative_Prop_prop a0 a1 a2) a3 H3)
-    (Lean_prop_0_of (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (Lean_List_Perm_Prop_prop a0 v__lu8321 v__lu8322) v_p Hv_p) a4 H4)))))))).
+    (Lean_List_foldr a0 a1 a2 a4)) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0
+    a1 a2 a4 v_b))))) (fun v_a bridge_bound_64 => (Pi_family_eq (Lean_List a0) (fun v_b => (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b),
+    (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b)))) (fun v_b => (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b),
+    (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b)))) (fun v_b bridge_bound_63 => (eq_i_tra (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b))) (Pi_ ux :e ((fun
+    v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))) (Pi_ ux :e
+    (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))) (Pi_family_eq ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (fun bridge_arrow_62 => (Lean_Eq_Prop a1 ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4))
+    v_b))) (fun bridge_arrow_62 => (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b))) (fun bridge_arrow_62 bridge_bound_62 => (eq_i_tra (Lean_Eq_Prop a1 ((Sigma
+    (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b)) (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) ((Sigma (Lean_List a0)
+    (Lean_List_foldr a0 a1 a2 a4)) v_b)) (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b)) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop a1 bridge_hole_61 ((Sigma
+    (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b))) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) (Lean_List_foldr a0 a1 a2 a4 v_a) (f_eq_i (fun bridge_beta_0 => bridge_beta_0)
+    ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_a) (Lean_List_foldr a0 a1 a2 a4 v_a) (beta (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4) v_a bridge_bound_64))) (f_eq_i (fun bridge_hole_61
+    => (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) bridge_hole_61)) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b) (Lean_List_foldr a0 a1 a2 a4 v_b) (f_eq_i (fun bridge_beta_0 =>
+    bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) v_b) (Lean_List_foldr a0 a1 a2 a4 v_b) (beta (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4) v_b bridge_bound_63)))))) (f_eq_i
+    (fun bridge_domain_62 => (Pi_ ux :e bridge_domain_62, (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4 v_a) (Lean_List_foldr a0 a1 a2 a4 v_b)))) ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (Lean_List_Perm_Prop a0 v_a v_b) (eq_i_tra ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) ((Sigma (Lean_List
+    a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (f_eq_i (fun bridge_beta_0 => (bridge_beta_0 v_b)) ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a))) v_a) (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) (beta (Lean_List a0) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a bridge_bound_64))
+    (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (beta (Lean_List a0) (Lean_List_Perm_Prop a0 v_a) v_b
+    bridge_bound_63)))))))))) (Pi_0_In (Lean_List a0) (fun v__lu8321 => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v_b), (Lean_Eq_Prop a1 (Lean_List_foldr a0 a1 a2 a4
+    v__lu8321) (Lean_List_foldr a0 a1 a2 a4 v_b))))) (fun v__lu8321 Hv__lu8321 => (Pi_0_In (Lean_List a0) (fun v__lu8322 => (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322), (Lean_Eq_Prop a1
+    (Lean_List_foldr a0 a1 a2 a4 v__lu8321) (Lean_List_foldr a0 a1 a2 a4 v__lu8322)))) (fun v__lu8322 Hv__lu8322 => (Pi_0_In (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (fun v_p => (Lean_Eq_Prop a1
+    (Lean_List_foldr a0 a1 a2 a4 v__lu8321) (Lean_List_foldr a0 a1 a2 a4 v__lu8322))) (fun v_p Hv_p => (Lean_List_Perm_foldr_eq_proof l_u_1 H_l_u_1 l_v H_l_v a0 H_a0 a1 H_a1 a2 H2 v__lu8321
+    Hv__lu8321 v__lu8322 Hv__lu8322 (Lean_prop_0_of (Lean_LeftCommutative_Prop a0 a1 a2) (Lean_LeftCommutative_Prop_prop a0 a1 a2) a3 H3) (Lean_prop_0_of (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322)
+    (Lean_List_Perm_Prop_prop a0 v__lu8321 v__lu8322) v_p Hv_p) a4 H4)))))))).
 Qed.
-Theorem Lean_Multiset_foldr_In : forall a0, forall a1, forall a2 :e (Pi_ ux :e a0, (Pi_ ux :e a1, a1)), forall a3 :e (Lean_LeftCommutative_Prop a0 a1 a2), forall a4 :e a1, forall a5 :e (Lean_Quot
-    (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), Lean_Multiset_foldr a0 a1 a2 a3 a4 a5 :e a1.
-let a0. let a1. let a2. assume H2: a2 :e (Pi_ ux :e a0, (Pi_ ux :e a1, a1)). let a3. assume H3: a3 :e (Lean_LeftCommutative_Prop a0 a1 a2). let a4. assume H4: a4 :e a1. let a5. assume H5: a5 :e
-    (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). exact (Lean_Quot_liftOn_In (Lean_List a0) a1 (fun v_a :e (Lean_List a0) => (Sigma
-    (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (lam_Pi (Lean_List a0) (fun v_a => (Pi_ ux :e (Lean_List a0), LeanProp)) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (fun v_a
-    Hv_a => (lam_Pi (Lean_List a0) (fun v_x7 => LeanProp) (fun v_x7 => (Lean_List_Perm_Prop a0 v_a v_x7)) (fun v_x7 Hv_x7 => (Lean_List_Perm_Prop_prop a0 v_a v_x7))))) a5 H5 (Sigma (Lean_List a0)
-    (Lean_List_foldr a0 a1 a2 a4)) (lam_Pi (Lean_List a0) (fun v_l => a1) (fun v_l => (Lean_List_foldr a0 a1 a2 a4 v_l)) (fun v_l Hv_l => (Lean_List_foldr_In a0 a1 a2 H2 a4 H4 v_l Hv_l))) 0
-    (Lean_Multiset_foldr_eq_1_proof_0 a0 a1 a2 H2 a3 H3 a4 H4 a5 H5)).
+Theorem Lean_Multiset_foldr_In : forall l_v, nat_p l_v -> forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e LeanUniv l_v, forall a2 :e (Pi_ ux :e a0, (Pi_ ux :e a1, a1)), forall
+    a3 :e (Lean_LeftCommutative_Prop a0 a1 a2), forall a4 :e a1, forall a5 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))),
+    Lean_Multiset_foldr a0 a1 a2 a3 a4 a5 :e a1.
+let l_v. assume H_l_v: nat_p l_v. let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H_a1: a1 :e LeanUniv l_v. let a2. assume H2: a2 :e (Pi_ ux :e a0,
+    (Pi_ ux :e a1, a1)). let a3. assume H3: a3 :e (Lean_LeftCommutative_Prop a0 a1 a2). let a4. assume H4: a4 :e a1. let a5. assume H5: a5 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) =>
+    (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). exact (Lean_Quot_liftOn_In (Lean_List a0) a1 (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (lam_Pi
+    (Lean_List a0) (fun v_a => (Pi_ ux :e (Lean_List a0), LeanProp)) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (fun v_a Hv_a => (lam_Pi (Lean_List a0) (fun v_x7 => LeanProp)
+    (fun v_x7 => (Lean_List_Perm_Prop a0 v_a v_x7)) (fun v_x7 Hv_x7 => (Lean_List_Perm_Prop_prop a0 v_a v_x7))))) a5 H5 (Sigma (Lean_List a0) (Lean_List_foldr a0 a1 a2 a4)) (lam_Pi (Lean_List a0)
+    (fun v_l => a1) (fun v_l => (Lean_List_foldr a0 a1 a2 a4 v_l)) (fun v_l Hv_l => (Lean_List_foldr_In a0 a1 a2 H2 a4 H4 v_l Hv_l))) 0 (Lean_Multiset_foldr_eq_1_proof_0 a0 a1 a2 H2 a3 H3 a4 H4 a5 H5
+    l_v H_l_v l_u_1 H_l_u_1 H_a0 H_a1)).
 Qed.
 (** Receipt: Multiset.foldr.eq_1 is the source of the MeTTa rule for Multiset.foldr, statement digest 1627644574. **)
 Theorem Lean_Multiset_foldr_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall l_v, nat_p l_v -> forall v_u946 :e LeanUniv l_v, forall v_f :e (Pi_ ux :e v_u945, (Pi_ ux :e
@@ -9990,23 +10005,24 @@ Qed.
 Definition Lean_Multiset_sum : set -> set -> set -> set := fun a0 a1 a2 => (Lean_Multiset_foldr a0 a0 (fun v_x1 :e a0 => (Sigma a0 (ap ((Lean_Add_add a0 (Lean_AddSemigroup_toAdd a0
     (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1)))) 0 (Lean_Zero_zero a0 (Lean_AddMonoid_toZero a0 (Lean_AddCommMonoid_toAddMonoid a0 a1))) a2).
 Theorem Lean_Multiset_sum_eq_1_proof_0 : forall a0, forall a1 :e (Lean_AddCommMonoid a0), forall a2 :e (Lean_Quot (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_x3)))), 0 :e (Lean_LeftCommutative_Prop a0 a0 (fun v_x1 :e a0 => (Sigma a0 (ap ((Lean_Add_add a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0
-    (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1))))).
-let a0. let a1. assume H1: a1 :e (Lean_AddCommMonoid a0). let a2. assume H2: a2 :e (Lean_Quot (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x3)))).
-    exact (Lean_Multiset_sum__proof_1_proof a0 a1 H1).
+    (Lean_List_Perm_Prop a0 v_x3)))), forall l_u_3, nat_p l_u_3 -> a0 :e LeanUniv l_u_3 -> 0 :e (Lean_LeftCommutative_Prop a0 a0 (fun v_x1 :e a0 => (Sigma a0 (ap ((Lean_Add_add a0
+    (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1))))).
+let a0. let a1. assume H1: a1 :e (Lean_AddCommMonoid a0). let a2. assume H2: a2 :e (Lean_Quot (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x3)))). let
+    l_u_3. assume H_l_u_3: nat_p l_u_3. assume H_a0: a0 :e LeanUniv l_u_3. exact (Lean_Multiset_sum__proof_1_proof l_u_3 H_l_u_3 a0 H_a0 a1 H1).
 Qed.
-Theorem Lean_Multiset_sum_In : forall a0, forall a1 :e (Lean_AddCommMonoid a0), forall a2 :e (Lean_Quot (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0
-    v_x3)))), Lean_Multiset_sum a0 a1 a2 :e a0.
-let a0. let a1. assume H1: a1 :e (Lean_AddCommMonoid a0). let a2. assume H2: a2 :e (Lean_Quot (Lean_List a0) (fun v_x3 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x3)))).
-    exact (Lean_Multiset_foldr_In a0 a0 (fun v_x1 :e a0 => (Sigma a0 (ap ((Lean_Add_add a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1))))
-    v_x1)))) (lam_Pi a0 (fun v_x1 => (Pi_ ux :e a0, a0)) (fun v_x1 => (Sigma a0 (ap ((Lean_Add_add a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0
-    a1)))) v_x1)))) (fun v_x1 Hv_x1 => (lam_Pi a0 (fun v_x2 => a0) (fun v_x2 => ((Lean_Add_add a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0
-    a1)))) v_x1 v_x2)) (fun v_x2 Hv_x2 => (ap_Pi a0 (fun _ => a0) ((Lean_Add_add a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1) v_x2
-    (ap_Pi a0 (fun _ => (Pi_ ux :e a0, a0)) (Lean_Add_add a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1 (Lean_Add_add_In a0
-    (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1))) (Lean_AddSemigroup_toAdd_In a0 (Lean_AddMonoid_toAddSemigroup a0
-    (Lean_AddCommMonoid_toAddMonoid a0 a1)) (Lean_AddMonoid_toAddSemigroup_In a0 (Lean_AddCommMonoid_toAddMonoid a0 a1) (Lean_AddCommMonoid_toAddMonoid_In a0 a1 H1)))) Hv_x1) Hv_x2))))) 0
-    (Lean_Multiset_sum_eq_1_proof_0 a0 a1 H1 a2 H2) (Lean_Zero_zero a0 (Lean_AddMonoid_toZero a0 (Lean_AddCommMonoid_toAddMonoid a0 a1))) (Lean_Zero_zero_In a0 (Lean_AddMonoid_toZero a0
-    (Lean_AddCommMonoid_toAddMonoid a0 a1)) (Lean_AddMonoid_toZero_In a0 (Lean_AddCommMonoid_toAddMonoid a0 a1) (Lean_AddCommMonoid_toAddMonoid_In a0 a1 H1))) a2 H2).
+Theorem Lean_Multiset_sum_In : forall l_u_3, nat_p l_u_3 -> forall a0 :e LeanUniv l_u_3, forall a1 :e (Lean_AddCommMonoid a0), forall a2 :e (Lean_Quot (Lean_List a0) (fun v_x3 :e (Lean_List a0) =>
+    (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x3)))), Lean_Multiset_sum a0 a1 a2 :e a0.
+let l_u_3. assume H_l_u_3: nat_p l_u_3. let a0. assume H_a0: a0 :e LeanUniv l_u_3. let a1. assume H1: a1 :e (Lean_AddCommMonoid a0). let a2. assume H2: a2 :e (Lean_Quot (Lean_List a0) (fun v_x3 :e
+    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x3)))). exact (Lean_Multiset_foldr_In l_u_3 H_l_u_3 l_u_3 H_l_u_3 a0 H_a0 a0 H_a0 (fun v_x1 :e a0 => (Sigma a0 (ap ((Lean_Add_add
+    a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1)))) (lam_Pi a0 (fun v_x1 => (Pi_ ux :e a0, a0)) (fun v_x1 => (Sigma a0 (ap
+    ((Lean_Add_add a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1)))) (fun v_x1 Hv_x1 => (lam_Pi a0 (fun v_x2 => a0) (fun v_x2 =>
+    ((Lean_Add_add a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1 v_x2)) (fun v_x2 Hv_x2 => (ap_Pi a0 (fun _ => a0) ((Lean_Add_add a0
+    (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1) v_x2 (ap_Pi a0 (fun _ => (Pi_ ux :e a0, a0)) (Lean_Add_add a0
+    (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)))) v_x1 (Lean_Add_add_In a0 (Lean_AddSemigroup_toAdd a0 (Lean_AddMonoid_toAddSemigroup a0
+    (Lean_AddCommMonoid_toAddMonoid a0 a1))) (Lean_AddSemigroup_toAdd_In a0 (Lean_AddMonoid_toAddSemigroup a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)) (Lean_AddMonoid_toAddSemigroup_In a0
+    (Lean_AddCommMonoid_toAddMonoid a0 a1) (Lean_AddCommMonoid_toAddMonoid_In a0 a1 H1)))) Hv_x1) Hv_x2))))) 0 (Lean_Multiset_sum_eq_1_proof_0 a0 a1 H1 a2 H2 l_u_3 H_l_u_3 H_a0) (Lean_Zero_zero a0
+    (Lean_AddMonoid_toZero a0 (Lean_AddCommMonoid_toAddMonoid a0 a1))) (Lean_Zero_zero_In a0 (Lean_AddMonoid_toZero a0 (Lean_AddCommMonoid_toAddMonoid a0 a1)) (Lean_AddMonoid_toZero_In a0
+    (Lean_AddCommMonoid_toAddMonoid a0 a1) (Lean_AddCommMonoid_toAddMonoid_In a0 a1 H1))) a2 H2).
 Qed.
 (** Receipt: Multiset.sum.eq_1 is the source of the MeTTa rule for Multiset.sum, statement digest 2607920674. Read pointwise: Lean states it between functions, here at 1 more argument(s). **)
 Theorem Lean_Multiset_sum_eq_1 : forall l_u_3, nat_p l_u_3 -> forall v_M :e LeanUniv l_u_3, forall v_inst :e (Lean_AddCommMonoid v_M), forall v_a :e (Lean_Quot (Lean_List v_M) (fun v_x3 :e (Lean_List
@@ -10559,11 +10575,11 @@ let a0. reflexivity.
 Qed.
 
 (** Lean's theorem List.Perm.map: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_List_Perm_map_proof : forall v_u945, forall v_u946, forall v_f :e (Pi_ ux :e v_u945, v_u946), forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322 :e (Lean_List v_u945), 0 :e
-    (Lean_List_Perm_Prop v_u945 v_lu8321 v_lu8322) -> 0 :e (Lean_List_Perm_Prop v_u946 (Lean_List_map v_u945 v_u946 v_f v_lu8321) (Lean_List_map v_u945 v_u946 v_f v_lu8322)).
-let A B f. assume Hf: f :e (Pi_ ux :e A, B).
-let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
-assume H: 0 :e Lean_List_Perm_Prop A xs ys.
+Theorem Lean_List_Perm_map_proof : forall l_u_1, nat_p l_u_1 -> forall l_u_2, nat_p l_u_2 -> forall v_u945 :e LeanUniv l_u_1, forall v_u946 :e LeanUniv l_u_2, forall v_f :e (Pi_ ux :e v_u945,
+    v_u946), forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322 :e (Lean_List v_u945), 0 :e (Lean_List_Perm_Prop v_u945 v_lu8321 v_lu8322) -> 0 :e (Lean_List_Perm_Prop v_u946 (Lean_List_map
+    v_u945 v_u946 v_f v_lu8321) (Lean_List_map v_u945 v_u946 v_f v_lu8322)).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let l_u_2. assume H_l_u_2: nat_p l_u_2. let A. assume H_A: A :e LeanUniv l_u_1. let B. assume H_B: B :e LeanUniv l_u_2. let f. assume Hf: f :e (Pi_ ux :e A,
+    B). let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A. assume H: 0 :e Lean_List_Perm_Prop A xs ys.
 exact LeanListPerm_to_prop B (Lean_List_map A B f xs) (Lean_List_map A B f ys)
   (LeanListPerm_map A B f Hf xs ys (LeanListPerm_from_prop A xs ys H)).
 Qed.
@@ -10573,85 +10589,88 @@ Definition Lean_Multiset_map : set -> set -> set -> set -> set := fun a0 a1 a2 a
     (Lean_List_Perm_Prop a1 v_a)))) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) a3 (fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1
     a2 v_l))) 0).
 Theorem Lean_Multiset_map_eq_1_proof_0 : forall a0, forall a1, forall a2 :e (Pi_ ux :e a0, a1), forall a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a)))), 0 :e (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a
-    v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1
-    (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))))).
+    (Lean_List_Perm_Prop a0 v_a)))), forall l_v, nat_p l_v -> forall l_u_1, nat_p l_u_1 -> a0 :e LeanUniv l_u_1 -> a1 :e LeanUniv l_v -> 0 :e (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0),
+    (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List
+    a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1
+    (Lean_List_map a0 a1 a2 v_l))) v_b))))).
 let a0. let a1. let a2. assume H2: a2 :e (Pi_ ux :e a0, a1). let a3. assume H3: a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))).
-    exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma
-    (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))))) (Pi_ v_a :e (Lean_List a0), (Pi_
-    v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1)
-    => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) =>
-    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))))) (eq_sym_i (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) =>
-    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b
+    let l_v. assume H_l_v: nat_p l_v. let l_u_1. assume H_l_u_1: nat_p l_u_1. assume H_a0: a0 :e LeanUniv l_u_1. assume H_a1: a1 :e LeanUniv l_v. exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0), (Pi_ v_b
     :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))))
-    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))))) (Pi_family_eq (Lean_List a0) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e
-    ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1)
-    (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map
-    a0 a1 a2 v_l))) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma
-    (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))))) (fun v_a bridge_bound_64 =>
-    (Pi_family_eq (Lean_List a0) (fun v_b => (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a
-    :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0)
-    => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b)))) (fun v_b => (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) =>
-    (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b))))) (fun v_b bridge_bound_63 =>
-    (eq_i_tra (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma
-    (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1
-    (Lean_List_map a0 a1 a2 v_l))) v_b))) (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e
-    (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))) (Pi_ ux :e
-    (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1
-    (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))) (Pi_family_eq ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b)
-    (fun bridge_arrow_62 => (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) =>
-    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))) (fun bridge_arrow_62 => (Lean_Eq_Prop
-    (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1
-    (Lean_List_map a0 a1 a2 v_b)))) (fun bridge_arrow_62 bridge_bound_62 => (eq_i_tra (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop
-    a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))
-    (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) ((fun v_l :e
-    (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b)) (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1
-    v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun
-    v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) bridge_hole_61 ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))) ((fun
-    v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l
-    :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (beta (Lean_List a0) (fun v_l => (Lean_Multiset_ofList a1
-    (Lean_List_map a0 a1 a2 v_l))) v_a bridge_bound_64))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1)
-    (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) bridge_hole_61)) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b)
-    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b)
-    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)) (beta (Lean_List a0) (fun v_l => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b bridge_bound_63)))))) (f_eq_i (fun
-    bridge_domain_62 => (Pi_ ux :e bridge_domain_62, (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList
-    a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b))))) ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b)
-    (Lean_List_Perm_Prop a0 v_a v_b) (eq_i_tra ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b)
-    (Lean_List_Perm_Prop a0 v_a v_b) (f_eq_i (fun bridge_beta_0 => (bridge_beta_0 v_b)) ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a) (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a)) (beta (Lean_List a0) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a bridge_bound_64)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma
-    (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (beta (Lean_List a0) (Lean_List_Perm_Prop a0 v_a) v_b bridge_bound_63)))))))))) (Pi_0_In (Lean_List a0) (fun
-    v__lu8321 => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1)
-    (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v__lu8321)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))))) (fun v__lu8321 Hv__lu8321 => (Pi_0_In
-    (Lean_List a0) (fun v__lu8322 => (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1)
-    (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v__lu8321)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v__lu8322))))) (fun v__lu8322 Hv__lu8322 => (Pi_0_In
-    (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (fun v_p => (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))))
-    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v__lu8321)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v__lu8322)))) (fun v_p Hv_p => (Lean_Eq_proof_of (Lean_Quot (Lean_List a1) (fun v_a
-    :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Quot_mk (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))
-    (Lean_List_map a0 a1 a2 v__lu8321)) (Lean_Quot_mk (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8322))
-    (Lean_Quot_mk_sound (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map_In a0 a1 a2 H2 v__lu8321
-    Hv__lu8321) (Lean_List_map a0 a1 a2 v__lu8322) (Lean_List_map_In a0 a1 a2 H2 v__lu8322 Hv__lu8322) (In_eq_r 0 (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2
-    v__lu8322)) ((fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322)) (eq_sym_i ((fun v_a :e
-    (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322)) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2
-    v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322)) (eq_i_tra ((fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0
-    a1 a2 v__lu8322)) ((Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321))) (Lean_List_map a0 a1 a2 v__lu8322)) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2
-    v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322)) (f_eq_i (fun bridge_beta_0 => (bridge_beta_0 (Lean_List_map a0 a1 a2 v__lu8322))) ((fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1)
-    (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321)) (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321))) (beta (Lean_List a1) (fun v_a => (Sigma
-    (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map_In a0 a1 a2 H2 v__lu8321 Hv__lu8321))) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma
-    (Lean_List a1) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321))) (Lean_List_map a0 a1 a2 v__lu8322)) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2
-    v__lu8322)) (beta (Lean_List a1) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321)) (Lean_List_map a0 a1 a2 v__lu8322) (Lean_List_map_In a0 a1 a2 H2 v__lu8322 Hv__lu8322)))))
-    (Lean_List_Perm_map_proof a0 a1 a2 H2 v__lu8321 Hv__lu8321 v__lu8322 Hv__lu8322 (Lean_prop_0_of (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (Lean_List_Perm_Prop_prop a0 v__lu8321 v__lu8322) v_p
-    Hv_p)))))))))))).
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e
+    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop
+    a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l)))
+    v_b))))) (eq_sym_i (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop
+    (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2
+    v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop
+    a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a))
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))))) (Pi_family_eq (Lean_List a0) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) =>
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List
+    a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList
+    a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))))) (fun v_a bridge_bound_64 => (Pi_family_eq (Lean_List a0) (fun v_b => (Pi_ ux :e ((fun v_a :e (Lean_List
+    a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))))
+    ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b)))) (fun v_b
+    => (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList
+    a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b))))) (fun v_b bridge_bound_63 => (eq_i_tra (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) =>
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))) (Pi_ ux :e ((fun v_a :e (Lean_List a0)
+    => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))))
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))) (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List
+    a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2
+    v_b)))) (Pi_family_eq ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (fun bridge_arrow_62 => (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e
+    (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) =>
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))) (fun bridge_arrow_62 => (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1)
+    (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))) (fun bridge_arrow_62 bridge_bound_62 => (eq_i_tra
+    (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map
+    a0 a1 a2 v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b)) (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma
+    (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))
+    (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a))
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1)
+    (Lean_List_Perm_Prop a1 v_a)))) bridge_hole_61 ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList
+    a1 (Lean_List_map a0 a1 a2 v_l))) v_a) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1
+    (Lean_List_map a0 a1 a2 v_l))) v_a) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a)) (beta (Lean_List a0) (fun v_l => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_a
+    bridge_bound_64))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList
+    a1 (Lean_List_map a0 a1 a2 v_a)) bridge_hole_61)) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2
+    v_b)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2
+    v_b)) (beta (Lean_List a0) (fun v_l => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) v_b bridge_bound_63)))))) (f_eq_i (fun bridge_domain_62 => (Pi_ ux :e bridge_domain_62,
+    (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_a))
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b))))) ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (Lean_List_Perm_Prop a0 v_a v_b) (eq_i_tra
+    ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (f_eq_i
+    (fun bridge_beta_0 => (bridge_beta_0 v_b)) ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a) (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) (beta
+    (Lean_List a0) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a bridge_bound_64)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0
+    v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (beta (Lean_List a0) (Lean_List_Perm_Prop a0 v_a) v_b bridge_bound_63)))))))))) (Pi_0_In (Lean_List a0) (fun v__lu8321 => (Pi_ v_b :e (Lean_List a0),
+    (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))))
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v__lu8321)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_b)))))) (fun v__lu8321 Hv__lu8321 => (Pi_0_In (Lean_List a0) (fun v__lu8322 => (Pi_
+    ux :e (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322), (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))))
+    (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v__lu8321)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v__lu8322))))) (fun v__lu8322 Hv__lu8322 => (Pi_0_In (Lean_List_Perm_Prop a0
+    v__lu8321 v__lu8322) (fun v_p => (Lean_Eq_Prop (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Multiset_ofList a1
+    (Lean_List_map a0 a1 a2 v__lu8321)) (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v__lu8322)))) (fun v_p Hv_p => (Lean_Eq_proof_of (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) =>
+    (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (Lean_Quot_mk (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2
+    v__lu8321)) (Lean_Quot_mk (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8322)) (Lean_Quot_mk_sound (Lean_List a1)
+    (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map_In a0 a1 a2 H2 v__lu8321 Hv__lu8321) (Lean_List_map a0 a1 a2
+    v__lu8322) (Lean_List_map_In a0 a1 a2 H2 v__lu8322 Hv__lu8322) (In_eq_r 0 (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322)) ((fun v_a :e (Lean_List
+    a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322)) (eq_sym_i ((fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1)
+    (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322)) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2
+    v__lu8322)) (eq_i_tra ((fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322)) ((Sigma (Lean_List
+    a1) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321))) (Lean_List_map a0 a1 a2 v__lu8322)) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322))
+    (f_eq_i (fun bridge_beta_0 => (bridge_beta_0 (Lean_List_map a0 a1 a2 v__lu8322))) ((fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map a0 a1 a2
+    v__lu8321)) (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321))) (beta (Lean_List a1) (fun v_a => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a))) (Lean_List_map
+    a0 a1 a2 v__lu8321) (Lean_List_map_In a0 a1 a2 H2 v__lu8321 Hv__lu8321))) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2
+    v__lu8321))) (Lean_List_map a0 a1 a2 v__lu8322)) (Lean_List_Perm_Prop a1 (Lean_List_map a0 a1 a2 v__lu8321) (Lean_List_map a0 a1 a2 v__lu8322)) (beta (Lean_List a1) (Lean_List_Perm_Prop a1
+    (Lean_List_map a0 a1 a2 v__lu8321)) (Lean_List_map a0 a1 a2 v__lu8322) (Lean_List_map_In a0 a1 a2 H2 v__lu8322 Hv__lu8322))))) (Lean_List_Perm_map_proof l_u_1 H_l_u_1 l_v H_l_v a0 H_a0 a1 H_a1 a2
+    H2 v__lu8321 Hv__lu8321 v__lu8322 Hv__lu8322 (Lean_prop_0_of (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (Lean_List_Perm_Prop_prop a0 v__lu8321 v__lu8322) v_p Hv_p)))))))))))).
 Qed.
-Theorem Lean_Multiset_map_In : forall a0, forall a1, forall a2 :e (Pi_ ux :e a0, a1), forall a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop
-    a0 v_a)))), Lean_Multiset_map a0 a1 a2 a3 :e (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))).
-let a0. let a1. let a2. assume H2: a2 :e (Pi_ ux :e a0, a1). let a3. assume H3: a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))).
-    exact (Lean_Quot_liftOn_In (Lean_List a0) (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (fun v_a :e (Lean_List a0) => (Sigma
-    (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (lam_Pi (Lean_List a0) (fun v_a => (Pi_ ux :e (Lean_List a0), LeanProp)) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (fun v_a
-    Hv_a => (lam_Pi (Lean_List a0) (fun v_x5 => LeanProp) (fun v_x5 => (Lean_List_Perm_Prop a0 v_a v_x5)) (fun v_x5 Hv_x5 => (Lean_List_Perm_Prop_prop a0 v_a v_x5))))) a3 H3 (fun v_l :e (Lean_List
-    a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) (lam_Pi (Lean_List a0) (fun v_l => (Lean_Quot (Lean_List a1) (fun v_x2 :e (Lean_List a1) => (Sigma (Lean_List a1)
-    (Lean_List_Perm_Prop a1 v_x2))))) (fun v_l => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2 v_l))) (fun v_l Hv_l => (Lean_Multiset_ofList_In a1 (Lean_List_map a0 a1 a2 v_l) (Lean_List_map_In
-    a0 a1 a2 H2 v_l Hv_l)))) 0 (Lean_Multiset_map_eq_1_proof_0 a0 a1 a2 H2 a3 H3)).
+Theorem Lean_Multiset_map_In : forall l_v, nat_p l_v -> forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e LeanUniv l_v, forall a2 :e (Pi_ ux :e a0, a1), forall a3 :e (Lean_Quot
+    (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), Lean_Multiset_map a0 a1 a2 a3 :e (Lean_Quot (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma
+    (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))).
+let l_v. assume H_l_v: nat_p l_v. let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H_a1: a1 :e LeanUniv l_v. let a2. assume H2: a2 :e (Pi_ ux :e a0,
+    a1). let a3. assume H3: a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). exact (Lean_Quot_liftOn_In (Lean_List a0) (Lean_Quot
+    (Lean_List a1) (fun v_a :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_a)))) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (lam_Pi
+    (Lean_List a0) (fun v_a => (Pi_ ux :e (Lean_List a0), LeanProp)) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (fun v_a Hv_a => (lam_Pi (Lean_List a0) (fun v_x5 => LeanProp)
+    (fun v_x5 => (Lean_List_Perm_Prop a0 v_a v_x5)) (fun v_x5 Hv_x5 => (Lean_List_Perm_Prop_prop a0 v_a v_x5))))) a3 H3 (fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a1 (Lean_List_map a0 a1 a2
+    v_l))) (lam_Pi (Lean_List a0) (fun v_l => (Lean_Quot (Lean_List a1) (fun v_x2 :e (Lean_List a1) => (Sigma (Lean_List a1) (Lean_List_Perm_Prop a1 v_x2))))) (fun v_l => (Lean_Multiset_ofList a1
+    (Lean_List_map a0 a1 a2 v_l))) (fun v_l Hv_l => (Lean_Multiset_ofList_In a1 (Lean_List_map a0 a1 a2 v_l) (Lean_List_map_In a0 a1 a2 H2 v_l Hv_l)))) 0 (Lean_Multiset_map_eq_1_proof_0 a0 a1 a2 H2
+    a3 H3 l_v H_l_v l_u_1 H_l_u_1 H_a0 H_a1)).
 Qed.
 (** Receipt: Multiset.map.eq_1 is the source of the MeTTa rule for Multiset.map, statement digest 3582524169. **)
 Theorem Lean_Multiset_map_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall l_v, nat_p l_v -> forall v_u946 :e LeanUniv l_v, forall v_f :e (Pi_ ux :e v_u945, v_u946), forall
@@ -10670,11 +10689,10 @@ let a0 a1 a2 a3. reflexivity.
 Qed.
 
 (** Lean's theorem List.Perm.filter: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_List_Perm_filter_proof : forall v_u945, forall v_p :e (Pi_ ux :e v_u945, Lean_Bool), forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322 :e (Lean_List v_u945), 0 :e
-    (Lean_List_Perm_Prop v_u945 v_lu8321 v_lu8322) -> 0 :e (Lean_List_Perm_Prop v_u945 (Lean_List_filter v_u945 v_p v_lu8321) (Lean_List_filter v_u945 v_p v_lu8322)).
-let A p. assume Hp: p :e (Pi_ ux :e A, Lean_Bool).
-let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
-assume H: 0 :e Lean_List_Perm_Prop A xs ys.
+Theorem Lean_List_Perm_filter_proof : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_p :e (Pi_ ux :e v_u945, Lean_Bool), forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322
+    :e (Lean_List v_u945), 0 :e (Lean_List_Perm_Prop v_u945 v_lu8321 v_lu8322) -> 0 :e (Lean_List_Perm_Prop v_u945 (Lean_List_filter v_u945 v_p v_lu8321) (Lean_List_filter v_u945 v_p v_lu8322)).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let A. assume H_A: A :e LeanUniv l_u_1. let p. assume Hp: p :e (Pi_ ux :e A, Lean_Bool). let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e
+    Lean_List A. assume H: 0 :e Lean_List_Perm_Prop A xs ys.
 exact LeanListPerm_to_prop A (Lean_List_filter A p xs) (Lean_List_filter A p ys)
   (LeanListPerm_filter A p Hp xs ys (LeanListPerm_from_prop A xs ys H)).
 Qed.
@@ -10684,74 +10702,74 @@ Definition Lean_Multiset_filter : set -> set -> set -> set -> set := fun a0 a1 a
     (Lean_List_Perm_Prop a0 v_a)))) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) a3 (fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0
     (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) 0).
 Theorem Lean_Multiset_filter_eq_1_proof_0 : forall a0, forall a1 :e (Pi_ ux :e a0, LeanProp), forall a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))), forall a3 :e (Lean_Quot (Lean_List a0) (fun v_a
-    :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), 0 :e (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma
+    :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), forall l_u_1, nat_p l_u_1 -> a0 :e LeanUniv l_u_1 -> 0 :e (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_
+    ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e
+    (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))))).
+let a0. let a1. assume H1: a1 :e (Pi_ ux :e a0, LeanProp). let a2. assume H2: a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))). let a3. assume H3: a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e
+    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). let l_u_1. assume H_l_u_1: nat_p l_u_1. assume H_a0: a0 :e LeanUniv l_u_1. exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0),
+    (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0
+    v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 =>
+    (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) =>
+    (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0
+    (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))))) (eq_sym_i (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma
     (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e
     (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0
-    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))))).
-let a0. let a1. assume H1: a1 :e (Pi_ ux :e a0, LeanProp). let a2. assume H2: a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))). let a3. assume H3: a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e
-    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b),
-    (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
-    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))))) (Pi_ v_a :e (Lean_List
-    a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e
-    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1
-    v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))))) (eq_sym_i
-    (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot
-    (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
+    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a
+    v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
+    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))))) (Pi_family_eq
+    (Lean_List a0) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List
+    a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
     (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b)))
-    v_l))) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma
-    (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0
-    (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))))) (Pi_family_eq (Lean_List a0) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e
+    v_l))) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun
+    v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))))) (fun v_a bridge_bound_64 => (Pi_family_eq (Lean_List a0) (fun v_b => (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma
+    (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e
+    (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0
+    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b)))) (fun v_b => (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0)
+    (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b)))
+    v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b))))) (fun v_b bridge_bound_63 => (eq_i_tra (Pi_ ux :e ((fun v_a :e
     (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop
     a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e (Lean_List a0) =>
-    (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop
-    a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e
-    a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))))) (fun v_a
-    bridge_bound_64 => (Pi_family_eq (Lean_List a0) (fun v_b => (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot
-    (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
-    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b)))
-    v_l))) v_b)))) (fun v_b => (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))))
+    (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))) (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0
+    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2
+    v_b_c))) v_b)))) (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))))
     (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 =>
-    (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b))))) (fun v_b bridge_bound_63 => (eq_i_tra (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a
-    v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0
-    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
-    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))) (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop (Lean_Quot
-    (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b)
-    (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))) (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b),
-    (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
-    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))) (Pi_family_eq ((fun v_a
-    :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (fun bridge_arrow_62 => (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List
-    a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l
-    :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))) (fun bridge_arrow_62 => (Lean_Eq_Prop (Lean_Quot
-    (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b)
-    (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))) (fun bridge_arrow_62 bridge_bound_62 => (eq_i_tra
+    (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))) (Pi_family_eq ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (fun bridge_arrow_62 =>
     (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0
     (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
-    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b)) (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))))
-    (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun
-    v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b)) (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))))
-    (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 =>
-    (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a)))) bridge_hole_61 ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l)))
-    v_b))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) (Lean_Multiset_ofList a0
-    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0
-    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2
-    v_b))) v_a)) (beta (Lean_List a0) (fun v_l => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a bridge_bound_64))) (f_eq_i (fun
-    bridge_hole_61 => (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun
-    v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) bridge_hole_61)) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
-    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)) (f_eq_i (fun
-    bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b)
-    (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)) (beta (Lean_List a0) (fun v_l => (Lean_Multiset_ofList a0 (Lean_List_filter
-    a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b bridge_bound_63)))))) (f_eq_i (fun bridge_domain_62 => (Pi_ ux :e bridge_domain_62, (Lean_Eq_Prop (Lean_Quot (Lean_List
+    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))) (fun bridge_arrow_62 => (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop
+    a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 =>
+    (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))) (fun bridge_arrow_62 bridge_bound_62 => (eq_i_tra (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List
+    a0) (Lean_List_Perm_Prop a0 v_a)))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) ((fun v_l
+    :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b)) (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e
+    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) ((fun v_l
+    :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b)) (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e
+    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a))
+    (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun
+    v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) bridge_hole_61 ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
+    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b))) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b)))
+    v_l))) v_a) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List
+    a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_a) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
+    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (beta (Lean_List a0) (fun v_l => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l)))
+    v_a bridge_bound_64))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))))
+    (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) bridge_hole_61)) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0
+    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c)
+    (a2 v_b_c))) v_b)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2
+    v_b))) v_l))) v_b) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)) (beta (Lean_List a0) (fun v_l => (Lean_Multiset_ofList a0
+    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) v_b bridge_bound_63)))))) (f_eq_i (fun bridge_domain_62 => (Pi_ ux :e bridge_domain_62, (Lean_Eq_Prop
+    (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 =>
+    (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b))))) ((fun v_a :e (Lean_List
+    a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (Lean_List_Perm_Prop a0 v_a v_b) (eq_i_tra ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))
+    v_a v_b) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (f_eq_i (fun bridge_beta_0 => (bridge_beta_0 v_b)) ((fun v_a :e (Lean_List a0) => (Sigma
+    (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a) (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) (beta (Lean_List a0) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a
+    bridge_bound_64)) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (beta (Lean_List a0) (Lean_List_Perm_Prop
+    a0 v_a) v_b bridge_bound_63)))))))))) (Pi_0_In (Lean_List a0) (fun v__lu8321 => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List
     a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b)))
-    v_a)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b))))) ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (Lean_List_Perm_Prop a0 v_a v_b) (eq_i_tra ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) ((Sigma (Lean_List
-    a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (f_eq_i (fun bridge_beta_0 => (bridge_beta_0 v_b)) ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a))) v_a) (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) (beta (Lean_List a0) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a bridge_bound_64))
-    (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)) v_b) (Lean_List_Perm_Prop a0 v_a v_b) (beta (Lean_List a0) (Lean_List_Perm_Prop a0 v_a) v_b
-    bridge_bound_63)))))))))) (Pi_0_In (Lean_List a0) (fun v__lu8321 => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v_b), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a
-    :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v__lu8321))
-    (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))))) (fun v__lu8321 Hv__lu8321 => (Pi_0_In (Lean_List a0) (fun v__lu8322 =>
-    (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))))
+    v__lu8321)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 => (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v_b)))))) (fun v__lu8321 Hv__lu8321 => (Pi_0_In (Lean_List a0) (fun
+    v__lu8322 => (Pi_ ux :e (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322), (Lean_Eq_Prop (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))))
     (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v__lu8321)) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b_c :e a0 =>
     (Lean_Decidable_decide (a1 v_b_c) (a2 v_b_c))) v__lu8322))))) (fun v__lu8322 Hv__lu8322 => (Pi_0_In (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (fun v_h => (Lean_Eq_Prop (Lean_Quot (Lean_List
     a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b)))
@@ -10784,24 +10802,24 @@ let a0. let a1. assume H1: a1 :e (Pi_ ux :e a0, LeanProp). let a2. assume H2: a2
     (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v__lu8322)) (beta (Lean_List a0) (Lean_List_Perm_Prop a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v__lu8321))
     (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v__lu8322) (Lean_List_filter_In a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) (lam_Pi a0 (fun
     v_b => Lean_Bool) (fun v_b => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) (fun v_b Hv_b => (Lean_Decidable_decide_In (a1 v_b) (ap_Pi a0 (fun _ => LeanProp) a1 v_b H1 Hv_b) (a2 v_b) (ap_Pi a0 (fun
-    v_a => (Lean_Decidable (a1 v_a))) a2 v_b H2 Hv_b)))) v__lu8322 Hv__lu8322))))) (Lean_List_Perm_filter_proof a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) (lam_Pi a0 (fun v_b =>
-    Lean_Bool) (fun v_b => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) (fun v_b Hv_b => (Lean_Decidable_decide_In (a1 v_b) (ap_Pi a0 (fun _ => LeanProp) a1 v_b H1 Hv_b) (a2 v_b) (ap_Pi a0 (fun v_a =>
-    (Lean_Decidable (a1 v_a))) a2 v_b H2 Hv_b)))) v__lu8321 Hv__lu8321 v__lu8322 Hv__lu8322 (Lean_prop_0_of (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322) (Lean_List_Perm_Prop_prop a0 v__lu8321
-    v__lu8322) v_h Hv_h)))))))))))).
+    v_a => (Lean_Decidable (a1 v_a))) a2 v_b H2 Hv_b)))) v__lu8322 Hv__lu8322))))) (Lean_List_Perm_filter_proof l_u_1 H_l_u_1 a0 H_a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b)))
+    (lam_Pi a0 (fun v_b => Lean_Bool) (fun v_b => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) (fun v_b Hv_b => (Lean_Decidable_decide_In (a1 v_b) (ap_Pi a0 (fun _ => LeanProp) a1 v_b H1 Hv_b) (a2 v_b)
+    (ap_Pi a0 (fun v_a => (Lean_Decidable (a1 v_a))) a2 v_b H2 Hv_b)))) v__lu8321 Hv__lu8321 v__lu8322 Hv__lu8322 (Lean_prop_0_of (Lean_List_Perm_Prop a0 v__lu8321 v__lu8322)
+    (Lean_List_Perm_Prop_prop a0 v__lu8321 v__lu8322) v_h Hv_h)))))))))))).
 Qed.
-Theorem Lean_Multiset_filter_In : forall a0, forall a1 :e (Pi_ ux :e a0, LeanProp), forall a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))), forall a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e
-    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), Lean_Multiset_filter a0 a1 a2 a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a)))).
-let a0. let a1. assume H1: a1 :e (Pi_ ux :e a0, LeanProp). let a2. assume H2: a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))). let a3. assume H3: a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e
-    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). exact (Lean_Quot_liftOn_In (Lean_List a0) (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a)))) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (lam_Pi (Lean_List a0) (fun v_a => (Pi_ ux :e (Lean_List a0), LeanProp)) (fun
-    v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (fun v_a Hv_a => (lam_Pi (Lean_List a0) (fun v_x5 => LeanProp) (fun v_x5 => (Lean_List_Perm_Prop a0 v_a v_x5)) (fun v_x5 Hv_x5 =>
-    (Lean_List_Perm_Prop_prop a0 v_a v_x5))))) a3 H3 (fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l)))
-    (lam_Pi (Lean_List a0) (fun v_l => (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))))) (fun v_l => (Lean_Multiset_ofList a0
-    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) (fun v_l Hv_l => (Lean_Multiset_ofList_In a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide
-    (a1 v_b) (a2 v_b))) v_l) (Lean_List_filter_In a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) (lam_Pi a0 (fun v_b => Lean_Bool) (fun v_b => (Lean_Decidable_decide (a1 v_b) (a2
-    v_b))) (fun v_b Hv_b => (Lean_Decidable_decide_In (a1 v_b) (ap_Pi a0 (fun _ => LeanProp) a1 v_b H1 Hv_b) (a2 v_b) (ap_Pi a0 (fun v_a => (Lean_Decidable (a1 v_a))) a2 v_b H2 Hv_b)))) v_l Hv_l))))
-    0 (Lean_Multiset_filter_eq_1_proof_0 a0 a1 H1 a2 H2 a3 H3)).
+Theorem Lean_Multiset_filter_In : forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e (Pi_ ux :e a0, LeanProp), forall a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))), forall a3
+    :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), Lean_Multiset_filter a0 a1 a2 a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e
+    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H1: a1 :e (Pi_ ux :e a0, LeanProp). let a2. assume H2: a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1
+    v_a))). let a3. assume H3: a3 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). exact (Lean_Quot_liftOn_In (Lean_List a0)
+    (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))
+    (lam_Pi (Lean_List a0) (fun v_a => (Pi_ ux :e (Lean_List a0), LeanProp)) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (fun v_a Hv_a => (lam_Pi (Lean_List a0) (fun v_x5 =>
+    LeanProp) (fun v_x5 => (Lean_List_Perm_Prop a0 v_a v_x5)) (fun v_x5 Hv_x5 => (Lean_List_Perm_Prop_prop a0 v_a v_x5))))) a3 H3 (fun v_l :e (Lean_List a0) => (Lean_Multiset_ofList a0
+    (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) (lam_Pi (Lean_List a0) (fun v_l => (Lean_Quot (Lean_List a0) (fun v_x2 :e (Lean_List a0) => (Sigma
+    (Lean_List a0) (Lean_List_Perm_Prop a0 v_x2))))) (fun v_l => (Lean_Multiset_ofList a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l))) (fun v_l Hv_l =>
+    (Lean_Multiset_ofList_In a0 (Lean_List_filter a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) v_l) (Lean_List_filter_In a0 (fun v_b :e a0 => (Lean_Decidable_decide (a1 v_b) (a2
+    v_b))) (lam_Pi a0 (fun v_b => Lean_Bool) (fun v_b => (Lean_Decidable_decide (a1 v_b) (a2 v_b))) (fun v_b Hv_b => (Lean_Decidable_decide_In (a1 v_b) (ap_Pi a0 (fun _ => LeanProp) a1 v_b H1 Hv_b)
+    (a2 v_b) (ap_Pi a0 (fun v_a => (Lean_Decidable (a1 v_a))) a2 v_b H2 Hv_b)))) v_l Hv_l)))) 0 (Lean_Multiset_filter_eq_1_proof_0 a0 a1 H1 a2 H2 a3 H3 l_u_1 H_l_u_1 H_a0)).
 Qed.
 (** Receipt: Multiset.filter.eq_1 is the source of the MeTTa rule for Multiset.filter, statement digest 3298733475. **)
 Theorem Lean_Multiset_filter_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_p :e (Pi_ ux :e v_u945, LeanProp), forall v_inst :e (Pi_ v_a :e v_u945, (Lean_Decidable (v_p
@@ -11171,11 +11189,11 @@ exact LeanListPerm_pairwise A (LeanListNe A) (LeanListNe_typed A) (LeanListNe_sy
 Qed.
 
 (** Lean's theorem List.Perm.nodup_iff: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_List_Perm_nodup_iff_proof : forall v_u945, forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322 :e (Lean_List v_u945), 0 :e (Lean_List_Perm_Prop v_u945 v_lu8321 v_lu8322) -> 0 :e
-    (Lean_Iff_Prop (Lean_List_Pairwise_Prop v_u945 (fun v_x1 :e v_u945 => (fun v_x2 :e v_u945 => (Pi_ ux :e (Lean_Eq_Prop v_u945 v_x1 v_x2), Lean_False_Prop))) v_lu8321) (Lean_List_Pairwise_Prop
-    v_u945 (fun v_x1 :e v_u945 => (fun v_x2 :e v_u945 => (Pi_ ux :e (Lean_Eq_Prop v_u945 v_x1 v_x2), Lean_False_Prop))) v_lu8322)).
-let A xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A.
-assume H: 0 :e Lean_List_Perm_Prop A xs ys.
+Theorem Lean_List_Perm_nodup_iff_proof : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_lu8321 :e (Lean_List v_u945), forall v_lu8322 :e (Lean_List v_u945), 0 :e
+    (Lean_List_Perm_Prop v_u945 v_lu8321 v_lu8322) -> 0 :e (Lean_Iff_Prop (Lean_List_Pairwise_Prop v_u945 (fun v_x1 :e v_u945 => (fun v_x2 :e v_u945 => (Pi_ ux :e (Lean_Eq_Prop v_u945 v_x1 v_x2),
+    Lean_False_Prop))) v_lu8321) (Lean_List_Pairwise_Prop v_u945 (fun v_x1 :e v_u945 => (fun v_x2 :e v_u945 => (Pi_ ux :e (Lean_Eq_Prop v_u945 v_x1 v_x2), Lean_False_Prop))) v_lu8322)).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let A. assume H_A: A :e LeanUniv l_u_1. let xs. assume Hxs: xs :e Lean_List A. let ys. assume Hys: ys :e Lean_List A. assume H: 0 :e Lean_List_Perm_Prop A xs
+    ys.
 claim Hp: LeanListPerm A xs ys. { exact LeanListPerm_from_prop A xs ys H. }
 exact LeanIff_intro
   (Lean_List_Pairwise_Prop A (LeanListNe A) xs) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) xs)
@@ -11187,52 +11205,52 @@ Qed.
 (** Multiset.Nodup, from its equation theorem **)
 Definition Lean_Multiset_Nodup : set -> set -> set := fun a0 a1 => (Lean_Quot_liftOn (Lean_List a0) LeanProp (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) a1
     (Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) 0).
-Theorem Lean_Multiset_Nodup_eq_1_proof_0 : forall a0, forall a1 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), 0 :e (Pi_ v_a :e
-    (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0)
+Theorem Lean_Multiset_Nodup_eq_1_proof_0 : forall a0, forall a1 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), forall l_u_1, nat_p
+    l_u_1 -> a0 :e LeanUniv l_u_1 -> 0 :e (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a
+    v_b), (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma
+    (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b))))).
+let a0. let a1. assume H1: a1 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). let l_u_1. assume H_l_u_1: nat_p l_u_1. assume H_a0: a0
+    :e LeanUniv l_u_1. exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun
+    v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1
+    v_x2), Lean_False_Prop))) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b),
+    (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma
+    (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b))))) (eq_sym_i (Pi_ v_a :e (Lean_List a0), (Pi_
+    v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0)
     (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e
-    a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b))))).
-let a0. let a1. assume H1: a1 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). exact (In_eq_r 0 (Pi_ v_a :e (Lean_List a0), (Pi_ v_b
-    :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
-    Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b
-    :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop
-    a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 =>
-    (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b))))) (eq_sym_i (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List
-    a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1
-    v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)))))
-    (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_
-    ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b)))))
-    (Pi_family_eq (Lean_List a0) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop
-    LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0)
-    (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e
-    (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a)
-    (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b))))) (fun v_a bridge_bound_64 => (Pi_family_eq (Lean_List a0) (fun
-    v_b => (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1
-    :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e
-    (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)))) (fun v_b => (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2
-    :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
-    Lean_False_Prop))) v_b)))) (fun v_b bridge_bound_63 => (eq_i_tra (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp
-    ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0)
-    (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b))) (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List
-    a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop)))
-    v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b))) (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop
-    LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2
-    :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b))) (Pi_family_eq ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (fun
-    bridge_arrow_62 => (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop)))))
-    v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b))) (fun bridge_arrow_62 =>
+    a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b))))) (Pi_ v_a :e (Lean_List a0), (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b),
     (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e
-    a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b))) (fun bridge_arrow_62 bridge_bound_62 => (eq_i_tra (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0)
-    (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e
-    a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)) (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e
-    (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
-    Lean_False_Prop))))) v_b)) (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a)
-    (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b)) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop LeanProp
-    bridge_hole_61 ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b))) ((Sigma (Lean_List a0)
-    (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0
-    => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e
-    a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
-    Lean_False_Prop))) v_a) (beta (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop)))) v_a bridge_bound_64)))
-    (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a)
-    bridge_hole_61)) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)
+    a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b))))) (Pi_family_eq (Lean_List a0) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e ((fun v_a :e
+    (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 =>
+    (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
+    Lean_False_Prop))))) v_b))))) (fun v_a => (Pi_ v_b :e (Lean_List a0), (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2
+    :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
+    Lean_False_Prop))) v_b))))) (fun v_a bridge_bound_64 => (Pi_family_eq (Lean_List a0) (fun v_b => (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a
+    v_b), (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma
+    (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)))) (fun v_b => (Pi_ ux :e (Lean_List_Perm_Prop
+    a0 v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0
+    (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b)))) (fun v_b bridge_bound_63 => (eq_i_tra (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma
+    (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0
+    v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)))
+    (Pi_ ux :e ((fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 =>
+    (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b)))
+    (Pi_ ux :e (Lean_List_Perm_Prop a0 v_a v_b), (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop)))
+    v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b))) (Pi_family_eq ((fun v_a :e (Lean_List a0) => (Sigma
+    (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) v_a v_b) (fun bridge_arrow_62 => (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_
+    ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
+    Lean_False_Prop))))) v_b))) (fun bridge_arrow_62 => (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
+    Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b))) (fun bridge_arrow_62 bridge_bound_62 =>
+    (eq_i_tra (Lean_Eq_Prop LeanProp ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) ((Sigma
+    (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)) (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop
+    a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 =>
+    (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)) (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
+    Lean_False_Prop))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b)) (f_eq_i (fun bridge_hole_61 =>
+    (Lean_Eq_Prop LeanProp bridge_hole_61 ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)))
+    ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e
+    a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1
+    :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_a) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1
+    v_x2), Lean_False_Prop))) v_a) (beta (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop)))) v_a
+    bridge_bound_64))) (f_eq_i (fun bridge_hole_61 => (Lean_Eq_Prop LeanProp (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
+    Lean_False_Prop))) v_a) bridge_hole_61)) ((Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b)
     (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b) (f_eq_i (fun bridge_beta_0 => bridge_beta_0) ((Sigma (Lean_List
     a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) v_b) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e
     a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_b) (beta (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1
@@ -11253,16 +11271,18 @@ let a0. let a1. assume H1: a1 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_Lis
     Lean_False_Prop))) v_x3) (Lean_propext_value (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x5 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x5), Lean_False_Prop))) v_x)
     (Lean_List_Pairwise_Prop_prop a0 (fun v_x1 :e a0 => (fun v_x5 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x5), Lean_False_Prop))) v_x) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x5 :e
     a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x5), Lean_False_Prop))) v_x3) (Lean_List_Pairwise_Prop_prop a0 (fun v_x1 :e a0 => (fun v_x5 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x5),
-    Lean_False_Prop))) v_x3) (Lean_List_Perm_nodup_iff_proof a0 v_x Hv_x v_x3 Hv_x3 (Lean_prop_0_of (Lean_List_Perm_Prop a0 v_x v_x3) (Lean_List_Perm_Prop_prop a0 v_x v_x3) v_p Hv_p))))))))))).
+    Lean_False_Prop))) v_x3) (Lean_List_Perm_nodup_iff_proof l_u_1 H_l_u_1 a0 H_a0 v_x Hv_x v_x3 Hv_x3 (Lean_prop_0_of (Lean_List_Perm_Prop a0 v_x v_x3) (Lean_List_Perm_Prop_prop a0 v_x v_x3) v_p
+    Hv_p))))))))))).
 Qed.
-Theorem Lean_Multiset_Nodup_In : forall a0, forall a1 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))), Lean_Multiset_Nodup a0 a1 :e
-    LeanProp.
-let a0. let a1. assume H1: a1 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a)))). exact (Lean_Quot_liftOn_In (Lean_List a0) LeanProp (fun
-    v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (lam_Pi (Lean_List a0) (fun v_a => (Pi_ ux :e (Lean_List a0), LeanProp)) (fun v_a => (Sigma (Lean_List a0)
-    (Lean_List_Perm_Prop a0 v_a))) (fun v_a Hv_a => (lam_Pi (Lean_List a0) (fun v_x3 => LeanProp) (fun v_x3 => (Lean_List_Perm_Prop a0 v_a v_x3)) (fun v_x3 Hv_x3 => (Lean_List_Perm_Prop_prop a0 v_a
-    v_x3))))) a1 H1 (Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) (lam_Pi (Lean_List a0) (fun
-    v_a => LeanProp) (fun v_a => (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a)) (fun v_a Hv_a =>
-    (Lean_List_Pairwise_Prop_prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a))) 0 (Lean_Multiset_Nodup_eq_1_proof_0 a0 a1 H1)).
+Theorem Lean_Multiset_Nodup_In : forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a)))), Lean_Multiset_Nodup a0 a1 :e LeanProp.
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H1: a1 :e (Lean_Quot (Lean_List a0) (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0)
+    (Lean_List_Perm_Prop a0 v_a)))). exact (Lean_Quot_liftOn_In (Lean_List a0) LeanProp (fun v_a :e (Lean_List a0) => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (lam_Pi (Lean_List a0) (fun
+    v_a => (Pi_ ux :e (Lean_List a0), LeanProp)) (fun v_a => (Sigma (Lean_List a0) (Lean_List_Perm_Prop a0 v_a))) (fun v_a Hv_a => (lam_Pi (Lean_List a0) (fun v_x3 => LeanProp) (fun v_x3 =>
+    (Lean_List_Perm_Prop a0 v_a v_x3)) (fun v_x3 Hv_x3 => (Lean_List_Perm_Prop_prop a0 v_a v_x3))))) a1 H1 (Sigma (Lean_List a0) (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_
+    ux :e (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))))) (lam_Pi (Lean_List a0) (fun v_a => LeanProp) (fun v_a => (Lean_List_Pairwise_Prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e
+    (Lean_Eq_Prop a0 v_x1 v_x2), Lean_False_Prop))) v_a)) (fun v_a Hv_a => (Lean_List_Pairwise_Prop_prop a0 (fun v_x1 :e a0 => (fun v_x2 :e a0 => (Pi_ ux :e (Lean_Eq_Prop a0 v_x1 v_x2),
+    Lean_False_Prop))) v_a))) 0 (Lean_Multiset_Nodup_eq_1_proof_0 a0 a1 H1 l_u_1 H_l_u_1 H_a0)).
 Qed.
 Theorem Lean_Multiset_Nodup_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_s :e (Lean_Quot (Lean_List v_u945) (fun v_a :e (Lean_List v_u945) => (Sigma (Lean_List
     v_u945) (Lean_List_Perm_Prop v_u945 v_a)))), (Lean_Multiset_Nodup v_u945 v_s) = (Lean_Quot_liftOn (Lean_List v_u945) LeanProp (fun v_a :e (Lean_List v_u945) => (Sigma (Lean_List v_u945)
@@ -11462,6 +11482,27 @@ prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) (
 rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
 Qed.
 
+Definition Lean_Finset_mrec : (set -> set -> set) -> set -> set := fun h0 t => IndRec Lean_Finset_K Lean_Finset_T Lean_Finset_N Lean_Finset_R Lean_Finset_F Lean_Finset_Ix Lean_Finset_O Lean_Finset_B
+    (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) t.
+Theorem Lean_Finset_miota0 : forall h0:(set -> set -> set), forall x0 :e (Lean_Multiset P0), forall x1 :e {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)}, Lean_Finset_mrec h0 (Lean_Finset_mk_node x0
+    x1) = (h0 x0 x1).
+let h0. let x0. assume H0: x0 :e (Lean_Multiset P0). let x1. assume H1: x1 :e {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)}.
+claim U0: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite SeqAt_0. reflexivity. }
+claim T0: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 = x0.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 0 (ordsuccI1 1 0 (ordsuccI2 0)). exact U0. }
+claim U1: SeqAt (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite SeqAt_S. { rewrite SeqAt_0. reflexivity. } exact nat_0. }
+claim T1: TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 = x1.
+{ rewrite TupArgs_at 2 (SeqCons (x0) (SeqCons (x1) SeqNil)) 1 (ordsuccI2 1). exact U1. }
+prove IndRec Lean_Finset_K Lean_Finset_T Lean_Finset_N Lean_Finset_R Lean_Finset_F Lean_Finset_Ix Lean_Finset_O Lean_Finset_B (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) (IndNode
+    Lean_Finset_K Lean_Finset_T Lean_Finset_N Lean_Finset_R Lean_Finset_F Lean_Finset_Ix Lean_Finset_O Lean_Finset_B 0 (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil)))) = (h0 x0 x1).
+rewrite IndRec_iota Lean_Finset_K Lean_Finset_T Lean_Finset_N Lean_Finset_R Lean_Finset_F Lean_Finset_Ix Lean_Finset_O Lean_Finset_B Lean_Finset_distinct Lean_Finset_bounded Lean_Finset_arity (fun k
+    a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) 0 (ordsuccI2 0) (TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) (Lean_Finset_mk_args x0 H0 x1 H1).
+prove SeqAt (SeqCons ((h0 ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 0) ((TupArgs 2 (SeqCons (x0) (SeqCons (x1) SeqNil))) 1))) SeqNil) 0 = (h0 x0 x1).
+rewrite SeqAt_0. rewrite T0. rewrite T1. reflexivity.
+Qed.
+
 Theorem Lean_Finset_HM0 : forall C:set -> set, forall h0, h0 :e (Pi_ x0 :e (Lean_Multiset P0), (Pi_ x1 :e {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)}, (C (Lean_Finset_mk_node x0 x1)))) -> forall a
     :e IndArgs Lean_Finset_K Lean_Finset_T Lean_Finset_N Lean_Finset_R Lean_Finset_F Lean_Finset_Ix Lean_Finset_O Lean_Finset_B Lean_Finset_All 0, forall r:set -> set, (forall j :e Lean_Finset_N 0,
     Lean_Finset_R 0 j -> r j :e C (a j)) -> (fun k a r:set => SeqAt (SeqCons ((h0 (a 0) (a 1))) SeqNil) k) 0 a (IndRes Lean_Finset_K Lean_Finset_T Lean_Finset_N Lean_Finset_R Lean_Finset_F
@@ -11521,6 +11562,13 @@ exact IndRec_type Lean_Finset_K Lean_Finset_T Lean_Finset_N Lean_Finset_R Lean_F
     Lean_Finset_O Lean_Finset_B x = 0) t Ht).
 Qed.
 
+Theorem Lean_Finset_rec_In : forall C:set, forall h0 :e (Pi_ x0 :e (Lean_Multiset P0), (Pi_ x1 :e {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)}, C)), forall t :e Lean_Finset, Lean_Finset_rec h0 t :e
+    C.
+let C.
+exact Lean_Finset_rec_type (fun _ => C).
+Qed.
+
+
 
 
 Theorem Lean_Finset_ind : forall P:set -> prop, (forall x0 :e (Lean_Multiset P0), forall x1 :e {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)}, P (Lean_Finset_mk_node x0 x1)) -> forall t :e
@@ -11545,6 +11593,7 @@ apply Lean_Finset_ind.
   let x0. assume Hx0. let x1. assume Hx1. exact (Pi_0_ap {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)} (fun x1 => (motive (Lean_Finset_mk_node x0 x1))) (Pi_0_ap (Lean_Multiset P0) (fun x0 => (Pi_ x1
     :e {z :e 1 | z :e ((Lean_Multiset_Nodup P0) x0)}, (motive (Lean_Finset_mk_node x0 x1)))) H0 x0 Hx0) x1 Hx1).
 Qed.
+
 
 
 
@@ -11617,9 +11666,11 @@ Qed.
 
 (** Finset.sum, from its equation theorem **)
 Definition Lean_Finset_sum : set -> set -> set -> set -> set -> set := fun a0 a1 a2 a3 a4 => (Lean_Multiset_sum a1 a2 (Lean_Multiset_map a0 a1 a4 (Lean_Finset_val a0 a3))).
-Theorem Lean_Finset_sum_In : forall a0, forall a1, forall a2 :e (Lean_AddCommMonoid a1), forall a3 :e (Lean_Finset a0), forall a4 :e (Pi_ ux :e a0, a1), Lean_Finset_sum a0 a1 a2 a3 a4 :e a1.
-let a0. let a1. let a2. assume H2: a2 :e (Lean_AddCommMonoid a1). let a3. assume H3: a3 :e (Lean_Finset a0). let a4. assume H4: a4 :e (Pi_ ux :e a0, a1). exact (Lean_Multiset_sum_In a1 a2 H2
-    (Lean_Multiset_map a0 a1 a4 (Lean_Finset_val a0 a3)) (Lean_Multiset_map_In a0 a1 a4 H4 (Lean_Finset_val a0 a3) (Lean_Finset_val_In a0 a3 H3))).
+Theorem Lean_Finset_sum_In : forall l_u_1, nat_p l_u_1 -> forall l_u_3, nat_p l_u_3 -> forall a0 :e LeanUniv l_u_1, forall a1 :e LeanUniv l_u_3, forall a2 :e (Lean_AddCommMonoid a1), forall a3 :e
+    (Lean_Finset a0), forall a4 :e (Pi_ ux :e a0, a1), Lean_Finset_sum a0 a1 a2 a3 a4 :e a1.
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let l_u_3. assume H_l_u_3: nat_p l_u_3. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H_a1: a1 :e LeanUniv l_u_3. let a2. assume H2: a2 :e
+    (Lean_AddCommMonoid a1). let a3. assume H3: a3 :e (Lean_Finset a0). let a4. assume H4: a4 :e (Pi_ ux :e a0, a1). exact (Lean_Multiset_sum_In l_u_3 H_l_u_3 a1 H_a1 a2 H2 (Lean_Multiset_map a0 a1
+    a4 (Lean_Finset_val a0 a3)) (Lean_Multiset_map_In l_u_3 H_l_u_3 l_u_1 H_l_u_1 a0 H_a0 a1 H_a1 a4 H4 (Lean_Finset_val a0 a3) (Lean_Finset_val_In a0 a3 H3))).
 Qed.
 (** Receipt: Finset.sum.eq_1 is the source of the MeTTa rule for Finset.sum, statement digest 1194252111. **)
 Theorem Lean_Finset_sum_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u953 :e LeanUniv l_u_1, forall l_u_3, nat_p l_u_3 -> forall v_M :e LeanUniv l_u_3, forall v_inst :e (Lean_AddCommMonoid v_M),
@@ -11635,8 +11686,9 @@ Qed.
 
 (** Finset.card, from its equation theorem **)
 Definition Lean_Finset_card : set -> set -> set := fun a0 a1 => (Lean_Multiset_card a0 (Lean_Finset_val a0 a1)).
-Theorem Lean_Finset_card_In : forall a0, forall a1 :e (Lean_Finset a0), Lean_Finset_card a0 a1 :e Lean_Nat.
-let a0. let a1. assume H1: a1 :e (Lean_Finset a0). exact (Lean_Multiset_card_In a0 (Lean_Finset_val a0 a1) (Lean_Finset_val_In a0 a1 H1)).
+Theorem Lean_Finset_card_In : forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e (Lean_Finset a0), Lean_Finset_card a0 a1 :e Lean_Nat.
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H1: a1 :e (Lean_Finset a0). exact (Lean_Multiset_card_In l_u_1 H_l_u_1 a0 H_a0 (Lean_Finset_val a0
+    a1) (Lean_Finset_val_In a0 a1 H1)).
 Qed.
 (** Receipt: Finset.card.eq_1 is the source of the MeTTa rule for Finset.card, statement digest 3930454784. **)
 Theorem Lean_Finset_card_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_s :e (Lean_Finset v_u945), (Lean_Finset_card v_u945 v_s) = (Lean_Multiset_card v_u945
@@ -11701,7 +11753,11 @@ claim Hrespect: forall xs ys :e Lean_List A, 0 :e (LeanPermRel A) xs ys ->
   exact Lean_propext_value
     (Lean_List_Pairwise_Prop A (LeanListNe A) xs) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) xs)
     (Lean_List_Pairwise_Prop A (LeanListNe A) ys) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) ys)
-    (Lean_List_Perm_nodup_iff_proof A xs Hxs ys Hys (LeanPermRel_perm A xs Hxs ys Hys H)). }
+    (LeanIff_intro
+      (Lean_List_Pairwise_Prop A (LeanListNe A) xs) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) xs)
+      (Lean_List_Pairwise_Prop A (LeanListNe A) ys) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) ys)
+      (LeanListPerm_nodup A xs ys (LeanListPerm_from_prop A xs ys (LeanPermRel_perm A xs Hxs ys Hys H)))
+      (LeanListPerm_nodup A ys xs (LeanListPerm_symm A xs ys (LeanListPerm_from_prop A xs ys (LeanPermRel_perm A xs Hxs ys Hys H))))). }
 prove Lean_Quot_lift (Lean_List A) (LeanPermRel A) LeanProp
     (fun xs :e (Lean_List A) => Lean_List_Pairwise_Prop A (LeanListNe A) xs) 0
     (Lean_Quot_mk (Lean_List A) (LeanPermRel A) l) = Lean_List_Pairwise_Prop A (LeanListNe A) l.
@@ -11881,8 +11937,11 @@ claim Hrespect: forall xs ys :e Lean_List A, 0 :e (LeanPermRel A) xs ys ->
   claim Hperm: 0 :e Lean_List_Perm_Prop A
     (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) xs)
     (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) ys).
-  { exact Lean_List_Perm_filter_proof A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) Hq xs Hxs ys Hys
-      (LeanPermRel_perm A xs Hxs ys Hys H). }
+  { exact LeanListPerm_to_prop A
+      (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) xs)
+      (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) ys)
+      (LeanListPerm_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) Hq xs ys
+        (LeanListPerm_from_prop A xs ys (LeanPermRel_perm A xs Hxs ys Hys H))). }
   prove Lean_Quot_mk (Lean_List A) (LeanPermRel A)
       (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) xs) =
     Lean_Quot_mk (Lean_List A) (LeanPermRel A)
@@ -11933,12 +11992,11 @@ let a0. reflexivity.
 Qed.
 
 (** Lean's theorem Multiset.Nodup.filter: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_Multiset_Nodup_filter_proof : forall v_u945, forall v_p :e (Pi_ ux :e v_u945, LeanProp), forall v_inst :e (Pi_ v_x5 :e v_u945, (Lean_Decidable (v_p v_x5))), forall v_s :e (Lean_Quot
-    (Lean_List v_u945) (fun v_x5 :e (Lean_List v_u945) => (Sigma (Lean_List v_u945) (Lean_List_Perm_Prop v_u945 v_x5)))), 0 :e (Lean_Multiset_Nodup v_u945 v_s) -> 0 :e (Lean_Multiset_Nodup v_u945
-    (Lean_Multiset_filter v_u945 v_p v_inst v_s)).
-let A p. assume Hp: p :e (Pi_ ux :e A, LeanProp). let inst. assume Hinst: inst :e (Pi_ x :e A, (Lean_Decidable (p x))).
-let s. assume Hs: s :e Lean_Quot (Lean_List A) (LeanPermRel A).
-assume H: 0 :e Lean_Multiset_Nodup A s.
+Theorem Lean_Multiset_Nodup_filter_proof : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_p :e (Pi_ ux :e v_u945, LeanProp), forall v_inst :e (Pi_ v_x5 :e v_u945,
+    (Lean_Decidable (v_p v_x5))), forall v_s :e (Lean_Quot (Lean_List v_u945) (fun v_x5 :e (Lean_List v_u945) => (Sigma (Lean_List v_u945) (Lean_List_Perm_Prop v_u945 v_x5)))), 0 :e
+    (Lean_Multiset_Nodup v_u945 v_s) -> 0 :e (Lean_Multiset_Nodup v_u945 (Lean_Multiset_filter v_u945 v_p v_inst v_s)).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let A. assume H_A: A :e LeanUniv l_u_1. let p. assume Hp: p :e (Pi_ ux :e A, LeanProp). let inst. assume Hinst: inst :e (Pi_ x :e A, (Lean_Decidable (p x))).
+    let s. assume Hs: s :e Lean_Quot (Lean_List A) (LeanPermRel A). assume H: 0 :e Lean_Multiset_Nodup A s.
 claim Hq: (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) :e (Pi_ ux :e A, Lean_Bool).
 { exact lam_Pi A (fun _ => Lean_Bool) (fun b => Lean_Decidable_decide (p b) (inst b))
     (fun b Hb => Lean_Decidable_decide_In (p b) (ap_Pi A (fun _ => LeanProp) p b Hp Hb)
@@ -11956,31 +12014,31 @@ exact LeanListFilter_pairwise A (LeanListNe A) (LeanListNe_typed A)
   (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) Hq l Hl H2.
 Qed.
 
-(** Lean's theorem Finset.nodup: its statement as a typing statement, proved in Egal. **)
-Theorem Lean_Finset_nodup_proof : forall v_u945, forall v_self :e (Lean_Finset v_u945), 0 :e (Lean_Multiset_Nodup v_u945 (Lean_Finset_val v_u945 v_self)).
-let A.
-claim L: forall x0 :e (Lean_Multiset A), forall x1 :e {z :e 1 | z :e (Lean_Multiset_Nodup A x0)},
-  0 :e Lean_Multiset_Nodup A (Lean_Finset_val A (Lean_Finset_mk_node A x0 x1)).
-{ let x0. assume Hx0: x0 :e Lean_Multiset A. let x1. assume Hx1: x1 :e {z :e 1 | z :e (Lean_Multiset_Nodup A x0)}.
-  rewrite Lean_Finset_val_mk A x0 Hx0 x1 Hx1.
-  exact Lean_prop_0_of (Lean_Multiset_Nodup A x0) (Lean_Multiset_Nodup_In A x0 Hx0) x1
-    (SepE2 1 (fun z => z :e (Lean_Multiset_Nodup A x0)) x1 Hx1). }
-exact Lean_Finset_ind A (fun self => 0 :e Lean_Multiset_Nodup A (Lean_Finset_val A self)) L.
+(** Lean's theorem Finset.nodup: the projection of field 1 of Finset, a proof.  It holds of
+    every value of Finset: at a node, the field's guard gives it. **)
+Theorem Lean_Finset_nodup_proof : forall l_u_4, nat_p l_u_4 -> forall v_u945 :e LeanUniv l_u_4, forall v_self :e (Lean_Finset v_u945), 0 :e (Lean_Multiset_Nodup v_u945 (Lean_Finset_val v_u945
+    v_self)).
+let l_u_4. assume H_l_u_4: nat_p l_u_4. let v_u945. assume H_v_u945: v_u945 :e LeanUniv l_u_4. claim L: forall y0 :e (Lean_Multiset v_u945), forall y1 :e (Lean_ProofField (Lean_Multiset_Nodup v_u945
+    y0)), 0 :e (Lean_Multiset_Nodup v_u945 (Lean_Finset_val v_u945 (Lean_Finset_mk_node v_u945 y0 y1))).
+{ let y0. assume Hy0: y0 :e (Lean_Multiset v_u945). let y1. assume Hy1: y1 :e (Lean_ProofField (Lean_Multiset_Nodup v_u945 y0)).
+rewrite Lean_Finset_val_mk v_u945 y0 Hy0 y1 Hy1.
+exact Lean_of_guard (Lean_Multiset_Nodup v_u945 y0) y1 Hy1. }
+exact Lean_Finset_ind v_u945 (fun v_self => 0 :e (Lean_Multiset_Nodup v_u945 (Lean_Finset_val v_u945 v_self))) L.
 Qed.
 
 (** Finset.filter, from its equation theorem **)
 Definition Lean_Finset_filter : set -> set -> set -> set -> set := fun a0 a1 a2 a3 => (Lean_Finset_mk_node a0 (Lean_Multiset_filter a0 a1 a2 (Lean_Finset_val a0 a3)) 0).
-Theorem Lean_Finset_filter_eq_1_proof_0 : forall a0, forall a1 :e (Pi_ ux :e a0, LeanProp), forall a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))), forall a3 :e (Lean_Finset a0), 0 :e
-    (Lean_ProofField (Lean_Multiset_Nodup a0 (Lean_Multiset_filter a0 a1 a2 (Lean_Finset_val a0 a3)))).
-let a0. let a1. assume H1: a1 :e (Pi_ ux :e a0, LeanProp). let a2. assume H2: a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))). let a3. assume H3: a3 :e (Lean_Finset a0). exact (Lean_ProofField_intro
-    (Lean_Multiset_Nodup a0 (Lean_Multiset_filter a0 a1 a2 (Lean_Finset_val a0 a3))) (Lean_Multiset_Nodup_filter_proof a0 a1 H1 a2 H2 (Lean_Finset_val a0 a3) (Lean_Finset_val_In a0 a3 H3)
-    (Lean_Finset_nodup_proof a0 a3 H3))).
+Theorem Lean_Finset_filter_eq_1_proof_0 : forall a0, forall a1 :e (Pi_ ux :e a0, LeanProp), forall a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))), forall a3 :e (Lean_Finset a0), forall l_u_1, nat_p
+    l_u_1 -> a0 :e LeanUniv l_u_1 -> 0 :e (Lean_ProofField (Lean_Multiset_Nodup a0 (Lean_Multiset_filter a0 a1 a2 (Lean_Finset_val a0 a3)))).
+let a0. let a1. assume H1: a1 :e (Pi_ ux :e a0, LeanProp). let a2. assume H2: a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))). let a3. assume H3: a3 :e (Lean_Finset a0). let l_u_1. assume H_l_u_1:
+    nat_p l_u_1. assume H_a0: a0 :e LeanUniv l_u_1. exact (Lean_ProofField_intro (Lean_Multiset_Nodup a0 (Lean_Multiset_filter a0 a1 a2 (Lean_Finset_val a0 a3))) (Lean_Multiset_Nodup_filter_proof
+    l_u_1 H_l_u_1 a0 H_a0 a1 H1 a2 H2 (Lean_Finset_val a0 a3) (Lean_Finset_val_In a0 a3 H3) (Lean_Finset_nodup_proof l_u_1 H_l_u_1 a0 H_a0 a3 H3))).
 Qed.
-Theorem Lean_Finset_filter_In : forall a0, forall a1 :e (Pi_ ux :e a0, LeanProp), forall a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))), forall a3 :e (Lean_Finset a0), Lean_Finset_filter a0 a1 a2
-    a3 :e (Lean_Finset a0).
-let a0. let a1. assume H1: a1 :e (Pi_ ux :e a0, LeanProp). let a2. assume H2: a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))). let a3. assume H3: a3 :e (Lean_Finset a0). exact (Lean_Finset_mk_typed
-    a0 (Lean_Multiset_filter a0 a1 a2 (Lean_Finset_val a0 a3)) (Lean_Multiset_filter_In a0 a1 H1 a2 H2 (Lean_Finset_val a0 a3) (Lean_Finset_val_In a0 a3 H3)) 0 (Lean_Finset_filter_eq_1_proof_0 a0 a1
-    H1 a2 H2 a3 H3)).
+Theorem Lean_Finset_filter_In : forall l_u_1, nat_p l_u_1 -> forall a0 :e LeanUniv l_u_1, forall a1 :e (Pi_ ux :e a0, LeanProp), forall a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1 v_a))), forall a3 :e
+    (Lean_Finset a0), Lean_Finset_filter a0 a1 a2 a3 :e (Lean_Finset a0).
+let l_u_1. assume H_l_u_1: nat_p l_u_1. let a0. assume H_a0: a0 :e LeanUniv l_u_1. let a1. assume H1: a1 :e (Pi_ ux :e a0, LeanProp). let a2. assume H2: a2 :e (Pi_ v_a :e a0, (Lean_Decidable (a1
+    v_a))). let a3. assume H3: a3 :e (Lean_Finset a0). exact (Lean_Finset_mk_typed a0 (Lean_Multiset_filter a0 a1 a2 (Lean_Finset_val a0 a3)) (Lean_Multiset_filter_In l_u_1 H_l_u_1 a0 H_a0 a1 H1 a2
+    H2 (Lean_Finset_val a0 a3) (Lean_Finset_val_In a0 a3 H3)) 0 (Lean_Finset_filter_eq_1_proof_0 a0 a1 H1 a2 H2 a3 H3 l_u_1 H_l_u_1 H_a0)).
 Qed.
 (** Receipt: Finset.filter.eq_1 is the source of the MeTTa rule for Finset.filter, statement digest 3832976824. **)
 Theorem Lean_Finset_filter_eq_1 : forall l_u_1, nat_p l_u_1 -> forall v_u945 :e LeanUniv l_u_1, forall v_p :e (Pi_ ux :e v_u945, LeanProp), forall v_inst :e (Pi_ v_a :e v_u945, (Lean_Decidable (v_p
@@ -12382,71 +12440,71 @@ Definition LeanMergeSort_half2 : set -> set -> set := fun A l =>
     (Lean_Prod_snd (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum
     2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l)).
 
-Theorem LeanMergeSort_split_In : forall A, forall l :e (Lean_List A),
+Theorem LeanMergeSort_split_In : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A),
   LeanMergeSort_split A l :e Lean_Prod (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l)
     (LeanNum 1)) (LeanNum 2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))).
-let A l. assume Hl: l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 claim Lrefl: Lean_List_length A l = Lean_List_length A l.
 { reflexivity. }
 claim L0: 0 :e Lean_ProofField ((fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l).
 { apply Lean_ProofField_intro ((fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l).
   rewrite beta (Lean_List A) (fun v_l => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l Hl.
   exact Lean_Eq_proof_of Lean_Nat (Lean_List_length A l) (Lean_List_length A l) Lrefl. }
-exact Lean_List_MergeSort_Internal_splitInTwo_In A (Lean_List_length A l) (Lean_List_length_In A l Hl)
+exact Lean_List_MergeSort_Internal_splitInTwo_In u Hu A HA (Lean_List_length A l) (Lean_List_length_In A l Hl)
   (Lean_Subtype_mk_node (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l 0)
   (Lean_Subtype_mk_typed (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_List_length A l)) l Hl 0 L0).
 Qed.
 
-Theorem LeanMergeSort_half1_In : forall A, forall l :e (Lean_List A), LeanMergeSort_half1 A l :e (Lean_List A).
-let A l. assume Hl: l :e (Lean_List A).
+Theorem LeanMergeSort_half1_In : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A), LeanMergeSort_half1 A l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 exact Lean_Subtype_val_In (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2)))
   (Lean_Prod_fst (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2))))
     (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l))
   (Lean_Prod_fst_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum
     2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l)
-    (LeanMergeSort_split_In A l Hl)).
+    (LeanMergeSort_split_In u Hu A HA l Hl)).
 Qed.
 
-Theorem LeanMergeSort_half2_In : forall A, forall l :e (Lean_List A), LeanMergeSort_half2 A l :e (Lean_List A).
-let A l. assume Hl: l :e (Lean_List A).
+Theorem LeanMergeSort_half2_In : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A), LeanMergeSort_half2 A l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 exact Lean_Subtype_val_In (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))
   (Lean_Prod_snd (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2))))
     (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l))
   (Lean_Prod_snd_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum
     2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l)
-    (LeanMergeSort_split_In A l Hl)).
+    (LeanMergeSort_split_In u Hu A HA l Hl)).
 Qed.
 
 (** The lengths of the halves, from the type of splitInTwo. **)
-Theorem LeanMergeSort_half1_length : forall A, forall l :e (Lean_List A),
+Theorem LeanMergeSort_half1_length : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A),
   Lean_List_length A (LeanMergeSort_half1 A l) = Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2).
-let A l. assume Hl: l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 exact LeanSubtype_length_val A (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2))
   (Lean_Prod_fst (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2))))
     (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l))
   (Lean_Prod_fst_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum
     2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l)
-    (LeanMergeSort_split_In A l Hl)).
+    (LeanMergeSort_split_In u Hu A HA l Hl)).
 Qed.
 
-Theorem LeanMergeSort_half2_length : forall A, forall l :e (Lean_List A),
+Theorem LeanMergeSort_half2_length : forall u, nat_p u -> forall A :e LeanUniv u, forall l :e (Lean_List A),
   Lean_List_length A (LeanMergeSort_half2 A l) = Lean_Nat_div (Lean_List_length A l) (LeanNum 2).
-let A l. assume Hl: l :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let l. assume Hl: l :e (Lean_List A).
 exact LeanSubtype_length_val A (Lean_Nat_div (Lean_List_length A l) (LeanNum 2))
   (Lean_Prod_snd (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum 2))))
     (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l))
   (Lean_Prod_snd_In (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_Nat_add (Lean_List_length A l) (LeanNum 1)) (LeanNum
     2)))) (Lean_Subtype (Lean_List A) (fun v_l :e (Lean_List A) => Lean_Eq_Prop Lean_Nat (Lean_List_length A v_l) (Lean_Nat_div (Lean_List_length A l) (LeanNum 2)))) (LeanMergeSort_split A l)
-    (LeanMergeSort_split_In A l Hl)).
+    (LeanMergeSort_split_In u Hu A HA l Hl)).
 Qed.
 
 (** Each half of a list of at least two elements is shorter than the list. **)
-Theorem LeanMergeSort_halves_below : forall A, forall a :e A, forall b :e A, forall xs :e (Lean_List A),
+Theorem LeanMergeSort_halves_below : forall u, nat_p u -> forall A :e LeanUniv u, forall a :e A, forall b :e A, forall xs :e (Lean_List A),
   LeanNat_ord (Lean_List_length A (LeanMergeSort_half1 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)))) :e LeanNat_ord (Lean_List_length A (Lean_List_cons_node A a (Lean_List_cons_node A b
     xs)))
   /\ LeanNat_ord (Lean_List_length A (LeanMergeSort_half2 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)))) :e LeanNat_ord (Lean_List_length A (Lean_List_cons_node A a (Lean_List_cons_node A
     b xs))).
-let A a. assume Ha: a :e A. let b. assume Hb: b :e A. let xs. assume Hxs: xs :e (Lean_List A).
+let u. assume Hu: nat_p u. let A. assume HA: A :e LeanUniv u. let a. assume Ha: a :e A. let b. assume Hb: b :e A. let xs. assume Hxs: xs :e (Lean_List A).
 claim Hl: (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) :e (Lean_List A).
 { exact Lean_List_cons_typed A a Ha (Lean_List_cons_node A b xs) (Lean_List_cons_typed A b Hb xs Hxs). }
 apply Lean_Nat_num (Lean_List_length A xs) (Lean_List_length_In A xs Hxs).
@@ -12457,8 +12515,8 @@ claim Hn: nat_p (ordsucc (ordsucc j)).
 claim Ll: Lean_List_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) = LeanNum (ordsucc (ordsucc j)).
 { exact LeanListLength_cons_num A a Ha (Lean_List_cons_node A b xs) (Lean_List_cons_typed A b Hb xs Hxs)
     (ordsucc j) (nat_ordsucc j Hj1) (LeanListLength_cons_num A b Hb xs Hxs j Hj1 Hj2). }
-rewrite LeanMergeSort_half1_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl.
-rewrite LeanMergeSort_half2_length A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl.
+rewrite LeanMergeSort_half1_length u Hu A HA (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl.
+rewrite LeanMergeSort_half2_length u Hu A HA (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl.
 rewrite Ll.
 apply LeanNat_halves (ordsucc (ordsucc j)) Hn.
 let p. assume Hp: nat_p p /\ (exists q, nat_p q /\ (ordsucc (ordsucc j) = add_nat p q
@@ -12595,13 +12653,13 @@ apply LeanList_cases2 A (fun x =>
   { exact Lean_List_cons_typed A a Ha (Lean_List_cons_node A b xs) (Lean_List_cons_typed A b Hb xs Hxs). }
   rewrite LeanMergeSort_level_at (LeanNum k) (LeanNum_In k Hk) u Hu A HA le Hle a Ha b Hb xs Hxs.
   rewrite LeanMergeSort_level_at (LeanNum m) (LeanNum_In m Hm) u Hu A HA le Hle a Ha b Hb xs Hxs.
-  apply LeanMergeSort_halves_below A a Ha b Hb xs Hxs.
+  apply LeanMergeSort_halves_below u Hu A HA a Ha b Hb xs Hxs.
   assume Hb1: LeanNat_ord (Lean_List_length A (LeanMergeSort_half1 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)))) :e LeanNat_ord (Lean_List_length A (Lean_List_cons_node A a
     (Lean_List_cons_node A b xs))).
   assume Hb2: LeanNat_ord (Lean_List_length A (LeanMergeSort_half2 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)))) :e LeanNat_ord (Lean_List_length A (Lean_List_cons_node A a
     (Lean_List_cons_node A b xs))).
-  rewrite Hagree (LeanMergeSort_half1 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))) (LeanMergeSort_half1_In A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl) Hb1.
-  rewrite Hagree (LeanMergeSort_half2 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))) (LeanMergeSort_half2_In A (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl) Hb2.
+  rewrite Hagree (LeanMergeSort_half1 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))) (LeanMergeSort_half1_In u Hu A HA (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl) Hb1.
+  rewrite Hagree (LeanMergeSort_half2 A (Lean_List_cons_node A a (Lean_List_cons_node A b xs))) (LeanMergeSort_half2_In u Hu A HA (Lean_List_cons_node A a (Lean_List_cons_node A b xs)) Hl) Hb2.
   reflexivity.
 Qed.
 
@@ -12687,17 +12745,17 @@ prove Lean_Mettapedia_Languages_Lean_Recursion_FuelCore_MergeSort_sourceFuel (Le
     (Lean_List_cons_node v_u945 v_b v_xs))))) v_u945 (LeanMergeSort_half2 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) v_x)
       v_x.
 rewrite LeanMergeSort_level_at (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) Hlen l_u_1 Hu v_u945 HA v_x Hle v_a Ha v_b Hb v_xs Hxs.
-apply LeanMergeSort_halves_below v_u945 v_a Ha v_b Hb v_xs Hxs.
+apply LeanMergeSort_halves_below l_u_1 Hu v_u945 HA v_a Ha v_b Hb v_xs Hxs.
 assume Hb1: LeanNat_ord (Lean_List_length v_u945 (LeanMergeSort_half1 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs)))) :e LeanNat_ord (Lean_List_length v_u945
     (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))).
 assume Hb2: LeanNat_ord (Lean_List_length v_u945 (LeanMergeSort_half2 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs)))) :e LeanNat_ord (Lean_List_length v_u945
     (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))).
 rewrite LeanMergeSort_at_length l_u_1 Hu v_u945 HA v_x Hle (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) Hlen
-  (LeanMergeSort_half1 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (LeanMergeSort_half1_In v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b
-    v_xs)) Hl) Hb1.
+  (LeanMergeSort_half1 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (LeanMergeSort_half1_In l_u_1 Hu v_u945 HA (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node
+    v_u945 v_b v_xs)) Hl) Hb1.
 rewrite LeanMergeSort_at_length l_u_1 Hu v_u945 HA v_x Hle (Lean_List_length v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) Hlen
-  (LeanMergeSort_half2 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (LeanMergeSort_half2_In v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b
-    v_xs)) Hl) Hb2.
+  (LeanMergeSort_half2 v_u945 (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node v_u945 v_b v_xs))) (LeanMergeSort_half2_In l_u_1 Hu v_u945 HA (Lean_List_cons_node v_u945 v_a (Lean_List_cons_node
+    v_u945 v_b v_xs)) Hl) Hb2.
 reflexivity.
 Qed.
 

@@ -29,12 +29,12 @@ proposition (`probe_of_bisimilar`).
 
 **Apartness with a witness** (`Apart`): a formula true at one state and false at the other. It refutes
 bisimilarity (`not_bisimilar_of_apart`) and is symmetric (`apart_symm`). On list-presented systems it
-is found by a search through finite levels of formulas (`apart_iff_exists_level`), its none query is
+is found by a search through finite levels of formulas (`apart_iff_exists_level`), its absence is
 exactly logical equivalence (`not_apart_iff_logicallyEquivalent`), Markov's principle turns "not
 logically equivalent" into a witness (`apart_of_mp`), and LPO decides between the two
 (`logicallyEquivalent_or_apart_of_lpo`). With no principle, "the same type" is carried by a
 bisimulation, given as a certificate, and "a different type" by a distinguishing formula; logical
-equivalence is only the none query of the second.
+equivalence is only the absence of the second.
 -/
 
 set_option autoImplicit false
@@ -905,7 +905,7 @@ theorem apart_symm {x y : S.Term} (apart : Apart M x y) : Apart M y x :=
   let ⟨φ, holds, fails⟩ := apart
   ⟨.neg φ, fails, fun notHolds => notHolds holds⟩
 
-/-- **On list-presented systems, the none query of a witness is logical equivalence.** -/
+/-- **On list-presented systems, the absence of a witness is logical equivalence.** -/
 theorem not_apart_iff_logicallyEquivalent (P : ListPresented M) {x y : S.Term} :
     ¬ Apart M x y ↔ M.LogicallyEquivalent x y := by
   constructor

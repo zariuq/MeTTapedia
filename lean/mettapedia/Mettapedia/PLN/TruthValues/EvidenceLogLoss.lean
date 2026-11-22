@@ -1,4 +1,4 @@
-import Mettapedia.PLN.TruthValues.PLNTruthTower
+import Mettapedia.PLN.TruthValues.PLNBinaryCounts
 import Mettapedia.InformationTheory.PredictiveLogLoss
 
 /-!

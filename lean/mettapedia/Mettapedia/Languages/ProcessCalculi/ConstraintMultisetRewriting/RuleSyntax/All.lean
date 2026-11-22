@@ -19,7 +19,7 @@ the present occurrences by an enabled commit (`realizable_iff`). The last law ex
 is an instance with no knowledge (`ofLTS`).
 
 **A one-match step** (`Core`). Over a frame action with its extensions, a rule has its own frame of
-schematic unknowns and, there, take and read patterns, tells, checks (equation guards, none queries and
+schematic unknowns and, there, take and read patterns, tells, checks (equation guards, absence and
 count queries) and made rows (the tree's `RuleInstance`), and collect patterns. A program is a set of
 rules. A firing of a program is a rule of the program, an extension, an opening of the rule's unknowns
 into the extended frame, a selection of occurrences and the collect query's claimed rows. Information,
@@ -56,6 +56,6 @@ rows and the opened tells (`result_knowledge`), and at a finite store the select
 extension, opening and made identities are finitely many (`selections_finite`), each with its control.
 
 **Every feature fires** (`Examples`, at the one-frame action over first-order atoms): a take and a
-make, a read, a tell that binds a caller's unknown, a guard that holds and one that fails, a none query
+make, a read, a tell that binds a caller's unknown, a guard that holds and one that fails, an absence
 that holds and one that fails, and a refused opening that captures the caller's unknown.
 -/

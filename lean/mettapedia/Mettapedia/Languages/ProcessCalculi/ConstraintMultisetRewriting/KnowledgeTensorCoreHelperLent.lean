@@ -42,10 +42,10 @@ theorem after_present {s : State S O} (f : Firing s) :
   simp [Firing.selection, Selection.commit, or_comm]
 
 /-- The owned identities after a helper firing, when a set of present identities is lent. -/
-theorem after_owned_val {s : State S O} (f : Firing s) (missing : f.made ∉ s.present)
+theorem after_owned_val {s : State S O} (f : Firing s) (absent : f.made ∉ s.present)
     {lent : Finset O} (lentIn : lent ⊆ s.present) :
     (f.after.present \ lent).val = {f.made} + (s.present \ lent).val := by
-  have unlent : f.made ∉ s.present \ lent := fun member => missing (Finset.mem_sdiff.mp member).1
+  have unlent : f.made ∉ s.present \ lent := fun member => absent (Finset.mem_sdiff.mp member).1
   have same : f.after.present \ lent = insert f.made (s.present \ lent) := by
     rw [after_present]
     ext occurrence
@@ -55,7 +55,7 @@ theorem after_owned_val {s : State S O} (f : Firing s) (missing : f.made ∉ s.p
       · exact Or.inl made
       · exact Or.inr ⟨present, unlentHere⟩
     · rintro (made | ⟨present, unlentHere⟩)
-      · refine ⟨Or.inl made, fun lentHere => missing ?_⟩
+      · refine ⟨Or.inl made, fun lentHere => absent ?_⟩
         rw [← made]
         exact lentIn lentHere
       · exact ⟨Or.inr present, unlentHere⟩
@@ -68,7 +68,7 @@ theorem firesUnder_lent_of_admits {s : State S O} (f : Firing s) (allowed : help
     (helperZoned S O).FiresUnder (a := s.frame) lent.val (ruleOf f)
       (solutions (Frames.contextual S) s.knowledge) (s.present \ lent).val
       (solutions (Frames.contextual S) f.information) (f.after.present \ lent).val := by
-  have missing : f.made ∉ s.present := (Helpers.enabled_iff f).mp allowed.2.1
+  have absent : f.made ∉ s.present := (Helpers.enabled_iff f).mp allowed.2.1
   refine ⟨(s.present \ lent).val, (zero_add _).symm, Multiset.zero_le _, ?_, ?_,
     solutions_information f, ?_⟩
   · intro solution member
@@ -80,13 +80,13 @@ theorem firesUnder_lent_of_admits {s : State S O} (f : Firing s) (allowed : help
   · intro member
     have present : f.made ∈ (s.present \ lent).val + lent.val := member
     rcases Multiset.mem_add.mp present with owned | lentHere
-    · exact missing (Finset.mem_sdiff.mp (Finset.mem_val.mp owned)).1
-    · exact missing (lentIn (Finset.mem_val.mp lentHere))
+    · exact absent (Finset.mem_sdiff.mp (Finset.mem_val.mp owned)).1
+    · exact absent (lentIn (Finset.mem_val.mp lentHere))
   · have carried : Multiset.map (fun occurrence : O => occurrence) (s.present \ lent).val =
         (s.present \ lent).val := Multiset.map_id' _
     show (f.after.present \ lent).val =
       {f.made} + Multiset.map (fun occurrence : O => occurrence) (s.present \ lent).val
-    rw [carried, after_owned_val f missing lentIn]
+    rw [carried, after_owned_val f absent lentIn]
 
 /-- **A firing under a lent zone that reaches consistent knowledge is an admitted helper
 firing.** -/
@@ -104,7 +104,7 @@ theorem admits_of_firesUnder_lent (s : State S O) (rule : Rule S O s.frame) {len
   have whole : frame = (s.present \ lent).val := (zero_add frame).symm.trans sourced.symm
   subst whole
   have fresh : rule.made ∉ (s.present \ lent).val + lent.val := checked
-  have missing : (firingOf s rule).made ∉ s.present := by
+  have absent : (firingOf s rule).made ∉ s.present := by
     intro present
     have here : rule.made ∈ s.present := present
     by_cases lentHere : rule.made ∈ lent
@@ -119,7 +119,7 @@ theorem admits_of_firesUnder_lent (s : State S O) (rule : Rule S O s.frame) {len
   have guarded : ∀ solution ∈ reached,
       (Frames.contextual S).Models (Assignment.compose solution.2 (incl s.frame rule.helper))
         rule.guards := known ▸ asked
-  refine ⟨⟨List.nodup_singleton _, (Helpers.enabled_iff (firingOf s rule)).mpr missing, ?_, ?_⟩,
+  refine ⟨⟨List.nodup_singleton _, (Helpers.enabled_iff (firingOf s rule)).mpr absent, ?_, ?_⟩,
     reaches, ?_⟩
   · exact (solvable_iff_nonempty _).mpr (reaches ▸ consistent)
   · intro later σ solved
@@ -131,7 +131,7 @@ theorem admits_of_firesUnder_lent (s : State S O) (rule : Rule S O s.frame) {len
         (s.present \ lent).val := Multiset.map_id' _
     have made : left = {rule.made} +
         Multiset.map (fun occurrence : O => occurrence) (s.present \ lent).val := target
-    rw [made, carried, after_owned_val (firingOf s rule) missing lentIn]
+    rw [made, carried, after_owned_val (firingOf s rule) absent lentIn]
     rfl
 
 /-- A set of present identities stays present after a helper firing. -/
@@ -244,8 +244,8 @@ theorem helper_checks_gives_lent_proof {left right : State S O}
     constructor
     · rintro ⟨here | there, outside⟩
       · exact here
-      · by_contra missing
-        exact outside ⟨there, missing⟩
+      · by_contra absent
+        exact outside ⟨there, absent⟩
     · intro here
       exact ⟨Or.inl here, fun both => both.2 here⟩
   have known : solutions (Frames.contextual S) placed.state.knowledge =

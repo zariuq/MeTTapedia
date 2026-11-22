@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Principal
 # Literal matching receipts as a fixed-observation profile of constraint steps
 
 An actual matching receipt determines the same ordered physical selections
-in the two-sided occurrence step. Equality, none queries and exact-count checks
+in the two-sided occurrence step. Equality, absence and exact-count checks
 are retained. Their observation world is fixed under the substitution action,
 so a successful literal check is valid in every remaining solution.
 
@@ -121,11 +121,11 @@ theorem check_holds_iff (A : SubstitutionAction T S) (label : O → T)
               Finset.mem_filter.mpr ⟨present, equal⟩
             rw [empty] at member
             exact Finset.notMem_empty _ member
-          · intro missing
+          · intro absent
             apply Finset.eq_empty_iff_forall_notMem.mpr
             intro occurrence member
             obtain ⟨present, equal⟩ := Finset.mem_filter.mp member
-            exact missing occurrence present equal
+            exact absent occurrence present equal
   | count pattern number =>
       change Multiset.card (GuardedMultisetRewriting.matchesIn (ResolvedMatching.literalLayer A)
         ResolvedMatching.assignment (A.apply A.identity pattern) (labels label world)) = number ↔ _

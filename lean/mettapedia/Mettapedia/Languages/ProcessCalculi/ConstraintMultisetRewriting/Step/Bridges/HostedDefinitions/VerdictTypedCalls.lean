@@ -30,9 +30,9 @@ theorem typed_old {dev : Definitions.Development} (fresh : Definitions.devFresh 
     {n : Nat} {Γ : Ctx Tower.Head n} {term type : Tower.Tm n} (typed : Typed pkg Γ term type) :
     Definitions.OldTerm dev term := by
   intro entry member
-  have missing : pkg.constantType entry.1 = none :=
+  have absent : pkg.constantType entry.1 = none :=
     Option.isNone_iff_eq_none.mp (List.all_eq_true.mp fresh entry member)
-  exact TowerSyntaxLimit.typed_free missing typed
+  exact TowerSyntaxLimit.typed_free absent typed
 
 theorem compiled_old {dev : Definitions.Development} (fresh : Definitions.devFresh dev = true)
     {definition : Vectors.Checker.Definition} {base : Nat} {compiled : Tower.Tm base}

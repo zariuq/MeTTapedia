@@ -177,13 +177,13 @@ theorem the_unprotected_hidden_binding_really_changes_the_count :
       ContextualGuardSemantics.Ask locals setX sharedRows world (.count query 1) :=
   ContextualProcessInterference.same_world_different_information_changes_the_guard
 
-theorem the_hidden_binding_changes_pointwise_none :
+theorem the_hidden_binding_changes_pointwise_absence :
     ContextualGuardSemantics.Holds locals (generator captures) sharedRows world (.predicate .none query) ∧
       ¬ ContextualGuardSemantics.Holds locals ContextualGuardSemantics.Controls.assignedA
         sharedRows world (.predicate .none query) := by
-  refine ⟨ContextualGuardSemantics.Controls.identity_none_of_a_shared_unknown_is_only_pointwise, ?_⟩
-  intro missing
-  exact missing 7 (by decide +kernel)
+  refine ⟨ContextualGuardSemantics.Controls.identity_absence_of_a_shared_unknown_is_only_pointwise, ?_⟩
+  intro absent
+  exact absent 7 (by decide +kernel)
     ContextualGuardSemantics.Controls.later_binding_makes_the_shared_row_match
 
 def mixedSchema : Term (signature base (ContextualSelectionViews.source locals captures)) [] () :=

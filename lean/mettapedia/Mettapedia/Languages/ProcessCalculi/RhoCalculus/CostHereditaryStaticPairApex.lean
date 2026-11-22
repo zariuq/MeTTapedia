@@ -1303,6 +1303,7 @@ private theorem rhoCostStatic_quote_inner_hasType
   obtain ⟨argument, argumentTyped, argumentsShape, _argumentSafe⟩ :=
     typed.selectedQuoteArgument rhoCIGSLT.costWholeLanguage_validate
       rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership
+      (CostCanonicalLaws.rho_costWholeReflectionProfile_closed _ declarationMembership)
       (typed.reflectiveSupportSafeAt_empty bound)
   have argumentEquality : inner = argument := by
     simpa [declaration] using (List.cons.inj argumentsShape).1
@@ -1573,8 +1574,8 @@ private theorem rhoCostStatic_quote_isQuote (color : CostStaticColor) :
           simp [ReflectionExtension.rhoReflectionProfile])
   change ReflectiveContextSupport.isQuoteConstructor
     rhoCIGSLT.costWholeReflectionProfile declaration.quoteConstructor = true
-  simp only [ReflectiveContextSupport.isQuoteConstructor, List.any_eq_true]
-  exact ⟨declaration, membership, by simp⟩
+  exact ReflectiveContextSupport.isQuoteConstructor_of_mem membership
+    (CostCanonicalLaws.rho_costWholeReflectionProfile_closed _ membership)
 
 /-- If ordinary canonicalization of a term has no Drop root, keyed
 canonicalization cannot invent one.  Re-canonicalizing the keyed result

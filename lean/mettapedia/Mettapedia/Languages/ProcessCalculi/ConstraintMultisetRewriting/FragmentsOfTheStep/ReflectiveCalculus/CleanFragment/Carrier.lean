@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Fragments
 Cleanliness is stated on actual target knowledge and row observations. It
 does not assume a source process, a source run, or an operational simulation.
 A certificate provides a closed value for each present occurrence, consistent
-knowledge, and determination of that value at every ground solution. Missing
+knowledge, and determination of that value at every ground solution. Absent
 identities and unused declarations are unrestricted.
 
 The finite inventory constructs its source readback. This independently

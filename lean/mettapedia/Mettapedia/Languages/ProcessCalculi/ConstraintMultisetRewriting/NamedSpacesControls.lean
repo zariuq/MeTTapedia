@@ -247,7 +247,7 @@ open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NamedSpaces
 #print axioms Controls.peek_impossible_after_owner_take
 #print axioms Controls.ask_acts_after_owner_take
 #print axioms Controls.guarded_act_refused_when_present
-#print axioms Controls.ask_none_acts_when_present
+#print axioms Controls.ask_absence_acts_when_present
 #print axioms Controls.two_asks_two_copies
 #print axioms Controls.forwarder_gap_observable
 #print axioms Controls.primitive_send_no_gap

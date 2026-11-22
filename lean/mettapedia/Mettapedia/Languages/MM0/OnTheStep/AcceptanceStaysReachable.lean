@@ -13,9 +13,9 @@ accepts: **from every state the step reaches from such a file, a state holding `
   `arrow_runs`, the dependency runs), chosen by the verdict equation of the cursor.
 * `accepted_reachable_of_phase`: from every bag of the invariant `TermDeclarations.Phase` of an accepted file, a bag
   holding `accepted` is reachable.
-* `read_run`, `realize_run`: runs of the step from a state that reads as a bag and runs of rewriting with none queries
-  from the bag correspond, one firing for one rewrite (`NoneRewriting.readsBag_backward_none`,
-  `readsBag_forward_none`), so the statement holds on the step itself.
+* `read_run`, `realize_run`: runs of the step from a state that reads as a bag and runs of rewriting with absence
+  from the bag correspond, one firing for one rewrite (`AbsenceRewriting.readsBag_backward_absent`,
+  `readsBag_forward_absent`), so the statement holds on the step itself.
 -/
 
 set_option autoImplicit false
@@ -28,7 +28,7 @@ open Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax
 open NamesOnTheStep (Expr)
 open Presentation.Schematic
 open Machines (ReadsBag stepSystem)
-open NoneRewriting
+open AbsenceRewriting
 open DeclarationProgram
 open SortDeclarations (fileTree mem_one_add)
 open ArrowTermDeclarations (multiStep_append)
@@ -76,7 +76,7 @@ theorem reaches_of_inTerm (t : TermStatement) (restTree : Expr) (env : Env) (old
 /-- **From every bag of the invariant of an accepted file, a bag holding `accepted` is reachable.** -/
 theorem accepted_reachable_of_phase {ss₀ : List Statement} {bag : Multiset Expr} (phase : Phase ss₀ bag)
     (accepts : (checkAll empty ss₀).isSome) :
-    ∃ bag' : Multiset Expr, (rewritingNone program).MultiStep bag bag' ∧ accepted ∈ bag' := by
+    ∃ bag' : Multiset Expr, (rewritingAbsent program).MultiStep bag bag' ∧ accepted ∈ bag' := by
   obtain ⟨env₀, whole⟩ := Option.isSome_iff_exists.mp accepts
   rcases phase with ⟨done, rest, env, old, decomposed, checked, shape, rfl⟩ |
     ⟨done, t, rest, env, old, bound, names, cursor, decomposed, checked, shape, fresh, inTerm, rfl⟩ |
@@ -100,30 +100,30 @@ theorem accepted_reachable_of_phase {ss₀ : List Statement} {bag : Multiset Exp
     · cases whole'
   · exact ⟨_, .refl _, mem_one_add.mpr (Or.inl rfl)⟩
 
-/-- **A run of the step from a state that reads as a bag is read back as a run of rewriting with none queries.** -/
-theorem read_run {O : Type uO} [DecidableEq O] {rules : List SRule} (fragment : ∀ r ∈ rules, NoneRestricted r)
+/-- **A run of the step from a state that reads as a bag is read back as a run of rewriting with absence.** -/
+theorem read_run {O : Type uO} [DecidableEq O] {rules : List SRule} (fragment : ∀ r ∈ rules, AbsenceRestricted r)
     {s s' : (stepSystem O rules).Term} (steps : (stepSystem O rules).MultiStep s s') :
     ∀ {bag : Multiset Expr}, ReadsBag s bag →
-      ∃ bag' : Multiset Expr, (rewritingNone rules).MultiStep bag bag' ∧ ReadsBag s' bag' := by
+      ∃ bag' : Multiset Expr, (rewritingAbsent rules).MultiStep bag bag' ∧ ReadsBag s' bag' := by
   induction steps with
   | refl _ => exact fun reads => ⟨_, .refl _, reads⟩
   | step first _ ih =>
       intro bag reads
       obtain ⟨g, admitted, rfl⟩ := first
-      obtain ⟨bag₁, rewritten, reads₁⟩ := readsBag_backward_none fragment reads g admitted
+      obtain ⟨bag₁, rewritten, reads₁⟩ := readsBag_backward_absent fragment reads g admitted
       obtain ⟨bag', runs, reads'⟩ := ih reads₁
       exact ⟨bag', .step rewritten runs, reads'⟩
 
-/-- **A run of rewriting with none queries from the bag a state reads as is realized by a run of the step.** -/
+/-- **A run of rewriting with absence from the bag a state reads as is realized by a run of the step.** -/
 theorem realize_run {O : Type uO} [DecidableEq O] [Infinite O] {rules : List SRule}
-    (fragment : ∀ r ∈ rules, NoneRestricted r) {bag bag' : (rewritingNone rules).Term}
-    (runs : (rewritingNone rules).MultiStep bag bag') :
+    (fragment : ∀ r ∈ rules, AbsenceRestricted r) {bag bag' : (rewritingAbsent rules).Term}
+    (runs : (rewritingAbsent rules).MultiStep bag bag') :
     ∀ {s : SState O}, ReadsBag s bag → ∃ s' : SState O, (stepSystem O rules).MultiStep s s' ∧ ReadsBag s' bag' := by
   induction runs with
   | refl _ => exact fun reads => ⟨_, .refl _, reads⟩
   | step first _ ih =>
       intro s reads
-      obtain ⟨g, admitted, reads₁⟩ := readsBag_forward_none fragment reads first
+      obtain ⟨g, admitted, reads₁⟩ := readsBag_forward_absent fragment reads first
       obtain ⟨s', steps, reads'⟩ := ih reads₁
       exact ⟨s', .step ⟨g, admitted, rfl⟩ steps, reads'⟩
 

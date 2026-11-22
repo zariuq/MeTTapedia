@@ -516,11 +516,15 @@ Qed." ($E "{" $E "}" $E $E $E $E $E $E $E $E $E $E $E $E $E $E))
             (arity-text $E $cs)
             (let $ks (range-from 0 (length-of $cs)) (join "" (map-atom $ks $k (ctor-text $name $cs $params $q $k))))
             (rec-text $name $cs $params $q)
+            (if (and (== $q 0) (not (is-prop $name))) (rec-text-as mrec $name $cs $params $q) "")
             (rec-type-text $name $cs $params $q)
+            (if (and (== $q 0) (not (is-prop $name))) (rec-in-text $name $cs $params) "")
             (if (has-cases-eliminator $name) (cases-text $name $cs $params $q) "")
             (if (has-cases-eliminator $name) (cases-type-text $name $cs $params $q) "")
+            (if (and (has-cases-eliminator $name) (and (== $q 0) (not (is-prop $name)))) (cases-in-text $name $cs $params) "")
             (if (== $q 0) (ind-text $name $cs $params) "")
             (if (and (== $q 0) (not (is-prop $name))) (data-rec-proof-ok-text $name $cs $params) "")
+            (if (and (== $q 0) (not (is-prop $name))) (field-typed-text $name $cs $params) "")
             (if (and (== $q 1) (is-prop $name)) (indexed-ind-text $name $cs $params) "")
             (noconf-text $name $cs)
             (inj-text $name $cs)
@@ -921,17 +925,29 @@ Qed.
 
 (= (method-fun $cs) (format-args "(fun k a r:set => SeqAt {} k)" ((methods-seq $cs "(a {})" "(r {})"))))
 
-(= (rec-text $name $cs $params $q)
+(= (rec-text $name $cs $params $q) (rec-text-as rec $name $cs $params $q))
+; The recursor read two ways.  rec: each minor premise a set, applied set-theoretically (a Lean
+; function is a set).  mrec: each minor premise a function on sets, for an elimination into
+; types (List.below): a type is a set, and a function of types needs no domain to be read.
+(= (rec-text-as $flavor $name $cs $params $q)
    (let* (($E (egal $name))
           ($n (length-of $cs))
           ($hs (join " " (hs-of $n)))
           ($ks (range-from 0 $n)))
-     (format-args "Definition {}_rec : {} := fun {} t => IndRec {} {} t.
+     (format-args "Definition {}_{} : {} := fun {} t => IndRec {} {} t.
 {}"
-       ($E (node-type (+ $n 1)) $hs (sig $E) (method-fun $cs)
-        (join "" (map-atom $ks $k (iota-text $name $cs $params $q $k)))))))
+       ($E $flavor (if (== $flavor rec) (node-type (+ $n 1)) (mrec-type $cs)) $hs (sig $E) (method-fun $cs)
+        (join "" (map-atom $ks $k (iota-text-as $flavor $name $cs $params $q $k)))))))
+(= (mrec-minor-type $c)
+   (let $arity (+ (length-of (ctor-fields $c)) (length-of (rec-positions (ctor-fields $c) 0)))
+     (if (== $arity 0) "set" (format-args "({})" ((node-type $arity))))))
+(= (mrec-type $cs) (format-args "{} -> set -> set" ((join " -> " (map-atom $cs $c (mrec-minor-type $c))))))
+(= (mrec-binders $cs)
+   (let $ks (range-from 0 (length-of $cs))
+     (join ", " (map-atom $ks $k (format-args "forall h{}:{}" ($k (mrec-minor-type (nth $cs $k))))))))
 
-(= (iota-text $name $cs $params $q $k)
+(= (iota-text $name $cs $params $q $k) (iota-text-as rec $name $cs $params $q $k))
+(= (iota-text-as $flavor $name $cs $params $q $k)
    (let* (($E (egal $name))
           ($n (length-of $cs))
           ($hs (join " " (hs-of $n)))
@@ -944,9 +960,9 @@ Qed.
           ($M (method-fun $cs))
           ($recs (format-args "(IndRes {} {} (fun j => IndRec {} {} ({} j)))" ((sig $E) $k (sig $E) $M $T)))
           ($ps (rec-positions $fs 0))
-          ($rhs (method-app $k $fs "x{}" (format-args "({}_rec {} x{})" ($E $hs "{}"))))
+          ($rhs (method-app $k $fs "x{}" (format-args "({}_{} {} x{})" ($E $flavor $hs "{}"))))
           ($node (applied (format-args "{}_node" ($C)) $m)))
-     (format-args "Theorem {}_iota{} : forall {}, {}.
+     (format-args "Theorem {}_{}{} : {}, {}.
 let {}. {}
 {}{}prove IndRec {} {} (IndNode {} {} {}) = {}.
 rewrite IndRec_iota {} {}_distinct {}_bounded {}_arity {} {} {} {} ({}_args {}).
@@ -954,13 +970,14 @@ prove SeqAt {} {} = {}.
 {}
 Qed.
 "
-       ($E $k $hs (binders $E $q $fs $params 0 (format-args "{}_rec {} ({}) = {}" ($E $hs $node $rhs)))
+       ($E (if (== $flavor rec) iota miota) $k (if (== $flavor rec) (format-args "forall {}" ($hs)) (mrec-binders $cs))
+        (binders $E $q $fs $params 0 (format-args "{}_{} {} ({}) = {}" ($E $flavor $hs $node $rhs)))
         $hs (intros $E $q $fs $params 0)
         (tuple-claims $m $S)
         (join "" (map-atom $ps $p
-           (format-args "claim R{}: {} {} = {}_rec {} x{}.
+           (format-args "claim R{}: {} {} = {}_{} {} x{}.
 {} rewrite IndRes_at {} {} (fun j => IndRec {} {} ({} j)) {} (In_eq_rs {} ({}_N {}) {} {}_N{} {}) {}_R{}_{}. prove IndRec {} {} ({} {}) = IndRec {} {} x{}. rewrite T{}. reflexivity. {}
-" ($p $recs $p $E $hs $p
+" ($p $recs $p $E $flavor $hs $p
    "{" (sig $E) $k (sig $E) $M $T $p $p $E $k $m $E $k (inproof $p $m) $E $k $p
    (sig $E) $M $T $p (sig $E) $M $p $p "}"))))
         (sig $E) $M (sig $E) $k $T $rhs
@@ -2762,3 +2779,207 @@ Qed.
    "{" $B $E (type-args $B $bcs 0 0) "}"
    $E
    $E $E $B))))
+
+; ---- a family's below, and brecOn read as Lean states its type ----
+; Lean compiles structural recursion in a proof to F.brecOn motive t F, where F proves motive x
+; from F.below motive x, a type built by F's recursor: at a constructor, PUnit when it has no
+; recursive field, else the pairs (motive r, below r) of its recursive fields, nested to the
+; right (Lean's mkBelow).  F.below is read by the recursor with meta-level minors (mrec), and
+; F.brecOn by the theorem Lean_F_brecOn_proof_ok: from F, motive t, proved by induction on t
+; with motive x and an inhabitant of below x carried together.  Generated after the families,
+; for each family the section read without indices whose fields are data or recursive, where
+; PProd and PUnit are read in the same document.
+(= (brecon-section $emitted)
+   (if (and (brecon-member PProd $emitted) (brecon-member PUnit $emitted))
+       (join "" (map-atom $emitted $F (if (brecon-family $F) (brecon-text $F) "")))
+       ""))
+(= (brecon-member $x $xs) (if (== $xs ()) False (if (== (car-atom $xs) $x) True (brecon-member $x (cdr-atom $xs)))))
+(= (brecon-family $name)
+   (if (is-prop $name) False
+   (if (not (== (section-q $name) 0)) False
+   (if (== (constructors-of $name) ()) False
+       (brecon-fields-plain (constructors-of $name))))))
+(= (brecon-fields-plain $cs)
+   (if (== $cs ()) True
+       (if (brecon-plain-fields (ctor-fields (car-atom $cs))) (brecon-fields-plain (cdr-atom $cs)) False)))
+(= (brecon-plain-fields $fs)
+   (if (== $fs ()) True
+       (case (car-atom $fs)
+         (((data $t) (brecon-plain-fields (cdr-atom $fs)))
+          ((rec $is) (brecon-plain-fields (cdr-atom $fs)))
+          ($_ False)))))
+(= (brecon-applied $head $args) (if (== $args ()) $head (format-args "({} {})" ($head (join " " $args)))))
+; The pairs of the recursive fields, nested to the right; PUnit for none.  ITEM renders one.
+(= (brecon-fold $items)
+   (if (== $items ()) "Lean_PUnit"
+       (if (== (cdr-atom $items) ()) (car-atom $items)
+           (format-args "(Lean_PProd {} {})" ((car-atom $items) (brecon-fold (cdr-atom $items)))))))
+(= (brecon-minor $c)
+   (let* (($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0))
+          ($xs (map-atom (range-from 0 $m) $j (format-args "x{}" ($j))))
+          ($rs (map-atom $ps $p (format-args "r{}" ($p))))
+          ($body (brecon-fold (map-atom $ps $p (format-args "(Lean_PProd (motive x{}) r{})" ($p $p))))))
+     (if (== (append-lists $xs $rs) ()) $body
+         (format-args "(fun {} => {})" ((join " " (append-lists $xs $rs)) $body)))))
+; The inhabitant of below at a constructor, and its typing, from the hypotheses b_p :e below x_p.
+(= (brecon-value $ps $B)
+   (if (== $ps ()) "Lean_PUnit_unit_node"
+       (let* (($p (car-atom $ps)) ($v (format-args "(Lean_PProd_mk_node (motive x{}) ({} x{}) 0 b{})" ($p $B $p $p))))
+         (if (== (cdr-atom $ps) ()) $v
+             (format-args "(Lean_PProd_mk_node {} {} {} {})"
+               ((brecon-item-type $p $B) (brecon-type (cdr-atom $ps) $B) $v (brecon-value (cdr-atom $ps) $B)))))))
+(= (brecon-item-type $p $B) (format-args "(Lean_PProd (motive x{}) ({} x{}))" ($p $B $p)))
+(= (brecon-type $ps $B)
+   (if (== (cdr-atom $ps) ()) (brecon-item-type (car-atom $ps) $B)
+       (format-args "(Lean_PProd {} {})" ((brecon-item-type (car-atom $ps) $B) (brecon-type (cdr-atom $ps) $B)))))
+(= (brecon-typed $ps $B)
+   (if (== $ps ()) "Lean_PUnit_unit_typed"
+       (let* (($p (car-atom $ps))
+              ($t (format-args "(Lean_PProd_mk_typed (motive x{}) ({} x{}) 0 IH{}a b{} Hb{})" ($p $B $p $p $p $p))))
+         (if (== (cdr-atom $ps) ()) $t
+             (format-args "(Lean_PProd_mk_typed {} {} {} {} {} {})"
+               ((brecon-item-type $p $B) (brecon-type (cdr-atom $ps) $B)
+                (format-args "(Lean_PProd_mk_node (motive x{}) ({} x{}) 0 b{})" ($p $B $p $p)) $t
+                (brecon-value (cdr-atom $ps) $B) (brecon-typed (cdr-atom $ps) $B)))))))
+(= (brecon-case $E $cs $params $k $TT $B $PS $Ms $bullet)
+   (let* (($c (nth $cs $k)) ($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0))
+          ($js (range-from 0 $m))
+          ($C (egal (ctor-name $c)))
+          ($node (brecon-applied (format-args "{}_node" ($C)) (append-lists $PS (map-atom $js $j (format-args "x{}" ($j))))))
+          ($fieldhyps (join " " (map-atom $js $j (format-args "x{} H{}" ($j $j)))))
+          ($intros (join "" (map-atom $js $j
+                     (format-args "let x{}. assume H{}: x{} :e {}. "
+                       ($j $j $j (let $f (nth $fs $j) (if (is-rec $f) $TT (field-type $E 0 $f $params))))))))
+          ($ihs (join "" (map-atom $ps $p (format-args "assume IH{}: 0 :e motive x{} /\\ (exists b, b :e {} x{}). " ($p $p $B $p)))))
+          ($opens (join "" (map-atom $ps $p
+                     (format-args "apply IH{}. assume IH{}a: 0 :e motive x{}. assume IH{}b: exists b, b :e {} x{}. apply IH{}b. let b{}. assume Hb{}: b{} :e {} x{}.\n    "
+                       ($p $p $p $p $B $p $p $p $p $p $B $p)))))
+          ($val (brecon-value $ps $B)))
+     (format-args "  {}{}{}\n    {}claim Hc: {} :e {}.\n    { exact {}. }\n    claim Hb: {} :e {} {}.\n    { prove {} :e {}_mrec {} {}. rewrite {}_miota{} {} {}. exact {}. }\n    apply andI.\n    + exact Pi_0_ap ({} {}) (fun b => motive {}) (HFx {} Hc) {} Hb.\n    + witness {}. exact Hb.\n"
+       ($bullet $intros $ihs $opens $node $TT
+        (brecon-applied (format-args "{}_typed" ($C)) (append-lists $PS (if (== $fieldhyps "") () ($fieldhyps))))
+        $val $B $node
+        $val $E (join " " (append-lists $PS $Ms)) $node
+        $E $k (join " " (append-lists $PS $Ms)) $fieldhyps (brecon-typed $ps $B)
+        $B $node $node $node $val $val))))
+(= (brecon-text $name)
+   (let* (($E (egal $name)) ($cs (constructors-of $name)) ($params (params-of $name))
+          ($PS (map-atom (range-from 0 (length-of $params)) $i (format-args "P{}" ($i))))
+          ($TT (brecon-applied $E $PS))
+          ($psets (join "" (map-atom $PS $v2 "set -> ")))
+          ($pnames (join "" (map-atom $PS $v3 (format-args "{} " ($v3)))))
+          ($pforall (join "" (map-atom $PS $v5 (format-args "forall {}, " ($v5)))))
+          ($B (format-args "{}_below{}" ($E (join "" (map-atom $PS $v1 (format-args " {}" ($v1)))))))
+          ($Bm (format-args "{} motive" ($B)))
+          ($Ms (map-atom $cs $c (brecon-minor $c)))
+          ($minors (join " " $Ms))
+          ($ks (range-from 0 (length-of $cs)))
+          ($bullet (if (> (length-of $cs) 1) "- " ""))
+          ($cases (join "" (map-atom $ks $k (brecon-case $E $cs $params $k $TT $Bm $PS $Ms $bullet))))
+          ($iotas (join "" (map-atom $ks $k2 (brecon-iota $E $cs $params $k2 $TT $Bm $PS $Ms $pforall))))
+          ($head (format-args "(** {}.below, read by its recursor as Lean defines it, and {}.brecOn read as Lean states its type. **)
+Definition {}_below : {}(set -> set) -> set -> set :=
+  fun {}motive t => {}_mrec {}{} t.
+" ($name $name $E $psets $pnames $E $pnames $minors)))
+          ($statement (format-args "Theorem {}_brecOn_proof_ok : {}forall motive:set -> set, forall t :e {},
+  0 :e (Pi_ x :e {}, (Pi_ b :e {} x, motive x)) -> 0 :e motive t.
+" ($E $pforall $TT $TT $Bm)))
+          ($opening (format-args "let {}motive t. assume Ht: t :e {}.
+assume HF: 0 :e (Pi_ x :e {}, (Pi_ b :e {} x, motive x)).
+claim HFx: forall x :e {}, 0 :e (Pi_ b :e {} x, motive x).
+{ exact Pi_0_ap {} (fun x => Pi_ b :e {} x, motive x) HF. }
+" ($pnames $TT $TT $Bm $TT $Bm $TT $Bm)))
+          ($induction (format-args "claim L: forall x :e {}, 0 :e motive x /\\ (exists b, b :e {} x).
+{ apply {}_ind{}.
+{}}
+exact andEL (0 :e motive t) (exists b, b :e {} t) (L t Ht).
+Qed.
+
+" ($TT $Bm $E (if (== $pnames "") "" (format-args " {}" ((join " " $PS)))) $cases $Bm))))
+     (format-args "{}{}{}{}{}" ($head $iotas $statement $opening $induction))))
+; below at constructor k: the pairs at its recursive fields (a rule of the kernel's evaluation).
+(= (brecon-iota $E $cs $params $k $TT $Bm $PS $Ms $pforall)
+   (let* (($c (nth $cs $k)) ($fs (ctor-fields $c)) ($m (length-of $fs)) ($ps (rec-positions $fs 0))
+          ($js (range-from 0 $m))
+          ($C (egal (ctor-name $c)))
+          ($node (brecon-applied (format-args "{}_node" ($C)) (append-lists $PS (map-atom $js $j1 (format-args "x{}" ($j1))))))
+          ($binders (join "" (map-atom $js $j2
+                      (format-args "forall x{} :e {}, " ($j2 (let $f (nth $fs $j2) (if (is-rec $f) $TT (field-type $E 0 $f $params))))))))
+          ($intros (join "" (map-atom $js $j3
+                     (format-args "let x{}. assume H{}: x{} :e {}. " ($j3 $j3 $j3 (let $f (nth $fs $j3) (if (is-rec $f) $TT (field-type $E 0 $f $params))))))))
+          ($rhs (brecon-fold (map-atom $ps $p (format-args "(Lean_PProd (motive x{}) ({} x{}))" ($p $Bm $p)))))
+          ($fieldhyps (join " " (map-atom $js $j4 (format-args "x{} H{}" ($j4 $j4)))))
+          ($pnames (join "" (map-atom $PS $v (format-args "{} " ($v))))))
+     (format-args "Theorem {}_below_iota{} : {}forall motive:set -> set, {}{} {} = {}.
+let {}motive. {}
+prove {}_mrec {} {} = {}.
+rewrite {}_miota{} {} {}. reflexivity.
+Qed.
+" ($E $k $pforall $binders $Bm $node $rhs
+   $pnames $intros
+   $E (join " " (append-lists $PS $Ms)) $node $rhs
+   $E $k (join " " (append-lists $PS $Ms)) $fieldhyps))))
+
+; ---- a structure's fields in their types ----
+; For a family with one constructor whose fields each have a parameter's type: every member's
+; field i lies in that type (Lean_RecordField i s :e P_j), by the family's induction and the
+; constructor's field lemma.
+(= (field-typed-text $name $cs $params)
+   (if (not (== (length-of $cs) 1)) ""
+       (let* (($c (car-atom $cs)) ($fs (ctor-fields $c)))
+         (if (not (fields-of-params $fs $params)) ""
+             (let* (($E (egal $name)) ($C (egal (ctor-name $c))) ($m (length-of $fs)) ($js (range-from 0 $m))
+                    ($xs (join " " (map-atom $js $j1 (format-args "x{}" ($j1)))))
+                    ($intros (join " " (map-atom $js $j2 (format-args "let x{}. assume H{}: x{} :e {}." ($j2 $j2 $j2 (field-type $E 0 (nth $fs $j2) $params)))))))
+               (join "" (map-atom $js $i
+                 (format-args "Theorem {}_field{}_typed : forall s :e {}, Lean_RecordField {} s :e {}.
+apply {}_ind.
+{}
+prove (proj1 ({}_node {})) {} :e {}.
+rewrite {}_field{} {}. exact H{}.
+Qed.
+" ($E $i $E $i (field-type $E 0 (nth $fs $i) $params) $E $intros $C $xs $i (field-type $E 0 (nth $fs $i) $params) $C $i $xs $i)))))))))
+(= (fields-of-params $fs $params)
+   (if (== $fs ()) True
+       (case (car-atom $fs)
+         (((data $t) (if (== (param-index $t $params 0) -1) False (fields-of-params (cdr-atom $fs) $params)))
+          ($other False)))))
+
+; ---- a recursor into one type ----
+; Lean_F_rec_In: the recursor's typing where the motive is constant (a match, a fold).  Its
+; conclusion names the result type itself, so a prover that reads a lemma off its conclusion
+; can apply it; F_rec_type leaves the motive to be invented.
+(= (rec-in-text $name $cs $params)
+   (let* (($rin_E (egal $name))
+          ($rin_ks (range-from 0 (length-of $cs)))
+          ($rin_hs (join " " (hs-of (length-of $cs))))
+          ($rin_hyps (join " " (map-atom $rin_ks $rin_k
+                       (format-args "forall h{} :e {}," ($rin_k (rec-in-minor $rin_E (ctor-fields (nth $cs $rin_k)) $params)))))))
+     (format-args "Theorem {}_rec_In : forall C:set, {} forall t :e {}, {}_rec {} t :e C.
+let C.
+exact {}_rec_type (fun _ => C).
+Qed.
+" ($rin_E $rin_hyps $rin_E $rin_E $rin_hs $rin_E))))
+; Lean_F_casesOn_In: the same for a family's own case eliminator, whose minor premises take
+; the fields and no induction hypotheses.
+(= (cases-in-text $cin_name $cin_cs $cin_params)
+   (let* (($cin_E (egal $cin_name))
+          ($cin_ks (range-from 0 (length-of $cin_cs)))
+          ($cin_hs (join " " (hs-of (length-of $cin_cs))))
+          ($cin_hyps (join " " (map-atom $cin_ks $cin_k
+                       (format-args "forall h{} :e {}," ($cin_k (rec-in-fields $cin_E (ctor-fields (nth $cin_cs $cin_k)) $cin_params 0 "C")))))))
+     (format-args "Theorem {}_casesOn_In : forall C:set, {} forall t :e {}, {}_casesOn {} t :e C.
+let C.
+exact {}_casesOn_type (fun _ => C).
+Qed.
+" ($cin_E $cin_hyps $cin_E $cin_E $cin_hs $cin_E))))
+(= (rec-in-minor $rim_E $rim_fs $rim_params)
+   (rec-in-fields $rim_E $rim_fs $rim_params 0 (rec-in-results (rec-positions $rim_fs 0))))
+(= (rec-in-fields $rif_E $rif_fs $rif_params $rif_j $rif_end)
+   (if (== $rif_fs ()) $rif_end
+       (format-args "(Pi_ x{} :e {}, {})"
+         ($rif_j (field-type $rif_E 0 (car-atom $rif_fs) $rif_params)
+          (rec-in-fields $rif_E (cdr-atom $rif_fs) $rif_params (+ $rif_j 1) $rif_end)))))
+(= (rec-in-results $rir_ps)
+   (if (== $rir_ps ()) "C"
+       (format-args "(Pi_ y{} :e C, {})" ((car-atom $rir_ps) (rec-in-results (cdr-atom $rir_ps))))))

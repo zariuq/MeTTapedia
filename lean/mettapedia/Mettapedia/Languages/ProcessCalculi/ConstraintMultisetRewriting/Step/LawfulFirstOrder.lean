@@ -82,10 +82,10 @@ theorem check_holds_inside (σ : S) (check : Check T) {W W' : Finset O}
           show (∀ o ∈ W, ¬ A.E (A.apply σ pattern) (A.apply σ (label o))) ↔
             (∀ o ∈ W', ¬ A.E (A.apply σ pattern) (A.apply σ (label o)))
           constructor
-          · intro missing o member matched
-            exact missing o ((same o matched).mpr member) matched
-          · intro missing o member matched
-            exact missing o ((same o matched).mp member) matched
+          · intro absent o member matched
+            exact absent o ((same o matched).mpr member) matched
+          · intro absent o member matched
+            exact absent o ((same o matched).mp member) matched
   | count pattern number =>
       show (Check.«matches» A σ label W pattern).card = number ↔
         (Check.«matches» A σ label W' pattern).card = number

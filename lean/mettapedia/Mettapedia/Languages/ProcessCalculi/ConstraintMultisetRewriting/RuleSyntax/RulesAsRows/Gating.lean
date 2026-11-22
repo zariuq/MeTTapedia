@@ -8,7 +8,7 @@ store `s`, against the step of the interpreter `U` from the store holding `s` to
 row per rule of `P`, through the representation "the store of `U` without its code rows".
 
 **The fixed programs** (`FixedProgram`): finite lists of rules of the data fragment whose take, read,
-none queries, count and collect patterns are data rows (`DataAddressed`). Such rules never take, read or see
+absence, count and collect patterns are data rows (`DataAddressed`). Such rules never take, read or see
 a code row, so the code rows are a gate that stays open. A collect pattern sees the same rows in both
 stores, moved along `inl` (`matchesAt_gated`, `liftSeen`).
 
@@ -31,9 +31,9 @@ its knowledge is the knowledge of `s` together with closed equations between equ
 
 **Why the patterns must be data rows** (`readAny_reads_code`, `readAny_idle_without_codes`): a rule
 reading any row by the pattern `var 0` reads a code row in the store with codes, and has no firing at
-the empty store without them. For queries (`noRow_fires`, `noRow_interpreter_idle`): the fixed
+the empty store without them. For queries (`absentAny_fires`, `absentAny_interpreter_idle`): the fixed
 program asking that no row match `var 0` fires at the empty store, and the interpreter does nothing from
-the empty store with that rule's code, which the none pattern sees.
+the empty store with that rule's code, which the absence pattern sees.
 -/
 
 set_option autoImplicit false
@@ -49,7 +49,7 @@ open RunTime (ruleCode_injective)
 
 /-! ## Fixed programs and the store with codes -/
 
-/-- **A rule addressing data rows only**: its takes, reads, none queries and count patterns and collect query
+/-- **A rule addressing data rows only**: its takes, reads, absence and count patterns and collect query
 patterns are data rows. -/
 structure DataAddressed (r : Rule Tm) : Prop where
   take : ∀ p ∈ r.body.take, ∃ t, p = obj t
@@ -1083,98 +1083,98 @@ theorem readAny_idle_without_codes (f : Firing ℕ Ext ({readAny} : Program Tm) 
     simp [Selection.commit, reads])
   simp [emptyStore] at read
 
-/-- **A rule asking that no row at all be present**, by the none pattern `var 0`. -/
-def noRow : Rule Tm := ⟨PUnit.unit, ⟨[], [], [], [.predicate .none (var 0)], [obj Examples.done]⟩, []⟩
+/-- **A rule asking that no row at all be present**, by the absence pattern `var 0`. -/
+def absentAny : Rule Tm := ⟨PUnit.unit, ⟨[], [], [], [.predicate .none (var 0)], [obj Examples.done]⟩, []⟩
 
-theorem noRow_mem : noRow ∈ DataFragment :=
+theorem absentAny_mem : absentAny ∈ DataFragment :=
   ⟨Examples.fragment_of_check rfl, fun m inside => by
-    simp only [noRow, List.mem_singleton] at inside
+    simp only [absentAny, List.mem_singleton] at inside
     exact ⟨_, inside⟩⟩
 
-theorem noRow_not_addressed : ¬ DataAddressed noRow := by
+theorem absentAny_not_addressed : ¬ DataAddressed absentAny := by
   intro addressed
-  obtain ⟨t, same⟩ := addressed.query (.predicate .none (var 0)) (by simp [noRow]) (by simp [kindOf])
+  obtain ⟨t, same⟩ := addressed.query (.predicate .none (var 0)) (by simp [absentAny]) (by simp [kindOf])
   exact Expr.noConfusion same
 
-/-- `noRow` as the fixed program `{noRow}`, at the empty store. -/
-def noRowFiring : Firing ℕ Ext ({noRow} : Program Tm) emptyStore.frame :=
-  ⟨noRow, Set.mem_singleton _, PUnit.unit, shift 10, ⟨[], [], [0]⟩, []⟩
+/-- `absentAny` as the fixed program `{absentAny}`, at the empty store. -/
+def absentAnyFiring : Firing ℕ Ext ({absentAny} : Program Tm) emptyStore.frame :=
+  ⟨absentAny, Set.mem_singleton _, PUnit.unit, shift 10, ⟨[], [], [0]⟩, []⟩
 
-/-- **The fixed program `{noRow}` fires at the empty store.** -/
-theorem noRow_fires : noRowFiring.Admits X emptyStore := by
-  have information : noRowFiring.information X emptyStore = [] := rfl
-  refine ⟨⟨fresh_shift noRowFiring rfl (by decide), by decide, by decide, rfl, rfl, rfl, rfl⟩,
+/-- **The fixed program `{absentAny}` fires at the empty store.** -/
+theorem absentAny_fires : absentAnyFiring.Admits X emptyStore := by
+  have information : absentAnyFiring.information X emptyStore = [] := rfl
+  refine ⟨⟨fresh_shift absentAnyFiring rfl (by decide), by decide, by decide, rfl, rfl, rfl, rfl⟩,
     by decide, ⟨PUnit.unit, var, ?_⟩, ?_⟩
   · rw [information]
     intro e inside
     simp at inside
   · intro b σ _
-    refine (holds_iff noRowFiring rfl σ).mpr ?_
+    refine (holds_iff absentAnyFiring rfl σ).mpr ?_
     intro c inside
-    simp only [noRowFiring, noRow, List.mem_singleton] at inside
+    simp only [absentAnyFiring, absentAny, List.mem_singleton] at inside
     subst inside
     intro o present
     exact absurd present (Finset.notMem_empty o)
 
-/-- A store holding only the code of `noRow`: the empty store with its code. -/
-def noRowCodeOnly : State Tm ℕ := ⟨PUnit.unit, [], {0}, fun _ => ruleCode noRow⟩
+/-- A store holding only the code of `absentAny`: the empty store with its code. -/
+def absentCodeOnly : State Tm ℕ := ⟨PUnit.unit, [], {0}, fun _ => ruleCode absentAny⟩
 
-theorem noRowCodeOnly_tagged : Tagged DataFragment noRowCodeOnly :=
-  fun _ _ => Or.inr ⟨noRow, noRow_mem, rfl⟩
+theorem absentCodeOnly_tagged : Tagged DataFragment absentCodeOnly :=
+  fun _ _ => Or.inr ⟨absentAny, absentAny_mem, rfl⟩
 
-/-- **With its code in the store, `noRow` never fires**, whatever its opening: freshness gives a
-solution sending its none pattern to the code row. -/
-theorem noRow_refused_with_code (f : Firing ℕ Ext (Stored DataFragment) noRowCodeOnly.frame)
-    (isNoRow : f.rule = stored noRow) : ¬ f.Admits X noRowCodeOnly := by
+/-- **With its code in the store, `absentAny` never fires**, whatever its opening: freshness gives a
+solution sending its absence pattern to the code row. -/
+theorem absentAny_refused_with_code (f : Firing ℕ Ext (Stored DataFragment) absentCodeOnly.frame)
+    (isAbsentAny : f.rule = stored absentAny) : ¬ f.Admits X absentCodeOnly := by
   obtain ⟨rule, member, ext, ι, sel, seen⟩ := f
-  subst isNoRow
+  subst isAbsentAny
   rintro ⟨⟨fresh, -, -, takeLength, readLength, -, -⟩, -, -, asks⟩
-  have frag := noRow_mem.1
+  have frag := absentAny_mem.1
   have takenNil : sel.taken = [] := List.length_eq_zero_iff.mp (takeLength : 0 = sel.taken.length).symm
   have readLength' : 0 + 1 = sel.read.length := readLength
   obtain ⟨c₀, rest, reads, restLength⟩ := exists_cons_of_length readLength'
   have restNil : rest = [] := List.length_eq_zero_iff.mp restLength.symm
   subst restNil
-  obtain ⟨u, -, onRule⟩ := fresh PUnit.unit var (fun _ => ruleCode noRow)
-  have solvedU : X.Models (a := noRowCodeOnly.frame) (b := PUnit.unit) u
-      ((⟨stored noRow, member, ext, ι, sel, seen⟩ :
-        Firing ℕ Ext (Stored DataFragment) noRowCodeOnly.frame).information X noRowCodeOnly) := by
-    refine (models_information _ takeLength readLength u).mpr ⟨by simp [noRowCodeOnly], ?_, ?_, ?_⟩
+  obtain ⟨u, -, onRule⟩ := fresh PUnit.unit var (fun _ => ruleCode absentAny)
+  have solvedU : X.Models (a := absentCodeOnly.frame) (b := PUnit.unit) u
+      ((⟨stored absentAny, member, ext, ι, sel, seen⟩ :
+        Firing ℕ Ext (Stored DataFragment) absentCodeOnly.frame).information X absentCodeOnly) := by
+    refine (models_information _ takeLength readLength u).mpr ⟨by simp [absentCodeOnly], ?_, ?_, ?_⟩
     · show List.Forall₂ _ ([] : List Expr) sel.taken
       rw [takenNil]
       exact List.Forall₂.nil
-    · show List.Forall₂ (fun p o => nf (subst u (subst ι p)) = nf (subst u (noRowCodeOnly.label o)))
-        [ruleCode noRow] sel.read
+    · show List.Forall₂ (fun p o => nf (subst u (subst ι p)) = nf (subst u (absentCodeOnly.label o)))
+        [ruleCode absentAny] sel.read
       rw [reads]
       refine List.Forall₂.cons ?_ List.Forall₂.nil
-      show nf (subst u (subst ι (ruleCode noRow))) = nf (subst u (ruleCode noRow))
+      show nf (subst u (subst ι (ruleCode absentAny))) = nf (subst u (ruleCode absentAny))
       rw [subst_ruleCode frag]
     · intro e inside
-      simp [stored, noRow] at inside
+      simp [stored, absentAny] at inside
   have holds := (holds_iff _ rfl u).mp (asks PUnit.unit u solvedU) (.predicate .none (var 0))
-    (by simp [stored, noRow])
-  have pattern : nf (subst u (subst ι (var 0))) = nf (subst (fun _ => ruleCode noRow) (var 0)) :=
-    onRule (var 0) (by simp [Rule.terms, stored, noRow, checkTerms])
-  refine holds 0 (by simp [noRowCodeOnly]) ?_
-  show nf (subst u (subst ι (var 0))) = nf (subst u (Firing.row X noRowCodeOnly _ 0))
+    (by simp [stored, absentAny])
+  have pattern : nf (subst u (subst ι (var 0))) = nf (subst (fun _ => ruleCode absentAny) (var 0)) :=
+    onRule (var 0) (by simp [Rule.terms, stored, absentAny, checkTerms])
+  refine holds 0 (by simp [absentCodeOnly]) ?_
+  show nf (subst u (subst ι (var 0))) = nf (subst u (Firing.row X absentCodeOnly _ 0))
   rw [row_eq, pattern]
-  show nf (ruleCode noRow) = nf (subst u (ruleCode noRow))
+  show nf (ruleCode absentAny) = nf (subst u (ruleCode absentAny))
   rw [subst_ruleCode frag]
 
-/-- **So the interpreter does nothing from the empty store with the code of `noRow`**, where the
-fixed program `{noRow}` fires from the empty store (`noRow_fires`): a none pattern that is not
+/-- **So the interpreter does nothing from the empty store with the code of `absentAny`**, where the
+fixed program `{absentAny}` fires from the empty store (`absentAny_fires`): an absence pattern that is not
 a data row sees the code rows. -/
-theorem noRow_interpreter_idle (g : Firing ℕ Ext U noRowCodeOnly.frame) :
-    ¬ g.Admits X noRowCodeOnly := by
+theorem absentAny_interpreter_idle (g : Firing ℕ Ext U absentCodeOnly.frame) :
+    ¬ g.Admits X absentCodeOnly := by
   intro admitted
-  obtain ⟨f, admittedF, -, -⟩ := backward dataFragment_closed (represents_refl noRowCodeOnly_tagged) g admitted
+  obtain ⟨f, admittedF, -, -⟩ := backward dataFragment_closed (represents_refl absentCodeOnly_tagged) g admitted
   obtain ⟨r, hr, hf⟩ := stored_cases f
   have admittedF' := admittedF
   rw [hf] at admittedF'
-  obtain ⟨c₀, -, coded⟩ := Examples.code_present dataFragment_closed noRowCodeOnly_tagged hr admittedF'
-  have sameRule : noRow = r := ruleCode_injective coded
+  obtain ⟨c₀, -, coded⟩ := Examples.code_present dataFragment_closed absentCodeOnly_tagged hr admittedF'
+  have sameRule : absentAny = r := ruleCode_injective coded
   subst sameRule
-  exact noRow_refused_with_code f (by rw [hf]; rfl) admittedF
+  exact absentAny_refused_with_code f (by rw [hf]; rfl) admittedF
 
 end Control
 
@@ -1204,9 +1204,9 @@ end Control
 #print axioms tally_admitted
 #print axioms tally_interpreter_run
 #print axioms tally_wrong_refused
-#print axioms noRow_not_addressed
-#print axioms noRow_fires
-#print axioms noRow_refused_with_code
-#print axioms noRow_interpreter_idle
+#print axioms absentAny_not_addressed
+#print axioms absentAny_fires
+#print axioms absentAny_refused_with_code
+#print axioms absentAny_interpreter_idle
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.RulesAsRows.Gating

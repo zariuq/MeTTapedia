@@ -43,7 +43,7 @@ run is presented (`startPresented`), and so is the result of every canonical fir
 
 * **Firings to live firings.** `information_eq`: the native information is the hosted information
   carried along `infoExtension`. `admits_iff`: the canonical hosted firing is admitted exactly when its
-  live firing is, for every guard the rule carries (equation guards, none queries and counts:
+  live firing is, for every guard the rule carries (equation guards, absence and counts:
   `check_iff`, `holds_iff`), every program holding the rule, every scope ledger and every budget.
 * **Frames preserved.** `info_injective`: the frame map identifies no two observations.
 * **Results to results.** `resultExtension`: the native result is a dead-name extension
@@ -117,7 +117,7 @@ def placedRet : Placed Γ star κ (retRule N) where
   injective := Sum.inl_injective
   preserves _ := rfl
 
-/-- `apply` with no matching equation: the none guard is part of the body. -/
+/-- `apply` with no matching equation: the absence guard is part of the body. -/
 def placedUnmatched : Placed Γ star κ (unmatchedRule N) where
   body := { take := [altN N (evalN N (applyN N (unk .datum))) (unk .stack)], read := [], tell := [],
             checks := [.predicate .none (eqnN N (unk .datum))],

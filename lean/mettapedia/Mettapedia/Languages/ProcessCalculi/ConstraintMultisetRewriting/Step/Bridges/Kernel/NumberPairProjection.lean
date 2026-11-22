@@ -205,9 +205,9 @@ private theorem readFrom_eq (state : Registered.State) (index : Nat) (formula : 
     ExactFormulaReadback.read? state index formula = some (readFrom state index formula fact found matched) := by
   unfold ExactFormulaReadback.read?
   split
-  · rename_i missing
-    rw [found] at missing
-    cases missing
+  · rename_i absent
+    rw [found] at absent
+    cases absent
   · rename_i value present
     have same : value = fact := Option.some.inj (present.symm.trans found)
     subst value

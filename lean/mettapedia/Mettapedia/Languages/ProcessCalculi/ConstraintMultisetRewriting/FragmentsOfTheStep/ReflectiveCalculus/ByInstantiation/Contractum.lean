@@ -144,25 +144,15 @@ theorem fixes_liftSub {j : Nat} {Γ Δ : Ctx sig} {σ : Sub (signature sig noUnk
 
 /-! ## Read-back facts -/
 
-/-- What a read-back is at a sort: a well-sorted name, process, or bag of processes, under rho's
-apply view (the term algebra's quotation body lies in the surrounding pair context); a sealed
-read-back is also admitted by authored rho's closed scope (`ProcWellSorted.ofSealed`). -/
+/-- What a read-back is at a sort: a well-sorted name, process, or bag of processes. -/
 def SortedAt (m : Nat) : Srt → Pattern → Prop
-  | .nm, n => NameWellSorted rhoApplyPresentation FreeSortContext.empty
+  | .nm, n => NameWellSorted rhoReflectivePresentation FreeSortContext.empty
       (List.replicate m rhoReflectivePresentation.nameSort) n
-  | .pr, p => ProcWellSorted rhoApplyPresentation FreeSortContext.empty
+  | .pr, p => ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
       (List.replicate m rhoReflectivePresentation.nameSort) p
   | .ps, p => ∃ elements, p = .collection .hashBag elements none ∧
-      ProcListWellSorted rhoApplyPresentation FreeSortContext.empty
+      ProcListWellSorted rhoReflectivePresentation FreeSortContext.empty
         (List.replicate m rhoReflectivePresentation.nameSort) elements
-
-/-- A sealed process read-back is admitted by authored rho. -/
-theorem SortedAt.closed {m d : Nat} {p : Pattern} (typed : SortedAt m .pr p)
-    (safe : binderSafeAt "NQuote" d p = true) :
-    ProcWellSorted rhoReflectivePresentation FreeSortContext.empty
-      (List.replicate m rhoReflectivePresentation.nameSort) p :=
-  ProcWellSorted.ofSealed (presentation := rhoReflectivePresentation) (scope := .reaching .apply)
-    typed safe
 
 theorem lookup_name {m i : Nat} (small : i < m) :
     (List.replicate m rhoReflectivePresentation.nameSort)[i]? =
@@ -203,10 +193,10 @@ theorem read_sorted : ∀ {Γ : Ctx sig} {s : Srt} (t : G Γ s) (m : Nat), Γ = 
       exact .output channel payload
   | _, _, .op (.inl .dropq) (.cons p .nil), m, shape => by
       have inner : SortedAt m .pr (read p) := read_sorted p m shape
-      exact .drop (.quote inner (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits_of_reaching rfl _))
+      exact .drop (.quote inner)
   | _, _, .op (.inl .quote) (.cons p .nil), m, shape => by
       have inner : SortedAt m .pr (read p) := read_sorted p m shape
-      exact .quote inner (Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.quoteAdmits_of_reaching rfl _)
+      exact .quote inner
   | _, _, .op (.inr o) _, _, _ => o.key.elim
 
 /-- **Read-backs contain no hash set.** -/
@@ -352,7 +342,7 @@ theorem quote_not_bvar {m : Nat} {p : Pattern}
       (List.replicate m rhoReflectivePresentation.nameSort) p)
     (safe : binderSafeAt "NQuote" 0 p = true) (index : Nat) :
     semanticNormalizeName (.apply "NQuote" [p]) ≠ .bvar index :=
-  SubstitutionCanonicalCommutation.semanticNormalizeName_ne_bvar_of_nameWellSorted (NameWellSorted.quoteOfSafe typed safe)
+  SubstitutionCanonicalCommutation.semanticNormalizeName_ne_bvar_of_nameWellSorted (.quote typed)
     (depth := 0) (by simpa [binderSafeAt, rhoReflectivePresentation] using safe)
     (fun _ same => by cases same) index
 
@@ -369,7 +359,7 @@ theorem substName_quote {m k : Nat} {p : Pattern} (Q : Pattern)
     semanticSubstNameMark k (.apply "NQuote" [Q]) (.apply "NQuote" [p]) =
       (semanticNormalizeName (.apply "NQuote" [p]), false) := by
   have miss : canonicalize (.apply "NQuote" [p]) ≠ .bvar k :=
-    SubstitutionCanonicalCommutation.canonicalize_ne_bvar_of_nameWellSorted (NameWellSorted.quoteOfSafe typed safe)
+    SubstitutionCanonicalCommutation.canonicalize_ne_bvar_of_nameWellSorted (.quote typed)
       (depth := 0) (by simpa [binderSafeAt, rhoReflectivePresentation] using safe)
       (fun _ same => by cases same) k
   rw [semanticSubstNameMark, if_neg miss]
@@ -536,7 +526,7 @@ theorem contract (q : G [] .pr) (closedQ : binderSafeAt "NQuote" 0 (read q) = tr
       refine ⟨?_, ?_⟩
       · show StructuralCongruence (.apply "PDrop" [.apply "NQuote" [read (bind σ p)]])
           (semanticSubstProc k (.apply "NQuote" [read q]) (.apply "PDrop" [.apply "NQuote" [read p]]))
-        rw [fixed, substProc_drop_unmatched (substName_quote (read q) (typed.closed inner) inner)]
+        rw [fixed, substProc_drop_unmatched (substName_quote (read q) typed inner)]
         exact sc_apply_one _ (StructuralCongruence.symm _ _ semanticNormalizeName_sound_struct)
       · show binderSafeAt "NQuote" k (.apply "PDrop" [.apply "NQuote" [read (bind σ p)]]) = true
         rw [fixed]
@@ -553,7 +543,7 @@ theorem contract (q : G [] .pr) (closedQ : binderSafeAt "NQuote" 0 (read q) = tr
           (semanticSubstName k (.apply "NQuote" [read q]) (.apply "NQuote" [read p]))
         rw [fixed]
         unfold semanticSubstName
-        rw [substName_quote (read q) (typed.closed inner) inner]
+        rw [substName_quote (read q) typed inner]
         exact StructuralCongruence.symm _ _ semanticNormalizeName_sound_struct
       · show binderSafeAt "NQuote" k (.apply "NQuote" [read (bind σ p)]) = true
         rw [fixed]
@@ -599,8 +589,7 @@ theorem contractum_by_instantiation (b : G [.nm, .pr] .pr) (q : G [] .pr)
   have payloadEq : canonicalize (read q) = canonicalize (semanticNormalizeProc (read q)) :=
     (SubstitutionCanonicalCommutation.canonicalize_semanticNormalizeProc (read_hashSetFree q)).symm
   rw [Canonical.canonicalize_eq_of_structuralCongruence congruent freeMade freeSubst,
-    SubstitutionCanonicalCommutation.canonicalize_semanticSubstProc_payload (bodyTyped.closed safeB)
-      payloadEq 0]
+    SubstitutionCanonicalCommutation.canonicalize_semanticSubstProc_payload bodyTyped payloadEq 0]
   rfl
 
 /-- **Canonical forms of the parts suffice**: the contractum by instantiation is the canonical
@@ -612,7 +601,7 @@ theorem contractum_by_instantiation_canonical (b : G [.nm, .pr] .pr) (q : G [] .
       canonicalize (semanticCommSubst (canonicalize (read b)) (canonicalize (read q))) := by
   rw [contractum_by_instantiation b q safeB safeQ]
   exact (SubstitutionCanonicalCommutation.canonicalize_semanticCommSubst_canonicalize
-    ((read_sorted b 1 rfl : SortedAt 1 .pr (read b)).closed safeB) (read_hashSetFree q)).symm
+    (read_sorted b 1 rfl) (read_hashSetFree q)).symm
 
 #print axioms read_rename
 #print axioms read_sorted

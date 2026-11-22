@@ -160,8 +160,8 @@ theorem missing_source_cell_refuses_its_copy_step (token : Occurrence Suspension
     ¬ Nonempty (Firing firstRule token missingSource after) := by
   rintro ⟨firing⟩
   obtain ⟨occurrence,present,same⟩ := firing.read_rows (.cell 0 0 cached) (by simp [firstRule,copyRule])
-  have missing : ∀ occurrence ∈ missingSource.present, label occurrence ≠ .cell 0 0 cached := by decide +kernel
-  exact missing occurrence present same
+  have absent : ∀ occurrence ∈ missingSource.present, label occurrence ≠ .cell 0 0 cached := by decide +kernel
+  exact absent occurrence present same
 
 /-- Internal cells are observable before readiness if a context is allowed
 to read them. Completion gating alone is not a public atomicity theorem. -/

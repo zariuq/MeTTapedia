@@ -63,7 +63,7 @@ theorem move (frame : Frame κ Γ star D.Ty)
   | fail K frames pending =>
       simpa [branch] using
         (Move.fail (D := D) (P := P) (supply := supply) world K (frames ++ [frame]) pending)
-  | run | query | add | remove | removeMissing | new | checkStart | delay | forcePending | forceDone =>
+  | run | query | add | remove | removeAbsent | new | checkStart | delay | forcePending | forceDone =>
       simp [ArrowBranch, ArrowComp] at arrow
   | admitted | refused | memo => simp [ArrowBranch, ArrowFrames] at arrow
 
@@ -103,7 +103,7 @@ theorem children_arrows (arrowP : ArrowProgram P)
         subst child
         exact ⟨frames, .inl ⟨_, rfl, rightArrow⟩⟩
   | fail => cases member
-  | run | query | add | remove | removeMissing | new | checkStart | delay | forcePending | forceDone =>
+  | run | query | add | remove | removeAbsent | new | checkStart | delay | forcePending | forceDone =>
       exact False.elim (by simpa [ArrowComp] using arrow_eval focus)
   | admitted | refused | memo => simp [ArrowFrames] at frames
 

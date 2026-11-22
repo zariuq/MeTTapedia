@@ -166,7 +166,7 @@ theorem name_supportSafeAt_of_nil (inventory : CanonicalInventory language)
     (object : isObjectPattern name = true)
     (targetAvailable : List TypeExpr) :
     typed.ReflectiveSupportSafeAt rhoReflectionProfile support targetAvailable binderImage :=
-  safe.nameResult_of_nil inventory.nameResultsSealed.resultsQuoted rhoReflectivePresentation
+  safe.nameResult_of_nil (inventory.nameResultsSealed.resultsQuoted ReflectiveWellSorted.rhoReflectionProfile_closed) rhoReflectivePresentation
     (by simp [rhoReflectionProfile]) typed rfl object targetAvailable
 
 /-- Inversion of support safety for rho's unary drop constructor. -/

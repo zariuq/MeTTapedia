@@ -128,7 +128,7 @@ theorem events_checked_iff {source target : Endpoint locals O Γ sort}
     (certificate : Certificate locals source target) :
     Checked locals (events certificate) ↔ ContextualSchedulePromotion.Checked locals certificate.questions := by
   induction certificate with
-  | nil => simp [events, Checked, Certificate.questions, ContextualSchedulePromotion.Checked]
+  | nil => simp [events, Checked, Certificate.questions, Certificate.observations, ContextualSchedulePromotion.Checked]
   | snoc past next earlier =>
       rw [events, checked_append_iff]
       have moved := checked_map_extension_iff locals (events past)

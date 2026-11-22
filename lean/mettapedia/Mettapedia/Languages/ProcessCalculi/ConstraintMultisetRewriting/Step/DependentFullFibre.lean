@@ -171,7 +171,7 @@ def checkGuards : Check (Obs M) → EquationStore (Obs M)
   | _ => []
 
 variable (O) in
-/-- The predicate queries of a check: none queries and counting of the translated pattern. -/
+/-- The predicate queries of a check: absence and counting of the translated pattern. -/
 def checkQueries : Check (Obs M) →
     List (Query S.levels O ((fibre facts roots heads church names realization).obj M))
   | .predicate q pattern => [Query.predicate S.levels O q ((fibre facts roots heads church names realization).tm pattern)]
@@ -180,7 +180,7 @@ def checkQueries : Check (Obs M) →
   | .equal _ _ => []
 
 /-- **The translated firing**: no helpers; the same selection; translated take and read patterns,
-made rows, tells and equation guards; none queries and counting queries of the translated patterns. -/
+made rows, tells and equation guards; absence and counting queries of the translated patterns. -/
 def translateFiring (C : Configuration (Obs M) O)
     (f : AnnotatedRuns.Firing (Obs M) (Binding.ContextualFamily.Assignment (S := sig) M.get M.get) O) :
     Firing S.levels (translateState facts roots heads church names realization label C) where
@@ -274,11 +274,11 @@ theorem translate_information :
   simp only [Selection.problem, FrameMap.store, List.map_append]
   rfl
 
-/-! ### Solvability, guards and none queries through the fibre -/
+/-! ### Solvability, guards and absence through the fibre -/
 
 omit [DecidableEq O] in
-/-- A none ask is the refutation of each extension. -/
-theorem entails_none_iff {Obj : Type*} {Tm : Obj → Type*} {Hom : Obj → Obj → Type*}
+/-- An absence ask is the refutation of each extension. -/
+theorem entails_absent_iff {Obj : Type*} {Tm : Obj → Type*} {Hom : Obj → Obj → Type*}
     (X : Frames Tm Hom) {a : Obj} (K : EquationStore (Tm a)) (p : Tm a) (present : Finset O)
     (row : O → Tm a) :
     X.Entails K (fun _ τ => ∀ o ∈ present, ¬ X.E (X.act τ p) (X.act τ (row o))) ↔
@@ -295,7 +295,7 @@ theorem entails_none_iff {Obj : Type*} {Tm : Obj → Type*} {Hom : Obj → Obj �
 
 omit [DecidableEq O] in
 /-- The same for a substitution action. -/
-theorem action_entails_none_iff {T U : Type*} (A : SubstitutionAction T U) (K : EquationStore T)
+theorem action_entails_absent_iff {T U : Type*} (A : SubstitutionAction T U) (K : EquationStore T)
     (p : T) (present : Finset O) (row : O → T) :
     A.Entails K (fun σ => ∀ o ∈ present, ¬ A.E (A.apply σ p) (A.apply σ (row o))) ↔
       ∀ o ∈ present, ¬ A.Consistent (K ++ [(p, row o)]) := by
@@ -454,8 +454,8 @@ theorem checks_entails_iff (noCount : ∀ p n, Check.count p n ∉ f.rule.checks
           exact checks _ present σ solved
       | predicate quantifier _ => cases guard
       | count _ _ => cases guard
-    · exact (action_entails_none_iff (action M) _ p C.present label).mp (checks _ inside)
-  · rintro ⟨guards, nones, anys⟩ c present
+    · exact (action_entails_absent_iff (action M) _ p C.present label).mp (checks _ inside)
+  · rintro ⟨guards, absences, anys⟩ c present
     cases c with
     | equal left right =>
         intro σ solved
@@ -463,7 +463,7 @@ theorem checks_entails_iff (noCount : ∀ p n, Check.count p n ∉ f.rule.checks
     | predicate quantifier p =>
         cases quantifier with
         | any => exact anys p present
-        | none => exact (action_entails_none_iff (action M) _ p C.present label).mpr (nones p present)
+        | none => exact (action_entails_absent_iff (action M) _ p C.present label).mpr (absences p present)
     | count p n => exact absurd present (noCount p n)
 
 /-- **First-order admission**, without collect queries and counting checks. -/
@@ -487,15 +487,15 @@ theorem firstOrder_admits_iff (noQueries : f.queries = [])
   constructor
   · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs, occurrences, consistent,
       checks⟩, -⟩
-    obtain ⟨guards, nones, anys⟩ := (checks_entails_iff label C f noCount).mp checks
+    obtain ⟨guards, absences, anys⟩ := (checks_entails_iff label C f noCount).mp checks
     exact ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs⟩,
-      (selection_enabled_iff label f.selection C.present).mp occurrences, consistent, guards, nones,
+      (selection_enabled_iff label f.selection C.present).mp occurrences, consistent, guards, absences,
       anys⟩
   · rintro ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs⟩, enabled, consistent,
-      guards, nones, anys⟩
+      guards, absences, anys⟩
     refine ⟨⟨takeDistinct, outputDistinct, takeLength, readLength, outputs,
       (selection_enabled_iff label f.selection C.present).mpr enabled, consistent,
-      (checks_entails_iff label C f noCount).mpr ⟨guards, nones, anys⟩⟩, ?_⟩
+      (checks_entails_iff label C f noCount).mpr ⟨guards, absences, anys⟩⟩, ?_⟩
     intro q member
     rw [noQueries] at member
     cases member
@@ -519,7 +519,7 @@ theorem translate_queries_iff (noCount : ∀ p n, Check.count p n ∉ f.rule.che
           (fun _ τ => ∃ o ∈ C.present,
             (frames S.levels).E ((frames S.levels).act τ ((fibre facts roots heads church names realization).tm p))
               ((frames S.levels).act τ ((fibre facts roots heads church names realization).tm (label o)))) := by
-  have noneAsk : ∀ p : Obs M,
+  have absentAsk : ∀ p : Obs M,
       (frames S.levels).Entails
           (translateFiring facts roots heads church names realization label C f).information
           (fun _ τ => (Query.predicate S.levels O .none ((fibre facts roots heads church names realization).tm p)).Holds
@@ -540,7 +540,7 @@ theorem translate_queries_iff (noCount : ∀ p n, Check.count p n ∉ f.rule.che
       ⟨fun asked b τ solved => (Query.predicate_holds_iff _ _ _ _ τ).mp (asked b τ solved),
         fun asked b τ solved => (Query.predicate_holds_iff _ _ _ _ τ).mpr (asked b τ solved)⟩
     rw [pointwise]
-    refine (entails_none_iff (frames S.levels) _ _ C.present _).trans ?_
+    refine (entails_absent_iff (frames S.levels) _ _ C.present _).trans ?_
     rw [translate_information, translate_row_eq]
     simp only [FrameMap.store, List.map_append, List.map_cons, List.map_nil]
     exact Iff.rfl
@@ -561,9 +561,9 @@ theorem translate_queries_iff (noCount : ∀ p n, Check.count p n ∉ f.rule.che
   constructor
   · intro asked
     refine ⟨fun p inside => ?_, fun p inside => ?_⟩
-    · exact (noneAsk p).mp (asked _ (List.mem_flatMap.mpr ⟨_, inside, List.mem_singleton_self _⟩))
+    · exact (absentAsk p).mp (asked _ (List.mem_flatMap.mpr ⟨_, inside, List.mem_singleton_self _⟩))
     · exact (anyAsk p).mp (asked _ (List.mem_flatMap.mpr ⟨_, inside, List.mem_singleton_self _⟩))
-  · rintro ⟨nones, anys⟩ q member
+  · rintro ⟨absences, anys⟩ q member
     obtain ⟨c, present, query⟩ := List.mem_flatMap.mp member
     cases c with
     | equal _ _ => cases query
@@ -571,7 +571,7 @@ theorem translate_queries_iff (noCount : ∀ p n, Check.count p n ∉ f.rule.che
         obtain rfl := List.mem_singleton.mp query
         cases quantifier with
         | any => exact (anyAsk p).mpr (anys p present)
-        | none => exact (noneAsk p).mpr (nones p present)
+        | none => exact (absentAsk p).mpr (absences p present)
     | count p n => exact absurd present (noCount p n)
 
 /-- **Dependent admission of a translated firing**, without counting checks. -/
@@ -625,29 +625,29 @@ theorem translate_admits_iff (noCount : ∀ p n, Check.count p n ∉ f.rule.chec
 
 include algebra complete rigid sortInjective closed operatorInjective in
 /-- **Admission is preserved and reflected by the join.** At a first-order firing without collect query
-queries and counting checks, whose problem and the none query extensions the dependent unifier decides in
+queries and counting checks, whose problem and absence extensions the dependent unifier decides in
 the fibre at `M`, the firing is admitted exactly when its produced labels are its made occurrences'
 labels and its translation is admitted by the dependent full step. -/
 theorem admits_translate_iff (noQueries : f.queries = [])
     (noCount : ∀ p n, Check.count p n ∉ f.rule.checks)
     (decided : EndoDecided facts roots heads church names realization (f.selection.problem label f.rule C))
-    (decidedNone : ∀ p, Check.predicate .none p ∈ f.rule.checks → ∀ o ∈ C.present,
+    (decidedAbsent : ∀ p, Check.predicate .none p ∈ f.rule.checks → ∀ o ∈ C.present,
       EndoDecided facts roots heads church names realization
         (f.selection.problem label f.rule C ++ [(p, label o)])) :
     (AnnotatedRuns.firstOrder (action M) label).Admits (s := C) f ↔
       f.selection.made.map label = f.rule.produce ∧
         (step S.levels O).Admits (s := translateState facts roots heads church names realization label C)
           (translateFiring facts roots heads church names realization label C f) := by
-  have nones : (∀ p, Check.predicate .none p ∈ f.rule.checks → ∀ o ∈ C.present,
+  have absences : (∀ p, Check.predicate .none p ∈ f.rule.checks → ∀ o ∈ C.present,
         ¬ (frames S.levels).Solvable ((fibre facts roots heads church names realization).store
           (f.selection.problem label f.rule C ++ [(p, label o)]))) ↔
       ∀ p, Check.predicate .none p ∈ f.rule.checks → ∀ o ∈ C.present,
         ¬ (action M).Consistent (f.selection.problem label f.rule C ++ [(p, label o)]) :=
     forall_congr' fun p => imp_congr_right fun inside => forall₂_congr fun o present =>
       not_congr (solvable_iff_consistent facts roots heads algebra complete rigid church names
-        realization sortInjective closed @operatorInjective (decidedNone p inside o present))
+        realization sortInjective closed @operatorInjective (decidedAbsent p inside o present))
   rw [firstOrder_admits_iff label C f noQueries noCount,
-    translate_admits_iff facts roots heads church names realization label C f noCount, nones]
+    translate_admits_iff facts roots heads church names realization label C f noCount, absences]
   rcases decided with ⟨τ, principal⟩ | refuted
   · have anys : (∀ p, Check.predicate .any p ∈ f.rule.checks →
           (frames S.levels).Entails ((fibre facts roots heads church names realization).store
@@ -721,8 +721,8 @@ end DependentFull
 #print axioms DependentFull.frameMap_admission_transfer
 #print axioms DependentFull.fibre_admission_transfer
 #print axioms DependentFull.translate_information
-#print axioms DependentFull.entails_none_iff
-#print axioms DependentFull.action_entails_none_iff
+#print axioms DependentFull.entails_absent_iff
+#print axioms DependentFull.action_entails_absent_iff
 #print axioms DependentFull.action_principal_entails_iff
 #print axioms DependentFull.principal_entails_any_iff
 #print axioms DependentFull.action_principal_entails_any_iff

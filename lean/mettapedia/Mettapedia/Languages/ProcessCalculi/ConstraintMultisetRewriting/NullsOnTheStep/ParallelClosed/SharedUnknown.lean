@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTh
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.NullsOnTheStep.ParallelClosed.PositiveTell
 
 /-!
-# A necessary condition for switching, on the step of rule instances: a none query or count check, or a shared unknown
+# A necessary condition for switching, on the step of rule instances: an absence or count check, or a shared unknown
 
 Over first-order terms, with occurrences labelled by their rows, on the step whose programs are sets of
 rule instances (`stepCalculus`, over `AnnotatedRuns`). A rule instance carries its variables fixed:
@@ -19,7 +19,7 @@ they stand.
   with the joint solutions given by coincidence. This is the content of the line below.
 * **The line, a necessary condition** (`switched_off_has_guard_or_shared`,
   `switchable_has_guard_or_shared`): when a composable neighbour switches reachable success off, some
-  rule of the program has a none query or a count check, or every run that reaches success alone has a
+  rule of the program has an absence or a count check, or every run that reaches success alone has a
   firing whose information mentions a variable the neighbour's knowledge mentions. A firing's predicate
   queries never block reachability on this step (`Monotone.dropQueries_valid`), so they are no third
   source. What it counts as a shared variable includes a rule instance's own variable: a neighbour
@@ -33,7 +33,7 @@ they stand.
 On the step of a program with fresh openings (`RuleSyntax.step`), capture cannot happen; the line is
 stated there in `FreshOpenings`.
 
-Controls, one for each source of switching: a none check (`source_switchable`) and a count check
+Controls, one for each source of switching: an absence check (`source_switchable`) and a count check
 (`Monotone.counted_switchable`), both over ground terms, where no unknown exists; and a tell on a
 shared unknown, with no check (`PositiveTell.tellSource_switchable`), where the only run to success has a
 firing whose information mentions the neighbour's unknown (`tell_shares_with_neighbour`). Positive
@@ -144,8 +144,8 @@ theorem succeeds_union_of_apart (monotone : ∀ r, P r → Monotone.MonotoneChec
   exact Monotone.succeeds_union_of_joint monotone composable rfl (joint_run_of_apart solvable run) shows
 
 omit [DecidableEq (Term sig)] in
-/-- Every check is an equality, an `any` query, a none query or a count: a rule has monotone checks, or
-a none query or a count check. -/
+/-- Every check is an equality, an `any` query, an absence or a count: a rule has monotone checks, or
+an absence or a count check. -/
 theorem monotoneChecks_or_guard (r : RuleInstance (Term sig)) :
     Monotone.MonotoneChecks r ∨ ∃ c ∈ r.checks, (∃ p, c = Check.predicate .none p) ∨ ∃ p n, c = Check.count p n := by
   by_cases guard : ∃ c ∈ r.checks, (∃ p, c = Check.predicate .none p) ∨ ∃ p n, c = Check.count p n
@@ -160,7 +160,7 @@ theorem monotoneChecks_or_guard (r : RuleInstance (Term sig)) :
     | count p n => exact absurd ⟨_, member, Or.inr ⟨p, n, rfl⟩⟩ guard
 
 /-- **The necessary condition, for one pair.** When `D`, composable with `C`, switches reachable success
-off, some rule of the program has a none query or a count check, or no run that reaches success from
+off, some rule of the program has an absence or a count check, or no run that reaches success from
 `C` consists of firings sharing no unknown with `D`'s knowledge. A shared unknown here may be a rule
 instance's own variable (`captor_on_shared_side`); the converse fails (`friend_shares_and_succeeds`). -/
 theorem switched_off_has_guard_or_shared {C D : Configuration (Term sig) (Term sig × ℕ)}
@@ -178,7 +178,7 @@ theorem switched_off_has_guard_or_shared {C D : Configuration (Term sig) (Term s
     · exact monotone
     · exact absurd ⟨r, inProgram, hasGuard⟩ guard
 
-/-- **The necessary condition**: a switchable program has a rule with a none query or a count check, or a
+/-- **The necessary condition**: a switchable program has a rule with an absence or a count check, or a
 switching pair every run to success of whose first part has a firing sharing an unknown with the
 knowledge of the second (an unknown that may be a rule instance's own variable). -/
 theorem switchable_has_guard_or_shared

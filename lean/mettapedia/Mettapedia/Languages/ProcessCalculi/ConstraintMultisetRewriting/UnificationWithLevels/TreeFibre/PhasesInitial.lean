@@ -129,14 +129,14 @@ theorem Decided.after_epi {Θ : Context S.R} {problem : EquationStore (TotalTerm
     (Decided.after first d).Epi := by
   cases d with
   | solved update finished => exact then_epi first update epiFirst epi
-  | refuted missing => trivial
+  | refuted absent => trivial
 
 theorem Decided.equivalent_epi {Θ : Context S.R} {problem other : EquationStore (TotalTerm Θ)}
     (same : (frames S.levels).Equivalent problem other) (d : Decided other) (epi : d.Epi) :
     (Decided.equivalent same d).Epi := by
   cases d with
   | solved update finished => exact epi
-  | refuted missing => trivial
+  | refuted absent => trivial
 
 theorem decideNewest_epi {Θ : Context S.R} (view : Newest Θ) (problem : EquationStore (TotalTerm Θ))
     (decide : {Γ : Context S.R} → (type : TypeOver Γ) → (stored : EquationStore (TotalTerm (extend Γ type))) →
@@ -286,7 +286,7 @@ def Decided.ofRankCover (solver : ContextualDependentWorklist.Solver S.levels) {
   match runRank solver problem with
   | .solved state finished => if NativeTypesOnTheStep.VariableCover state.answer then some (.solved state finished)
       else none
-  | .refuted missing => some (.refuted missing)
+  | .refuted absent => some (.refuted absent)
   | _ => none
 
 /-- **Its decisions have epimorphic answers.** -/

@@ -584,7 +584,7 @@ process. -/
 theorem sharedChannelSource_closed :
     RhoClosedTermWellSorted rhoProc (commSource closedNilName.1 inert inert) :=
   (rhoClosedTermWellSorted_process_iff _).mpr
-    ⟨.parallel (.cons (.output (.quote .unit (by decide)) .unit) (.cons (.input (.quote .unit (by decide)) .unit) .nil)),
+    ⟨.parallel (.cons (.output (.quote .unit) .unit) (.cons (.input (.quote .unit) .unit) .nil)),
       by decide⟩
 
 /-- **Positive control.**  COMM on the shared channel `@0` reacts, with the
@@ -643,8 +643,8 @@ def mismatchedChannels : RhoProcess :=
   ⟨.collection .hashBag
       [outputPartner.1, .apply "PInput" [otherName, .lambda none inert]] none,
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.parallel (.cons (.output (.quote .unit (by decide)) .unit)
-        (.cons (.input (.quote (.output (.quote .unit (by decide)) .unit) (by decide)) .unit) .nil)), by decide⟩⟩
+      ⟨.parallel (.cons (.output (.quote .unit) .unit)
+        (.cons (.input (.quote (.output (.quote .unit) .unit)) .unit) .nil)), by decide⟩⟩
 
 /-- No COMM redex is among the components of `mismatchedChannels`. -/
 theorem mismatchedChannels_no_commRedex :
@@ -683,9 +683,9 @@ theorem mismatchedChannels_not_step (target : RhoProcess) :
 def guardedComm : RhoProcess :=
   ⟨.apply "PInput" [otherName, .lambda none (commSource closedNilName.1 inert inert)],
     (rhoClosedTermWellSorted_process_iff _).mpr
-      ⟨.input (.quote (.output (.quote .unit (by decide)) .unit) (by decide))
-        (.parallel (.cons (.output (.quote .unit (by decide)) .unit)
-          (.cons (.input (.quote .unit (by decide)) .unit) .nil))), by decide⟩⟩
+      ⟨.input (.quote (.output (.quote .unit) .unit))
+        (.parallel (.cons (.output (.quote .unit) .unit)
+          (.cons (.input (.quote .unit) .unit) .nil))), by decide⟩⟩
 
 /-- A prefixed process is one component, and that component is an input. -/
 theorem guardedComm_no_commRedex :

@@ -11,7 +11,7 @@ predicate queries, so a firing can disable another without sharing anything with
 
 * **an asymmetric conflict**: one takes what the other reads (`TakesRead`);
 * **inhibition**: one takes or makes inside the region of a predicate query of the other
-  (`Inhibits`). A none query is a predicate query whose collect query is empty.
+  (`Inhibits`). An absence query is a predicate query whose collect query is empty.
 
 **Contention** (`Contends`) is the symmetric closure of the three. Each of them breaks the step's
 static independence (`not_independent_of_contends`), and inhibition refuses the inhibited firing
@@ -42,7 +42,7 @@ contention set at the configuration it fires at. With `SharesTake` this is Mered
 Four ground firings over the tokens `a, b, p, out`, for every substitution action.
 
 * **Inhibition and mass** (`inhibition_control`). `maker` takes `a` and makes `p`; `guarded` takes `b`
-  under the none query of `p`. They share nothing. The maximal runs are `[maker]` and
+  under the absence query of `p`. They share nothing. The maximal runs are `[maker]` and
   `[guarded, maker]`.
   - With sharing contention each firing is its own contention set and both runs get likelihood `1`:
     **total mass `2`**.
@@ -50,7 +50,7 @@ Four ground firings over the tokens `a, b, p, out`, for every substitution actio
     `w_g/(w_m+w_g)`, the step's own jump chain (`Race.traceProb`) gives the same, and the mass is
     `1`.
 * **One atom forces a race** (`forcing_control`). `racer` and `vetoed` both take `a`; `vetoed` has the
-  none query of `p`. Adding one occurrence of `p` refuses `vetoed`, and `racer` fires with
+  absence query of `p`. Adding one occurrence of `p` refuses `vetoed`, and `racer` fires with
   probability `1`. The other way no context can force (`cannot_force_vetoed`): `racer` is
   inhibitor-free.
 -/
@@ -372,28 +372,28 @@ def label : Site → Tok
   | .ro => .out
   | .vo => .out
 
-/-- **The none query of `p`**: the collect query of the region `p` is empty. -/
-def noP : PredicateQuery Site Tok := ⟨fun t => decide (t = Tok.p), ∅⟩
+/-- **The absence query of `p`**: the collect query of the region `p` is empty. -/
+def absentP : PredicateQuery Site Tok := ⟨fun t => decide (t = Tok.p), ∅⟩
 
 variable {S : Type uS} (A : SubstitutionAction Tok S)
 
 /-- Takes `a`, makes `p`. -/
 def maker : Firing Tok S Site := ⟨⟨[.a], [], [], [], [.p]⟩, [], ⟨[.ta], [], [.mp]⟩⟩
 
-/-- Takes `b` under the none query of `p`, makes `out`. -/
+/-- Takes `b` under the absence query of `p`, makes `out`. -/
 def guarded : Firing Tok S Site :=
-  ⟨⟨[.b], [], [], [], [.out]⟩, [(PredicateQueryAdmission.Query.fixed noP).toRegion], ⟨[.tb], [], [.go]⟩⟩
+  ⟨⟨[.b], [], [], [], [.out]⟩, [(PredicateQueryAdmission.Query.fixed absentP).toRegion], ⟨[.tb], [], [.go]⟩⟩
 
 /-- Takes `a`, makes `out`. -/
 def racer : Firing Tok S Site := ⟨⟨[.a], [], [], [], [.out]⟩, [], ⟨[.ta], [], [.ro]⟩⟩
 
-/-- Takes `a` under the none query of `p`, makes `out`. -/
+/-- Takes `a` under the absence query of `p`, makes `out`. -/
 def vetoed : Firing Tok S Site :=
-  ⟨⟨[.a], [], [], [], [.out]⟩, [(PredicateQueryAdmission.Query.fixed noP).toRegion], ⟨[.ta], [], [.vo]⟩⟩
+  ⟨⟨[.a], [], [], [], [.out]⟩, [(PredicateQueryAdmission.Query.fixed absentP).toRegion], ⟨[.ta], [], [.vo]⟩⟩
 
 /-- The fixed queries of the four firings. -/
 def queriesOf (f : Firing Tok S Site) : List (PredicateQuery Site Tok) :=
-  if f.selection.made = [.go] ∨ f.selection.made = [.vo] then [noP] else []
+  if f.selection.made = [.go] ∨ f.selection.made = [.vo] then [absentP] else []
 
 def inhibition : List (Firing Tok S Site) := [maker, guarded]
 
@@ -421,13 +421,13 @@ def D0 : Configuration Tok Site := ⟨[], {.ta}⟩
 theorem maker_queried : Queried label (maker (S := S)) [] :=
   ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl, List.nodup_singleton _, List.nodup_singleton _⟩, rfl⟩
 
-theorem guarded_queried : Queried label (guarded (S := S)) [noP] :=
+theorem guarded_queried : Queried label (guarded (S := S)) [absentP] :=
   ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl, List.nodup_singleton _, List.nodup_singleton _⟩, rfl⟩
 
 theorem racer_queried : Queried label (racer (S := S)) [] :=
   ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl, List.nodup_singleton _, List.nodup_singleton _⟩, rfl⟩
 
-theorem vetoed_queried : Queried label (vetoed (S := S)) [noP] :=
+theorem vetoed_queried : Queried label (vetoed (S := S)) [absentP] :=
   ⟨⟨rfl, rfl, rfl, rfl, rfl, rfl, List.nodup_singleton _, List.nodup_singleton _⟩, rfl⟩
 
 theorem inhibition_queried : ∀ f ∈ inhibition (S := S), Queried label f (queriesOf f) := by
@@ -507,7 +507,7 @@ theorem not_shares_guarded_maker : ¬ SharesTake (guarded (S := S)) maker :=
   fun shares => not_shares_maker_guarded shares.symm
 
 include A in
-/-- **`maker` inhibits `guarded`**: it makes `p`, inside `guarded`'s none query. -/
+/-- **`maker` inhibits `guarded`**: it makes `p`, inside `guarded`'s absence query. -/
 theorem maker_inhibits_guarded : Inhibits label (maker (S := S)) guarded :=
   ⟨_, List.mem_singleton_self _, A.identity, .mp, by simp [maker], rfl⟩
 

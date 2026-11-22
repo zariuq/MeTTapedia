@@ -78,7 +78,7 @@ theorem normal_iff_no_compiled_firing (configuration : Configuration (S := S)) :
   · rintro none ⟨instruction, _⟩
     exact none ⟨instruction⟩
   · rintro none ⟨instruction⟩
-    exact none ⟨instruction, (instruction.admitted_iff qualified _).mpr configuration.fresh_not_present⟩
+    exact none ⟨instruction, (instruction.admitted_iff qualified _).mpr configuration.fresh_absent⟩
 
 theorem full_run_typed {configuration : Configuration (S := S)}
     {run : (step S.levels Nat).toStep.Run configuration.state}

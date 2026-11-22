@@ -63,7 +63,7 @@ mutual
         show Pattern.bvar (half (position (nameAt bound.length index small))) = _
         rw [half_nameAt]
     | _, _, .fvar lookup, _ => by simp [FreeSortContext.empty] at lookup
-    | _, _, .quote typed _, names => by
+    | _, _, .quote typed, names => by
         obtain ⟨t, same⟩ := represent_proc typed names
         exact ⟨quoteT t, by rw [read_quote, same]; rfl⟩
 

@@ -217,8 +217,8 @@ theorem readingRefute_isSome {Γ : Context (TowerModel.setting valuation).R} {sc
       cases found
     · split
       · rename_i missing
-        have notMem : certifyNormal active.right.code = none := missing
-        rw [notMem] at certified
+        have absent : certifyNormal active.right.code = none := missing
+        rw [absent] at certified
         cases certified
       · rw [dif_pos millerRight]
         rfl

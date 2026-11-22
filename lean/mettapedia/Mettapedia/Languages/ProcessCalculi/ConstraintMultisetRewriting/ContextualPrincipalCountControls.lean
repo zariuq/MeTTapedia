@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Contextua
 Two equal conditional schemas occupy distinct occurrences and both match
 their explicit shared capture. An actual native firing publishes a new
 value while its complete query records both occurrences. An open caller
-counterexample shows that an empty principal table alone is not none queries.
+counterexample shows that an empty principal table alone is not absence.
 -/
 
 set_option autoImplicit false

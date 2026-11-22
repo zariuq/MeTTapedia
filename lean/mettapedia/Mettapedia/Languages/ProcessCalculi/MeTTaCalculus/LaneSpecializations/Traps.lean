@@ -44,7 +44,7 @@ variable {O : Type uO} {V : Type uV} {T : Type uT} {P : Type uP}
 def sourceTakes : Source V T P → Bool
   | .take _ => true
   | .unique .take _ => true
-  | .all .take _ _ _ => true
+  | .collect .take _ _ _ => true
   | _ => false
 
 /-- Whether an `every` suffix follows. -/
@@ -71,7 +71,7 @@ theorem instances_not_flagged (p a xs : P) (t : T) (fold : Multiset T → T) :
     vacuousEveryLint (matchEvery p [] : Transform V T P).sources = false ∧
       vacuousEveryLint (matchEach p [] : Transform V T P).sources = false ∧
       vacuousEveryLint (.every (.cons (.take p) .done) : SourceList V T P) = false ∧
-      vacuousEveryLint (.cons (.all .take p xs fold) .done : SourceList V T P) = false ∧
+      vacuousEveryLint (.cons (.collect .take p xs fold) .done : SourceList V T P) = false ∧
       vacuousEveryLint (addT a : Transform V T P).sources = false ∧
       vacuousEveryLint (takeIdentical t : Transform V T T).sources = false ∧
       vacuousEveryLint (takeUnique t : Transform V T T).sources = false ∧

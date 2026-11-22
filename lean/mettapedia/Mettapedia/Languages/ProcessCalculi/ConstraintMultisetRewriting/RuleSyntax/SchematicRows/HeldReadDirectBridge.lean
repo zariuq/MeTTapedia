@@ -75,13 +75,13 @@ theorem held_iff_reading (s : Store O) (filler : Tm) (caller : Subst rowSig)
   have lengths : datum.schema.params.length = ((host s filler).held selected).args.length := by
     rw [arguments]
     exact wellFormed
-  have tempNotPresent : temporary ∉ (host s filler).present := fun inside =>
+  have tempAbsent : temporary ∉ (host s filler).present := fun inside =>
     temporaryFresh ((HeldReadEncoding.present_iff s filler temporary).mp inside).1
-  have madeNotPresent : made ∉ (host s filler).present := fun inside =>
+  have madeAbsent : made ∉ (host s filler).present := fun inside =>
     madeFresh ((HeldReadEncoding.present_iff s filler made).mp inside).1
   have law := HeldReadProtocol.reading_iff_execution codeBook ambient (host s filler)
     selected temporary made reader datum.schema declared rfl (Set.mem_singleton reader)
-    heldPresent persistent lengths tempNotPresent madeNotPresent different caller known value
+    heldPresent persistent lengths tempAbsent madeAbsent different caller known value
   have sameClosure :
       (⟨datum.schema, ((host s filler).held selected).args⟩ : Closure RowTerms s.frame) = datum := by
     rw [arguments]
@@ -124,9 +124,9 @@ theorem held_final_resources (s : Store O) (filler : Tm) (selected temporary mad
       reader materialized consumed).last.present ∪
         (HeldReadProtocol.execution codeBook ambient (host s filler) selected temporary made
           reader materialized consumed).last.rules = s.present ∪ {made} := by
-  have tempNotPresent : temporary ∉ (host s filler).present := fun inside =>
+  have tempAbsent : temporary ∉ (host s filler).present := fun inside =>
     temporaryFresh ((HeldReadEncoding.present_iff s filler temporary).mp inside).1
-  rw [HeldReadProtocol.final_present _ _ _ _ _ _ _ _ _ tempNotPresent,
+  rw [HeldReadProtocol.final_present _ _ _ _ _ _ _ _ _ tempAbsent,
     HeldReadProtocol.final_rules _ _ _ _ _ _ _ _ _ (HeldReadEncoding.schema_persistent s filler selected)]
   calc
     ((host s filler).present ∪ {made}) ∪ (host s filler).rules =

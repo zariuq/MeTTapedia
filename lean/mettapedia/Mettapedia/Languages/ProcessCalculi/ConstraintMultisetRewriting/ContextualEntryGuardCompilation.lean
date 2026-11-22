@@ -42,7 +42,7 @@ def originalEntryCut {Query : Type} (schedule : Schedule S O Γ sort before afte
   taken := schedule.net.effect.taken
   made := schedule.net.effect.made
 
-/-- Complete equality, none queries and count judgments agree with the independently
+/-- Complete equality, absence and count judgments agree with the independently
 updated source prefix, including the current clause's own information. -/
 theorem original_entry_cut_iff {Query : Type} (schedule : Schedule S O Γ sort before after)
     (shapes : schedule.ShapesHold) (resources : Executable unitLabel before.present schedule.commits)

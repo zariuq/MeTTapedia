@@ -250,8 +250,8 @@ def Region (term : Pattern) : Prop :=
 
 theorem carrier_state {term : Pattern} (admitted : carrier term = true) : IsState term ∧ HashSetFree term := by
   have typed := sorted_iff.mp (Bool.and_eq_true_iff.mp admitted).1
-  exact ⟨⟨typed.2.2.2, typed.2.2.1⟩, Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary.rhoProcWellSorted_hashSetFree_at
-    (.reaching .apply) (Complete.RhoReference.procWellSorted_of_sorted ((GeneralPlanEnvironment.typing_iff plan [] proc _).mpr typed))⟩
+  exact ⟨⟨typed.2.2.2, typed.2.2.1⟩, Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary.rhoProcWellSorted_hashSetFree
+    (Complete.RhoReference.procWellSorted_of_sorted ((GeneralPlanEnvironment.typing_iff plan [] proc _).mpr typed))⟩
 
 theorem carrier_region {term : Pattern} (admitted : carrier term = true) : Region term :=
   ⟨(carrier_state admitted).1, (carrier_state admitted).2, term, admitted, .refl _⟩

@@ -183,7 +183,7 @@ theorem native_cut_query_region (body : Body S O Γ sort before after) (index : 
         (body.nativeGuardRow index (label (some (.inl occurrence))).2)) = true
     exact decide_eq_true ⟨Option.some_ne_none _, outside, (view occurrence).mpr matched⟩
 
-theorem native_cut_none_point_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
+theorem native_cut_absence_point_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
     (occupied : Finset Nat) (pattern : Term (signature S after.declarations) Γ sort)
     (excluded : Finset (GuardPhysical O)) (candidate : Assignment body.guardNativeFamily next) :
     ((body.nativeCutMatchingQuery index pattern excluded ∅).atSolution ⟨Next, next, candidate⟩).Holds
@@ -239,9 +239,9 @@ theorem native_guard_cut_model_extends (body : Body S O Γ sort before after) (i
     cut, ContextualGuardMatching.Extension.trans_assignment, Assignment.compose_associative]
   rfl
 
-/-- An actual-row complete query retains exactly the original-cut none queries
+/-- An actual-row complete query retains exactly the original-cut absence
 judgment for surviving entry rows. Virtual prefix creations are separate. -/
-theorem native_cut_none_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
+theorem native_cut_absence_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
     (shapes : body.ShapesHold) (resources : Executable ContextualSourceSchedules.Schedule.unitLabel before.present body.commits)
     (consistent : ContextualConditionalExecution.Solvable after.equations) (occupied : Finset Nat)
     (produced : List (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort))
@@ -257,13 +257,13 @@ theorem native_cut_none_iff (body : Body S O Γ sort before after) (index : body
   · intro observed Future future candidate model
     obtain ⟨extension, native, solved, cut⟩ := body.native_guard_cut_model_extends index shapes resources
       consistent occupied produced guards candidate model
-    have held := (body.native_cut_none_point_iff index occupied pattern excluded native).mp
+    have held := (body.native_cut_absence_point_iff index occupied pattern excluded native).mp
       (observed extension.Names extension.declarations native solved)
     rw [cut] at held
     exact (ContextualIndependentProblems.holds_extension_iff first extension candidate body.sourceGuardInputs
       (body.survivingGuardInputs excluded) (.predicate .none pattern)).mp held
   · intro observed Future future candidate model
-    exact (body.native_cut_none_point_iff index occupied pattern excluded candidate).mpr
+    exact (body.native_cut_absence_point_iff index occupied pattern excluded candidate).mpr
       (observed Future future _ (body.native_guard_cut_model index occupied produced guards candidate model))
 
 theorem native_saved_cut_ask_iff {Local : Type} (locals : Local → MetaArity S)
@@ -291,9 +291,9 @@ theorem native_saved_cut_ask_iff {Local : Type} (locals : Local → MetaArity S)
     exact (ContextualConditionalGuards.holds_transport locals (body.nativeGuardCut index) candidate rows world check).mpr
       (observed Future future _ (body.native_guard_cut_model index occupied produced guards candidate model))
 
-/-- Source prefix the none query splits into surviving actual inputs and the finite
+/-- Source prefix absence splits into surviving actual inputs and the finite
 authored creations. The latter must not disappear during entry regression. -/
-theorem entry_cut_none_point_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
+theorem entry_cut_absence_point_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
     (candidate : Assignment after.declarations next) (pattern : Term (signature S after.declarations) Γ sort) :
     ContextualConditionalGuards.Holds (body.entryCutAt index).view.locals candidate
         (body.entryCutAt index).view.rows (body.entryCutAt index).view.world (.predicate .none pattern) ↔
@@ -337,7 +337,7 @@ theorem entry_cut_none_point_iff (body : Body S O Γ sort before after) (index :
       forall_and]
   exact split.trans (and_congr initial Iff.rfl)
 
-theorem entry_cut_none_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
+theorem entry_cut_absence_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
     (shapes : body.ShapesHold) (resources : Executable ContextualSourceSchedules.Schedule.unitLabel before.present body.commits)
     (pattern : Term (signature S after.declarations) Γ sort) :
     ContextualConditionalGuards.Ask (body.entryCutAt index).view.locals (body.entryCutAt index).view.problem
@@ -349,15 +349,15 @@ theorem entry_cut_none_iff (body : Body S O Γ sort before after) (index : body.
   rw [(body.entry_cut_at_compare shapes resources index).1]
   constructor
   · intro observed
-    exact ⟨fun Future future candidate model => (body.entry_cut_none_point_iff index candidate pattern).mp
+    exact ⟨fun Future future candidate model => (body.entry_cut_absence_point_iff index candidate pattern).mp
         (observed Future future candidate model) |>.1,
-      fun Future future candidate model => (body.entry_cut_none_point_iff index candidate pattern).mp
+      fun Future future candidate model => (body.entry_cut_absence_point_iff index candidate pattern).mp
         (observed Future future candidate model) |>.2⟩
   · rintro ⟨initial, created⟩ Future future candidate model
-    exact (body.entry_cut_none_point_iff index candidate pattern).mpr
+    exact (body.entry_cut_absence_point_iff index candidate pattern).mpr
       ⟨initial Future future candidate model, created Future future candidate model⟩
 
-noncomputable def nativeVirtualNoneQuery (body : Body S O Γ sort before after) (index : body.CutIndex)
+noncomputable def nativeVirtualAbsenceQuery (body : Body S O Γ sort before after) (index : body.CutIndex)
     (pattern : Term (signature S after.declarations) Γ sort) :
     ContextualPredicateQueryAdmission.DataQuery body.guardNativeFamily
       (GuardPhysical O × Row body.guardNativeBank body.guardNativeFamily Γ sort) (GuardPhysical O) :=
@@ -367,26 +367,26 @@ noncomputable def nativeVirtualNoneQuery (body : Body S O Γ sort before after) 
         after.declarations (body.nativeGuardCut index)) (body.entryCutAt index).made
       (.predicate .none (instantiate (body.nativeGuardCut index) pattern))) none)
 
-theorem native_virtual_none_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
+theorem native_virtual_absence_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
     (shapes : body.ShapesHold) (resources : Executable ContextualSourceSchedules.Schedule.unitLabel before.present body.commits)
     (consistent : ContextualConditionalExecution.Solvable after.equations) (occupied : Finset Nat)
     (produced : List (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort))
     (guards : List (Check (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort)))
     (pattern : Term (signature S after.declarations) Γ sort) :
     ContextualPredicateQueryAdmission.AskData (body.nativeBindingInformation occupied produced guards)
-        (body.nativeVirtualNoneQuery index pattern)
+        (body.nativeVirtualAbsenceQuery index pattern)
         (ContextualPredicateQueryAdmission.nativeLabels body.guardNativeBank (body.nativeBindingState occupied))
         (body.nativeBindingState occupied).present ↔
       ContextualConditionalGuards.Ask (body.entryCutAt index).view.locals (body.cuts.get index).problem
         (body.entryCutAt index).view.rows (body.entryCutAt index).made (.predicate .none pattern) := by
-  erw [nativeVirtualNoneQuery, ContextualPredicateQueryAdmission.lift_point_ask_iff]
+  erw [nativeVirtualAbsenceQuery, ContextualPredicateQueryAdmission.lift_point_ask_iff]
   erw [ContextualPredicateQueryAdmission.ask_condition_iff _ _ _ (Finset.mem_insert_self _ _)]
   exact body.native_saved_cut_ask_iff (body.entryCutAt index).view.locals index shapes resources consistent
     occupied produced guards (body.entryCutAt index).view.rows (body.entryCutAt index).made (.predicate .none pattern)
 
-/-- The complete regressed none condition uses real input data and a
+/-- The complete regressed absence condition uses real input data and a
 separate finite check of the prefix's authored creations at the same cut. -/
-theorem native_entry_none_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
+theorem native_entry_absence_iff (body : Body S O Γ sort before after) (index : body.CutIndex)
     (shapes : body.ShapesHold) (resources : Executable ContextualSourceSchedules.Schedule.unitLabel before.present body.commits)
     (consistent : ContextualConditionalExecution.Solvable after.equations) (occupied : Finset Nat)
     (produced : List (Term (signature S (queryFamily body.bindingLocals body.guardFamily)) Γ sort))
@@ -399,13 +399,13 @@ theorem native_entry_none_iff (body : Body S O Γ sort before after) (index : bo
           (ContextualPredicateQueryAdmission.nativeLabels body.guardNativeBank (body.nativeBindingState occupied))
           (body.nativeBindingState occupied).present ∧
         ContextualPredicateQueryAdmission.AskData (body.nativeBindingInformation occupied produced guards)
-          (body.nativeVirtualNoneQuery index pattern)
+          (body.nativeVirtualAbsenceQuery index pattern)
           (ContextualPredicateQueryAdmission.nativeLabels body.guardNativeBank (body.nativeBindingState occupied))
           (body.nativeBindingState occupied).present :=
-  (body.entry_cut_none_iff index shapes resources pattern).trans
-    (and_congr (body.native_cut_none_iff index shapes resources consistent occupied produced guards pattern
+  (body.entry_cut_absence_iff index shapes resources pattern).trans
+    (and_congr (body.native_cut_absence_iff index shapes resources consistent occupied produced guards pattern
       ((body.entryCutAt index).taken.image some)).symm
-      (body.native_virtual_none_iff index shapes resources consistent occupied produced guards pattern).symm)
+      (body.native_virtual_absence_iff index shapes resources consistent occupied produced guards pattern).symm)
 
 /-- Equality uses the native step's existing guard form. Its saved-cut
 terms are interpreted under the same actual binding information. -/

@@ -273,7 +273,7 @@ no identity, with the same renaming. -/
 def renamingIso_rowIsoModulo {C D : Configuration T O} (i : RenamingIso A label C D) :
     RowIsoModulo (∅ : Finset O) (ofConfiguration A label C) (ofConfiguration A label D) :=
   Interface.rowIsoModulo_of_renaming A label
-    (Observation.RenamingUpTo.of_private ⟨i.keeps, fun _ missing => absurd missing (Finset.notMem_empty _)⟩)
+    (Observation.RenamingUpTo.of_private ⟨i.keeps, fun _ absent => absurd absent (Finset.notMem_empty _)⟩)
     i.same
 
 /-- **Trace-equivalent runs end in states related by a renaming that carries one end's record to the

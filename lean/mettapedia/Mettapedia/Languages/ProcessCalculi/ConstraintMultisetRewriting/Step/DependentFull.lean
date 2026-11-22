@@ -272,9 +272,9 @@ theorem relabel_of_not_mem {Δ : Context rules} (row : O → TotalTerm Δ) :
     ∀ (makes : List (O × Make Δ)) (typed : ∀ m ∈ makes, m.2.WellTyped) {o : O},
       o ∉ makes.map Prod.fst → relabel row makes typed o = row o
   | [], _, _, _ => rfl
-  | m :: rest, typed, o, missing => by
-      have other : o ≠ m.1 := fun same => missing (List.mem_cons.mpr (Or.inl same))
-      have later : o ∉ rest.map Prod.fst := fun inside => missing (List.mem_cons.mpr (Or.inr inside))
+  | m :: rest, typed, o, absent => by
+      have other : o ≠ m.1 := fun same => absent (List.mem_cons.mpr (Or.inl same))
+      have later : o ∉ rest.map Prod.fst := fun inside => absent (List.mem_cons.mpr (Or.inr inside))
       simp only [relabel, if_neg other]
       exact relabel_of_not_mem row rest _ later
 
@@ -431,9 +431,9 @@ theorem admitted_take_unifies (admitted : f.Admits) {p : TotalTerm f.helpers.fra
 
 /-! ## Results and subject reduction -/
 
-theorem label_after_of_not_mem (admitted : f.Admits) {o : O} (missing : o ∉ f.made) :
+theorem label_after_of_not_mem (admitted : f.Admits) {o : O} (absent : o ∉ f.made) :
     (f.after admitted).label o = f.row o :=
-  relabel_of_not_mem f.row f.makes _ missing
+  relabel_of_not_mem f.row f.makes _ absent
 
 theorem label_after_of_mem (admitted : f.Admits) {o : O} (inside : o ∈ f.made) :
     ∃ (m : O × Make f.helpers.frame) (member : m ∈ f.makes),
@@ -451,8 +451,8 @@ theorem subject_reduction (admitted : f.Admits) (o : O) :
         ((f.after admitted).label o).1.code = subst f.helpers.weaken.substitution (s.label o).1.code) ∧
       (o ∈ f.made → ∃ m ∈ f.makes, m.1 = o ∧ ((f.after admitted).label o).1 = m.2.type ∧
         ((f.after admitted).label o).2.code = m.2.code) := by
-  refine ⟨((f.after admitted).label o).2.typed, fun missing => ?_, fun inside => ?_⟩
-  · rw [f.label_after_of_not_mem admitted missing]
+  refine ⟨((f.after admitted).label o).2.typed, fun absent => ?_, fun inside => ?_⟩
+  · rw [f.label_after_of_not_mem admitted absent]
     exact ⟨rfl, rfl⟩
   · obtain ⟨m, member, named, eq⟩ := f.label_after_of_mem admitted inside
     exact ⟨m, member, named, by rw [eq]; rfl, by rw [eq]; rfl⟩

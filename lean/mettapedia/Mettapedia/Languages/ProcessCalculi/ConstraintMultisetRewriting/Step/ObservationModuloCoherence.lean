@@ -108,7 +108,7 @@ variable {T : Type uT} {S : Type uS} {O : Type uO} [DecidableEq O]
 /-- **A firing and its alternative under a fresh name are equivalent modulo the knowledge exactly
 when neither name has escaped.** -/
 theorem fresh_alternative_moduloEquivalent_iff (valid : f.Valid A label C)
-    (made : r ∈ f.selection.made) (missing : r' ∉ C.present) (same : label r' = label r)
+    (made : r ∈ f.selection.made) (absent : r' ∉ C.present) (same : label r' = label r)
     (new : r' ∉ f.selection.made) :
     ModuloEquivalent A label E (f.result label C) ((f.rename (Equiv.swap r r')).result label C) ↔
       r ∉ E ∧ r' ∉ E := by
@@ -118,23 +118,23 @@ theorem fresh_alternative_moduloEquivalent_iff (valid : f.Valid A label C)
     refine ⟨fun seen => ?_, fun seen' => ?_⟩
     · have here : r ∈ (f.result label C).present := result_present_iff.mpr (Or.inr made)
       have there := (h.escaped_iff seen).mp here
-      rw [fresh_alternative_result valid made missing same] at there
+      rw [fresh_alternative_result valid made absent same] at there
       obtain ⟨a, member, moved⟩ := Finset.mem_map.mp there
       have isR' : a = r' := by
         rw [Equiv.coe_toEmbedding, Equiv.swap_apply_eq_iff, Equiv.swap_apply_left] at moved
         exact moved
       rw [isR'] at member
       rcases result_present_iff.mp member with ⟨present, -⟩ | inMade
-      · exact missing present
+      · exact absent present
       · exact notMade inMade
     · have there : r' ∈ ((f.rename (Equiv.swap r r')).result label C).present := by
-        rw [fresh_alternative_result valid made missing same]
+        rw [fresh_alternative_result valid made absent same]
         exact Finset.mem_map.mpr ⟨r, result_present_iff.mpr (Or.inr made), by simp⟩
       rcases result_present_iff.mp ((h.escaped_iff seen').mpr there) with ⟨present, -⟩ | inMade
-      · exact missing present
+      · exact absent present
       · exact notMade inMade
   · rintro ⟨unseen, unseen'⟩
-    exact PrivatelyEquivalent.modulo (fresh_alternative_equivalent valid made missing same unseen unseen')
+    exact PrivatelyEquivalent.modulo (fresh_alternative_equivalent valid made absent same unseen unseen')
 
 end Alternatives
 

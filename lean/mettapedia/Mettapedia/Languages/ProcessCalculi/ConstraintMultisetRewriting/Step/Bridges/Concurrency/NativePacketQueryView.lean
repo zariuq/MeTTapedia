@@ -307,7 +307,7 @@ theorem own_exact_ask_iff {s : NativeState S O Γ sort} (f : LiveFiring s) {base
     apply (point substitution model).mpr
     exact asked _ _ _ (NativePacketStep.model_reads_information f base use substitution model)
 
-theorem own_none_ask_iff {s : NativeState S O Γ sort} (f : LiveFiring s) {base use : Nat}
+theorem own_absence_ask_iff {s : NativeState S O Γ sort} (f : LiveFiring s) {base use : Nat}
     (different : base ≠ use)
     (enabled : Enabled (fun _ : O => ()) s.state.present (f.selection.commit (T := Unit)))
     (pattern : Term (signature S s.infoFrame.arity) Γ sort) :

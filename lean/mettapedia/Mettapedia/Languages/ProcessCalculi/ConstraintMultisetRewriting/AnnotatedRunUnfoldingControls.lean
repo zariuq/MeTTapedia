@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunUnfoldingWorlds
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunsRestoredNone
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunsAbsence
 
 /-! # Competing alternatives, finite completeness and causal history controls -/
 
@@ -88,7 +88,7 @@ theorem noFlow_does_not_remove_read_take_precedence :
 open AnnotatedRuns.RoundControls (tellSame tellOne tellTwo)
 
 /-- Pairwise constraint checks cannot replace joint consistency in an
-unfolding node. The forbidden triple is not present in every order. -/
+unfolding node. The forbidden triple is absent in every order. -/
 theorem inconsistent_triple_never_enumerated (word : List AnnotatedRuns.Controls.Run)
     (permuted : word.Perm [tellSame, tellOne, tellTwo]) :
     word ∉ frontier A label [tellSame, tellOne, tellTwo] 3 AnnotatedRuns.RoundControls.empty := by
@@ -96,25 +96,25 @@ theorem inconsistent_triple_never_enumerated (word : List AnnotatedRuns.Controls
   exact AnnotatedRuns.RoundControls.pairwise_consistent_not_joint word permuted
     (frontier_sound A label member)
 
-namespace RestoredNone
+namespace RestoredAbsence
 
-open AnnotatedRuns.RestoredNoneControls (maker empty restored_none_two_traces)
+open AnnotatedRuns.AbsenceControls (maker empty restored_absence_two_traces)
 
-local notation "noneLabel" => AnnotatedRuns.RestoredNoneControls.label
-local notation "noneReader" => AnnotatedRuns.RestoredNoneControls.reader
-local notation "noneTaker" => AnnotatedRuns.RestoredNoneControls.taker
+local notation "absenceLabel" => AnnotatedRuns.AbsenceControls.label
+local notation "absenceReader" => AnnotatedRuns.AbsenceControls.reader
+local notation "absenceTaker" => AnnotatedRuns.AbsenceControls.taker
 
 /-- The same bare firings and endpoint can carry distinct contextual causal
 histories. An event-structure encoding must distinguish their contexts. -/
 theorem both_histories_survive_unfolding :
-    [noneReader, maker, noneTaker] ∈ frontier A noneLabel [noneReader, maker, noneTaker] 3 empty ∧
-      [maker, noneTaker, noneReader] ∈ frontier A noneLabel [noneReader, maker, noneTaker] 3 empty ∧
-      ¬ RoundEquiv A noneLabel empty [noneReader, maker, noneTaker] [maker, noneTaker, noneReader] := by
-  obtain ⟨first, second, _, _, different, _⟩ := restored_none_two_traces
-  exact ⟨(mem_frontier A noneLabel _ 3 empty _).mpr ⟨rfl, first, by simp⟩,
-    (mem_frontier A noneLabel _ 3 empty _).mpr ⟨rfl, second, by simp⟩, different⟩
+    [absenceReader, maker, absenceTaker] ∈ frontier A absenceLabel [absenceReader, maker, absenceTaker] 3 empty ∧
+      [maker, absenceTaker, absenceReader] ∈ frontier A absenceLabel [absenceReader, maker, absenceTaker] 3 empty ∧
+      ¬ RoundEquiv A absenceLabel empty [absenceReader, maker, absenceTaker] [maker, absenceTaker, absenceReader] := by
+  obtain ⟨first, second, _, _, different, _⟩ := restored_absence_two_traces
+  exact ⟨(mem_frontier A absenceLabel _ 3 empty _).mpr ⟨rfl, first, by simp⟩,
+    (mem_frontier A absenceLabel _ 3 empty _).mpr ⟨rfl, second, by simp⟩, different⟩
 
-end RestoredNone
+end RestoredAbsence
 
 #print axioms mem_frontier
 #print axioms mem_completed
@@ -126,6 +126,6 @@ end RestoredNone
 #print axioms collectQueries_stable
 #print axioms competitor_changes_maximum
 #print axioms inconsistent_triple_never_enumerated
-#print axioms RestoredNone.both_histories_survive_unfolding
+#print axioms RestoredAbsence.both_histories_survive_unfolding
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.AnnotatedRunUnfolding.Controls

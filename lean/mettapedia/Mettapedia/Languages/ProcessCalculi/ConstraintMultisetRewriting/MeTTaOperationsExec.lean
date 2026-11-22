@@ -7,7 +7,7 @@ import Mathlib.Data.Set.Finite.List
 The reference is MORK's documented execution rule on ground stored atoms. The
 space is a set. The exec atom is removed before it is interpreted. One step
 enumerates every row of its sources against that snapshot. The kernel writes
-every `+` instance, then subtracts every `-` instance; a removal of a missing
+every `+` instance, then subtracts every `-` instance; a removal of an absent
 instance does nothing, and an instance removed or added by several rows is
 removed or added once. The MORK binary and both CeTTa `mm2` lanes agree on
 the nine probes recorded with this file.
@@ -603,7 +603,7 @@ def self2 : Atom := .symbol "exec-p2"
 def space2 : Finset Atom := {xs, self2}
 def exec2 : Exec := ⟨self2, [xs], [xs], [xs]⟩
 
-/-- `(O (- (x)) (+ (x)))` leaves `(x)` missing, as MORK and both CeTTa lanes do;
+/-- `(O (- (x)) (+ (x)))` leaves `(x)` absent, as MORK and both CeTTa lanes do;
 the reverse sink order does too (probe p8). -/
 theorem result2_reference : Result space2 exec2 ∅ := by
   have row : ∀ σ, Row space2 exec2 σ := by

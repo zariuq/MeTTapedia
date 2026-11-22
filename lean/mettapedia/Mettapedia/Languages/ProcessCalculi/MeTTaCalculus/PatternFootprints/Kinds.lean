@@ -65,7 +65,7 @@ def present (kind : Location) : LocalRule Location ℕ where
     rwa [← agrees kind (Finset.mem_union_left _ (Finset.mem_singleton_self _))]
 
 /-- Add one occurrence of `kind` unless `watched` is present.  The guard asks for
-a none query, and declares the kind it reads. -/
+an absence, and declares the kind it reads. -/
 def addUnless (kind watched : Location) : LocalRule Location ℕ where
   consumed := 0
   produced := Pi.single kind 1
@@ -149,12 +149,12 @@ theorem fire_removeKind_eq_some_iff (kind : Location) (state target : Location �
 
 /-- Removing a kind that is not there does not fire. -/
 theorem fire_removeKind_eq_none (kind : Location) {state : Location → ℕ}
-    (missing : state kind = 0) : (removeKind kind).fire state = none := by
+    (absent : state kind = 0) : (removeKind kind).fire state = none := by
   cases fired : (removeKind kind).fire state with
   | none => rfl
   | some target =>
       have same := congrFun ((fire_removeKind_eq_some_iff kind state target).mp fired) kind
-      rw [missing] at same
+      rw [absent] at same
       simp at same
 
 /-- **Seeing a kind fires exactly where it is present**, and changes nothing. -/
@@ -170,19 +170,19 @@ theorem fire_seeKind_eq_some_iff (kind : Location) (state target : Location → 
     exact ⟨present, target, fun _ => trivial, fun _ => trivial, (zero_add target).symm,
       (zero_add target).symm⟩
 
-/-- **The guarded addition fires exactly where the watched kind is not present.** -/
+/-- **The guarded addition fires exactly where the watched kind is absent.** -/
 theorem fire_addKindUnless_eq_some_iff (kind watched : Location) (state target : Location → ℕ) :
     (addKindUnless kind watched).fire state = some target ↔
       state watched = 0 ∧ target = state + Pi.single kind 1 := by
   rw [(addKindUnless kind watched).fire_eq_some_iff]
   constructor
-  · rintro ⟨missing, frame, -, -, sourceEq, targetEq⟩
-    refine ⟨missing, ?_⟩
+  · rintro ⟨absent, frame, -, -, sourceEq, targetEq⟩
+    refine ⟨absent, ?_⟩
     have same : state = frame := sourceEq.trans (zero_add frame)
     rw [targetEq, same]
     exact add_comm _ _
-  · rintro ⟨missing, rfl⟩
-    exact ⟨missing, state, fun _ => trivial, fun _ => trivial, (zero_add state).symm,
+  · rintro ⟨absent, rfl⟩
+    exact ⟨absent, state, fun _ => trivial, fun _ => trivial, (zero_add state).symm,
       add_comm _ _⟩
 
 /-- **The write of a cell fires exactly where the old value is present**: the
@@ -292,7 +292,7 @@ theorem seeKind_fires :
       ((seeKind Kind.a).fire noKinds).isSome = false := by
   decide
 
-/-- **Positive**: the guarded addition fires where the watched kind is not present.
+/-- **Positive**: the guarded addition fires where the watched kind is absent.
 **Negative**: and not where it is present. -/
 theorem addKindUnless_fires :
     ((addKindUnless Kind.b Kind.a).fire noKinds).map (fun world => world .b) = some 1 ∧

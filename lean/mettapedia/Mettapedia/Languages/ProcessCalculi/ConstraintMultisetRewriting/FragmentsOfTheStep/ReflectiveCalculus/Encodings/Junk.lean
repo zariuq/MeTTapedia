@@ -25,7 +25,7 @@ knowledge has no solution, switches every system off.
   (`strict_separation_fourRule`): with every pair composable, the same criterion separates the
   reflective calculus from the states of its own four-rule program.
 * With composition restricted to solvable joint knowledge (`stepParallelSolvable`), the junk pair is
-  not composable (`junk_pair_not_composable`), while the none query pair is (`solvable_switchable`).
+  not composable (`junk_pair_not_composable`), while the absence pair is (`solvable_switchable`).
 * Weak barbed bisimilarity with a state that represents nothing: `junk` and the empty state are
   bisimilar (neither moves nor shows a barb), and beside `ω!(0)` they are not (`junk_not_congruence`).
 -/
@@ -145,7 +145,7 @@ def outputSystem (ω : G [] .nm) : System := ⟨ByInstantiation.program, single 
 /-- The system of the four-rule program with the junk state. -/
 def junkSystem : System := ⟨ByInstantiation.program, junk⟩
 
-/-- **With every pair composable, the step is switchable without any none queries**: the system of the
+/-- **With every pair composable, the step is switchable without any absence**: the system of the
 four-rule program with the row `ω!(0)` succeeds, and beside the system of the same program with the
 junk state it never does. -/
 theorem junk_switches {ω : G [] .nm} (closed : Closed ω) : (stepParallel ω).Switchable :=

@@ -8,10 +8,10 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.CheckStab
 Uses `Check`, `Selection.Valid`, `SubstitutionAction.Entails`,
 `Provenance.Infers`, `Provenance.SystemStep` and `Derivable`.
 
-* Conjunctive none queries: none queries of a conjunction with a shared local variable is not the list of
-  separately entailed none checks.
+* Conjunctive absence: absence of a conjunction with a shared local variable is not the list of
+  separately entailed absence checks.
 * Promotion: `Provenance.Infers` keeps no trace of the world in which a guard was checked.
-  A conclusion derivable from no hypotheses can still depend on a none guard, and the
+  A conclusion derivable from no hypotheses can still depend on an absence guard, and the
   installation that drops the guard reaches a configuration the original system never reaches.
   A closed conclusion can also depend on a local equation (a scope restriction): the
   universal schema is not derivable.
@@ -58,7 +58,7 @@ theorem a_ne_b : a ≠ b := by
   intro same
   cases same
 
-/-! ## Conjunctive none queries: none queries of a conjunction with a shared local variable -/
+/-! ## Conjunctive absence: absence of a conjunction with a shared local variable -/
 
 def world : Finset Nat := {0, 1}
 
@@ -67,7 +67,7 @@ def worldLabel : Nat → Term sig
   | 0 => p a
   | _ => q b
 
-/-- The list encoding `[none p(X), none q(X)]` fails already at its first check:
+/-- The list encoding `[absent p(X), absent q(X)]` fails already at its first check:
 the all-future ask ranges over `X := a`, where `p(a)` is present. -/
 theorem list_encoding_first_check_not_entailed :
     ¬ A.Entails [] (fun σ => (Check.predicate .none (p X)).Holds A σ worldLabel world) := by
@@ -76,12 +76,12 @@ theorem list_encoding_first_check_not_entailed :
   exact holds 0 (by simp [world]) rfl
 
 /-- The intended guard: no single value of `X` makes both `p(X)` and `q(X)` present. -/
-def NoJoin (σ : Subst sig) : Prop :=
+def JoinAbsent (σ : Subst sig) : Prop :=
   ¬ ((∃ o ∈ world, A.E (A.apply σ (p X)) (A.apply σ (worldLabel o))) ∧
      (∃ o ∈ world, A.E (A.apply σ (q X)) (A.apply σ (worldLabel o))))
 
-/-- The joined the none query holds in every solution of the empty store. -/
-theorem noJoin_entailed : A.Entails [] NoJoin := by
+/-- The joined absence holds in every solution of the empty store. -/
+theorem join_absence_entailed : A.Entails [] JoinAbsent := by
   intro σ _ both
   obtain ⟨⟨o, member, same⟩, ⟨o', member', same'⟩⟩ := both
   simp only [world, Finset.mem_insert, Finset.mem_singleton] at member member'
@@ -96,7 +96,7 @@ theorem noJoin_entailed : A.Entails [] NoJoin := by
   · have hp : p (σ 0) = q b := same
     exact p_ne_q _ _ hp
 
-/-! ## Promotion: world-free inference forgets a none guard -/
+/-! ## Promotion: world-free inference forgets an absence guard -/
 
 def pTok : Term sig := .const 7
 def qTok : Term sig := .const 9
@@ -270,7 +270,7 @@ theorem pa_derivable_pb_not :
         have same := pinned_concludes_only_pa inferred
         exact a_ne_b (p_inj same).symm
 
-/-! ## a none guard adds order between firings with no resource edge
+/-! ## an absence guard adds order between firings with no resource edge
 
 `maker` publishes `p` as identity `4`; `checker` publishes `q` as `5` when no `p` is present.
 Neither takes or reads anything, so there is no causality, no asymmetric conflict and no

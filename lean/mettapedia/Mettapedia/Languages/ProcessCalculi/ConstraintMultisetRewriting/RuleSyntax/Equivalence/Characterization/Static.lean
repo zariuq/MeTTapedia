@@ -16,7 +16,7 @@ and the two states mention the same unknowns.
   knowledge are congruent (`unsolvable_cong`).
 * **Necessary, beside programs that leave a constant unused** (`static_of_congruent`): if
   `⟨P, s⟩` and `⟨P', t⟩` are congruent and `P`, `P'` are `Bounded` (their constants lie below a
-  bound), then `Static s t`. The programs may be different, and may ask none queries and count queries.
+  bound), then `Static s t`. The programs may be different, and may ask absence and count queries.
   - *Solutions* (`models_of_congruent`): a solution of the one knowledge that fails an equation of the
     other is grounded and told; then the one side is solvable and the other not, and the rule that does
     nothing moves at the one side only.

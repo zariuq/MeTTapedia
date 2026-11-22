@@ -9,7 +9,7 @@ data, with the fixed impossible cases recorded by a Boolean. It does not retain
 a callback that simply runs the original sequence.
 
 Occurrence exclusion is needed even when all final writes cancel: creating and
-then consuming an occurrence still requires its initial none query. Labels alone
+then consuming an occurrence still requires its initial absence. Labels alone
 cannot in general express that exclusion.
 -/
 
@@ -25,14 +25,14 @@ variable {O : Type u} [DecidableEq O] {R : Type v}
 checks independent of the initial store, including incompatible overlaps. -/
 structure CommitPrecondition (O : Type u) (R : Type v) where
   present : Finset O
-  missing : Finset O
+  absent : Finset O
   queries : List (PredicateQuery O R)
   possible : Bool
 
 namespace CommitPrecondition
 
 def Holds (p : CommitPrecondition O R) (label : O → R) (store : Finset O) : Prop :=
-  p.possible = true ∧ p.present ⊆ store ∧ Disjoint p.missing store ∧
+  p.possible = true ∧ p.present ⊆ store ∧ Disjoint p.absent store ∧
     ∀ q ∈ p.queries, q.Holds label store
 
 instance (p : CommitPrecondition O R) (label : O → R) (store : Finset O) :
@@ -42,7 +42,7 @@ instance (p : CommitPrecondition O R) (label : O → R) (store : Finset O) :
 /-- The actual finite enabling tests of one existing commit. -/
 def ofCommit (c : Commit O R) : CommitPrecondition O R where
   present := c.taken ∪ c.kept
-  missing := c.made
+  absent := c.made
   queries := c.queries
   possible := decide (Disjoint c.taken c.kept)
 
@@ -55,7 +55,7 @@ theorem ofCommit_holds_iff (c : Commit O R) (label : O → R) (store : Finset O)
 /-- Conjunction retains query positions, even for repeated identical queries. -/
 def and (p q : CommitPrecondition O R) : CommitPrecondition O R where
   present := p.present ∪ q.present
-  missing := p.missing ∪ q.missing
+  absent := p.absent ∪ q.absent
   queries := p.queries ++ q.queries
   possible := p.possible && q.possible
 
@@ -69,10 +69,10 @@ theorem and_holds_iff (p q : CommitPrecondition O R) (label : O → R) (store : 
 def before (p : CommitPrecondition O R) (label : O → R) (c : Commit O R) :
     CommitPrecondition O R where
   present := p.present \ c.made
-  missing := p.missing \ c.taken
+  absent := p.absent \ c.taken
   queries := p.queries.map fun q => q.pullback label c
   possible := p.possible && decide (Disjoint (p.present \ c.made) c.taken) &&
-    decide (Disjoint p.missing c.made) && decide (∀ q ∈ p.queries, q.Compatible label c)
+    decide (Disjoint p.absent c.made) && decide (∀ q ∈ p.queries, q.Compatible label c)
 
 /-- The finite construction is exactly the preimage of the postcondition. -/
 theorem before_holds_iff (p : CommitPrecondition O R) {label : O → R}

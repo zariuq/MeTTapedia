@@ -72,8 +72,8 @@ theorem realized_indices {s : NativeState S O Γ sort} (members : List (LiveFiri
       refine ⟨⟨data.1, ?_⟩, ?_⟩
       · intro other outside
         have different : other ≠ index := fun equal => outside (List.mem_cons.mpr (Or.inl equal))
-        have missing : other ∉ rest := fun inside => outside (List.mem_cons_of_mem _ inside)
-        simpa only [Function.update_of_ne different] using data.2 other missing
+        have absent : other ∉ rest := fun inside => outside (List.mem_cons_of_mem _ inside)
+        simpa only [Function.update_of_ne different] using data.2 other absent
       · intro term inside
         have atUse : joint (NativePacketStep.useObject s (useTag index)) =
             wanted (NativePacketStep.useObject s (useTag index)) := by

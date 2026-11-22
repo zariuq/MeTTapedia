@@ -189,10 +189,11 @@ def rhoBreadthLeft :
   exact ⟨rhoBreadthLeftPattern,
     ⟨⟨rhoBreadthLeft_typed, rfl, rfl, rhoBreadthLeft_typed.isWellScopedAt⟩, by
     intro declaration membership
-    simp [rhoBreadthLeftPattern, rhoBreadthLeftProcess,
+    exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+      simp [rhoBreadthLeftPattern, rhoBreadthLeftProcess,
       rhoBreadthOutputName, rhoCutOrderRedex, rhoCutOrderBaseQuote,
       rhoCutOrderBaseDrop, rhoCutOrderWrappedDrop, binderSafeAt,
-      binderSafeListAt]⟩⟩
+      binderSafeListAt])⟩⟩
 
 /-- Checked right endpoint. -/
 def rhoBreadthRight :
@@ -201,9 +202,10 @@ def rhoBreadthRight :
   exact ⟨rhoBreadthRightPattern,
     ⟨⟨rhoBreadthRight_typed, rfl, rfl, rhoBreadthRight_typed.isWellScopedAt⟩, by
     intro declaration membership
-    simp [rhoBreadthRightPattern, rhoBreadthRightProcess,
+    exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+      simp [rhoBreadthRightPattern, rhoBreadthRightProcess,
       rhoBreadthOutputName, rhoCutOrderWrappedDrop, binderSafeAt,
-      binderSafeListAt]⟩⟩
+      binderSafeListAt])⟩⟩
 
 /-- Two independently canonicalized sibling collapses beneath one neutral
 frame form a single authored reflective occurrence. -/
@@ -468,8 +470,9 @@ private theorem rhoBreadthRedexA_wellSorted :
       show "Name" ≠ "Proc" by decide] using rhoBreadthRedexA_typed
   refine ⟨⟨typed, rfl, rfl, typed.isWellScopedAt⟩, ?_⟩
   intro declaration membership
-  simp [rhoBreadthRedexA, rhoCutOrderBaseQuote, rhoCutOrderBaseDrop,
-    binderSafeAt, binderSafeListAt]
+  exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+    simp [rhoBreadthRedexA, rhoCutOrderBaseQuote, rhoCutOrderBaseDrop,
+    binderSafeAt, binderSafeListAt])
 
 private def rhoBreadthRedexATerm :
     ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
@@ -709,7 +712,7 @@ private theorem rhoBreadthWrappedProc_wellSorted (process : Pattern)
       (.base costWrappedSortName))
     (scope : ∀ declaration ∈
       rhoCIGSLT.costWholeReflectionProfile.presentations,
-      binderSafeAt declaration.quoteConstructor 0 process = true)
+      scopeSafeAt declaration.quoteScope declaration.quoteConstructor 0 process = true)
     (canonical : process.hasCanonicalBinderMetadata = true)
     (object : isObjectPattern process = true) :
     ReflectiveWellSorted.OpenPatternWellSorted
@@ -735,9 +738,10 @@ private def rhoBreadthLeftProcessTerm :
       (rhoBreadthWrappedDrop_typed _ rhoBreadthRedexA_typed)
       (by
         intro declaration membership
-        simp [rhoBreadthLeftProcess, rhoCutOrderWrappedDrop,
+        exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+          simp [rhoBreadthLeftProcess, rhoCutOrderWrappedDrop,
           rhoCutOrderBaseQuote, rhoCutOrderBaseDrop, binderSafeAt,
-          binderSafeListAt])
+          binderSafeListAt]))
       rfl rfl⟩
 
 private def rhoBreadthRightProcessTerm :
@@ -749,8 +753,9 @@ private def rhoBreadthRightProcessTerm :
       (rhoBreadthWrappedDrop_typed _ rhoBreadthA_typed)
       (by
         intro declaration membership
-        simp [rhoBreadthRightProcess, rhoCutOrderWrappedDrop, binderSafeAt,
-          binderSafeListAt])
+        exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_of_binderSafeAt _ (by
+          simp [rhoBreadthRightProcess, rhoCutOrderWrappedDrop, binderSafeAt,
+          binderSafeListAt]))
       rfl rfl⟩
 
 noncomputable def rhoBreadthLeftProcessNode :

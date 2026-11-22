@@ -58,7 +58,7 @@ theorem nil_bag : (fromProcess nil).1 = 0 := by
   change primes (.apply "PZero" []) = 0
   exact primes_zero
 
-/-! ## Stuck processes and missing barbs, read on canonical bags -/
+/-! ## Stuck processes and absent barbs, read on canonical bags -/
 
 /-- A process whose bag has no output is stuck. -/
 theorem stuck_of_no_output {P : RhoProcess}

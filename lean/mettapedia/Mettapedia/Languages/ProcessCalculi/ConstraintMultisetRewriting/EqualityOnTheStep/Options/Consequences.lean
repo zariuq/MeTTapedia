@@ -7,17 +7,17 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.EqualityO
 # The designs of extensional equality, and their consequences
 
 Each row below is a theorem that bundles the results it rests on. The common law is
-`Observability`: on the step, none queries and counting read the knowledge, so an extension of the
+`Observability`: on the step, absence and counting read the knowledge, so an extension of the
 knowledge's equality is invisible to queries exactly when it identifies nothing new
 (`Observability.conservative_iff`, `Observability.count_conservative_iff`).
 
 | design | what stays decidable | what transports automatically | what queries see | what must be rebuilt | set theory on the step |
 |---|---|---|---|---|---|
-| **A. evidence rows** with generated respect terms (built) | the knowledge, unchanged: transport keeps its solutions (`rowA`) | every family of the code class (membership, constants, `→`, `×`, `Π`, `Σ` over set-free domains), by one firing, coherently along reflexivity and composition; not the intensional identity family | exactly today's answers; none queries of members of `S` does not become none queries of members of `T` | nothing in the kernel | comprehension definitional; extensionality as evidence with transport; union one universe up; quotients through class names (row D) |
+| **A. evidence rows** with generated respect terms (built) | the knowledge, unchanged: transport keeps its solutions (`rowA`) | every family of the code class (membership, constants, `→`, `×`, `Π`, `Σ` over set-free domains), by one firing, coherently along reflexivity and composition; not the intensional identity family | exactly today's answers; absence of members of `S` does not become absence of members of `T` | nothing in the kernel | comprehension definitional; extensionality as evidence with transport; union one universe up; quotients through class names (row D) |
 | **B. observational**, propositions proof-irrelevant (model) | must be re-proved: the normalization hypotheses listed in `Observational` | in the model every family of predicate-sets (the sets are equal) | `S` and `T` stay apart judgmentally, so their answers stay separate; proofs of one proposition are identified, so counts of members collapse (`rowB`) | the normalization model, η-long forms, unifier completeness; the intensional identity type gains inhabitants | extensionality for predicate-sets; the proof-relevant `Σ X Ground` only through its truncation |
 | **C. univalent** (model) | must be built: interval, Kan operations, unification modulo faces | in the model, the decoding family and the path family, coherently; counting along equivalences (`rowC`) | paths are terms, so answers stay separate unless the interval enters the knowledge | the conversion with an interval; identity with unique proofs cannot be kept | sets equal up to equivalence, transport computes the swap |
 | **D. class names** with the publication discipline | the knowledge stays an equational theory of names | classes identified only with evidence, closed under equivalence (`rowD`) | identified classes are counted together; an unwitnessed identification would change answers and is refused | a discipline on the rule set covering tells and read matchings | quotients of sets by extensional equality |
-| **R. reflection** (forced negative) | lost in general | everything | `S` and `T` identified, so their none query and counts merge (`rowR`) | the step refuses it today | extensionality as an equation |
+| **R. reflection** (forced negative) | lost in general | everything | `S` and `T` identified, so their absence and counts merge (`rowR`) | the step refuses it today | extensionality as an equation |
 
 **Combinations** (`combinationAB`, `combinationAC`). Evidence rows for data and the
 proof-irrelevant universe for propositions combine coherently through truncation, and stop at
@@ -39,13 +39,13 @@ open ContextualDependentEta
 open Interface.DependentFull Interface.DependentFull.Controls
 open ProgrammingOnTheStep.SetExtensionality (small U0 sCode tCode setType swapCode swapType
   swapBackType setType_formed s_typed t_typed swap_typed swapBack_typed sRow tRow)
-open Observability (CountUnder NoneMatchUnder count_changes)
+open Observability (CountUnder AbsentUnder count_changes)
 
 /-- **Row A: evidence rows with generated respect terms.** The knowledge keeps its solutions under
 transport; every well-formed code has a typed respect term; the generated transport is the identity
 along reflexivity and composes along composite evidence, and so does the row the transport firing
 makes; the identity family is outside the class; a respect term that is only typed need not be
-coherent; the none query does not transport. -/
+coherent; absence does not transport. -/
 theorem rowA :
     (∀ (st : State Tower.rules Nat) (i j k : Nat) (σ : st.frame ⟶ Transport.Omega),
         (frames setting.levels).Equivalent (Transport.transportBy st i j k σ).information st.knowledge) ∧
@@ -76,7 +76,7 @@ theorem rowA :
         ¬ Equal Tower.rules Respect.twoPoints.raw
           (.app (.app (.app (.app Respect.badRespect sCode) sCode) Respect.reflE) (.var 0)) (.var 0)
           (.app (Respect.famOf Respect.groundCode) sCode)) ∧
-      ((step setting.levels Nat).Admits Controls.noneOfS ∧ ¬ (step setting.levels Nat).Admits Controls.noneOfT) :=
+      ((step setting.levels Nat).Admits Controls.absentS ∧ ¬ (step setting.levels Nat).Admits Controls.absentT) :=
   ⟨Observability.transportBy_equivalent, fun {_ _ _} wf => Respect.respOf_typed wf,
     fun {_ _ _} wf {_ _} hS hM => Respect.respOf_refl wf hS hM,
     fun {_ _ _} wf {_ _ _ _ _ _} hS hT hU he he' hM => Respect.respOf_comp wf hS hT hU he he' hM,
@@ -84,7 +84,7 @@ theorem rowA :
     fun {_ _} formed {_} wf {_ _ _ _ _ _} hS hT hU he he' hM => Respect.made_row_comp formed wf hS hT hU he he' hM,
     fun {_} wf => Respect.idFamily_outside wf,
     ⟨Respect.incoherent_respect.1, Respect.incoherent_respect.2.1⟩,
-    ⟨Controls.noneOfS_admitted, Controls.noneOfT_refused⟩⟩
+    ⟨Controls.absentS_admitted, Controls.absentT_refused⟩⟩
 
 /-- **Row A's universal statements have instances**: membership at `X`, the sets `S` and `T`, the
 swaps' evidence and the member `(x, g)` satisfy the hypotheses of reflexivity and composition
@@ -188,7 +188,7 @@ theorem sets_apart_rows : ¬ (frames setting.levels).E (sRow (empty Tower.rules)
 
 /-- **Row R: reflection, the forced negative.** The step refuses telling `S ≐ T`; and any extension
 of the knowledge's equality that identifies the two sets, as equality reflection would, changes the
-count of `S` among the one row `T` from `0`, and loses the none query of `S` there. -/
+count of `S` among the one row `T` from `0`, and loses the absence of `S` there. -/
 theorem rowR :
     ¬ (step setting.levels Nat).Admits ProgrammingOnTheStep.SetExtensionality.extensionalityFiring ∧
       ∀ (E' : TotalTerm (empty Tower.rules) → TotalTerm (empty Tower.rules) → Prop),
@@ -196,13 +196,13 @@ theorem rowR :
           (CountUnder (frames setting.levels).E (sRow (empty Tower.rules)) ({0} : Finset Nat)
               (fun _ => tRow (empty Tower.rules)) 0 ∧
             ¬ CountUnder E' (sRow (empty Tower.rules)) ({0} : Finset Nat) (fun _ => tRow (empty Tower.rules)) 0) ∧
-          (NoneMatchUnder (frames setting.levels).E (sRow (empty Tower.rules)) ({0} : Finset Nat)
+          (AbsentUnder (frames setting.levels).E (sRow (empty Tower.rules)) ({0} : Finset Nat)
               (fun _ => tRow (empty Tower.rules)) ∧
-            ¬ NoneMatchUnder E' (sRow (empty Tower.rules)) ({0} : Finset Nat) (fun _ => tRow (empty Tower.rules))) := by
+            ¬ AbsentUnder E' (sRow (empty Tower.rules)) ({0} : Finset Nat) (fun _ => tRow (empty Tower.rules))) := by
   refine ⟨ProgrammingOnTheStep.SetExtensionality.extensionality_refused, fun E' extension identified => ?_⟩
   have today := Observability.count_zero_of_apart (0 : Nat) sets_apart_rows
   exact ⟨⟨today, count_changes extension (Finset.mem_singleton_self 0) identified sets_apart_rows today⟩,
-    fun _ _ => sets_apart_rows, Observability.none_changes (Finset.mem_singleton_self 0) identified⟩
+    fun _ _ => sets_apart_rows, Observability.absence_changes (Finset.mem_singleton_self 0) identified⟩
 
 /-- **A with B: coherent through truncation, up to counting.** Evidence between proof-relevant sets
 gives equal truncations, so families of predicate-sets transport along it; a family that counts

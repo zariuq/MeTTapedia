@@ -13,7 +13,7 @@ depends on (`heFoot`):
   depends on the rows of its region (`eqRegion`): the rows that are not inert for the query, where a
   row is inert when its only possible contribution to the complete frontier is nothing (it is not an
   equation, or every fresh variant of it misses). Its firing reads the matched rows and observes that
-  the region holds nothing else: the matched rows plus a none guard;
+  the region holds nothing else: the matched rows plus an absence guard;
 * the moves that consult the cast lookup, the argument admission service, the context payload of
   the space, or a completed native return depend on the whole space: those services are parameters
   of the machine, so nothing smaller is honest for them in this generality;

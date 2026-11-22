@@ -1,10 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.RulesAsRows.Limits
 
 /-!
-# The none query and count queries of stored rules, through the interpreter
+# Absence and count queries of stored rules, through the interpreter
 
-**The none query** (`quiet`): "when no token is present, make done", the none query of `obj (tok x)` with the
-rule's own unknown `x`. None reads through every solution, and `x` is fresh, so it holds only when
+**Absence** (`quiet`): "when no token is present, make done", the absence of `obj (tok x)` with the
+rule's own unknown `x`. Absence reads through every solution, and `x` is fresh, so it holds only when
 no row could be a token of any value.
 * At a store with a key and no token, `quiet` fires (`quiet_admitted`), and so does the interpreter
   (`interpreter_quiet`).
@@ -31,7 +31,7 @@ open Expr
 open Examples (DataFragment dataFragment_closed five tok key done fragment_of_check code_present)
 open RunTime (ruleCode_injective)
 
-/-! ## The none query -/
+/-! ## Absence -/
 
 /-- **When no token is present, make done.** -/
 def quiet : Rule Tm := ⟨PUnit.unit, ⟨[], [], [], [.predicate .none (obj (tok (var 0)))], [obj done]⟩, []⟩

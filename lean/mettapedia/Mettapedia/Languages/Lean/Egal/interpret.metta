@@ -84,8 +84,7 @@
       ((app $c $args)
        (if (is-proof-node $c) "0"
        (if (is-cases-on $c) (render-cases $c $args $sub)
-       (if (== $args ()) (head-text $c)
-           (format-args "({} {})" ((head-text $c) (join " " (render-all $args $sub))))))))
+           (render-application $c $args $sub))))
       ($_ (if (is-sort-term $t) (sort-or-render $t) $t)))))
 
 ; X.casesOn params motive major minors, for a family without indices or
@@ -175,6 +174,7 @@
    (case $t
      (((var $x) (lookup-var-term $x $bind $t))
       ((num $k) $t)
+      ((level $L) $t)
       ((prop) $t)
       ((proof) $t)
       ((canon $P) (canon (fsubst $P $bind)))
@@ -1524,6 +1524,7 @@ Qed.
    (case $t
      (((var $y) (== $y $x))
       ((num $k) False)
+      ((level $L) False)
       ((prop) False)
       ((proof) False)
       ((canon $P) (mentions $P $x))
@@ -1831,24 +1832,35 @@ Qed.
 (= (layer-names $ls) (map-atom $ls $l (ly-name $l)))
 ; The fixed parameters' binders and introductions: a type parameter is any set.
 (= (fixed-binders-text $f $m $ps $famT)
-   (join "" (map-atom $ps $p
-     (if (== (nth (pos-kinds $f) $p) type) (format-args "forall {}, " ((pos-name $p)))
-         (format-args "forall {} :e {}, " ((pos-name $p) (pos-type $f $p $m $famT ())))))))
+   (str:concat (fn-levels-binders $f)
+     (join "" (map-atom $ps $p
+       (let $k (nth (typing-kinds $f) $p)
+         (if (== $k type) (format-args "forall {}, " ((pos-name $p)))
+         (if (== $k utype) (format-args "forall {} :e {}, " ((pos-name $p) (pos-univ-text $f $p)))
+             (format-args "forall {} :e {}, " ((pos-name $p) (pos-type $f $p $m $famT ()))))))))))
 (= (fixed-intros-text $f $m $ps $famT)
-   (join "" (map-atom $ps $p
-     (if (== (nth (pos-kinds $f) $p) type) (format-args "let {}. " ((pos-name $p)))
-         (format-args "let {}. assume H{}: {} :e {}. " ((pos-name $p) $p (pos-name $p) (pos-type $f $p $m $famT ())))))))
+   (str:concat (fn-levels-intros $f)
+     (join "" (map-atom $ps $p
+       (let $k (nth (typing-kinds $f) $p)
+         (if (== $k type) (format-args "let {}. " ((pos-name $p)))
+         (if (== $k utype) (univ-intro (pos-name $p) (pos-univ-text $f $p))
+             (format-args "let {}. assume H{}: {} :e {}. " ((pos-name $p) $p (pos-name $p) (pos-type $f $p $m $famT ()))))))))))
 (= (fixed-args-hyps $f $ps)
-   (join "" (map-atom $ps $p
-     (if (== (nth (pos-kinds $f) $p) type) (format-args " {}" ((pos-name $p))) (format-args " {} H{}" ((pos-name $p) $p))))))
+   (str:concat (fn-levels-call $f)
+     (join "" (map-atom $ps $p
+       (let $k (nth (typing-kinds $f) $p)
+         (if (== $k type) (format-args " {}" ((pos-name $p)))
+         (if (== $k utype) (format-args " {} H_{}" ((pos-name $p) (pos-name $p)))
+             (format-args " {} H{}" ((pos-name $p) $p)))))))))
 (= (fixed-ctx $f $m $ps)
    (if (== $ps ()) ()
        (let* (($p (car-atom $ps)) ($rest (fixed-ctx $f $m (cdr-atom $ps))))
-         (if (== (nth (pos-kinds $f) $p) type) $rest
+         (if (== (nth (typing-kinds $f) $p) type) $rest
+         (if (== (nth (typing-kinds $f) $p) utype) (append-lists (univ-ctx (pos-name $p) (pos-level $f $p)) $rest)
              (let* (($e (car-atom (eqns-of $f))) ($x (var-name (nth (lhs-args $e) $p)))
                     ($ren (param-renames (lhs-args $e) $m 0)))
                (cons-atom ((pos-name $p) (format-args "H{}" ($p)))
-                 (cons-atom ((ty (pos-name $p)) (fsubst (binder-type $x (eqn-binders $e)) $ren)) $rest)))))))
+                 (cons-atom ((ty (pos-name $p)) (fsubst (binder-type $x (eqn-binders $e)) $ren)) $rest))))))))
 
 (= (methods-lift-text $f $s)
    (let* (($m (shape-m $s)) ($fam (shape-fam $s)) ($eqs (shape-eqs $s))
@@ -2259,7 +2271,8 @@ Qed.
          (cons-atom (typ (car-atom $args) $sub $ctx) (typ-fields (cdr-atom $args) $sub $ctx)))))
 
 (= (typ-fn $g $args $sub $ctx)
-   (format-args "({}_In {})" ((egal $g) (join " " (typ-args-raw $args (pos-kinds $g) (arg-types $g $args) (arg-types-raw $g $args) $sub $ctx)))))
+   (format-args "({}_In {})" ((egal $g) (join " " (append-lists (fn-level-args $g $args $ctx)
+                                                    (typ-args-raw $args (typing-kinds $g) (arg-types $g $args) (arg-types-raw $g $args) $sub $ctx))))))
 ; The declared types instantiated as written: Megalodon expects these (a
 ; set-level lambda applied is not reduced by conversion).
 ; A family argument (a motive) is passed with a meta-level copy, and the
@@ -2302,6 +2315,7 @@ Qed.
        (let* (($a (car-atom $args)) ($T (if (== $Ts ()) None (car-atom $Ts))) ($TR (if (== $Rs ()) None (car-atom $Rs)))
               ($rest (typ-args-raw (cdr-atom $args) (cdr-atom $ks) (if (== $Ts ()) () (cdr-atom $Ts)) (if (== $Rs ()) () (cdr-atom $Rs)) $sub $ctx)))
          (if (== (car-atom $ks) type) (cons-atom (render $a $sub) $rest)
+         (if (== (car-atom $ks) utype) (cons-atom (render $a $sub) (cons-atom (univ-at $a $sub $ctx) $rest))
          (if (== (car-atom $ks) family) (cons-atom (render $a $sub) (cons-atom (meta-render $a $sub) $rest))
              (let $evidence
                (if (== $a (proof)) (proof-at (if (== $TR None) $T $TR) $sub $ctx)
@@ -2312,7 +2326,7 @@ Qed.
                          (typ-at-conv $a $TR $sub $ctx)
                          (if (and (not (== $TR $T)) (and (identity-sub $sub) (beta-needed $TR)))
                              (typ-at-beta $a $T $TR $sub $ctx) (typ-at $a $T $sub $ctx)))))))
-               (cons-atom (render $a $sub) (cons-atom $evidence $rest))))))))
+               (cons-atom (render $a $sub) (cons-atom $evidence $rest)))))))))
 
 ; Each argument at its declared type, the earlier arguments put in place: a
 ; proof argument is proved at it.
@@ -2321,9 +2335,10 @@ Qed.
        (let* (($a (car-atom $args)) ($T (if (== $Ts ()) None (car-atom $Ts)))
               ($rest (typ-args (cdr-atom $args) (cdr-atom $ks) (if (== $Ts ()) () (cdr-atom $Ts)) $sub $ctx)))
          (if (== (car-atom $ks) type) (cons-atom (render $a $sub) $rest)
+         (if (== (car-atom $ks) utype) (cons-atom (render $a $sub) (cons-atom (univ-at $a $sub $ctx) $rest))
          (if (== (car-atom $ks) family) (cons-atom (render $a $sub) (cons-atom (meta-render $a $sub) $rest))
              (cons-atom (render $a $sub)
-               (cons-atom (if (== $T None) (typ $a $sub $ctx) (typ-at $a $T $sub $ctx)) $rest)))))))
+               (cons-atom (if (== $T None) (typ $a $sub $ctx) (typ-at $a $T $sub $ctx)) $rest))))))))
 (= (arg-types $g $args)
    (let $T (fn-type $g) (if (== $T None) () (inst-binder-types (type-binders-of $T 0) $args ()))))
 (= (inst-binder-types $bs $args $bind)
@@ -2351,7 +2366,7 @@ Qed.
 (= (rec-in-theorem $f $s)
    (let* (($m (shape-m $s)) ($fam (shape-fam $s)) ($e1 (car-atom (shape-eqs $s)))
           ($n (arity-of $f)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0))
-          ($ks (pos-kinds $f)) ($accs (fn-accs $f $m))
+          ($ks (typing-kinds $f)) ($accs (fn-accs $f $m))
           ($cm1 (cmethod $f $e1 $m $fam)) ($R (cm-result $cm1))
           ($ren1 (param-renames (lhs-args $e1) $m 0))
           ($Ts (acc-types $e1 $accs $ren1))
@@ -2366,13 +2381,13 @@ Qed.
 exact {}_rec_type{} {} {} {}t Ht.
 Qed.
 "
-       ((egal $f) (fixed-binders $f $ks $m $accs 0 $famT $sub) $famT $prefix (render $PiR $sub)
-        (fixed-intros $f $ks $m $accs 0 $famT $sub) $famT
+       ((egal $f) (str:concat (fn-levels-binders $f) (fixed-binders $f $ks $m $accs 0 $famT $sub)) $famT $prefix (render $PiR $sub)
+        (str:concat (fn-levels-intros $f) (fixed-intros $f $ks $m $accs 0 $famT $sub)) $famT
         (egal $fam) $fps (rec-motive-text $f $m $accs $Ts $R $sub) $hms (major-index-text $f $m $sub)))))
 (= (in-theorem-acc $f $s)
    (let* (($m (shape-m $s)) ($fam (shape-fam $s)) ($e1 (car-atom (shape-eqs $s)))
           ($n (arity-of $f)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0))
-          ($ks (pos-kinds $f)) ($accs (fn-accs $f $m))
+          ($ks (typing-kinds $f)) ($accs (fn-accs $f $m))
           ($cm1 (cmethod $f $e1 $m $fam)) ($dep (dep-typed $f)) ($R (if $dep (pos-result $f) (cm-result $cm1)))
           ($ren1 (param-renames (lhs-args $e1) $m 0))
           ($Ts (acc-types $e1 $accs $ren1))
@@ -2390,17 +2405,17 @@ Theorem {}_In : {}{} {} :e {}.
 {}exact {}.
 Qed.
 "
-       ((egal $f) (fixed-binders $f $ks $m $accs 0 $famT $sub) $famT $prefix (render $PiR $sub)
-        (fixed-intros $f $ks $m $accs 0 $famT $sub) $famT
+       ((egal $f) (str:concat (fn-levels-binders $f) (fixed-binders $f $ks $m $accs 0 $famT $sub)) $famT $prefix (render $PiR $sub)
+        (str:concat (fn-levels-intros $f) (fixed-intros $f $ks $m $accs 0 $famT $sub)) $famT
         (egal $fam) $fps (rec-motive-text $f $m $accs $Ts $R $sub) $hms (major-index-text $f $m $sub)
-        (egal $f) (in-binders $f $ks $m 0 $famT $sub) (egal $f) (join " " $ps) (render $R $sub)
-        (in-intros $f $ks $m 0 $famT $sub)
+        (egal $f) (str:concat (fn-levels-binders $f) (in-binders $f $ks $m 0 $famT $sub)) (egal $f) (join " " $ps) (render $R $sub)
+        (str:concat (fn-levels-intros $f) (in-intros $f $ks $m 0 $famT $sub))
         (if $dep
             (ap-chain-dep (format-args "({} a{})" ($prefix $m))
-                  (format-args "({}_recIn {})" ((egal $f) (join " " (in-rec-args $ks $m $accs 0))))
+                  (format-args "({}_recIn {})" ((egal $f) (join " " (append-lists (fn-levels-call-list $f) (in-rec-args $ks $m $accs 0)))))
                   $accs $Ts $R $sub)
             (ap-chain (format-args "({} a{})" ($prefix $m))
-                  (format-args "({}_recIn {})" ((egal $f) (join " " (in-rec-args $ks $m $accs 0))))
+                  (format-args "({}_recIn {})" ((egal $f) (join " " (append-lists (fn-levels-call-list $f) (in-rec-args $ks $m $accs 0)))))
                   $accs $Ts $R $sub))))))
 
 ; Inside E_f_In: the fixed parameters with their hypotheses H_p, then the major.
@@ -2410,14 +2425,16 @@ Qed.
          (if (or (== $p $m) (member-term $p $accs)) $rest
              (if (== (car-atom $ks) proof) $rest
              (if (== (car-atom $ks) type) (cons-atom (format-args "a{}" ($p)) $rest)
-                 (cons-atom (format-args "a{}" ($p)) (cons-atom (format-args "H{}" ($p)) $rest))))))))
+             (if (== (car-atom $ks) utype) (cons-atom (format-args "a{}" ($p)) (cons-atom (format-args "H_a{}" ($p)) $rest))
+                 (cons-atom (format-args "a{}" ($p)) (cons-atom (format-args "H{}" ($p)) $rest)))))))))
 
 (= (fixed-binders $f $ks $m $accs $p $famT $sub)
    (if (== $ks ()) ""
        (format-args "{}{}"
          ((if (or (or (== $p $m) (member-term $p $accs)) (== (car-atom $ks) proof)) ""
               (if (== (car-atom $ks) type) (format-args "forall a{}, " ($p))
-                  (format-args "forall a{} :e {}, " ($p (pos-type $f $p $m $famT $sub)))))
+              (if (== (car-atom $ks) utype) (format-args "forall a{} :e {}, " ($p (pos-univ-text $f $p)))
+                  (format-args "forall a{} :e {}, " ($p (pos-type $f $p $m $famT $sub))))))
           (fixed-binders $f (cdr-atom $ks) $m $accs (+ $p 1) $famT $sub)))))
 
 (= (fixed-intros $f $ks $m $accs $p $famT $sub)
@@ -2425,7 +2442,8 @@ Qed.
        (format-args "{}{}"
          ((if (or (or (== $p $m) (member-term $p $accs)) (== (car-atom $ks) proof)) ""
               (if (== (car-atom $ks) type) (format-args "let a{}. " ($p))
-                  (format-args "let a{}. assume H{}: a{} :e {}. " ($p $p $p (pos-type $f $p $m $famT $sub)))))
+              (if (== (car-atom $ks) utype) (univ-intro (pos-name $p) (pos-univ-text $f $p))
+                  (format-args "let a{}. assume H{}: a{} :e {}. " ($p $p $p (pos-type $f $p $m $famT $sub))))))
           (fixed-intros $f (cdr-atom $ks) $m $accs (+ $p 1) $famT $sub)))))
 
 ; The same with a result depending on the accumulators: each application's
@@ -2447,7 +2465,7 @@ Qed.
 (= (in-theorem-plain $f $s)
    (let* (($m (shape-m $s)) ($fam (shape-fam $s)) ($e1 (car-atom (shape-eqs $s)))
           ($n (arity-of $f)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0))
-          ($ks (pos-kinds $f))
+          ($ks (typing-kinds $f))
           ($cm1 (cmethod $f $e1 $m $fam)) ($R (if (dep-typed $f) (pos-result $f) (cm-result $cm1)))
           ($famT (major-type-text $f $s $sub))
           ($ctx (append-lists (pos-hyps $ks $m 0) (pos-tys $f $ks $m 0)))
@@ -2502,15 +2520,16 @@ Qed.
 (= (pos-hyps $ks $m $p)
    (if (== $ks ()) ()
        (let $rest (pos-hyps (cdr-atom $ks) $m (+ $p 1))
-         (if (or (== (car-atom $ks) type) (== (car-atom $ks) proof)) $rest (cons-atom ((pos-name $p) (format-args "H{}" ($p))) $rest)))))
+         (if (or (or (== (car-atom $ks) type) (== (car-atom $ks) utype)) (== (car-atom $ks) proof)) $rest (cons-atom ((pos-name $p) (format-args "H{}" ($p))) $rest)))))
 
 (= (pos-tys $f $ks $m $p)
    (if (== $ks ()) ()
        (let $rest (pos-tys $f (cdr-atom $ks) $m (+ $p 1))
          (if (or (or (== $p $m) (== (car-atom $ks) type)) (== (car-atom $ks) proof)) $rest
+         (if (== (car-atom $ks) utype) (append-lists (univ-ctx (pos-name $p) (pos-level $f $p)) $rest)
              (let* (($e (car-atom (eqns-of $f))) ($x (var-name (nth (lhs-args $e) $p)))
                     ($ren (param-renames (lhs-args $e) $m 0)))
-               (cons-atom ((ty (pos-name $p)) (fsubst (binder-type $x (eqn-binders $e)) $ren)) $rest))))))
+               (cons-atom ((ty (pos-name $p)) (fsubst (binder-type $x (eqn-binders $e)) $ren)) $rest)))))))
 
 (= (pos-type $f $p $m $famT $sub)
    (if (== $p $m) $famT
@@ -2522,14 +2541,16 @@ Qed.
    (if (== $ks ()) ""
        (format-args "{}{}"
          ((if (== (car-atom $ks) type) (format-args "forall {}, " ((pos-name $p)))
-              (format-args "forall {} :e {}, " ((pos-name $p) (pos-type $f $p $m $famT $sub))))
+          (if (== (car-atom $ks) utype) (format-args "forall {} :e {}, " ((pos-name $p) (pos-univ-text $f $p)))
+              (format-args "forall {} :e {}, " ((pos-name $p) (pos-type $f $p $m $famT $sub)))))
           (in-binders $f (cdr-atom $ks) $m (+ $p 1) $famT $sub)))))
 
 (= (in-intros $f $ks $m $p $famT $sub)
    (if (== $ks ()) ""
        (format-args "{}{}"
          ((if (== (car-atom $ks) type) (format-args "let {}. " ((pos-name $p)))
-              (format-args "let {}. assume H{}: {} :e {}. " ((pos-name $p) $p (pos-name $p) (pos-type $f $p $m $famT $sub))))
+          (if (== (car-atom $ks) utype) (univ-intro (pos-name $p) (pos-univ-text $f $p))
+              (format-args "let {}. assume H{}: {} :e {}. " ((pos-name $p) $p (pos-name $p) (pos-type $f $p $m $famT $sub)))))
           (in-intros $f (cdr-atom $ks) $m (+ $p 1) $famT $sub)))))
 
 (= (hm-list $f $eqs $m $fam $sub $ctx) (hm-list-k $f $eqs $m $fam $sub $ctx 0))
@@ -2574,7 +2595,8 @@ Qed.
    (let $found (collapse (match &self (LeanLemmaTerm $c $t) $t)) (if (== $found ()) None (car-atom $found))))
 (= (lemma-supplied $c)
    (if (== (lemma-sig $c) None) False
-       (let $e (egal $c) (if (== (collapse (match &self (LemmaProof $e) True)) ()) False True))))
+       (if (proof-projection-supported $c) True
+           (let $e (egal $c) (if (== (collapse (match &self (LemmaProof $e) True)) ()) False True)))))
 (= (cite-known $c) (if (== $c Quot.sound) True (if (== $c propext) True (lemma-supplied $c))))
 (= (is-proof-node $c)
    (if (== (get-metatype $c) Expression)
@@ -2590,7 +2612,8 @@ Qed.
          (if (cite-known $c) (app (EgalLibrary cite $c) $as)
              (let $aux (lemma-term $c)
                (if (== $aux None) (app (EgalLibrary cite $c) $as)
-                   (beta-norm (instantiate-proof (encode-proof $aux) $as)))))))
+                   (beta-norm (instantiate-proof (level-instantiate (encode-proof $aux) (level-binding (lemma-levels $c) (take-levels $as)))
+                                                 (drop-levels $as))))))))
       ((by $p) (as-proof-node (encode-proof $p)))
       ((lam $x $T $b) (lam $x (encode-proof $T) (encode-proof $b)))
       ((app $c $args) (app $c (encode-proof-all $args)))
@@ -2678,12 +2701,21 @@ Qed.
 (= (lemmas-in-all $ts) (if (== $ts ()) () (union-names (lemmas-in (car-atom $ts)) (lemmas-in-all (cdr-atom $ts)))))
 
 ; A cited theorem's proposition at its arguments.
-(= (cite-binds $bs $args)
+; A citation's arguments: the level arguments (level L) first, then the binders' values.
+(= (drop-levels $args)
+   (if (== $args ()) ()
+       (case (car-atom $args) (((level $L) (drop-levels (cdr-atom $args))) ($_ $args)))))
+(= (take-levels $args)
+   (if (== $args ()) ()
+       (case (car-atom $args) (((level $L) (cons-atom $L (take-levels (cdr-atom $args)))) ($_ ())))))
+(= (cite-binds $bs $args) (cite-binds-plain $bs (drop-levels $args)))
+(= (cite-binds-plain $bs $args)
    (if (== $bs ()) ()
        (case (car-atom $bs)
-         (((hyp $x $P) (cite-binds (cdr-atom $bs) (cdr-atom $args)))
-          ($b (cons-atom ((binder-name $b) (car-atom $args)) (cite-binds (cdr-atom $bs) (cdr-atom $args))))))))
-(= (cite-type $c $args)
+         (((hyp $x $P) (cite-binds-plain (cdr-atom $bs) (cdr-atom $args)))
+          ($b (cons-atom ((binder-name $b) (car-atom $args)) (cite-binds-plain (cdr-atom $bs) (cdr-atom $args))))))))
+(= (cite-type $c $args) (cite-type-plain $c (drop-levels $args)))
+(= (cite-type-plain $c $args)
    (if (is-position $c) (prop)
    (if (== $c Quot.sound)
        (let $Q (app Quot (cons-atom (nth $args 0) (cons-atom (nth $args 1) ())))
@@ -2710,7 +2742,10 @@ Qed.
    (if (== $c Quot.sound) (quot-sound-evidence $args $sub $ctx)
    (if (== $c propext) (propext-evidence $args $sub $ctx)
        (case (lemma-sig $c)
-         (((LemmaStatement $bs $P) (format-args "({}_proof{})" ((egal $c) (join-sp (cite-args $bs $args () $sub $ctx)))))
+         (((LemmaStatement $bs $P)
+           (let $lb (level-binding (lemma-levels $c) (take-levels $args))
+             (format-args "({}_proof{}{})" ((egal $c) (join-sp (level-args-text (take-levels $args) $ctx))
+                                             (join-sp (cite-args-u $bs (drop-levels $args) () $lb $sub $ctx))))))
           ($_ "UNDECIDED_lemma_statement"))))))
 (= (cite-args $bs $args $bind $sub $ctx)
    (if (== $bs ()) ()
@@ -2725,8 +2760,8 @@ Qed.
             ($b (cons-atom (render $a $sub)
                   (cite-args $bs2 $as2 (cons-atom ((binder-name $b) $a) $bind) $sub $ctx))))))))
 ; Quot.sound A r a b h: classes of related elements are equal.
-(= (quot-sound-evidence $args $sub $ctx)
-   (let* (($A (nth $args 0)) ($r (nth $args 1)) ($a (nth $args 2)) ($b (nth $args 3)) ($h (nth $args 4))
+(= (quot-sound-evidence $levelled $sub $ctx)
+   (let* (($args (drop-levels $levelled)) ($A (nth $args 0)) ($r (nth $args 1)) ($a (nth $args 2)) ($b (nth $args 3)) ($h (nth $args 4))
           ($Q (app Quot (cons-atom $A (cons-atom $r ())))))
      (format-args "(Lean_Eq_proof_of {} {} {} (Lean_Quot_mk_sound {} {} {} {} {} {} {}))"
        ((render $Q $sub) (render (app Quot.mk ($A $r $a)) $sub) (render (app Quot.mk ($A $r $b)) $sub)
@@ -2826,21 +2861,121 @@ Qed.
    (case (lemma-sig $c)
      (((LemmaStatement $bs $P) (union-names (proof-library-deps $c) (union-names (fns-in $P $c) (binder-deps $bs $c))))
       ($_ ()))))
+; A cited lemma reads faithfully: its level parameters first (Lean's order), each a natural
+; number; then its binders, a type of Type l a member of LeanUniv l, of Sort l of LeanSort l.
+(= (lemma-levels $c)
+   (let $found (collapse (match &self (LeanLevels $c $ls) $ls))
+     (if (== $found ()) () (car-atom $found))))
+(= (lemma-levels-text $ls)
+   (join "" (map-atom $ls $l (format-args "forall {}, nat_p {} -> " ($l $l)))))
+(= (lemma-levels-intros $ls)
+   (join "" (map-atom $ls $l (format-args "let {}. assume H_{}: nat_p {}. " ($l $l $l)))))
 (= (lemma-binders $bs)
    (if (== $bs ()) ""
        (let $rest (lemma-binders (cdr-atom $bs))
          (case (car-atom $bs)
            (((hyp $x $P) (format-args "0 :e {} -> {}" ((render $P ()) $rest)))
             ((term $x $T) (format-args "forall {} :e {}, {}" ($x (render $T ()) $rest)))
-            ($b (format-args "forall {}, {}" ((binder-name $b) $rest))))))))
+            ((type $x $l) (format-args "forall {} :e LeanUniv {}, {}" ($x $l $rest)))
+            ((sort $x $l) (format-args "forall {} :e LeanSort {}, {}" ($x $l $rest))))))))
 (= (lemma-text $c)
    (case (lemma-sig $c)
      (((LemmaStatement $bs $P)
-       (format-args "(** Lean's theorem {}: its statement as a typing statement, proved in Egal. **)
-Theorem {}_proof : {}0 :e {}.
+       (let $pp (proof-projection $c)
+         (if (== $pp None)
+             (format-args "(** Lean's theorem {}: its statement as a typing statement, proved in Egal. **)
+Theorem {}_proof : {}{}0 :e {}.
 PROOF-FILE {}_proof
 Qed.
-" ((nm $c) (egal $c) (lemma-binders $bs) (render $P ()) (egal $c)))))))
+" ((nm $c) (egal $c) (lemma-levels-text (lemma-levels $c)) (lemma-binders $bs) (render $P ()) (egal $c)))
+             (proof-projection-text $c $bs $P $pp)))))))
+
+; ---- the projection of a structure's proof field ----
+; (LeanProofProjection c S ctor i np): Lean's theorem c is the projection of
+; field i of the structure S, a proof (Finset.nodup, field 1 of Finset).  Its
+; statement holds of every value of S: by S's elimination at the predicate
+; "the statement at s"; at a node, each data field's projection of the node is
+; that field (its _mk), and the field's guard gives the proposition.
+(= (proof-projection $c)
+   (let $found (collapse (match &self (LeanProofProjection $c $S $ctor $i $np) (pp $S $ctor $i $np)))
+     (if (== $found ()) None (car-atom $found))))
+; Generated where the statement is the structure's parameters, then a value of it: a field whose
+; proposition takes further arguments (a law: forall a b c, ...) is not yet generated.
+(= (proof-projection-supported $c)
+   (case (proof-projection $c)
+     ((None False)
+      ((pp $S $ctor $i $np)
+       (case (lemma-sig $c)
+         (((LemmaStatement $bs $P)
+           (if (== (length-of $bs) (+ $np 1))
+               (case (binder-at $bs $np) (((term $self $T) True) ($_ False)))
+               False))
+          ($_ False)))))))
+(= (data-projection-field $f $S)
+   (let $found (collapse (match &self (LeanProjection $f $S $ctor $k $np) $k))
+     (if (== $found ()) None (car-atom $found))))
+; The statement at a node whose fields are y0 ..: a data field's projection of
+; self is that field.
+(= (proj-fields $t $self $S)
+   (case $t
+     (((app $f $args)
+       (let $k (data-projection-field $f $S)
+         (if (or (== $k None) (== $args ())) (app $f (proj-fields-all $args $self $S))
+             (if (== (last-of $args) (var $self)) (var (format-args "y{}" ($k))) (app $f (proj-fields-all $args $self $S))))))
+      ((apv $g $args) (apv (proj-fields $g $self $S) (proj-fields-all $args $self $S)))
+      ((arrow $A $B) (arrow (proj-fields $A $self $S) (proj-fields $B $self $S)))
+      ((lam $x $T $b) (lam $x (proj-fields $T $self $S) (proj-fields $b $self $S)))
+      ((pi $x $A $B) (pi $x (proj-fields $A $self $S) (proj-fields $B $self $S)))
+      ($_ $t))))
+(= (proj-fields-all $ts $self $S)
+   (if (== $ts ()) () (cons-atom (proj-fields (car-atom $ts) $self $S) (proj-fields-all (cdr-atom $ts) $self $S))))
+; The data projections of S the statement applies to self, each once.
+(= (proj-uses $t $self $S)
+   (case $t
+     (((app $f $args)
+       (let $inner (proj-uses-all $args $self $S)
+         (if (or (== (data-projection-field $f $S) None) (== $args ())) $inner
+             (if (== (last-of $args) (var $self)) (union-names ($f) $inner) $inner))))
+      ((apv $g $args) (union-names (proj-uses $g $self $S) (proj-uses-all $args $self $S)))
+      ((arrow $A $B) (union-names (proj-uses $A $self $S) (proj-uses $B $self $S)))
+      ((lam $x $T $b) (union-names (proj-uses $T $self $S) (proj-uses $b $self $S)))
+      ((pi $x $A $B) (union-names (proj-uses $A $self $S) (proj-uses $B $self $S)))
+      ($_ ()))))
+(= (proj-uses-all $ts $self $S)
+   (if (== $ts ()) () (union-names (proj-uses (car-atom $ts) $self $S) (proj-uses-all (cdr-atom $ts) $self $S))))
+; The binders of the projection's statement: S's parameters, then self.
+(= (binder-names-upto $bs $n)
+   (if (== $n 0) () (cons-atom (binder-name (car-atom $bs)) (binder-names-upto (cdr-atom $bs) (- $n 1)))))
+(= (binder-at $bs $n) (if (== $n 0) (car-atom $bs) (binder-at (cdr-atom $bs) (- $n 1))))
+(= (proof-projection-text $c $bs $P $pp)
+   (case ($pp (binder-at $bs (case $pp (((pp $S0 $c0 $i0 $n0) $n0)))))
+     ((((pp $S $ctor $i $np) (term $self $T))
+       (let* (($ps (binder-names-upto $bs $np)) ($targs (map-vars $ps)) ($fs (struct-fields $S))
+              ($m (length-of $fs))
+              ($Fs (instantiate-field-types (field-fterms $fs (params-of $S) $targs) (map-vars (vars-of $m "y"))))
+              ($layers (proj-layers $Fs 0))
+              ($Ps (if (== $np 0) "" (format-args " {}" ((join " " $ps)))))
+              ($node (if (== $m 0) (format-args "{}_node{}" ((egal $ctor) $Ps))
+                         (format-args "({}_node{} {})" ((egal $ctor) $Ps (join " " (vars-of $m "y"))))))
+              ($rewrites (join "" (map-atom (proj-uses $P $self $S) $f
+                                    (format-args "rewrite {}_mk{}{}.
+" ((egal $f) $Ps (proj-field-args $m)))))))
+         (format-args "(** Lean's theorem {}: the projection of field {} of {}, a proof.  It holds of
+    every value of {}: at a node, the field's guard gives it. **)
+Theorem {}_proof : {}{}0 :e {}.
+{}{}claim L: {}0 :e {}.
+{ {}
+{}exact Lean_of_guard {} y{} Hy{}. }
+exact {}_ind{} (fun {} => 0 :e {}) L.
+Qed.
+" ((nm $c) $i (nm $S) (nm $S)
+   (egal $c) (lemma-levels-text (lemma-levels $c)) (lemma-binders $bs) (render $P ())
+   (lemma-levels-intros (lemma-levels $c)) (param-intros (binders-upto $bs $np)) (proj-binders $layers) (render $P (($self $node)))
+   (u-intros $layers ())
+   $rewrites (render (proj-fields $P $self $S) ()) $i $i
+   (egal $S) $Ps $self (render $P ())))))
+      ($other (format-args "(** Lean's theorem {}: the projection of a proof field, whose statement is not its structure's parameters and a value. **)
+" ((nm $c)))))))
 
 ; ---- families read after the functions their fields use ----
 ; A family whose fields are written with definitions (Finset: its values are
@@ -2948,25 +3083,28 @@ Qed.
    (if (>= $p (length-of $args)) ""
        (format-args "{}{}"
          ((if (== (nth $ks $p) type) (format-args "forall {}, " ((pos-name $p)))
-              (format-args "forall {} :e {}, " ((pos-name $p) (render (hyp-position-type $args $hs $bs $ren $p) $sub))))
+          (if (== (nth $ks $p) utype) (format-args "forall {} :e {}, " ((pos-name $p) (binder-univ-text (var-name (nth $args $p)) $bs)))
+              (format-args "forall {} :e {}, " ((pos-name $p) (render (hyp-position-type $args $hs $bs $ren $p) $sub)))))
           (hyp-in-binders $args $hs $ks $bs $ren (+ $p 1) $sub)))))
 (= (hyp-in-intros $args $hs $ks $bs $ren $p $sub)
    (if (>= $p (length-of $args)) ""
        (format-args "{}{}"
          ((if (== (nth $ks $p) type) (format-args "let {}. " ((pos-name $p)))
+          (if (== (nth $ks $p) utype) (univ-intro (pos-name $p) (binder-univ-text (var-name (nth $args $p)) $bs))
               (format-args "let {}. assume H{}: {} :e {}. "
-                ((pos-name $p) $p (pos-name $p) (render (hyp-position-type $args $hs $bs $ren $p) $sub))))
+                ((pos-name $p) $p (pos-name $p) (render (hyp-position-type $args $hs $bs $ren $p) $sub)))))
           (hyp-in-intros $args $hs $ks $bs $ren (+ $p 1) $sub)))))
 (= (hyp-ctx $args $hs $ks $bs $ren $p)
    (if (>= $p (length-of $args)) ()
        (let $rest (hyp-ctx $args $hs $ks $bs $ren (+ $p 1))
          (if (== (nth $ks $p) type) $rest
+         (if (== (nth $ks $p) utype) (append-lists (univ-ctx (pos-name $p) (binder-level (var-name (nth $args $p)) $bs)) $rest)
              (cons-atom ((pos-name $p) (format-args "H{}" ($p)))
-               (cons-atom ((ty (pos-name $p)) (hyp-position-type $args $hs $bs $ren $p)) $rest))))))
+               (cons-atom ((ty (pos-name $p)) (hyp-position-type $args $hs $bs $ren $p)) $rest)))))))
 (= (direct-in-theorem-hyps $f $e)
    (let* (($args (lhs-args $e)) ($hs (argument-hyps $args (argument-proofs $e)))
           ($n (length-of $args)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0))
-          ($ren (hyp-renames $args $hs 0)) ($ks (pos-kinds $f)) ($bs (eqn-binders $e))
+          ($ren (hyp-renames $args $hs 0)) ($ks (typing-kinds $f)) ($bs (eqn-binders $e))
           ($ctx (hyp-ctx $args $hs $ks $bs $ren 0))
           ($R (fsubst (eqn-type $e) $ren)) ($rhs (fsubst (proved-rhs $e) $ren))
           ($cas (rhs-conv-claims $rhs $sub $ctx)))
@@ -2974,9 +3112,9 @@ Qed.
 {}{}exact {}.
 Qed.
 "
-       ((egal $f) (hyp-in-binders $args $hs $ks $bs $ren 0 $sub)
+       ((egal $f) (str:concat (fn-levels-binders $f) (hyp-in-binders $args $hs $ks $bs $ren 0 $sub))
         (if (== $n 0) (egal $f) (format-args "{} {}" ((egal $f) (join " " $ps)))) (render $R $sub)
-        (hyp-in-intros $args $hs $ks $bs $ren 0 $sub) (ca-claims $cas)
+        (str:concat (fn-levels-intros $f) (hyp-in-intros $args $hs $ks $bs $ren 0 $sub)) (ca-claims $cas)
         (if (== $cas ()) (typ $rhs $sub $ctx) (rhs-typ-cl $rhs $sub $ctx $cas))))))
 
 ; ---- proofs in a computation ----
@@ -3094,7 +3232,8 @@ Qed.
    (case $c
      (((EqnProof $f $eqn $i)
        (format-args "({}_proof_{}{})"
-         ((egal $eqn) $i (join-sp (typ-args-raw $args (pos-kinds $f) (arg-types $f $args) (arg-types-raw $f $args) $sub $ctx))))))))
+         ((egal $eqn) $i (join-sp (append-lists (typ-args-raw $args (pos-kinds $f) (arg-types $f $args) (arg-types-raw $f $args) $sub $ctx)
+                                    (append-lists (fn-level-args $f $args $ctx) (fn-universe-args $f $args $sub $ctx))))))))))
 ; The collecting pass marks each numbered proof with its proposition as the
 ; typing writes it and its proof by Lean's term, and keeps the proposition:
 ; it is the lemma's statement, over the definition's positional arguments.
@@ -3604,12 +3743,14 @@ Qed.
    (if (has-hyp-params $f $e)
        (let* (($args (lhs-args $e)) ($hs (argument-hyps $args (argument-proofs $e)))
               ($n (length-of $args)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0))
-              ($ren (hyp-renames $args $hs 0)) ($ks (pos-kinds $f)) ($bs (eqn-binders $e)))
-         (DirectTyping (hyp-in-binders $args $hs $ks $bs $ren 0 $sub) (hyp-in-intros $args $hs $ks $bs $ren 0 $sub)
+              ($ren (hyp-renames $args $hs 0)) ($ks (typing-kinds $f)) ($bs (eqn-binders $e)))
+         (DirectTyping (str:concat (fn-levels-binders $f) (hyp-in-binders $args $hs $ks $bs $ren 0 $sub))
+           (str:concat (fn-levels-intros $f) (hyp-in-intros $args $hs $ks $bs $ren 0 $sub))
            $sub (hyp-ctx $args $hs $ks $bs $ren 0) $ren $ps))
        (let* (($n (arity-of $f)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0))
-              ($ren (param-renames (lhs-args $e) -1 0)) ($ks (pos-kinds $f)))
-         (DirectTyping (in-binders $f $ks -1 0 "" $sub) (in-intros $f $ks -1 0 "" $sub)
+              ($ren (param-renames (lhs-args $e) -1 0)) ($ks (typing-kinds $f)))
+         (DirectTyping (str:concat (fn-levels-binders $f) (in-binders $f $ks -1 0 "" $sub))
+           (str:concat (fn-levels-intros $f) (in-intros $f $ks -1 0 "" $sub))
            $sub (append-lists (pos-hyps $ks -1 0) (pos-tys $f $ks -1 0)) $ren $ps))))
 (= (direct-proof-parts $rhs $sub $ctx)
    (let $cas (rhs-conv-claims $rhs $sub $ctx)
@@ -3619,6 +3760,8 @@ Qed.
 (= (direct-in-theorem-positions $f $e)
    (case (direct-typing $f $e)
      (((DirectTyping $binders $intros $sub $ctx $ren $ps)
+       (case (direct-plain-binders $f $e)
+         (((PlainBinders $plainBinders $plainIntros)
        (let* (($eqn (eqn-name $e)) ($rhs (proved-rhs $e)) ($R (fsubst (eqn-type $e) $ren))
               ($collecting (fsubst (car-atom (positioned $rhs $f $eqn () 0 collect)) $ren))
               ($citing (fsubst (car-atom (positioned $rhs $f $eqn (position-arguments $e) 0 cite)) $ren)))
@@ -3630,10 +3773,11 @@ Qed.
 {}{}exact {}.
 Qed.
 "
-                   ((position-lemmas $eqn (str:concat $scanClaims $scanExact) $binders $intros)
+                   ((position-lemmas $eqn (str:concat $scanClaims $scanExact)
+                      (str:concat $plainBinders (fn-universe-premises $f)) (str:concat $plainIntros (fn-universe-intros $f)))
                     (egal $f) $binders
                     (if (== $ps ()) (egal $f) (format-args "{} {}" ((egal $f) (join " " $ps)))) (render $R $sub)
-                    $intros $claims $exact)))))))))))))
+                    $intros $claims $exact))))))))))))))))
 
 ; ---- a direct definition with a dependent result type ----
 
@@ -3866,8 +4010,8 @@ reflexivity. }
       (ih (let $x (var-name (nth $fvars (ly-index $l)))
             (let $accs (fn-accs $f $m)
               (if (== $accs ())
-                  (format-args "({}_In {})" ((egal $f) (join " " (in-call-args $pnames $ks $m 0 $x))))
-                  (format-args "({}_recIn {})" ((egal $f) (join " " (rec-call-args $pnames $ks $m $accs 0 $x))))))))
+                  (format-args "({}_In {})" ((egal $f) (join " " (append-lists (fn-levels-call-list $f) (in-call-args $pnames $ks $m 0 $x)))))
+                  (format-args "({}_recIn {})" ((egal $f) (join " " (append-lists (fn-levels-call-list $f) (rec-call-args $pnames $ks $m $accs 0 $x)))))))))
       ($_ (format-args "H_{}" ((var-name (nth $fvars (ly-index $l)))))))))
 
 ; The arguments of E_f_recIn: the fixed parameters, then the major value.
@@ -3900,7 +4044,7 @@ reflexivity. }
 (= (eqn-theorem $f $s $e $k)
    (let* (($m (shape-m $s)) ($fam (shape-fam $s)) ($args (lhs-args $e))
           ($pnames (arg-names $args 0 $m)) ($sub (pos-subst $pnames 0))
-          ($ks (pos-kinds $f))
+          ($ks (typing-kinds $f))
           ($prefix (rec-prefix $f $s $sub))
           ($pat (pattern-of (nth $args $m)))
           ($fvars (drop-n (app-args $pat) (param-count $fam)))
@@ -4038,6 +4182,13 @@ Qed.
 
 (= (function-text $f)
    (if (is-document-node $f) (document-node-text $f) (function-text-of $f)))
+; A function's texts, made once in a run: the inventory a batch reads is fixed, so the
+; readability check and the section that prints the function share one reading.
+(= (function-texts $f)
+   (let $kept (collapse (match &self (EgalFunctionTexts $f $stored) $stored))
+     (if (== $kept ())
+         (let $made (collapse (function-text $f)) (let $_ (add-atom &self (EgalFunctionTexts $f $made)) $made))
+         (car-atom $kept))))
 (= (function-text-of $f)
    (let $s (shape-of $f)
      (case $s
@@ -4155,7 +4306,7 @@ Qed.
          (if (or (== $p None) (== $rest None)) None (cons-atom $p $rest)))))
 (= (direct-in-theorem-value $f $e)
    (let* (($n (arity-of $f)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0))
-          ($ren (param-renames (lhs-args $e) -1 0)) ($ks (pos-kinds $f))
+          ($ren (param-renames (lhs-args $e) -1 0)) ($ks (typing-kinds $f))
           ($ctx (append-lists (pos-hyps $ks -1 0) (pos-tys $f $ks -1 0)))
           ($R (fsubst (eqn-type $e) $ren)) ($rhs (fsubst (proved-rhs $e) $ren))
           ($cas (rhs-conv-claims $rhs $sub $ctx)))
@@ -4163,9 +4314,9 @@ Qed.
 {}{}exact {}.
 Qed.
 "
-       ((egal $f) (in-binders $f $ks -1 0 "" $sub)
+       ((egal $f) (str:concat (fn-levels-binders $f) (in-binders $f $ks -1 0 "" $sub))
         (if (== $n 0) (egal $f) (format-args "{} {}" ((egal $f) (join " " $ps)))) (render $R $sub)
-        (in-intros $f $ks -1 0 "" $sub) (ca-claims $cas)
+        (str:concat (fn-levels-intros $f) (in-intros $f $ks -1 0 "" $sub)) (ca-claims $cas)
         (if (== $cas ()) (typ $rhs $sub $ctx) (rhs-typ-cl $rhs $sub $ctx $cas))))))
 ; A direct definition applying a function whose arguments need the reduction.
 (= (rhs-conv-claims $rhs $sub $ctx)
@@ -4176,7 +4327,8 @@ Qed.
 (= (rhs-typ-cl $rhs $sub $ctx $cas)
    (case $rhs
      (((app $g $args)
-       (format-args "({}_In {})" ((egal $g) (join " " (typ-args-cl $args (pos-kinds $g) (arg-types $g $args) $sub $ctx $cas 0))))))))
+       (format-args "({}_In {})" ((egal $g) (join " " (append-lists (fn-level-args $g $args $ctx)
+                                                        (typ-args-cl $args (typing-kinds $g) (arg-types $g $args) $sub $ctx $cas 0)))))))))
 
 ; ---- which functions are read, in order ----
 
@@ -4246,7 +4398,7 @@ Qed.
       ((direct $e) (generated-proof-candidate $f))
       ($_ False))))
 (= (generated-proof-candidate $f)
-   (let $candidates (collapse (function-text $f))
+   (let $candidates (function-texts $f)
      (if (== (length-of $candidates) 1)
          (proof-candidate-text $f (car-atom $candidates)) False)))
 (= (proof-candidate-text $f $text)
@@ -4332,8 +4484,10 @@ Qed.
    (if (== $fs ()) ()
        (let* (($f (car-atom $fs))
               ((ProofPreamble $prefix $next) (proof-libraries-before (proof-library-uses $f) $seen)))
-         (cons-atom (str:concat $prefix (function-text $f))
-           (ordered-function-sections (cdr-atom $fs) $next)))))
+         (let $texts (function-texts $f)
+           (cons-atom (str:concat $prefix (if (== (length-of $texts) 1) (car-atom $texts)
+                                              (format-args "UNDECIDED_function_text: {} has {} readings" ((nm $f) (length-of $texts)))))
+             (ordered-function-sections (cdr-atom $fs) $next))))))
 (= (source-equation-proof $owner $entry)
    (let ($equation $lemma) $entry
      (let $declared (declared-equation $owner $equation)
@@ -4502,6 +4656,7 @@ Qed.
 (= (is-value $t)
    (case $t
      (((num $k) True)
+      ((level $L) True)
       ((var $x) False)
       ((prop) True)
       ((proof) True)
@@ -5533,9 +5688,10 @@ reflexivity.
               ($rest (typ-args-cl (cdr-atom $args) (cdr-atom $ks) (if (== $Ts ()) () (cdr-atom $Ts)) $sub $ctx $cas (+ $i 1)))
               ($nm (ca-name-at $cas $i)))
          (if (== (car-atom $ks) type) (cons-atom (render $a $sub) $rest)
+         (if (== (car-atom $ks) utype) (cons-atom (render $a $sub) (cons-atom (univ-at $a $sub $ctx) $rest))
          (if (== (car-atom $ks) family) (cons-atom (render $a $sub) (cons-atom (meta-render $a $sub) $rest))
              (cons-atom (render $a $sub)
-               (cons-atom (if (not (== $nm None)) $nm (if (== $T None) (typ $a $sub $ctx) (typ-at $a $T $sub $ctx))) $rest)))))))
+               (cons-atom (if (not (== $nm None)) $nm (if (== $T None) (typ $a $sub $ctx) (typ-at $a $T $sub $ctx))) $rest))))))))
 
 ; ---- typing at a declared type, modulo its redexes ----
 ; Beta conversion under binders carries its own domain hypotheses. Only
@@ -6154,4 +6310,298 @@ Qed.
    (case $L
      (((lvl $l) $l)
       ((lsucc $X) (format-args "(ordsucc {})" ((level-text $X))))
+      ((lmax $A $B) (format-args "(LeanLevelMax {} {})" ((level-text $A) (level-text $B))))
+      ((limax $A $B) (format-args "(LeanLevelIMax {} {})" ((level-text $A) (level-text $B))))
       ($_ $L))))
+
+; ---- universe levels at a citation ----
+; The level arguments of a citation, each followed by the evidence that it is a natural number.
+(= (level-binding $ls $Ls)
+   (if (or (== $ls ()) (== $Ls ())) () (cons-atom ((car-atom $ls) (car-atom $Ls)) (level-binding (cdr-atom $ls) (cdr-atom $Ls)))))
+(= (level-args-text $Ls $ctx)
+   (if (== $Ls ()) ()
+       (cons-atom (level-text (car-atom $Ls)) (cons-atom (level-nat (car-atom $Ls)) (level-args-text (cdr-atom $Ls) $ctx)))))
+; nat_p of a level: 0, a successor, a maximum, or a level parameter (its hypothesis H_l).
+(= (level-nat $L)
+   (case $L
+     (((lvl $l) (if (== (get-metatype $l) Grounded) (numeral-nat $l) (format-args "H_{}" ($l))))
+      ((lsucc $X) (format-args "(nat_ordsucc {} {})" ((level-text $X) (level-nat $X))))
+      ((lmax $A $B) (format-args "(LeanLevelMax_nat {} {} {} {})" ((level-text $A) (level-nat $A) (level-text $B) (level-nat $B))))
+      ((limax $A $B) (format-args "(LeanLevelIMax_nat {} {} {} {})" ((level-text $A) (level-nat $A) (level-text $B) (level-nat $B))))
+      ($_ "UNDECIDED_level"))))
+(= (numeral-nat $k) (if (== $k 0) "nat_0" (format-args "(nat_ordsucc {} {})" ((- $k 1) (numeral-nat (- $k 1))))))
+; The binders of a cited lemma at their arguments: a type argument with its membership in the
+; universe of the binder's level (as the citation instantiates it).
+(= (cite-args-u $bs $args $bind $lb $sub $ctx)
+   (if (== $bs ()) ()
+       (let* (($a (car-atom $args)) ($bs2 (cdr-atom $bs)) ($as2 (cdr-atom $args)))
+         (case (car-atom $bs)
+           (((hyp $x $P)
+             (cons-atom (follow-at $a (fsubst $P $bind) $sub $ctx) (cite-args-u $bs2 $as2 $bind $lb $sub $ctx)))
+            ((term $x $T)
+             (cons-atom (render $a $sub)
+               (cons-atom (typ-at $a (fsubst $T $bind) $sub $ctx)
+                 (cite-args-u $bs2 $as2 (cons-atom ($x $a) $bind) $lb $sub $ctx))))
+            ((type $x $l)
+             (cons-atom (render $a $sub)
+               (cons-atom (univ-in $a (level-of-binder $l $lb) $sub)
+                 (cite-args-u $bs2 $as2 (cons-atom ($x $a) $bind) $lb $sub $ctx))))
+            ((sort $x $l)
+             (cons-atom (render $a $sub)
+               (cons-atom (sort-in $a (level-of-binder $l $lb) $sub)
+                 (cite-args-u $bs2 $as2 (cons-atom ($x $a) $bind) $lb $sub $ctx)))))))))
+(= (level-of-binder $l $lb)
+   (if (== (get-metatype $l) Grounded) (lvl $l)
+       (let $v (lookup-var-term $l $lb None) (if (== $v None) (lvl $l) $v))))
+; T :e LeanUniv L: a type parameter by its hypothesis, a family at its arguments' universe, a
+; proposition by LeanProp_In_LeanUniv.
+(= (univ-in $T $L $sub)
+   (case $T
+     (((var $v) (format-args "H_{}" ((render $T $sub))))
+      ((prop) (format-args "(LeanProp_In_LeanUniv {} {})" ((level-text $L) (level-nat $L))))
+      ((app $fam $args)
+       (if (== $args ()) (format-args "({}_type_In {} {})" ((egal $fam) (level-text $L) (level-nat $L)))
+       (if (== $fam Quot)
+           (format-args "(Lean_Quot_type_In {} {} {} {} {})"
+             ((render (car-atom $args) $sub) (render (nth $args 1) $sub) (level-text $L) (level-nat $L) (univ-in (car-atom $args) $L $sub)))
+           (format-args "({}_type_In {} {} {} {})" ((egal $fam) (join " " (render-all $args $sub)) (level-text $L) (level-nat $L)
+                                                   (join " " (univ-in-all $args $L $sub)))))))
+      ($_ "UNDECIDED_universe"))))
+(= (univ-in-all $ts $L $sub) (if (== $ts ()) () (cons-atom (univ-in (car-atom $ts) $L $sub) (univ-in-all (cdr-atom $ts) $L $sub))))
+(= (sort-in $T $L $sub)
+   (case $T (((var $v) (format-args "H_{}" ((render $T $sub)))) ($_ "UNDECIDED_sort"))))
+(= (binders-upto $bs $n) (if (== $n 0) () (cons-atom (car-atom $bs) (binders-upto (cdr-atom $bs) (- $n 1)))))
+(= (param-intros $bs)
+   (join "" (map-atom $bs $b
+     (case $b
+       (((type $x $l) (format-args "let {}. assume H_{}: {} :e LeanUniv {}. " ($x $x $x $l)))
+        ((sort $x $l) (format-args "let {}. assume H_{}: {} :e LeanSort {}. " ($x $x $x $l)))
+        ((term $x $T) (format-args "let {}. assume H_{}: {} :e {}. " ($x $x $x (render $T ()))))
+        ($_ (format-args "let {}. " ((binder-name $b)))))))))
+
+; ---- a function's typing at its universes ----
+; A function's typing lemma is stated as generally as its proof holds: a type parameter is any
+; set, unless the proof cites a Lean theorem with a type binder (read at its universes) or
+; applies a function whose typing is read at its universes.  Then the function's level
+; parameters come first, each a natural number, and a parameter of Type l is a member of
+; LeanUniv l (of Sort l, of LeanSort l).
+(= (faithful-typed $f)
+   (let $cached (collapse (match &self (EgalFaithfulTyped $f $stored) $stored))
+     (if (== $cached ())
+         (let $made (faithful-typed-at $f ()) (let $_ (add-atom &self (EgalFaithfulTyped $f $made)) $made))
+         (car-atom $cached))))
+(= (faithful-typed-at $f $stack)
+   (if (member-term $f $stack) False
+   (if (not (is-function $f)) False
+   (if (is-intrinsic $f) False
+   (if (has-typing-proof $f) False
+   (if (not (member-term type (pos-kinds $f))) False
+       (eqns-need-universes (lean-eqns-of $f) (cons-atom $f $stack))))))))
+(= (eqns-need-universes $eqs $stack)
+   (if (== $eqs ()) False
+       (if (needs-universes-in (proved-rhs (car-atom $eqs)) $stack) True
+           (eqns-need-universes (cdr-atom $eqs) $stack))))
+(= (needs-universes-in $t $stack)
+   (case $t
+     (((level $L) True)
+      ((app $c $as)
+       (if (needs-universes-head $c $stack) True (needs-universes-all $as $stack)))
+      ((apv $g $as) (needs-universes-all (cons-atom $g $as) $stack))
+      ((lam $y $T $b) (needs-universes-all ($T $b) $stack))
+      ((arrow $A $B) (needs-universes-all ($A $B) $stack))
+      ((pi $y $A $B) (needs-universes-all ($A $B) $stack))
+      ((canon $P) (needs-universes-in $P $stack))
+      ($_ False))))
+(= (needs-universes-all $ts $stack)
+   (if (== $ts ()) False
+       (if (needs-universes-in (car-atom $ts) $stack) True (needs-universes-all (cdr-atom $ts) $stack))))
+(= (needs-universes-head $c $stack)
+   (case $c
+     (((EgalLibrary cite $thm) (lemma-has-type-binder $thm))
+      ($_ (if (== (get-metatype $c) Symbol) (faithful-typed-cached $c $stack) False)))))
+(= (faithful-typed-cached $c $stack)
+   (let $cached (collapse (match &self (EgalFaithfulTyped $c $stored) $stored))
+     (if (not (== $cached ())) (car-atom $cached)
+         (if (member-term $c $stack) False
+             (let $made (faithful-typed-at $c $stack) (let $_ (add-atom &self (EgalFaithfulTyped $c $made)) $made))))))
+(= (lemma-has-type-binder $c)
+   (case (lemma-sig $c)
+     (((LemmaStatement $bs $P) (binders-have-type $bs))
+      ($_ False))))
+(= (binders-have-type $bs)
+   (if (== $bs ()) False
+       (case (car-atom $bs)
+         (((type $x $l) True) ((sort $x $l) True) ($_ (binders-have-type (cdr-atom $bs)))))))
+
+; The typing kinds: a faithful function's type parameter (utype) is a member of its universe.
+(= (typing-kinds $f)
+   (if (faithful-typed $f) (utype-kinds (pos-kinds $f)) (pos-kinds $f)))
+(= (utype-kinds $ks)
+   (if (== $ks ()) () (cons-atom (if (== (car-atom $ks) type) utype (car-atom $ks)) (utype-kinds (cdr-atom $ks)))))
+(= (fn-levels-binders $f)
+   (if (faithful-typed $f) (lemma-levels-text (lemma-levels $f)) ""))
+(= (fn-levels-intros $f)
+   (if (faithful-typed $f) (lemma-levels-intros (lemma-levels $f)) ""))
+; A binder's level as a level term: a parameter or numeral (lvl l), a compound level as it is.
+(= (as-level $l) (if (== (get-metatype $l) Expression) $l (lvl $l)))
+(= (binder-level $x $bs)
+   (if (== $bs ()) None
+       (case (car-atom $bs)
+         (((type $y $l) (if (== $y $x) (as-level $l) (binder-level $x (cdr-atom $bs))))
+          ((sort $y $l) (if (== $y $x) (sorted (as-level $l)) (binder-level $x (cdr-atom $bs))))
+          ($_ (binder-level $x (cdr-atom $bs)))))))
+(= (binder-univ-text $x $bs)
+   (case (binder-level $x $bs)
+     (((sorted $L) (format-args "LeanSort {}" ((level-text $L))))
+      (None "UNDECIDED_binder_universe")
+      ($L (format-args "LeanUniv {}" ((level-text $L)))))))
+(= (pos-level $f $p)
+   (let $e (car-atom (eqns-of $f)) (binder-level (var-name (nth (lhs-args $e) $p)) (eqn-binders $e))))
+(= (pos-univ-text $f $p)
+   (let $e (car-atom (eqns-of $f)) (binder-univ-text (var-name (nth (lhs-args $e) $p)) (eqn-binders $e))))
+(= (univ-intro $x $U) (format-args "let {}. assume H_{}: {} :e {}. " ($x $x $x $U)))
+; The context of a faithful type parameter: its hypothesis H_x and its level.
+(= (univ-ctx $x $L)
+   (case $L
+     (((sorted $S) (($x (format-args "H_{}" ($x))) ((sortlv $x) $S)))
+      ($_ (($x (format-args "H_{}" ($x))) ((univ $x) $L))))))
+; The level of a type argument: a parameter's level from the context, a family's application at
+; its arguments' common level, a closed type at 0.
+(= (type-arg-level $a $ctx)
+   (case $a
+     (((var $x) (lookup-var-term (univ $x) $ctx None))
+      ((prop) (lvl 0))
+      ((app $c $args) (if (is-proof-node $c) None (common-level (type-arg-levels $args $ctx) (lvl 0))))
+      ($_ None))))
+(= (type-arg-levels $args $ctx)
+   (if (== $args ()) ()
+       (let $rest (type-arg-levels (cdr-atom $args) $ctx)
+         (case (car-atom $args)
+           (((var $x) (cons-atom (lookup-var-term (univ $x) $ctx None) $rest))
+            ((app $c $as) (cons-atom (type-arg-level (car-atom $args) $ctx) $rest))
+            ($_ $rest))))))
+(= (common-level $Ls $acc)
+   (if (== $Ls ()) $acc
+       (let $L (car-atom $Ls)
+         (if (== $L None) None
+         (if (== $acc (lvl 0)) (common-level (cdr-atom $Ls) $L)
+         (if (or (== $L $acc) (== $L (lvl 0))) (common-level (cdr-atom $Ls) $acc) None))))))
+(= (univ-at $a $sub $ctx)
+   (let $L (type-arg-level $a $ctx)
+     (if (== $L None) "UNDECIDED_universe_level" (univ-in $a $L $sub))))
+; At a use of a faithful function, its level arguments: each level parameter is read off the
+; universe of a type argument whose binder it names.
+(= (fn-level-args $g $args $ctx)
+   (if (not (faithful-typed $g)) ()
+       (let* (($e (car-atom (eqns-of $g))) ($bind (level-bind-args (lhs-args $e) (eqn-binders $e) $args $ctx)))
+         (level-args-text (map-atom (lemma-levels $g) $l (lookup-var-term $l $bind (lvl UNDECIDED_level_inference))) $ctx))))
+(= (level-bind-args $params $bs $args $ctx)
+   (if (or (== $params ()) (== $args ())) ()
+       (let $rest (level-bind-args (cdr-atom $params) $bs (cdr-atom $args) $ctx)
+         (if (not (is-fvar (car-atom $params))) $rest
+             (case (binder-level (var-name (car-atom $params)) $bs)
+               (((lvl $l) (let $L (type-arg-level (car-atom $args) $ctx) (if (== $L None) $rest (cons-atom ($l $L) $rest))))
+                ($_ $rest)))))))
+
+; Inside a faithful function's own lemmas: its level parameters, passed on with their hypotheses.
+(= (fn-levels-call-list $f)
+   (if (faithful-typed $f)
+       (let $ls (lemma-levels $f) (append-all-pairs $ls))
+       ()))
+(= (append-all-pairs $ls)
+   (if (== $ls ()) () (cons-atom (car-atom $ls) (cons-atom (format-args "H_{}" ((car-atom $ls))) (append-all-pairs (cdr-atom $ls))))))
+(= (fn-levels-call $f)
+   (join "" (map-atom (fn-levels-call-list $f) $x (format-args " {}" ($x)))))
+
+; An auxiliary theorem's term at a citation: its level parameters are the citation's level
+; arguments, all at once.  A level stands in a level argument (level L); a binder's sort is
+; left as it is (it is the type of a binder the citation's arguments fill).  Each term form is
+; rebuilt by its own template, as fsubst rebuilds it.
+(= (level-instantiate $t $lb)
+   (if (== $lb ()) $t (level-subst $t $lb)))
+(= (level-subst $t $lb)
+   (case $t
+     (((level $L) (level (level-subst-level $L $lb)))
+      ((canon $P) (canon (level-subst $P $lb)))
+      ((apv $f $args) (apv (level-subst $f $lb) (level-subst-all $args $lb)))
+      ((lam $x $T $b) (lam $x (level-subst $T $lb) (level-subst $b $lb)))
+      ((arrow $A $B) (arrow (level-subst $A $lb) (level-subst $B $lb)))
+      ((pi $x $A $B) (pi $x (level-subst $A $lb) (level-subst $B $lb)))
+      ((app $c $args) (app $c (level-subst-all $args $lb)))
+      ($_ $t))))
+(= (level-subst-all $ts $lb)
+   (if (== $ts ()) () (cons-atom (level-subst (car-atom $ts) $lb) (level-subst-all (cdr-atom $ts) $lb))))
+(= (level-subst-level $L $lb)
+   (case $L
+     (((lvl $x) (lookup-var-term $x $lb $L))
+      ((lsucc $X) (lsucc (level-subst-level $X $lb)))
+      ((lmax $A $B) (lmax (level-subst-level $A $lb) (level-subst-level $B $lb)))
+      ((limax $A $B) (limax (level-subst-level $A $lb) (level-subst-level $B $lb)))
+      ($_ $L))))
+
+; A position lemma (eqn_proof_K) quantifies the definition's arguments first, in their order: the
+; kernel binds a lemma that accompanies an equation by the call's arguments.  A faithful function's
+; levels and its type parameters' universes come after them, as premises:
+;   forall a0, forall a1 :e T, forall l, nat_p l -> a0 :e LeanUniv l -> 0 :e P
+; (the same proposition: the level is read off the type of the argument).
+(= (direct-plain-binders $f $e)
+   (if (has-hyp-params $f $e)
+       (let* (($args (lhs-args $e)) ($hs (argument-hyps $args (argument-proofs $e)))
+              ($n (length-of $args)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0))
+              ($ren (hyp-renames $args $hs 0)) ($ks (pos-kinds $f)) ($bs (eqn-binders $e)))
+         (PlainBinders (hyp-in-binders $args $hs $ks $bs $ren 0 $sub) (hyp-in-intros $args $hs $ks $bs $ren 0 $sub)))
+       (let* (($n (arity-of $f)) ($ps (vars-of $n "a")) ($sub (pos-subst $ps 0)) ($ks (pos-kinds $f)))
+         (PlainBinders (in-binders $f $ks -1 0 "" $sub) (in-intros $f $ks -1 0 "" $sub)))))
+(= (utype-positions $ks $at)
+   (if (== $ks ()) ()
+       (let $later (utype-positions (cdr-atom $ks) (+ $at 1))
+         (if (== (car-atom $ks) utype) (cons-atom $at $later) $later))))
+(= (fn-universe-premises $f)
+   (if (faithful-typed $f)
+       (str:concat (lemma-levels-text (lemma-levels $f))
+         (join "" (map-atom (utype-positions (typing-kinds $f) 0) $q
+                    (format-args "{} :e {} -> " ((pos-name $q) (pos-univ-text $f $q))))))
+       ""))
+(= (fn-universe-intros $f)
+   (if (faithful-typed $f)
+       (str:concat (lemma-levels-intros (lemma-levels $f))
+         (join "" (map-atom (utype-positions (typing-kinds $f) 0) $q
+                    (format-args "assume H_{}: {} :e {}. " ((pos-name $q) (pos-name $q) (pos-univ-text $f $q))))))
+       ""))
+(= (fn-universe-args $f $args $sub $ctx)
+   (if (faithful-typed $f) (universe-args-at (typing-kinds $f) $args $sub $ctx) ()))
+(= (universe-args-at $ks $args $sub $ctx)
+   (if (or (== $ks ()) (== $args ())) ()
+       (let $later (universe-args-at (cdr-atom $ks) (cdr-atom $args) $sub $ctx)
+         (if (== (car-atom $ks) utype) (cons-atom (univ-at (car-atom $args) $sub $ctx) $later) $later))))
+
+; ---- a recursor inside a term ----
+; Lean's X.rec takes the parameters, the motive, the minor premises, the indices and the major
+; premise.  The family's recursor as read takes the parameters, the minor premises and the
+; major: the motive and the indices are of the typing, not of the value.  render and wire
+; both read it here.  A subsingleton's eliminator and a proposition's recursor have readings
+; of their own; a recursor short of its major premise is refused by name, never misread.
+(= (rec-reading $rr_c $rr_args)
+   (let $rr_F (rec-family $rr_c)
+     (if (== $rr_F None) None
+     (if (subsingleton-family $rr_F) None
+     (if (is-prop $rr_F) None
+         (rec-arguments $rr_F $rr_args))))))
+(= (rec-arguments $ra_F $ra_args)
+   (let* (($ra_np (param-count $ra_F))
+          ($ra_nc (length-of (constructors-of $ra_F)))
+          ($ra_major (+ (+ (+ $ra_np 1) $ra_nc) (index-count $ra_F))))
+     (if (< (length-of $ra_args) (+ $ra_major 1)) RecPartial
+         (let* (($ra_params (take-n $ra_args $ra_np))
+                ($ra_minors (take-n (drop-n $ra_args (+ $ra_np 1)) $ra_nc))
+                ($ra_from (cons-atom (nth $ra_args $ra_major) (drop-n $ra_args (+ $ra_major 1))))
+                ($ra_read (append-lists $ra_params (append-lists $ra_minors $ra_from))))
+           (RecReading $ra_read)))))
+(= (render-application $rp_c $rp_args $rp_sub)
+   (case (rec-reading $rp_c $rp_args)
+     ((None (render-applied $rp_c $rp_args $rp_sub))
+      ((RecReading $rp_read) (render-applied $rp_c $rp_read $rp_sub))
+      ($rp_other "UNDECIDED_recursor_without_major_premise"))))
+(= (render-applied $rd_c $rd_args $rd_sub)
+   (if (== $rd_args ()) (head-text $rd_c)
+       (format-args "({} {})" ((head-text $rd_c) (join " " (render-all $rd_args $rd_sub))))))

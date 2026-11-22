@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Contracts.NoneFrontier
+import Mettapedia.GSLT.Contracts.AbsenceFrontier
 import Mettapedia.GSLT.Contracts.CoordinationFreedom
 
 /-!
@@ -23,7 +23,7 @@ states are the least such set.
 ## In a self-modifying space
 
 For the MM2 over-approximation of firing in
-`Mettapedia.GSLT.Contracts.NoneFrontier`:
+`Mettapedia.GSLT.Contracts.AbsenceFrontier`:
 
 * **Frontier absence is exactly intuitionistic negation**
   (`knot_iff_absent_frontier`): a pattern is absent in every reachable state if
@@ -62,7 +62,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.Contracts.FrontierNegation
 
-open Mettapedia.GSLT.Contracts.NoneFrontier
+open Mettapedia.GSLT.Contracts.AbsenceFrontier
 
 universe u v w x
 
@@ -166,27 +166,27 @@ theorem reaches_match_of_mayProduce {pattern : Pattern} {exec : Atom}
 
 /-- **Frontier absence is exactly intuitionistic negation** of a match. -/
 theorem knot_iff_absent_frontier (pattern : Pattern) (space : Set Atom) :
-    knot (Step model) (fun later => ¬ NoneMatch model pattern later) space ↔
-      NoneMatch model pattern space ∧ Frontier model pattern space := by
+    knot (Step model) (fun later => ¬ Absent model pattern later) space ↔
+      Absent model pattern space ∧ Frontier model pattern space := by
   constructor
   · intro holds
-    have now : NoneMatch model pattern space := not_not.1 (knot_now (Step model) holds)
+    have now : Absent model pattern space := not_not.1 (knot_now (Step model) holds)
     refine ⟨now, fun exec member isExec produces => ?_⟩
     obtain ⟨later, reaches, atom, inLater, matched⟩ :=
       reaches_match_of_mayProduce model produces space member isExec
     exact holds later reaches fun absent => absent atom inLater matched
   · rintro ⟨absent, frontier⟩ later reaches present
-    exact present (noneMatch_of_reaches model absent frontier reaches).1
+    exact present (absent_of_reaches model absent frontier reaches).1
 
 /-- **A frontier is sound for every refinement** of the over-approximation. -/
 theorem refinement_sound {actual : Set Atom → Set Atom → Prop}
     (refines : ∀ space next, actual space next → Step model space next) {pattern : Pattern}
-    {space : Set Atom} (absent : NoneMatch model pattern space) (frontier : Frontier model pattern space) :
-    knot actual (fun later => ¬ NoneMatch model pattern later) space := by
+    {space : Set Atom} (absent : Absent model pattern space) (frontier : Frontier model pattern space) :
+    knot actual (fun later => ¬ Absent model pattern later) space := by
   intro later reaches present
   have overReaches : Reaches (Step model) space later :=
     Relation.ReflTransGen.mono (fun a b h => refines a b h) _ _ reaches
-  exact present (noneMatch_of_reaches model absent frontier overReaches).1
+  exact present (absent_of_reaches model absent frontier overReaches).1
 
 /-! ## Certified by ownership -/
 
@@ -225,7 +225,7 @@ theorem ownership_certifies_frontier {head : Atom → Head} {owner : Head → Op
     (disciplined : Disciplined model head owner) (owned : OwnedPattern model head owner module pattern)
     (frozen : FrozenAt model head owner module pattern atoms) {space : Set Atom}
     (within : ∀ atom ∈ space, owner (head atom) = some module → atom ∈ atoms) :
-    NoneMatch model pattern space ∧ Frontier model pattern space := by
+    Absent model pattern space ∧ Frontier model pattern space := by
   rw [frontier_iff_closedRegion]
   refine ⟨ownedRegion head owner module atoms, ?_, ?_, ?_⟩
   · intro atom member
@@ -252,7 +252,7 @@ theorem foreign_extension_certified {head : Atom → Head} {owner : Head → Opt
     (frozen : FrozenAt model head owner module pattern atoms) {space extra : Set Atom}
     (within : ∀ atom ∈ space, owner (head atom) = some module → atom ∈ atoms)
     (foreign : ∀ atom ∈ extra, owner (head atom) ≠ some module) :
-    NoneMatch model pattern (space ∪ extra) ∧ Frontier model pattern (space ∪ extra) := by
+    Absent model pattern (space ∪ extra) ∧ Frontier model pattern (space ∪ extra) := by
   refine ownership_certifies_frontier model disciplined owned frozen ?_
   rintro atom (member | member) mine
   · exact within atom member mine
@@ -266,7 +266,7 @@ end Space
 
 namespace Controls
 
-open Mettapedia.GSLT.Contracts.NoneFrontier.Controls
+open Mettapedia.GSLT.Contracts.AbsenceFrontier.Controls
 
 /-- No firing at all: a semantics in which the producer's guard never holds. -/
 def neverFires : Set Item → Set Item → Prop := fun _ _ => False
@@ -274,12 +274,12 @@ def neverFires : Set Item → Set Item → Prop := fun _ _ => False
 /-- **A frontier is not complete for refinements**: if the producer never fires,
 the target is absent in every actually reachable state, but no frontier exists. -/
 theorem refinement_incomplete :
-    knot neverFires (fun later => ¬ NoneMatch items () later) {.producer, .fact} ∧
+    knot neverFires (fun later => ¬ Absent items () later) {.producer, .fact} ∧
       ¬ Frontier items () {.producer, .fact} := by
-  refine ⟨?_, snapshot_none_flips.2.2⟩
+  refine ⟨?_, snapshot_absence_flips.2.2⟩
   intro later reaches present
   cases reaches with
-  | refl => exact present snapshot_none_flips.1
+  | refl => exact present snapshot_absence_flips.1
   | tail _ last => exact last
 
 /-- The heads of the control: one module owns the producer and the target. -/
@@ -291,10 +291,10 @@ def itemOwner : Item → Option Unit
 atoms the inert space is certified, and the module's new producer makes the
 absence false in a reachable state. -/
 theorem owner_revokes :
-    (NoneMatch items () {.fact} ∧ Frontier items () {.fact}) ∧
-      ∃ later, Reaches (Step items) {.producer, .fact} later ∧ ¬ NoneMatch items () later := by
+    (Absent items () {.fact} ∧ Frontier items () {.fact}) ∧
+      ∃ later, Reaches (Step items) {.producer, .fact} later ∧ ¬ Absent items () later := by
   refine ⟨?_, ⟨{.fact, .target}, Relation.ReflTransGen.single fire,
-    snapshot_none_flips.2.1⟩⟩
+    snapshot_absence_flips.2.1⟩⟩
   refine ownership_certifies_frontier items (head := id) (owner := itemOwner) (module := ())
     (atoms := ∅) ?_ ?_ ⟨?_, ?_⟩ ?_
   · intro exec isExec out output

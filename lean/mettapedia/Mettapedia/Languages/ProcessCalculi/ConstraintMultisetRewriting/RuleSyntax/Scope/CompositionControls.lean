@@ -9,7 +9,7 @@ Over first-order atoms at the one frame (`Examples`), one positive program: `tel
 request holds one row labelled by the caller's unknown `x`; alone it fires and succeeds
 (`tellAt_admitted`, `request_succeeds`).
 
-* **A shared unknown** (a positive program; no none query is involved): the neighbour has no rows and
+* **A shared unknown** (a positive program; no absence is involved): the neighbour has no rows and
   knowledge `x = 6`. The two are composable (`shared_composable`: disjoint rows, jointly solvable
   knowledge), they share the unknown `x` (`shared_not_independent`), and beside the neighbour no
   firing of the program is admitted (`nothing_admitted_beside`), so success is unreachable
@@ -18,9 +18,9 @@ request holds one row labelled by the caller's unknown `x`; alone it fires and s
 * **A private neighbour** (`privateNeighbour`, knowledge `x₅ = 6`): it shares no unknown with the
   footprint (`private_independent`), the firing is admitted beside it (`private_admitted`) and success
   persists (`private_succeeds`), by `admits_beside` and `success_persists`.
-* **The none query is not saved by privacy**: over ground rows every family is independent of every other
-  (`ground_independent`), yet a firing that makes `8` where `7` is not present is admitted alone and refused
-  beside a ground row `7` (`none_refused_beside_ground`); so is a collect query that claims to see no row
+* **Absence is not saved by privacy**: over ground rows every family is independent of every other
+  (`ground_independent`), yet a firing that makes `8` where `7` is absent is admitted alone and refused
+  beside a ground row `7` (`absence_refused_beside_ground`); so is a collect query that claims to see no row
   `7` (`collect_refused_beside_ground`). Positivity (equation checks, no collect query) is needed.
 * **The neighbour must be solvable**: a neighbour with private but contradictory knowledge is
   independent of the footprint and still refuses (`unsolvable_refuses`).
@@ -314,9 +314,9 @@ theorem private_succeeds :
       subst member
       rfl⟩
 
-/-! ## The none query over ground rows: independent, and still refused -/
+/-! ## Absence over ground rows: independent, and still refused -/
 
-/-- Make `8` where `7` is not present. -/
+/-- Make `8` where `7` is absent. -/
 def spawnRule : Rule Tm := ⟨PUnit.unit, ⟨[], [], [], [.predicate .none (c 7)], [c 8]⟩, []⟩
 
 /-- The program of that one rule. -/
@@ -361,9 +361,9 @@ theorem groundRow_fixed : Fixed action groundRow.Mentions := by
 theorem ground_independent : Independent action groundRow.Mentions (Footprint action emptyState spawnAt) :=
   (independent_of_fixed groundRow_fixed).symm
 
-/-- **The none query is not saved by privacy**: the spawn firing is admitted alone, the neighbour shares no
+/-- **Absence is not saved by privacy**: the spawn firing is admitted alone, the neighbour shares no
 unknown with it, and it is refused beside the neighbour's ground row `7`. -/
-theorem none_refused_beside_ground :
+theorem absence_refused_beside_ground :
     Independent action groundRow.Mentions (Footprint action emptyState spawnAt) ∧
       (step X ℕ E spawnProgram).Admits (s := emptyState) spawnAt ∧
       ¬ (step X ℕ E spawnProgram).Admits (s := beside groundRow emptyState) spawnAt := by
@@ -552,7 +552,7 @@ theorem reopened_admitted :
 #print axioms private_admitted
 #print axioms private_succeeds
 #print axioms ground_independent
-#print axioms none_refused_beside_ground
+#print axioms absence_refused_beside_ground
 #print axioms collect_refused_beside_ground
 #print axioms unsolvable_refuses
 #print axioms opened_joint

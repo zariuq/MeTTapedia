@@ -158,11 +158,11 @@ theorem rhoStepAt_one_comm {elements : List Pattern} {inputIndex outputIndex : N
 
 /-- The contractum of a COMM at given positions, on derived syntax: the
 paper-facing COMM result of the body with its quotations of drops resolved. -/
-theorem apply_commBindingsAt_resolved {scope : QuoteScope}
+theorem apply_commBindingsAt_resolved
     {free : FreeSortContext} {bound : List String} {body payload : Pattern}
-    (bodyTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free
+    (bodyTyped : ProcWellSorted rhoReflectivePresentation free
       (rhoReflectivePresentation.nameSort :: bound) body)
-    (payloadTyped : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound payload)
+    (payloadTyped : ProcWellSorted rhoReflectivePresentation free bound payload)
     (elements : List Pattern) (inputIndex outputIndex : Nat) (inputChannel : Pattern) :
     applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (commBindingsAt elements inputIndex outputIndex inputChannel body payload) =
@@ -377,11 +377,11 @@ theorem locate_pair {patterns : List Pattern} {first second : Pattern} {residue 
 /-! ## Closedness bookkeeping -/
 
 /-- Inversion of the derived process judgment at a parallel bag. -/
-theorem rho_parallel_wellSorted_inv {scope : QuoteScope} {free : FreeSortContext} {bound : List String}
+theorem rho_parallel_wellSorted_inv {free : FreeSortContext} {bound : List String}
     {elements : List Pattern} {termRest : Option String}
-    (typed : ProcWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound
+    (typed : ProcWellSorted rhoReflectivePresentation free bound
       (.collection .hashBag elements termRest)) :
-    termRest = none ∧ ProcListWellSorted (rhoReflectivePresentation.withQuoteScope scope) free bound elements := by
+    termRest = none ∧ ProcListWellSorted rhoReflectivePresentation free bound elements := by
   generalize patternEq : (Pattern.collection .hashBag elements termRest) = pattern at typed
   cases typed <;> simp [rhoReflectivePresentation] at patternEq
   rename_i elementsTyped

@@ -50,7 +50,11 @@ claim Hrespect: forall xs ys :e Lean_List A, 0 :e (LeanPermRel A) xs ys ->
   exact Lean_propext_value
     (Lean_List_Pairwise_Prop A (LeanListNe A) xs) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) xs)
     (Lean_List_Pairwise_Prop A (LeanListNe A) ys) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) ys)
-    (Lean_List_Perm_nodup_iff_proof A xs Hxs ys Hys (LeanPermRel_perm A xs Hxs ys Hys H)). }
+    (LeanIff_intro
+      (Lean_List_Pairwise_Prop A (LeanListNe A) xs) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) xs)
+      (Lean_List_Pairwise_Prop A (LeanListNe A) ys) (Lean_List_Pairwise_Prop_prop A (LeanListNe A) ys)
+      (LeanListPerm_nodup A xs ys (LeanListPerm_from_prop A xs ys (LeanPermRel_perm A xs Hxs ys Hys H)))
+      (LeanListPerm_nodup A ys xs (LeanListPerm_symm A xs ys (LeanListPerm_from_prop A xs ys (LeanPermRel_perm A xs Hxs ys Hys H))))). }
 prove Lean_Quot_lift (Lean_List A) (LeanPermRel A) LeanProp
     (fun xs :e (Lean_List A) => Lean_List_Pairwise_Prop A (LeanListNe A) xs) 0
     (Lean_Quot_mk (Lean_List A) (LeanPermRel A) l) = Lean_List_Pairwise_Prop A (LeanListNe A) l.
@@ -230,8 +234,11 @@ claim Hrespect: forall xs ys :e Lean_List A, 0 :e (LeanPermRel A) xs ys ->
   claim Hperm: 0 :e Lean_List_Perm_Prop A
     (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) xs)
     (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) ys).
-  { exact Lean_List_Perm_filter_proof A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) Hq xs Hxs ys Hys
-      (LeanPermRel_perm A xs Hxs ys Hys H). }
+  { exact LeanListPerm_to_prop A
+      (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) xs)
+      (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) ys)
+      (LeanListPerm_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) Hq xs ys
+        (LeanListPerm_from_prop A xs ys (LeanPermRel_perm A xs Hxs ys Hys H))). }
   prove Lean_Quot_mk (Lean_List A) (LeanPermRel A)
       (Lean_List_filter A (fun b :e A => (Lean_Decidable_decide (p b) (inst b))) xs) =
     Lean_Quot_mk (Lean_List A) (LeanPermRel A)

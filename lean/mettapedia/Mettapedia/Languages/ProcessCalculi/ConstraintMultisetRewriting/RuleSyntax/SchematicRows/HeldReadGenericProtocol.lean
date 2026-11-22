@@ -98,7 +98,7 @@ theorem execution_of_direct
     rfl, rfl, ?_, ?_, ?_⟩
   · exact consumer_present X ordinary rows closures selected extension ruleOpening datumOpening temporary output temporaryFresh
   · exact consumer_rules X ordinary rows closures selected extension ruleOpening datumOpening temporary output
-  · exact private_not_present X ordinary rows closures selected extension ruleOpening datumOpening temporary output different
+  · exact private_absent X ordinary rows closures selected extension ruleOpening datumOpening temporary output different
 
 #print axioms execution_length
 #print axioms execution_models_iff

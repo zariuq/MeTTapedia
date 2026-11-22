@@ -91,9 +91,9 @@ def clashCons {Θ : Context S.R} (equation : Equation (TotalTerm Θ)) (rest : Eq
     Option (PLift (∀ {Δ : Context S.R} (σ : Δ ⟶ Θ), ¬ (frames S.levels).Solves σ equation)) ×
         Option (PLift (¬ (frames S.levels).Solvable rest)) →
       Option (PLift (¬ (frames S.levels).Solvable (equation :: rest)))
-  | (some missing, _) => some ⟨fun ⟨_, σ, solved⟩ => missing.down σ (solved equation List.mem_cons_self)⟩
-  | (none, some missing) => some ⟨fun ⟨Δ, σ, solved⟩ =>
-      missing.down ⟨Δ, σ, fun other member => solved other (List.mem_cons_of_mem _ member)⟩⟩
+  | (some absent, _) => some ⟨fun ⟨_, σ, solved⟩ => absent.down σ (solved equation List.mem_cons_self)⟩
+  | (none, some absent) => some ⟨fun ⟨Δ, σ, solved⟩ =>
+      absent.down ⟨Δ, σ, fun other member => solved other (List.mem_cons_of_mem _ member)⟩⟩
   | (none, none) => none
 
 end Semantics

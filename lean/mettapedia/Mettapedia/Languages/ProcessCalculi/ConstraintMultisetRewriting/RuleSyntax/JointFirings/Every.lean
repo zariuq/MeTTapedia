@@ -19,7 +19,7 @@ at its own information (so each member is itself an admitted firing: `Bag.admits
 rules, with distinct keys, complete. A set of rules rather than one rule, so that a rule presented by
 its instances is covered.
 
-Completeness is an ask of admission, read at the entry state. It is the none query of a further match: a
+Completeness is an ask of admission, read at the entry state. It is the absence of a further match: a
 statement over every selection of present rows and every opening, where a check or a collect query of the
 rule reads the rows through one solution of the firing's information.
 

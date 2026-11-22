@@ -34,15 +34,15 @@ theorem current_tell_can_discharge_its_own_guard :
     subst check
     exact solved (X, a) (by simp [Selection.problem, Selection.equations, emptySelection, currentTell, emptyWorld])
 
-def takingNone : RuleInstance (Term sig) := ⟨[pTok], [], [], [.predicate .none pTok], []⟩
+def takingAbsent : RuleInstance (Term sig) := ⟨[pTok], [], [], [.predicate .none pTok], []⟩
 def taking : Selection Nat := ⟨[4], [], []⟩
 def pWorld : Configuration (Term sig) Nat := ⟨[], {4}⟩
 
-theorem consuming_the_guarded_row_does_not_satisfy_its_none_guard :
-    ¬ taking.Valid A lab takingNone pWorld := by
+theorem consuming_the_guarded_row_does_not_make_it_absent :
+    ¬ taking.Valid A lab takingAbsent pWorld := by
   intro valid
   obtain ⟨assignment, solved⟩ := valid.consistent
-  have holds := valid.checks (.predicate .none pTok) (by simp [takingNone]) assignment solved
+  have holds := valid.checks (.predicate .none pTok) (by simp [takingAbsent]) assignment solved
   exact holds 4 (by simp [pWorld]) rfl
 
 def contradictory : RuleInstance (Term sig) := ⟨[], [], [(X, a), (X, b)], [.predicate .none pTok], []⟩

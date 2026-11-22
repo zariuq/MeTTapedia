@@ -100,7 +100,7 @@ theorem bindExpansion_empty {leaf : Leaf MSig} (paired : LeafRep (D := D) N P1 W
     (bindExpansion paired).names = ∅ := by
   ext name
   rw [(bindExpansion paired).complete]
-  exact ⟨fun enabled => (bind_no_native_name paired name enabled).elim, fun missing => by simp at missing⟩
+  exact ⟨fun enabled => (bind_no_native_name paired name enabled).elim, fun absent => by simp at absent⟩
 
 theorem bind_retires {leaf : Leaf MSig} (paired : LeafRep (D := D) N P1 W0 beforeBind leaf)
     (old : Multiset (Leaf MSig)) : Step (D := D) N P1 ⟨{leaf}, old⟩ ⟨0, leaf ::ₘ old⟩ := by

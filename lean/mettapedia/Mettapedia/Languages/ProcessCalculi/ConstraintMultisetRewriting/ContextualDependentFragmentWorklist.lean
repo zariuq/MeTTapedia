@@ -467,7 +467,7 @@ theorem rigidRound_const {Θ : Context S.R} (problem : EquationStore (TotalTerm 
   erw [localsSame fuel (le_of_max_le_left enough), localsSame _ (le_max_left _ _)]
   cases ContextualDependentRigidDecomposition.localsRule rigid complete facts roots heads algebra declared choices
       reducer root t₁ problem with
-  | some missing => rfl
+  | some absent => rfl
   | none =>
       dsimp only
       rw [fullSame fuel (le_of_max_le_right enough), fullSame _ (le_max_right _ _)]

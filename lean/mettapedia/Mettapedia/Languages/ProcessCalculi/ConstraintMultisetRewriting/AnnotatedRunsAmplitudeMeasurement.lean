@@ -658,10 +658,10 @@ theorem waveform_refused {seen : Finset O} {r : O} {C : Configuration T O}
 /-- **A path arriving in the region after its query saw it refuses the waveform guard.** -/
 theorem waveform_refuses_arrival {seen : Finset O} {r : O} {C : Configuration T O}
     (valid : (waveformFiring A label wave verdict bits row region seen r).Valid A label C) {o : O}
-    (missing : o ∉ C.present) (inRegion : region (label o) = true) :
+    (absent : o ∉ C.present) (inRegion : region (label o) = true) :
     ¬ (waveformFiring A label wave verdict bits row region seen r).Valid A label
       ⟨C.equations, C.present ∪ {o}⟩ :=
-  query_refuses_arrival A label valid (query := ⟨region, seen⟩) (List.mem_singleton_self _) missing
+  query_refuses_arrival A label valid (query := ⟨region, seen⟩) (List.mem_singleton_self _) absent
     inRegion
 
 omit [DecidableEq O] in

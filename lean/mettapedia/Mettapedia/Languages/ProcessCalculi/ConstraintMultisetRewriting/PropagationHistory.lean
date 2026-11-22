@@ -195,13 +195,13 @@ theorem consuming_runs_exact {core : Event Installation O → State → State �
   ⟨Run.forget,fun run => consuming_run_lifts run consumes history⟩
 
 theorem fresh_occurrence_changes_key {first second : Event Installation O} {occurrence : O}
-    (missing : occurrence ∉ first.selection.read) (present : occurrence ∈ second.selection.read) :
+    (absent : occurrence ∉ first.selection.read) (present : occurrence ∈ second.selection.read) :
     first.key ≠ second.key := by
   intro same
   have reads := congrArg Key.read same
   change first.selection.read = second.selection.read at reads
-  rw [reads] at missing
-  exact missing present
+  rw [reads] at absent
+  exact absent present
 
 def chrEvent (installation : Nat) (selection : Mettapedia.Languages.CHR.Selection) : Event Nat Nat :=
   ⟨installation,true,⟨selection.removed.map Mettapedia.Languages.CHR.Occurrence.id,

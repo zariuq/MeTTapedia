@@ -70,9 +70,9 @@ theorem replacementField_written (old : Layout) (writes : List Field) (made : Li
   simp only [replacementField, dif_pos member]
 
 theorem replacementField_unwritten (old : Layout) (writes : List Field) (made : List Occurrence)
-    (length : made.length = 1 + writes.length) (field : Field) (missing : field ∉ writes) :
+    (length : made.length = 1 + writes.length) (field : Field) (absent : field ∉ writes) :
     replacementField old writes made length field = old.field field := by
-  simp only [replacementField, dif_neg missing]
+  simp only [replacementField, dif_neg absent]
 
 theorem replacementField_injective (old : Layout) (writes : List Field) (made : List Occurrence)
     (length : made.length = 1 + writes.length) (distinct : made.Nodup)
@@ -165,7 +165,7 @@ theorem exact_support (old : Layout) (writes : List Field) (made : List Occurren
           replacementField_unwritten old writes made length field written
         rw [same, retained]
         exact Finset.mem_sdiff.mpr ⟨field_mem_support old field,
-          fun missing => written ((field_taken_iff old writes field).mp missing)⟩
+          fun absent => written ((field_taken_iff old writes field).mp absent)⟩
   · intro present
     rcases Finset.mem_union.mp present with retained | madePresent
     · obtain ⟨oldPresent, notTaken⟩ := Finset.mem_sdiff.mp retained

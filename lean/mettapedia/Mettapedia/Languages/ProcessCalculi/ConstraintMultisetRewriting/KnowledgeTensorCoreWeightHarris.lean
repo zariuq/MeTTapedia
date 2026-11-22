@@ -6,8 +6,8 @@ import Mettapedia.Logic.LinearLogic.KnowledgeTensorWeightHarris
 
 For an arbitrary step, contextual interpretation and family of placements: if each part of a cut
 survives the removal of facts from its surrounding, the two parts survive a common independent
-random surrounding with positively correlated chances (`cut_harris_of_shrinking`). None-only
-runs shrink (`NoneAlong.down_closed`); counting candidates need not
+random surrounding with positively correlated chances (`cut_harris_of_shrinking`). Absence-only
+runs shrink (`AbsenceAlong.down_closed`); counting candidates need not
 (`counting_does_not_shrink`, `counts_two_candidate_is_not_monotone`).
 -/
 
@@ -41,17 +41,17 @@ theorem cut_harris_of_shrinking (p : α → ℝ) (probability : ∀ a, 0 ≤ p a
     (fun S => checks_append I (place S) first second)]
   exact harris_down_closed p probability _ _ shrinksFirst shrinksSecond
 
-/-- None-only runs shrink, so the none query form of the inequality is an instance. -/
-theorem NoneAlong.cut_harris_by_shrinking (p : α → ℝ) (probability : ∀ a, 0 ≤ p a ∧ p a ≤ 1)
+/-- Absence-only runs shrink, so the absence form of the inequality is an instance. -/
+theorem AbsenceAlong.cut_harris_by_shrinking (p : α → ℝ) (probability : ∀ a, 0 ≤ p a ∧ p a ≤ 1)
     {left : State} {place : (S : Finset α) → I.Place left (right S)} {first : P.Run left}
     {second : P.Run first.last} {F₁ F₂ : Finset α}
-    (one : NoneAlong I right place first F₁)
-    (two : NoneAlong I right (fun S => advanceRun I (place S) first) second F₂) :
+    (one : AbsenceAlong I right place first F₁)
+    (two : AbsenceAlong I right (fun S => advanceRun I (place S) first) second F₂) :
     measure p (fun S => I.Checks (place S) first) *
         measure p (fun S => I.Checks (advanceRun I (place S) first) second) ≤
       measure p (fun S => I.Checks (place S) (first.append second)) :=
   cut_harris_of_shrinking I right p probability
-    (fun _ _ smaller survives => NoneAlong.down_closed I right one smaller survives)
-    (fun _ _ smaller survives => NoneAlong.down_closed I right two smaller survives)
+    (fun _ _ smaller survives => AbsenceAlong.down_closed I right one smaller survives)
+    (fun _ _ smaller survives => AbsenceAlong.down_closed I right two smaller survives)
 
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.KnowledgeTensorCore

@@ -150,7 +150,7 @@ def matchSet (S : Space K G) : Set B :=
 noncomputable def fire (S : Space K G) (finite : (rule.matchSet S).Finite) : Space K G :=
   rule.fireOn finite.toFinset S
 
-/-- **A binding that is not a match has value zero**: a missing read annihilates the product. -/
+/-- **A binding that is not a match has value zero**: an absent read annihilates the product. -/
 theorem value_eq_zero_of_not_matches {S : Space K G} {b : B} (notMatch : ¬ rule.Matches S b) :
     rule.value S b = 0 := by
   unfold Matches at notMatch
