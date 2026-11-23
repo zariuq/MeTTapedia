@@ -1,0 +1,24 @@
+import "NaturalInduction.mm0";
+
+def infiniteInjection {.f: term}: term =
+  $ \ f: ind -> ind. one_one ind ind @ f /\ ~(onto ind ind @ f) $;
+def infiniteSuccessor: term = $ sel (ind -> ind) @ infiniteInjection $;
+
+theorem infiniteSuccessorT (G: wff): $ G |- infiniteSuccessor: ind -> ind $;
+theorem infiniteSuccessorInjective (G: wff):
+  $ G |- one_one ind ind @ infiniteSuccessor $;
+theorem infiniteSuccessorNotOnto (G: wff):
+  $ G |- ~(onto ind ind @ infiniteSuccessor) $;
+
+def negativePredicate (A: type) (P: term) {.x: term}: term =
+  $ \ x: A. ~(P @ x) $;
+def rangePredicate (A: type) (s: term) {.y .x: term}: term =
+  $ \ y: A. ?x: A. =[A] y = s @ x $;
+def infiniteZero: term =
+  $ sel ind @ negativePredicate ind (rangePredicate ind infiniteSuccessor) $;
+
+theorem infiniteZeroT (G: wff): $ G |- infiniteZero: ind $;
+theorem infiniteZeroNoPreimage (G: wff) {x: term}:
+  $ G |- ~(?x: ind. =[ind] infiniteZero = infiniteSuccessor @ x) $;
+theorem infiniteZeroNotSuccessor (G: wff) (n: term):
+  $ G |- n: ind $ > $ G |- ~(=[ind] infiniteZero = infiniteSuccessor @ n) $;

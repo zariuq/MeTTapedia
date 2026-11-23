@@ -1,0 +1,124 @@
+import "ErlangData.module" as er
+
+Module ErlangSequentialIR {
+  Theory Data() {
+    let atoms = er.Data() in atoms
+      Types {
+        ErPatternId;
+        ErCodes; ErClauses; ErBuild; ErPrimitive; ErActorOp;
+        ErFaultData; ErDiagnostic; ErPrimitiveResult; ErDecision;
+        ErContinuation; ErMachineConfig;
+      }
+      Terms {
+        ErPatternAt . code:ErCode, clause:ErCount |- "pattern-at" code clause : ErPatternId;
+        ErCodesNil . |- "codes-nil" : ErCodes;
+        ErCodesCons . head:ErCode, tail:ErCodes |- "codes-cons" head tail : ErCodes;
+        ErClausesNil . |- "clauses-nil" : ErClauses;
+        ErClausesCons . pattern:ErPatternId, guard:ErCode, body:ErCode, later:ErClauses
+          |- "clauses-cons" pattern guard body later : ErClauses;
+        ErBuildValues . |- "build-values" : ErBuild;
+        ErBuildTuple . |- "build-tuple" : ErBuild;
+        ErBuildCons . |- "build-cons" : ErBuild;
+        ErBuildApply . function:ErValue |- "build-apply" function : ErBuild;
+        ErBuildPrimitive . operator:ErPrimitive |- "build-primitive" operator : ErBuild;
+        ErBuildActor . operation:ErActorOp |- "build-actor" operation : ErBuild;
+        ErAdd . |- "add" : ErPrimitive;
+        ErSubtract . |- "subtract" : ErPrimitive;
+        ErMultiply . |- "multiply" : ErPrimitive;
+        ErDivide . |- "div" : ErPrimitive;
+        ErRemainder . |- "rem" : ErPrimitive;
+        ErNegate . |- "negate" : ErPrimitive;
+        ErEqual . |- "equal" : ErPrimitive;
+        ErDifferent . |- "different" : ErPrimitive;
+        ErLess . |- "less" : ErPrimitive;
+        ErLessEqual . |- "less-equal" : ErPrimitive;
+        ErGreater . |- "greater" : ErPrimitive;
+        ErGreaterEqual . |- "greater-equal" : ErPrimitive;
+        ErIsInteger . |- "is-integer" : ErPrimitive;
+        ErIsAtom . |- "is-atom" : ErPrimitive;
+        ErIsTuple . |- "is-tuple" : ErPrimitive;
+        ErIsList . |- "is-list" : ErPrimitive;
+        ErIsPid . |- "is-pid" : ErPrimitive;
+        ErIsFunction . |- "is-function" : ErPrimitive;
+        ErIsFunctionArity . |- "is-function-arity" : ErPrimitive;
+        ErAnd . |- "and" : ErPrimitive;
+        ErOr . |- "or" : ErPrimitive;
+        ErXor . |- "xor" : ErPrimitive;
+        ErNot . |- "not" : ErPrimitive;
+        ErSelf . |- "self" : ErActorOp;
+        ErSpawn . |- "spawn" : ErActorOp;
+        ErSend . |- "send" : ErActorOp;
+        ErPeekMessage . |- "peek-message" : ErActorOp;
+        ErNextMessage . |- "next-message" : ErActorOp;
+        ErRemoveMessage . |- "remove-message" : ErActorOp;
+        ErWaitInfinity . |- "wait-infinity" : ErActorOp;
+        ErBadarith . |- "badarith" : ErFaultData;
+        ErBadarg . |- "badarg" : ErFaultData;
+        ErBadfun . value:ErValue |- "badfun" value : ErFaultData;
+        ErBadarity . function:ErValue, arguments:ErValues |- "badarity" function arguments : ErFaultData;
+        ErCaseClause . arguments:ErValues |- "case-clause" arguments : ErFaultData;
+        ErMatchFail . reason:ErValue |- "match-fail" reason : ErFaultData;
+        ErUnboundIndex . original:ErCount |- "unbound-index" original : ErDiagnostic;
+        ErReturnArity . expected:ErCount, actual:ErValues |- "return-arity" expected actual : ErDiagnostic;
+        ErOneValueRequired . actual:ErValues |- "one-value-required" actual : ErDiagnostic;
+        ErPrimitiveValue . value:ErValue |- "primitive-value" value : ErPrimitiveResult;
+        ErPrimitiveFault . fault:ErFaultData |- "primitive-fault" fault : ErPrimitiveResult;
+        ErYes . |- "yes" : ErDecision;
+        ErNo . |- "no" : ErDecision;
+        ErKDone . |- "done" : ErContinuation;
+        ErKApply . arguments:ErCodes, environment:ErEnvironment, rest:ErContinuation
+          |- "apply-function" arguments environment rest : ErContinuation;
+        ErKLet . arity:ErCount, body:ErCode, environment:ErEnvironment, rest:ErContinuation
+          |- "let-values" arity body environment rest : ErContinuation;
+        ErKSequence . body:ErCode, environment:ErEnvironment, rest:ErContinuation
+          |- "sequence" body environment rest : ErContinuation;
+        ErKGather . kind:ErBuild, remaining:ErCodes, environment:ErEnvironment, reversed:ErValues, rest:ErContinuation
+          |- "gather" kind remaining environment reversed rest : ErContinuation;
+        ErKCase . clauses:ErClauses, environment:ErEnvironment, rest:ErContinuation
+          |- "case" clauses environment rest : ErContinuation;
+        ErKGuard . arguments:ErValues, remaining:ErClauses, body:ErCode, bound:ErEnvironment,
+          outer:ErEnvironment, rest:ErContinuation
+          |- "guard" arguments remaining body bound outer rest : ErContinuation;
+        ErKMatchFail . rest:ErContinuation |- "match-fail" rest : ErContinuation;
+        ErEvaluate . code:ErCode, environment:ErEnvironment, continuation:ErContinuation
+          |- "evaluate" code environment continuation : ErMachineConfig;
+        ErReturn . values:ErValues, continuation:ErContinuation |- "return" values continuation : ErMachineConfig;
+        ErChoose . arguments:ErValues, clauses:ErClauses, environment:ErEnvironment, continuation:ErContinuation
+          |- "choose" arguments clauses environment continuation : ErMachineConfig;
+        ErTryClause . pattern:ErPatternId, arguments:ErValues, environment:ErEnvironment,
+          guard:ErCode, body:ErCode, later:ErClauses, continuation:ErContinuation
+          |- "try-clause" pattern arguments environment guard body later continuation : ErMachineConfig;
+        ErStart . kind:ErBuild, arguments:ErCodes, environment:ErEnvironment, continuation:ErContinuation
+          |- "start" kind arguments environment continuation : ErMachineConfig;
+        ErReverseBuild . kind:ErBuild, remaining:ErValues, ordered:ErValues, environment:ErEnvironment,
+          original:ErValues, continuation:ErContinuation
+          |- "reverse-build" kind remaining ordered environment original continuation : ErMachineConfig;
+        ErBuildConfig . kind:ErBuild, values:ErValues, environment:ErEnvironment, original:ErValues,
+          continuation:ErContinuation |- "build" kind values environment original continuation : ErMachineConfig;
+        ErApply . function:ErValue, arguments:ErValues, continuation:ErContinuation
+          |- "apply" function arguments continuation : ErMachineConfig;
+        ErBindCall . remaining:ErCount, arguments:ErValues, environment:ErEnvironment, body:ErCode,
+          function:ErValue, original:ErValues, continuation:ErContinuation
+          |- "bind-call" remaining arguments environment body function original continuation : ErMachineConfig;
+        ErBindLet . remaining:ErCount, arguments:ErValues, environment:ErEnvironment, body:ErCode,
+          expected:ErCount, original:ErValues, continuation:ErContinuation
+          |- "bind-let" remaining arguments environment body expected original continuation : ErMachineConfig;
+        ErLookup . remaining:ErCount, environment:ErEnvironment, original:ErCount, full:ErEnvironment,
+          continuation:ErContinuation |- "lookup" remaining environment original full continuation : ErMachineConfig;
+        ErPrimitiveRequest . operator:ErPrimitive, arguments:ErValues, continuation:ErContinuation
+          |- "primitive-request" operator arguments continuation : ErMachineConfig;
+        ErPrimitiveReturned . result:ErPrimitiveResult, continuation:ErContinuation
+          |- "primitive-returned" result continuation : ErMachineConfig;
+        ErGuardRequest . values:ErValues, arguments:ErValues, later:ErClauses, body:ErCode,
+          bound:ErEnvironment, outer:ErEnvironment, continuation:ErContinuation
+          |- "guard-request" values arguments later body bound outer continuation : ErMachineConfig;
+        ErActorRequest . operation:ErActorOp, arguments:ErValues, continuation:ErContinuation
+          |- "actor-request" operation arguments continuation : ErMachineConfig;
+        ErRaise . fault:ErFaultData, continuation:ErContinuation |- "raise" fault continuation : ErMachineConfig;
+        ErDone . values:ErValues |- "done" values : ErMachineConfig;
+        ErFault . fault:ErFaultData |- "fault" fault : ErMachineConfig;
+        ErInvalid . diagnostic:ErDiagnostic |- "invalid" diagnostic : ErMachineConfig;
+      }
+  }
+  theory Data()
+}

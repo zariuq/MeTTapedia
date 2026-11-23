@@ -1,3 +1,4 @@
+import Mettapedia.Languages.HOLLight.CheckedInferenceTrace
 import Mettapedia.Logic.HOL.PointedPredicate
 import Mettapedia.Languages.HOLLight.RetainedCompilation
 import Mettapedia.Languages.HOLLight.ExportReplay
@@ -4902,5140 +4903,591 @@ theorem check274 : r3958.check = some f3948 := by
   simp [or_comm]
 
 
-private def cache0 : Array Theorem := #[]
-private def node0 : ProofExecution.Receipt := ⟨f670, .inference r444, [], ("pointed-predicate-witness", 0)⟩
-private def cache1 : Array Theorem := cache0.push f670
-private def node1 : ProofExecution.Receipt := ⟨f714, .inference r685, [0], ("pointed-predicate-witness", 0)⟩
-private def cache2 : Array Theorem := cache1.push f714
-private def node2 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache3 : Array Theorem := cache2.push f725
-private def node3 : ProofExecution.Receipt := ⟨f732, .inference r726, [2, 1], ("pointed-predicate-witness", 0)⟩
-private def cache4 : Array Theorem := cache3.push f732
-private def node4 : ProofExecution.Receipt := ⟨f737, .inference r734, [], ("pointed-predicate-witness", 0)⟩
-private def cache5 : Array Theorem := cache4.push f737
-private def node5 : ProofExecution.Receipt := ⟨f743, .inference r738, [3, 4], ("pointed-predicate-witness", 0)⟩
-private def cache6 : Array Theorem := cache5.push f743
-private def node6 : ProofExecution.Receipt := ⟨f746, .inference r744, [5, 4], ("pointed-predicate-witness", 0)⟩
-private def cache7 : Array Theorem := cache6.push f746
-private def node7 : ProofExecution.Receipt := ⟨f749, .inference r748, [], ("pointed-predicate-witness", 0)⟩
-private def cache8 : Array Theorem := cache7.push f749
-private def node8 : ProofExecution.Receipt := ⟨f753, .inference r750, [7, 6], ("pointed-predicate-witness", 0)⟩
-private def cache9 : Array Theorem := cache8.push f753
-private def node9 : ProofExecution.Receipt := ⟨f755, .inference r754, [8, 7], ("pointed-predicate-witness", 0)⟩
-private def cache10 : Array Theorem := cache9.push f755
-private def node10 : ProofExecution.Receipt := ⟨f749, .inference r748, [], ("pointed-predicate-witness", 0)⟩
-private def cache11 : Array Theorem := cache10.push f749
-private def node11 : ProofExecution.Receipt := ⟨f749, .inference r748, [], ("pointed-predicate-witness", 0)⟩
-private def cache12 : Array Theorem := cache11.push f749
-private def node12 : ProofExecution.Receipt := ⟨f759, .inference r756, [11, 10], ("pointed-predicate-witness", 0)⟩
-private def cache13 : Array Theorem := cache12.push f759
-private def node13 : ProofExecution.Receipt := ⟨f749, .inference r760, [12, 11], ("pointed-predicate-witness", 0)⟩
-private def cache14 : Array Theorem := cache13.push f749
-private def node14 : ProofExecution.Receipt := ⟨f762, .inference r761, [9, 13], ("pointed-predicate-witness", 0)⟩
-private def cache15 : Array Theorem := cache14.push f762
-private def node15 : ProofExecution.Receipt := ⟨f749, .inference r748, [], ("pointed-predicate-witness", 0)⟩
-private def cache16 : Array Theorem := cache15.push f749
-private def node16 : ProofExecution.Receipt := ⟨f769, .inference r765, [], ("pointed-predicate-witness", 0)⟩
-private def cache17 : Array Theorem := cache16.push f769
-private def node17 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache18 : Array Theorem := cache17.push f777
-private def node18 : ProofExecution.Receipt := ⟨f781, .inference r778, [15, 17], ("pointed-predicate-witness", 0)⟩
-private def cache19 : Array Theorem := cache18.push f781
-private def node19 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache20 : Array Theorem := cache19.push f777
-private def node20 : ProofExecution.Receipt := ⟨f785, .inference r782, [14, 19], ("pointed-predicate-witness", 0)⟩
-private def cache21 : Array Theorem := cache20.push f785
-private def node21 : ProofExecution.Receipt := ⟨f792, .inference r786, [16, 18], ("pointed-predicate-witness", 0)⟩
-private def cache22 : Array Theorem := cache21.push f792
-private def node22 : ProofExecution.Receipt := ⟨f799, .inference r793, [21, 20], ("pointed-predicate-witness", 0)⟩
-private def cache23 : Array Theorem := cache22.push f799
-private def node23 : ProofExecution.Receipt := ⟨f1276, .inference r800, [22], ("pointed-predicate-witness", 0)⟩
-private def cache24 : Array Theorem := cache23.push f1276
-private def node24 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache25 : Array Theorem := cache24.push f1336
-private def node25 : ProofExecution.Receipt := ⟨f1654, .inference r1408, [24], ("pointed-predicate-witness", 0)⟩
-private def cache26 : Array Theorem := cache25.push f1654
-private def node26 : ProofExecution.Receipt := ⟨f737, .inference r734, [], ("pointed-predicate-witness", 0)⟩
-private def cache27 : Array Theorem := cache26.push f737
-private def node27 : ProofExecution.Receipt := ⟨f1661, .inference r1655, [25, 26], ("pointed-predicate-witness", 0)⟩
-private def cache28 : Array Theorem := cache27.push f1661
-private def node28 : ProofExecution.Receipt := ⟨f1766, .inference r1757, [], ("pointed-predicate-witness", 0)⟩
-private def cache29 : Array Theorem := cache28.push f1766
-private def node29 : ProofExecution.Receipt := ⟨f1774, .inference r1770, [28], ("pointed-predicate-witness", 0)⟩
-private def cache30 : Array Theorem := cache29.push f1774
-private def node30 : ProofExecution.Receipt := ⟨f1778, .inference r1775, [27, 29], ("pointed-predicate-witness", 0)⟩
-private def cache31 : Array Theorem := cache30.push f1778
-private def node31 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache32 : Array Theorem := cache31.push f725
-private def node32 : ProofExecution.Receipt := ⟨f1784, .inference r1779, [31, 30], ("pointed-predicate-witness", 0)⟩
-private def cache33 : Array Theorem := cache32.push f1784
-private def node33 : ProofExecution.Receipt := ⟨f1789, .inference r1786, [], ("pointed-predicate-witness", 0)⟩
-private def cache34 : Array Theorem := cache33.push f1789
-private def node34 : ProofExecution.Receipt := ⟨f1795, .inference r1790, [32, 33], ("pointed-predicate-witness", 0)⟩
-private def cache35 : Array Theorem := cache34.push f1795
-private def node35 : ProofExecution.Receipt := ⟨f1798, .inference r1796, [34, 33], ("pointed-predicate-witness", 0)⟩
-private def cache36 : Array Theorem := cache35.push f1798
-private def node36 : ProofExecution.Receipt := ⟨f1800, .inference r1799, [35, 23], ("pointed-predicate-witness", 0)⟩
-private def cache37 : Array Theorem := cache36.push f1800
-private def node37 : ProofExecution.Receipt := ⟨f1802, .inference r1801, [], ("pointed-predicate-witness", 0)⟩
-private def cache38 : Array Theorem := cache37.push f1802
-private def node38 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache39 : Array Theorem := cache38.push f1336
-private def node39 : ProofExecution.Receipt := ⟨f1654, .inference r1408, [38], ("pointed-predicate-witness", 0)⟩
-private def cache40 : Array Theorem := cache39.push f1654
-private def node40 : ProofExecution.Receipt := ⟨f737, .inference r734, [], ("pointed-predicate-witness", 0)⟩
-private def cache41 : Array Theorem := cache40.push f737
-private def node41 : ProofExecution.Receipt := ⟨f1661, .inference r1655, [39, 40], ("pointed-predicate-witness", 0)⟩
-private def cache42 : Array Theorem := cache41.push f1661
-private def node42 : ProofExecution.Receipt := ⟨f1766, .inference r1757, [], ("pointed-predicate-witness", 0)⟩
-private def cache43 : Array Theorem := cache42.push f1766
-private def node43 : ProofExecution.Receipt := ⟨f1774, .inference r1770, [42], ("pointed-predicate-witness", 0)⟩
-private def cache44 : Array Theorem := cache43.push f1774
-private def node44 : ProofExecution.Receipt := ⟨f1778, .inference r1775, [41, 43], ("pointed-predicate-witness", 0)⟩
-private def cache45 : Array Theorem := cache44.push f1778
-private def node45 : ProofExecution.Receipt := ⟨f1804, .inference r1803, [44, 37], ("pointed-predicate-witness", 0)⟩
-private def cache46 : Array Theorem := cache45.push f1804
-private def node46 : ProofExecution.Receipt := ⟨f1813, .inference r1809, [], ("pointed-predicate-witness", 0)⟩
-private def cache47 : Array Theorem := cache46.push f1813
-private def node47 : ProofExecution.Receipt := ⟨f1820, .inference r1814, [45, 46], ("pointed-predicate-witness", 0)⟩
-private def cache48 : Array Theorem := cache47.push f1820
-private def node48 : ProofExecution.Receipt := ⟨f1852, .inference r1848, [], ("pointed-predicate-witness", 0)⟩
-private def cache49 : Array Theorem := cache48.push f1852
-private def node49 : ProofExecution.Receipt := ⟨f1862, .inference r1857, [48], ("pointed-predicate-witness", 0)⟩
-private def cache50 : Array Theorem := cache49.push f1862
-private def node50 : ProofExecution.Receipt := ⟨f1874, .inference r1868, [], ("pointed-predicate-witness", 0)⟩
-private def cache51 : Array Theorem := cache50.push f1874
-private def node51 : ProofExecution.Receipt := ⟨f2115, .inference r1875, [50], ("pointed-predicate-witness", 0)⟩
-private def cache52 : Array Theorem := cache51.push f2115
-private def node52 : ProofExecution.Receipt := ⟨f737, .inference r734, [], ("pointed-predicate-witness", 0)⟩
-private def cache53 : Array Theorem := cache52.push f737
-private def node53 : ProofExecution.Receipt := ⟨f2121, .inference r2116, [51, 52], ("pointed-predicate-witness", 0)⟩
-private def cache54 : Array Theorem := cache53.push f2121
-private def node54 : ProofExecution.Receipt := ⟨f2132, .inference r2128, [], ("pointed-predicate-witness", 0)⟩
-private def cache55 : Array Theorem := cache54.push f2132
-private def node55 : ProofExecution.Receipt := ⟨f2137, .inference r2133, [54], ("pointed-predicate-witness", 0)⟩
-private def cache56 : Array Theorem := cache55.push f2137
-private def node56 : ProofExecution.Receipt := ⟨f2141, .inference r2138, [53, 55], ("pointed-predicate-witness", 0)⟩
-private def cache57 : Array Theorem := cache56.push f2141
-private def node57 : ProofExecution.Receipt := ⟨f2145, .inference r2142, [49, 56], ("pointed-predicate-witness", 0)⟩
-private def cache58 : Array Theorem := cache57.push f2145
-private def node58 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache59 : Array Theorem := cache58.push f725
-private def node59 : ProofExecution.Receipt := ⟨f2150, .inference r2146, [58, 57], ("pointed-predicate-witness", 0)⟩
-private def cache60 : Array Theorem := cache59.push f2150
-private def node60 : ProofExecution.Receipt := ⟨f2155, .inference r2152, [], ("pointed-predicate-witness", 0)⟩
-private def cache61 : Array Theorem := cache60.push f2155
-private def node61 : ProofExecution.Receipt := ⟨f2161, .inference r2156, [59, 60], ("pointed-predicate-witness", 0)⟩
-private def cache62 : Array Theorem := cache61.push f2161
-private def node62 : ProofExecution.Receipt := ⟨f2164, .inference r2162, [61, 60], ("pointed-predicate-witness", 0)⟩
-private def cache63 : Array Theorem := cache62.push f2164
-private def node63 : ProofExecution.Receipt := ⟨f2179, .inference r2175, [], ("pointed-predicate-witness", 0)⟩
-private def cache64 : Array Theorem := cache63.push f2179
-private def node64 : ProofExecution.Receipt := ⟨f2186, .inference r2180, [63], ("pointed-predicate-witness", 0)⟩
-private def cache65 : Array Theorem := cache64.push f2186
-private def node65 : ProofExecution.Receipt := ⟨f1874, .inference r1868, [], ("pointed-predicate-witness", 0)⟩
-private def cache66 : Array Theorem := cache65.push f1874
-private def node66 : ProofExecution.Receipt := ⟨f2202, .inference r2192, [65], ("pointed-predicate-witness", 0)⟩
-private def cache67 : Array Theorem := cache66.push f2202
-private def node67 : ProofExecution.Receipt := ⟨f2207, .inference r2203, [], ("pointed-predicate-witness", 0)⟩
-private def cache68 : Array Theorem := cache67.push f2207
-private def node68 : ProofExecution.Receipt := ⟨f2213, .inference r2208, [66, 67], ("pointed-predicate-witness", 0)⟩
-private def cache69 : Array Theorem := cache68.push f2213
-private def node69 : ProofExecution.Receipt := ⟨f2224, .inference r2220, [], ("pointed-predicate-witness", 0)⟩
-private def cache70 : Array Theorem := cache69.push f2224
-private def node70 : ProofExecution.Receipt := ⟨f2229, .inference r2225, [69], ("pointed-predicate-witness", 0)⟩
-private def cache71 : Array Theorem := cache70.push f2229
-private def node71 : ProofExecution.Receipt := ⟨f2233, .inference r2230, [68, 70], ("pointed-predicate-witness", 0)⟩
-private def cache72 : Array Theorem := cache71.push f2233
-private def node72 : ProofExecution.Receipt := ⟨f2237, .inference r2234, [64, 71], ("pointed-predicate-witness", 0)⟩
-private def cache73 : Array Theorem := cache72.push f2237
-private def node73 : ProofExecution.Receipt := ⟨f2241, .inference r2238, [62, 47], ("pointed-predicate-witness", 0)⟩
-private def cache74 : Array Theorem := cache73.push f2241
-private def node74 : ProofExecution.Receipt := ⟨f2243, .inference r2242, [73, 72], ("pointed-predicate-witness", 0)⟩
-private def cache75 : Array Theorem := cache74.push f2243
-private def node75 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache76 : Array Theorem := cache75.push f725
-private def node76 : ProofExecution.Receipt := ⟨f2248, .inference r2244, [75, 74], ("pointed-predicate-witness", 0)⟩
-private def cache77 : Array Theorem := cache76.push f2248
-private def node77 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache78 : Array Theorem := cache77.push f759
-private def node78 : ProofExecution.Receipt := ⟨f2255, .inference r2250, [76, 77], ("pointed-predicate-witness", 0)⟩
-private def cache79 : Array Theorem := cache78.push f2255
-private def node79 : ProofExecution.Receipt := ⟨f2258, .inference r2256, [78, 77], ("pointed-predicate-witness", 0)⟩
-private def cache80 : Array Theorem := cache79.push f2258
-private def node80 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache81 : Array Theorem := cache80.push f777
-private def node81 : ProofExecution.Receipt := ⟨f2260, .inference r2259, [79, 80], ("pointed-predicate-witness", 0)⟩
-private def cache82 : Array Theorem := cache81.push f2260
-private def node82 : ProofExecution.Receipt := ⟨f2264, .inference r2261, [36, 81], ("pointed-predicate-witness", 0)⟩
-private def cache83 : Array Theorem := cache82.push f2264
-private def node83 : ProofExecution.Receipt := ⟨f2342, .inference r2313, [], ("pointed-predicate-witness", 0)⟩
-private def cache84 : Array Theorem := cache83.push f2342
-private def node84 : ProofExecution.Receipt := ⟨f2353, .inference r2343, [83], ("pointed-predicate-witness", 0)⟩
-private def cache85 : Array Theorem := cache84.push f2353
-private def node85 : ProofExecution.Receipt := ⟨f737, .inference r734, [], ("pointed-predicate-witness", 0)⟩
-private def cache86 : Array Theorem := cache85.push f737
-private def node86 : ProofExecution.Receipt := ⟨f2360, .inference r2354, [84, 85], ("pointed-predicate-witness", 0)⟩
-private def cache87 : Array Theorem := cache86.push f2360
-private def node87 : ProofExecution.Receipt := ⟨f2389, .inference r2382, [], ("pointed-predicate-witness", 0)⟩
-private def cache88 : Array Theorem := cache87.push f2389
-private def node88 : ProofExecution.Receipt := ⟨f2394, .inference r2390, [87], ("pointed-predicate-witness", 0)⟩
-private def cache89 : Array Theorem := cache88.push f2394
-private def node89 : ProofExecution.Receipt := ⟨f2398, .inference r2395, [86, 88], ("pointed-predicate-witness", 0)⟩
-private def cache90 : Array Theorem := cache89.push f2398
-private def node90 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache91 : Array Theorem := cache90.push f725
-private def node91 : ProofExecution.Receipt := ⟨f2404, .inference r2399, [90, 89], ("pointed-predicate-witness", 0)⟩
-private def cache92 : Array Theorem := cache91.push f2404
-private def node92 : ProofExecution.Receipt := ⟨f2409, .inference r2406, [], ("pointed-predicate-witness", 0)⟩
-private def cache93 : Array Theorem := cache92.push f2409
-private def node93 : ProofExecution.Receipt := ⟨f2415, .inference r2410, [91, 92], ("pointed-predicate-witness", 0)⟩
-private def cache94 : Array Theorem := cache93.push f2415
-private def node94 : ProofExecution.Receipt := ⟨f2418, .inference r2416, [93, 92], ("pointed-predicate-witness", 0)⟩
-private def cache95 : Array Theorem := cache94.push f2418
-private def node95 : ProofExecution.Receipt := ⟨f2420, .inference r2419, [94, 82], ("pointed-predicate-witness", 0)⟩
-private def cache96 : Array Theorem := cache95.push f2420
-private def node96 : ProofExecution.Receipt := ⟨f2479, .inference r2426, [], ("pointed-predicate-witness", 0)⟩
-private def cache97 : Array Theorem := cache96.push f2479
-private def node97 : ProofExecution.Receipt := ⟨f2512, .inference r2483, [96], ("pointed-predicate-witness", 0)⟩
-private def cache98 : Array Theorem := cache97.push f2512
-private def node98 : ProofExecution.Receipt := ⟨f2518, .inference r2514, [], ("pointed-predicate-witness", 0)⟩
-private def cache99 : Array Theorem := cache98.push f2518
-private def node99 : ProofExecution.Receipt := ⟨f2523, .inference r2519, [97, 98], ("pointed-predicate-witness", 0)⟩
-private def cache100 : Array Theorem := cache99.push f2523
-private def node100 : ProofExecution.Receipt := ⟨f2591, .inference r2540, [], ("pointed-predicate-witness", 0)⟩
-private def cache101 : Array Theorem := cache100.push f2591
-private def node101 : ProofExecution.Receipt := ⟨f2605, .inference r2594, [100], ("pointed-predicate-witness", 0)⟩
-private def cache102 : Array Theorem := cache101.push f2605
-private def node102 : ProofExecution.Receipt := ⟨f2609, .inference r2606, [99, 101], ("pointed-predicate-witness", 0)⟩
-private def cache103 : Array Theorem := cache102.push f2609
-private def node103 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache104 : Array Theorem := cache103.push f725
-private def node104 : ProofExecution.Receipt := ⟨f2614, .inference r2610, [103, 102], ("pointed-predicate-witness", 0)⟩
-private def cache105 : Array Theorem := cache104.push f2614
-private def node105 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache106 : Array Theorem := cache105.push f759
-private def node106 : ProofExecution.Receipt := ⟨f2619, .inference r2615, [104, 105], ("pointed-predicate-witness", 0)⟩
-private def cache107 : Array Theorem := cache106.push f2619
-private def node107 : ProofExecution.Receipt := ⟨f2622, .inference r2620, [106, 105], ("pointed-predicate-witness", 0)⟩
-private def cache108 : Array Theorem := cache107.push f2622
-private def node108 : ProofExecution.Receipt := ⟨f2625, .inference r2624, [], ("pointed-predicate-witness", 0)⟩
-private def cache109 : Array Theorem := cache108.push f2625
-private def node109 : ProofExecution.Receipt := ⟨f2629, .inference r2626, [108, 107], ("pointed-predicate-witness", 0)⟩
-private def cache110 : Array Theorem := cache109.push f2629
-private def node110 : ProofExecution.Receipt := ⟨f2631, .inference r2630, [109, 108], ("pointed-predicate-witness", 0)⟩
-private def cache111 : Array Theorem := cache110.push f2631
-private def node111 : ProofExecution.Receipt := ⟨f2625, .inference r2624, [], ("pointed-predicate-witness", 0)⟩
-private def cache112 : Array Theorem := cache111.push f2625
-private def node112 : ProofExecution.Receipt := ⟨f2625, .inference r2624, [], ("pointed-predicate-witness", 0)⟩
-private def cache113 : Array Theorem := cache112.push f2625
-private def node113 : ProofExecution.Receipt := ⟨f2635, .inference r2632, [112, 111], ("pointed-predicate-witness", 0)⟩
-private def cache114 : Array Theorem := cache113.push f2635
-private def node114 : ProofExecution.Receipt := ⟨f2625, .inference r2636, [113, 112], ("pointed-predicate-witness", 0)⟩
-private def cache115 : Array Theorem := cache114.push f2625
-private def node115 : ProofExecution.Receipt := ⟨f2638, .inference r2637, [110, 114], ("pointed-predicate-witness", 0)⟩
-private def cache116 : Array Theorem := cache115.push f2638
-private def node116 : ProofExecution.Receipt := ⟨f2625, .inference r2624, [], ("pointed-predicate-witness", 0)⟩
-private def cache117 : Array Theorem := cache116.push f2625
-private def node117 : ProofExecution.Receipt := ⟨f769, .inference r765, [], ("pointed-predicate-witness", 0)⟩
-private def cache118 : Array Theorem := cache117.push f769
-private def node118 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache119 : Array Theorem := cache118.push f777
-private def node119 : ProofExecution.Receipt := ⟨f2642, .inference r2639, [116, 118], ("pointed-predicate-witness", 0)⟩
-private def cache120 : Array Theorem := cache119.push f2642
-private def node120 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache121 : Array Theorem := cache120.push f777
-private def node121 : ProofExecution.Receipt := ⟨f2644, .inference r2643, [115, 120], ("pointed-predicate-witness", 0)⟩
-private def cache122 : Array Theorem := cache121.push f2644
-private def node122 : ProofExecution.Receipt := ⟨f2650, .inference r2645, [117, 119], ("pointed-predicate-witness", 0)⟩
-private def cache123 : Array Theorem := cache122.push f2650
-private def node123 : ProofExecution.Receipt := ⟨f2656, .inference r2651, [122, 121], ("pointed-predicate-witness", 0)⟩
-private def cache124 : Array Theorem := cache123.push f2656
-private def node124 : ProofExecution.Receipt := ⟨f2890, .inference r2657, [123], ("pointed-predicate-witness", 0)⟩
-private def cache125 : Array Theorem := cache124.push f2890
-private def node125 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache126 : Array Theorem := cache125.push f1336
-private def node126 : ProofExecution.Receipt := ⟨f3162, .inference r2925, [125], ("pointed-predicate-witness", 0)⟩
-private def cache127 : Array Theorem := cache126.push f3162
-private def node127 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache128 : Array Theorem := cache127.push f759
-private def node128 : ProofExecution.Receipt := ⟨f3169, .inference r3163, [126, 127], ("pointed-predicate-witness", 0)⟩
-private def cache129 : Array Theorem := cache128.push f3169
-private def node129 : ProofExecution.Receipt := ⟨f3263, .inference r3255, [], ("pointed-predicate-witness", 0)⟩
-private def cache130 : Array Theorem := cache129.push f3263
-private def node130 : ProofExecution.Receipt := ⟨f3268, .inference r3264, [129], ("pointed-predicate-witness", 0)⟩
-private def cache131 : Array Theorem := cache130.push f3268
-private def node131 : ProofExecution.Receipt := ⟨f3272, .inference r3269, [128, 130], ("pointed-predicate-witness", 0)⟩
-private def cache132 : Array Theorem := cache131.push f3272
-private def node132 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache133 : Array Theorem := cache132.push f725
-private def node133 : ProofExecution.Receipt := ⟨f3278, .inference r3273, [132, 131], ("pointed-predicate-witness", 0)⟩
-private def cache134 : Array Theorem := cache133.push f3278
-private def node134 : ProofExecution.Receipt := ⟨f3283, .inference r3280, [], ("pointed-predicate-witness", 0)⟩
-private def cache135 : Array Theorem := cache134.push f3283
-private def node135 : ProofExecution.Receipt := ⟨f3289, .inference r3284, [133, 134], ("pointed-predicate-witness", 0)⟩
-private def cache136 : Array Theorem := cache135.push f3289
-private def node136 : ProofExecution.Receipt := ⟨f3292, .inference r3290, [135, 134], ("pointed-predicate-witness", 0)⟩
-private def cache137 : Array Theorem := cache136.push f3292
-private def node137 : ProofExecution.Receipt := ⟨f3294, .inference r3293, [136, 124], ("pointed-predicate-witness", 0)⟩
-private def cache138 : Array Theorem := cache137.push f3294
-private def node138 : ProofExecution.Receipt := ⟨f3296, .inference r3295, [], ("pointed-predicate-witness", 0)⟩
-private def cache139 : Array Theorem := cache138.push f3296
-private def node139 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache140 : Array Theorem := cache139.push f1336
-private def node140 : ProofExecution.Receipt := ⟨f3162, .inference r2925, [139], ("pointed-predicate-witness", 0)⟩
-private def cache141 : Array Theorem := cache140.push f3162
-private def node141 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache142 : Array Theorem := cache141.push f759
-private def node142 : ProofExecution.Receipt := ⟨f3169, .inference r3163, [140, 141], ("pointed-predicate-witness", 0)⟩
-private def cache143 : Array Theorem := cache142.push f3169
-private def node143 : ProofExecution.Receipt := ⟨f3263, .inference r3255, [], ("pointed-predicate-witness", 0)⟩
-private def cache144 : Array Theorem := cache143.push f3263
-private def node144 : ProofExecution.Receipt := ⟨f3268, .inference r3264, [143], ("pointed-predicate-witness", 0)⟩
-private def cache145 : Array Theorem := cache144.push f3268
-private def node145 : ProofExecution.Receipt := ⟨f3272, .inference r3269, [142, 144], ("pointed-predicate-witness", 0)⟩
-private def cache146 : Array Theorem := cache145.push f3272
-private def node146 : ProofExecution.Receipt := ⟨f3298, .inference r3297, [145, 138], ("pointed-predicate-witness", 0)⟩
-private def cache147 : Array Theorem := cache146.push f3298
-private def node147 : ProofExecution.Receipt := ⟨f1813, .inference r1809, [], ("pointed-predicate-witness", 0)⟩
-private def cache148 : Array Theorem := cache147.push f1813
-private def node148 : ProofExecution.Receipt := ⟨f3304, .inference r3299, [146, 147], ("pointed-predicate-witness", 0)⟩
-private def cache149 : Array Theorem := cache148.push f3304
-private def node149 : ProofExecution.Receipt := ⟨f3324, .inference r3320, [], ("pointed-predicate-witness", 0)⟩
-private def cache150 : Array Theorem := cache149.push f3324
-private def node150 : ProofExecution.Receipt := ⟨f3330, .inference r3325, [149], ("pointed-predicate-witness", 0)⟩
-private def cache151 : Array Theorem := cache150.push f3330
-private def node151 : ProofExecution.Receipt := ⟨f1874, .inference r1868, [], ("pointed-predicate-witness", 0)⟩
-private def cache152 : Array Theorem := cache151.push f1874
-private def node152 : ProofExecution.Receipt := ⟨f3504, .inference r3331, [151], ("pointed-predicate-witness", 0)⟩
-private def cache153 : Array Theorem := cache152.push f3504
-private def node153 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache154 : Array Theorem := cache153.push f759
-private def node154 : ProofExecution.Receipt := ⟨f3510, .inference r3505, [152, 153], ("pointed-predicate-witness", 0)⟩
-private def cache155 : Array Theorem := cache154.push f3510
-private def node155 : ProofExecution.Receipt := ⟨f3521, .inference r3517, [], ("pointed-predicate-witness", 0)⟩
-private def cache156 : Array Theorem := cache155.push f3521
-private def node156 : ProofExecution.Receipt := ⟨f3526, .inference r3522, [155], ("pointed-predicate-witness", 0)⟩
-private def cache157 : Array Theorem := cache156.push f3526
-private def node157 : ProofExecution.Receipt := ⟨f3530, .inference r3527, [154, 156], ("pointed-predicate-witness", 0)⟩
-private def cache158 : Array Theorem := cache157.push f3530
-private def node158 : ProofExecution.Receipt := ⟨f3534, .inference r3531, [150, 157], ("pointed-predicate-witness", 0)⟩
-private def cache159 : Array Theorem := cache158.push f3534
-private def node159 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache160 : Array Theorem := cache159.push f725
-private def node160 : ProofExecution.Receipt := ⟨f3539, .inference r3535, [159, 158], ("pointed-predicate-witness", 0)⟩
-private def cache161 : Array Theorem := cache160.push f3539
-private def node161 : ProofExecution.Receipt := ⟨f3544, .inference r3541, [], ("pointed-predicate-witness", 0)⟩
-private def cache162 : Array Theorem := cache161.push f3544
-private def node162 : ProofExecution.Receipt := ⟨f3550, .inference r3545, [160, 161], ("pointed-predicate-witness", 0)⟩
-private def cache163 : Array Theorem := cache162.push f3550
-private def node163 : ProofExecution.Receipt := ⟨f3553, .inference r3551, [162, 161], ("pointed-predicate-witness", 0)⟩
-private def cache164 : Array Theorem := cache163.push f3553
-private def node164 : ProofExecution.Receipt := ⟨f2179, .inference r2175, [], ("pointed-predicate-witness", 0)⟩
-private def cache165 : Array Theorem := cache164.push f2179
-private def node165 : ProofExecution.Receipt := ⟨f2186, .inference r2180, [164], ("pointed-predicate-witness", 0)⟩
-private def cache166 : Array Theorem := cache165.push f2186
-private def node166 : ProofExecution.Receipt := ⟨f1874, .inference r1868, [], ("pointed-predicate-witness", 0)⟩
-private def cache167 : Array Theorem := cache166.push f1874
-private def node167 : ProofExecution.Receipt := ⟨f2202, .inference r2192, [166], ("pointed-predicate-witness", 0)⟩
-private def cache168 : Array Theorem := cache167.push f2202
-private def node168 : ProofExecution.Receipt := ⟨f2207, .inference r2203, [], ("pointed-predicate-witness", 0)⟩
-private def cache169 : Array Theorem := cache168.push f2207
-private def node169 : ProofExecution.Receipt := ⟨f2213, .inference r2208, [167, 168], ("pointed-predicate-witness", 0)⟩
-private def cache170 : Array Theorem := cache169.push f2213
-private def node170 : ProofExecution.Receipt := ⟨f2224, .inference r2220, [], ("pointed-predicate-witness", 0)⟩
-private def cache171 : Array Theorem := cache170.push f2224
-private def node171 : ProofExecution.Receipt := ⟨f2229, .inference r2225, [170], ("pointed-predicate-witness", 0)⟩
-private def cache172 : Array Theorem := cache171.push f2229
-private def node172 : ProofExecution.Receipt := ⟨f2233, .inference r2230, [169, 171], ("pointed-predicate-witness", 0)⟩
-private def cache173 : Array Theorem := cache172.push f2233
-private def node173 : ProofExecution.Receipt := ⟨f2237, .inference r2234, [165, 172], ("pointed-predicate-witness", 0)⟩
-private def cache174 : Array Theorem := cache173.push f2237
-private def node174 : ProofExecution.Receipt := ⟨f3557, .inference r3554, [163, 148], ("pointed-predicate-witness", 0)⟩
-private def cache175 : Array Theorem := cache174.push f3557
-private def node175 : ProofExecution.Receipt := ⟨f3559, .inference r3558, [174, 173], ("pointed-predicate-witness", 0)⟩
-private def cache176 : Array Theorem := cache175.push f3559
-private def node176 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache177 : Array Theorem := cache176.push f725
-private def node177 : ProofExecution.Receipt := ⟨f3564, .inference r3560, [176, 175], ("pointed-predicate-witness", 0)⟩
-private def cache178 : Array Theorem := cache177.push f3564
-private def node178 : ProofExecution.Receipt := ⟨f2635, .inference r3565, [], ("pointed-predicate-witness", 0)⟩
-private def cache179 : Array Theorem := cache178.push f2635
-private def node179 : ProofExecution.Receipt := ⟨f3571, .inference r3566, [177, 178], ("pointed-predicate-witness", 0)⟩
-private def cache180 : Array Theorem := cache179.push f3571
-private def node180 : ProofExecution.Receipt := ⟨f3574, .inference r3572, [179, 178], ("pointed-predicate-witness", 0)⟩
-private def cache181 : Array Theorem := cache180.push f3574
-private def node181 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache182 : Array Theorem := cache181.push f777
-private def node182 : ProofExecution.Receipt := ⟨f3576, .inference r3575, [180, 181], ("pointed-predicate-witness", 0)⟩
-private def cache183 : Array Theorem := cache182.push f3576
-private def node183 : ProofExecution.Receipt := ⟨f3580, .inference r3577, [137, 182], ("pointed-predicate-witness", 0)⟩
-private def cache184 : Array Theorem := cache183.push f3580
-private def node184 : ProofExecution.Receipt := ⟨f2342, .inference r2313, [], ("pointed-predicate-witness", 0)⟩
-private def cache185 : Array Theorem := cache184.push f2342
-private def node185 : ProofExecution.Receipt := ⟨f3591, .inference r3581, [184], ("pointed-predicate-witness", 0)⟩
-private def cache186 : Array Theorem := cache185.push f3591
-private def node186 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache187 : Array Theorem := cache186.push f759
-private def node187 : ProofExecution.Receipt := ⟨f3598, .inference r3592, [185, 186], ("pointed-predicate-witness", 0)⟩
-private def cache188 : Array Theorem := cache187.push f3598
-private def node188 : ProofExecution.Receipt := ⟨f3616, .inference r3609, [], ("pointed-predicate-witness", 0)⟩
-private def cache189 : Array Theorem := cache188.push f3616
-private def node189 : ProofExecution.Receipt := ⟨f3621, .inference r3617, [188], ("pointed-predicate-witness", 0)⟩
-private def cache190 : Array Theorem := cache189.push f3621
-private def node190 : ProofExecution.Receipt := ⟨f3625, .inference r3622, [187, 189], ("pointed-predicate-witness", 0)⟩
-private def cache191 : Array Theorem := cache190.push f3625
-private def node191 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache192 : Array Theorem := cache191.push f725
-private def node192 : ProofExecution.Receipt := ⟨f3631, .inference r3626, [191, 190], ("pointed-predicate-witness", 0)⟩
-private def cache193 : Array Theorem := cache192.push f3631
-private def node193 : ProofExecution.Receipt := ⟨f3636, .inference r3633, [], ("pointed-predicate-witness", 0)⟩
-private def cache194 : Array Theorem := cache193.push f3636
-private def node194 : ProofExecution.Receipt := ⟨f3642, .inference r3637, [192, 193], ("pointed-predicate-witness", 0)⟩
-private def cache195 : Array Theorem := cache194.push f3642
-private def node195 : ProofExecution.Receipt := ⟨f3645, .inference r3643, [194, 193], ("pointed-predicate-witness", 0)⟩
-private def cache196 : Array Theorem := cache195.push f3645
-private def node196 : ProofExecution.Receipt := ⟨f3647, .inference r3646, [195, 183], ("pointed-predicate-witness", 0)⟩
-private def cache197 : Array Theorem := cache196.push f3647
-private def node197 : ProofExecution.Receipt := ⟨f3652, .inference r3651, [], ("pointed-predicate-witness", 0)⟩
-private def cache198 : Array Theorem := cache197.push f3652
-private def node198 : ProofExecution.Receipt := ⟨f3657, .inference r3656, [], ("pointed-predicate-witness", 0)⟩
-private def cache199 : Array Theorem := cache198.push f3657
-private def node199 : ProofExecution.Receipt := ⟨f3662, .inference r3658, [198, 197], ("pointed-predicate-witness", 0)⟩
-private def cache200 : Array Theorem := cache199.push f3662
-private def node200 : ProofExecution.Receipt := ⟨f3664, .inference r3663, [199, 198], ("pointed-predicate-witness", 0)⟩
-private def cache201 : Array Theorem := cache200.push f3664
-private def node201 : ProofExecution.Receipt := ⟨f3652, .inference r3651, [], ("pointed-predicate-witness", 0)⟩
-private def cache202 : Array Theorem := cache201.push f3652
-private def node202 : ProofExecution.Receipt := ⟨f3669, .inference r3665, [201, 200], ("pointed-predicate-witness", 0)⟩
-private def cache203 : Array Theorem := cache202.push f3669
-private def node203 : ProofExecution.Receipt := ⟨f3664, .inference r3670, [202, 201], ("pointed-predicate-witness", 0)⟩
-private def cache204 : Array Theorem := cache203.push f3664
-private def node204 : ProofExecution.Receipt := ⟨f3672, .inference r3671, [], ("pointed-predicate-witness", 0)⟩
-private def cache205 : Array Theorem := cache204.push f3672
-private def node205 : ProofExecution.Receipt := ⟨f3657, .inference r3656, [], ("pointed-predicate-witness", 0)⟩
-private def cache206 : Array Theorem := cache205.push f3657
-private def node206 : ProofExecution.Receipt := ⟨f3676, .inference r3673, [205, 204], ("pointed-predicate-witness", 0)⟩
-private def cache207 : Array Theorem := cache206.push f3676
-private def node207 : ProofExecution.Receipt := ⟨f3678, .inference r3677, [206, 205], ("pointed-predicate-witness", 0)⟩
-private def cache208 : Array Theorem := cache207.push f3678
-private def node208 : ProofExecution.Receipt := ⟨f3652, .inference r3651, [], ("pointed-predicate-witness", 0)⟩
-private def cache209 : Array Theorem := cache208.push f3652
-private def node209 : ProofExecution.Receipt := ⟨f3682, .inference r3679, [208, 207], ("pointed-predicate-witness", 0)⟩
-private def cache210 : Array Theorem := cache209.push f3682
-private def node210 : ProofExecution.Receipt := ⟨f3684, .inference r3683, [209, 208], ("pointed-predicate-witness", 0)⟩
-private def cache211 : Array Theorem := cache210.push f3684
-private def node211 : ProofExecution.Receipt := ⟨f2342, .inference r2313, [], ("pointed-predicate-witness", 0)⟩
-private def cache212 : Array Theorem := cache211.push f2342
-private def node212 : ProofExecution.Receipt := ⟨f3694, .inference r3685, [211], ("pointed-predicate-witness", 0)⟩
-private def cache213 : Array Theorem := cache212.push f3694
-private def node213 : ProofExecution.Receipt := ⟨f3700, .inference r3696, [], ("pointed-predicate-witness", 0)⟩
-private def cache214 : Array Theorem := cache213.push f3700
-private def node214 : ProofExecution.Receipt := ⟨f3705, .inference r3701, [212, 213], ("pointed-predicate-witness", 0)⟩
-private def cache215 : Array Theorem := cache214.push f3705
-private def node215 : ProofExecution.Receipt := ⟨f3723, .inference r3715, [], ("pointed-predicate-witness", 0)⟩
-private def cache216 : Array Theorem := cache215.push f3723
-private def node216 : ProofExecution.Receipt := ⟨f3723, .inference r3726, [215], ("pointed-predicate-witness", 0)⟩
-private def cache217 : Array Theorem := cache216.push f3723
-private def node217 : ProofExecution.Receipt := ⟨f3730, .inference r3727, [214, 216], ("pointed-predicate-witness", 0)⟩
-private def cache218 : Array Theorem := cache217.push f3730
-private def node218 : ProofExecution.Receipt := ⟨f3733, .inference r3731, [217, 203], ("pointed-predicate-witness", 0)⟩
-private def cache219 : Array Theorem := cache218.push f3733
-private def node219 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache220 : Array Theorem := cache219.push f725
-private def node220 : ProofExecution.Receipt := ⟨f3739, .inference r3734, [219, 218], ("pointed-predicate-witness", 0)⟩
-private def cache221 : Array Theorem := cache220.push f3739
-private def node221 : ProofExecution.Receipt := ⟨f3744, .inference r3741, [], ("pointed-predicate-witness", 0)⟩
-private def cache222 : Array Theorem := cache221.push f3744
-private def node222 : ProofExecution.Receipt := ⟨f3750, .inference r3745, [220, 221], ("pointed-predicate-witness", 0)⟩
-private def cache223 : Array Theorem := cache222.push f3750
-private def node223 : ProofExecution.Receipt := ⟨f3753, .inference r3751, [222, 221], ("pointed-predicate-witness", 0)⟩
-private def cache224 : Array Theorem := cache223.push f3753
-private def node224 : ProofExecution.Receipt := ⟨f3755, .inference r3754, [223, 210], ("pointed-predicate-witness", 0)⟩
-private def cache225 : Array Theorem := cache224.push f3755
-private def node225 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache226 : Array Theorem := cache225.push f1336
-private def node226 : ProofExecution.Receipt := ⟨f3766, .inference r3756, [225], ("pointed-predicate-witness", 0)⟩
-private def cache227 : Array Theorem := cache226.push f3766
-private def node227 : ProofExecution.Receipt := ⟨f3700, .inference r3696, [], ("pointed-predicate-witness", 0)⟩
-private def cache228 : Array Theorem := cache227.push f3700
-private def node228 : ProofExecution.Receipt := ⟨f3771, .inference r3767, [226, 227], ("pointed-predicate-witness", 0)⟩
-private def cache229 : Array Theorem := cache228.push f3771
-private def node229 : ProofExecution.Receipt := ⟨f3791, .inference r3782, [], ("pointed-predicate-witness", 0)⟩
-private def cache230 : Array Theorem := cache229.push f3791
-private def node230 : ProofExecution.Receipt := ⟨f3791, .inference r3792, [229], ("pointed-predicate-witness", 0)⟩
-private def cache231 : Array Theorem := cache230.push f3791
-private def node231 : ProofExecution.Receipt := ⟨f3796, .inference r3793, [228, 230], ("pointed-predicate-witness", 0)⟩
-private def cache232 : Array Theorem := cache231.push f3796
-private def node232 : ProofExecution.Receipt := ⟨f3799, .inference r3797, [231, 224], ("pointed-predicate-witness", 0)⟩
-private def cache233 : Array Theorem := cache232.push f3799
-private def node233 : ProofExecution.Receipt := ⟨f3806, .inference r3802, [], ("pointed-predicate-witness", 0)⟩
-private def cache234 : Array Theorem := cache233.push f3806
-private def node234 : ProofExecution.Receipt := ⟨f3813, .inference r3807, [232, 233], ("pointed-predicate-witness", 0)⟩
-private def cache235 : Array Theorem := cache234.push f3813
-private def node235 : ProofExecution.Receipt := ⟨f3826, .inference r3820, [], ("pointed-predicate-witness", 0)⟩
-private def cache236 : Array Theorem := cache235.push f3826
-private def node236 : ProofExecution.Receipt := ⟨f3835, .inference r3830, [235], ("pointed-predicate-witness", 0)⟩
-private def cache237 : Array Theorem := cache236.push f3835
-private def node237 : ProofExecution.Receipt := ⟨f3845, .inference r3841, [], ("pointed-predicate-witness", 0)⟩
-private def cache238 : Array Theorem := cache237.push f3845
-private def node238 : ProofExecution.Receipt := ⟨f3850, .inference r3846, [237], ("pointed-predicate-witness", 0)⟩
-private def cache239 : Array Theorem := cache238.push f3850
-private def node239 : ProofExecution.Receipt := ⟨f3700, .inference r3696, [], ("pointed-predicate-witness", 0)⟩
-private def cache240 : Array Theorem := cache239.push f3700
-private def node240 : ProofExecution.Receipt := ⟨f3856, .inference r3851, [238, 239], ("pointed-predicate-witness", 0)⟩
-private def cache241 : Array Theorem := cache240.push f3856
-private def node241 : ProofExecution.Receipt := ⟨f3865, .inference r3861, [], ("pointed-predicate-witness", 0)⟩
-private def cache242 : Array Theorem := cache241.push f3865
-private def node242 : ProofExecution.Receipt := ⟨f3865, .inference r3866, [241], ("pointed-predicate-witness", 0)⟩
-private def cache243 : Array Theorem := cache242.push f3865
-private def node243 : ProofExecution.Receipt := ⟨f3870, .inference r3867, [240, 242], ("pointed-predicate-witness", 0)⟩
-private def cache244 : Array Theorem := cache243.push f3870
-private def node244 : ProofExecution.Receipt := ⟨f3874, .inference r3871, [236, 243], ("pointed-predicate-witness", 0)⟩
-private def cache245 : Array Theorem := cache244.push f3874
-private def node245 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache246 : Array Theorem := cache245.push f725
-private def node246 : ProofExecution.Receipt := ⟨f3879, .inference r3875, [245, 244], ("pointed-predicate-witness", 0)⟩
-private def cache247 : Array Theorem := cache246.push f3879
-private def node247 : ProofExecution.Receipt := ⟨f3884, .inference r3881, [], ("pointed-predicate-witness", 0)⟩
-private def cache248 : Array Theorem := cache247.push f3884
-private def node248 : ProofExecution.Receipt := ⟨f3890, .inference r3885, [246, 247], ("pointed-predicate-witness", 0)⟩
-private def cache249 : Array Theorem := cache248.push f3890
-private def node249 : ProofExecution.Receipt := ⟨f3893, .inference r3891, [248, 247], ("pointed-predicate-witness", 0)⟩
-private def cache250 : Array Theorem := cache249.push f3893
-private def node250 : ProofExecution.Receipt := ⟨f2179, .inference r2175, [], ("pointed-predicate-witness", 0)⟩
-private def cache251 : Array Theorem := cache250.push f2179
-private def node251 : ProofExecution.Receipt := ⟨f3900, .inference r3894, [250], ("pointed-predicate-witness", 0)⟩
-private def cache252 : Array Theorem := cache251.push f3900
-private def node252 : ProofExecution.Receipt := ⟨f3845, .inference r3841, [], ("pointed-predicate-witness", 0)⟩
-private def cache253 : Array Theorem := cache252.push f3845
-private def node253 : ProofExecution.Receipt := ⟨f3905, .inference r3901, [252], ("pointed-predicate-witness", 0)⟩
-private def cache254 : Array Theorem := cache253.push f3905
-private def node254 : ProofExecution.Receipt := ⟨f2207, .inference r2203, [], ("pointed-predicate-witness", 0)⟩
-private def cache255 : Array Theorem := cache254.push f2207
-private def node255 : ProofExecution.Receipt := ⟨f3911, .inference r3906, [253, 254], ("pointed-predicate-witness", 0)⟩
-private def cache256 : Array Theorem := cache255.push f3911
-private def node256 : ProofExecution.Receipt := ⟨f3865, .inference r3861, [], ("pointed-predicate-witness", 0)⟩
-private def cache257 : Array Theorem := cache256.push f3865
-private def node257 : ProofExecution.Receipt := ⟨f3916, .inference r3912, [256], ("pointed-predicate-witness", 0)⟩
-private def cache258 : Array Theorem := cache257.push f3916
-private def node258 : ProofExecution.Receipt := ⟨f3920, .inference r3917, [255, 257], ("pointed-predicate-witness", 0)⟩
-private def cache259 : Array Theorem := cache258.push f3920
-private def node259 : ProofExecution.Receipt := ⟨f3924, .inference r3921, [251, 258], ("pointed-predicate-witness", 0)⟩
-private def cache260 : Array Theorem := cache259.push f3924
-private def node260 : ProofExecution.Receipt := ⟨f3928, .inference r3925, [249, 234], ("pointed-predicate-witness", 0)⟩
-private def cache261 : Array Theorem := cache260.push f3928
-private def node261 : ProofExecution.Receipt := ⟨f3932, .inference r3929, [260, 259], ("pointed-predicate-witness", 0)⟩
-private def cache262 : Array Theorem := cache261.push f3932
-private def node262 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache263 : Array Theorem := cache262.push f725
-private def node263 : ProofExecution.Receipt := ⟨f3937, .inference r3933, [262, 261], ("pointed-predicate-witness", 0)⟩
-private def cache264 : Array Theorem := cache263.push f3937
-private def node264 : ProofExecution.Receipt := ⟨f3700, .inference r3696, [], ("pointed-predicate-witness", 0)⟩
-private def cache265 : Array Theorem := cache264.push f3700
-private def node265 : ProofExecution.Receipt := ⟨f3943, .inference r3938, [263, 264], ("pointed-predicate-witness", 0)⟩
-private def cache266 : Array Theorem := cache265.push f3943
-private def node266 : ProofExecution.Receipt := ⟨f3946, .inference r3944, [265, 264], ("pointed-predicate-witness", 0)⟩
-private def cache267 : Array Theorem := cache266.push f3946
-private def node267 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache268 : Array Theorem := cache267.push f777
-private def node268 : ProofExecution.Receipt := ⟨f3948, .inference r3947, [266, 267], ("pointed-predicate-witness", 0)⟩
-private def cache269 : Array Theorem := cache268.push f3948
-private def node269 : ProofExecution.Receipt := ⟨f3657, .inference r3656, [], ("pointed-predicate-witness", 0)⟩
-private def cache270 : Array Theorem := cache269.push f3657
-private def node270 : ProofExecution.Receipt := ⟨f3952, .inference r3949, [269, 268], ("pointed-predicate-witness", 0)⟩
-private def cache271 : Array Theorem := cache270.push f3952
-private def node271 : ProofExecution.Receipt := ⟨f3948, .inference r3953, [270, 269], ("pointed-predicate-witness", 0)⟩
-private def cache272 : Array Theorem := cache271.push f3948
-private def node272 : ProofExecution.Receipt := ⟨f3652, .inference r3651, [], ("pointed-predicate-witness", 0)⟩
-private def cache273 : Array Theorem := cache272.push f3652
-private def node273 : ProofExecution.Receipt := ⟨f3957, .inference r3954, [272, 271], ("pointed-predicate-witness", 0)⟩
-private def cache274 : Array Theorem := cache273.push f3957
-private def node274 : ProofExecution.Receipt := ⟨f3948, .inference r3958, [273, 272], ("pointed-predicate-witness", 0)⟩
-private def cache275 : Array Theorem := cache274.push f3948
-private def node275 : ProofExecution.Receipt := ⟨f3657, .inference r3656, [], ("pointed-predicate-witness", 0)⟩
-private def cache276 : Array Theorem := cache275.push f3657
-private def node276 : ProofExecution.Receipt := ⟨f3964, .inference r3960, [], ("pointed-predicate-witness", 0)⟩
-private def cache277 : Array Theorem := cache276.push f3964
-private def node277 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache278 : Array Theorem := cache277.push f777
-private def node278 : ProofExecution.Receipt := ⟨f3968, .inference r3965, [275, 277], ("pointed-predicate-witness", 0)⟩
-private def cache279 : Array Theorem := cache278.push f3968
-private def node279 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache280 : Array Theorem := cache279.push f777
-private def node280 : ProofExecution.Receipt := ⟨f3932, .inference r3969, [274, 279], ("pointed-predicate-witness", 0)⟩
-private def cache281 : Array Theorem := cache280.push f3932
-private def node281 : ProofExecution.Receipt := ⟨f3976, .inference r3970, [276, 278], ("pointed-predicate-witness", 0)⟩
-private def cache282 : Array Theorem := cache281.push f3976
-private def node282 : ProofExecution.Receipt := ⟨f3983, .inference r3977, [281, 280], ("pointed-predicate-witness", 0)⟩
-private def cache283 : Array Theorem := cache282.push f3983
-private def node283 : ProofExecution.Receipt := ⟨f4021, .inference r3984, [282], ("pointed-predicate-witness", 0)⟩
-private def cache284 : Array Theorem := cache283.push f4021
-private def node284 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache285 : Array Theorem := cache284.push f1336
-private def node285 : ProofExecution.Receipt := ⟨f4067, .inference r4026, [284], ("pointed-predicate-witness", 0)⟩
-private def cache286 : Array Theorem := cache285.push f4067
-private def node286 : ProofExecution.Receipt := ⟨f3700, .inference r3696, [], ("pointed-predicate-witness", 0)⟩
-private def cache287 : Array Theorem := cache286.push f3700
-private def node287 : ProofExecution.Receipt := ⟨f4074, .inference r4068, [285, 286], ("pointed-predicate-witness", 0)⟩
-private def cache288 : Array Theorem := cache287.push f4074
-private def node288 : ProofExecution.Receipt := ⟨f4097, .inference r4088, [], ("pointed-predicate-witness", 0)⟩
-private def cache289 : Array Theorem := cache288.push f4097
-private def node289 : ProofExecution.Receipt := ⟨f4102, .inference r4098, [288], ("pointed-predicate-witness", 0)⟩
-private def cache290 : Array Theorem := cache289.push f4102
-private def node290 : ProofExecution.Receipt := ⟨f4106, .inference r4103, [287, 289], ("pointed-predicate-witness", 0)⟩
-private def cache291 : Array Theorem := cache290.push f4106
-private def node291 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache292 : Array Theorem := cache291.push f725
-private def node292 : ProofExecution.Receipt := ⟨f4112, .inference r4107, [291, 290], ("pointed-predicate-witness", 0)⟩
-private def cache293 : Array Theorem := cache292.push f4112
-private def node293 : ProofExecution.Receipt := ⟨f4117, .inference r4114, [], ("pointed-predicate-witness", 0)⟩
-private def cache294 : Array Theorem := cache293.push f4117
-private def node294 : ProofExecution.Receipt := ⟨f4123, .inference r4118, [292, 293], ("pointed-predicate-witness", 0)⟩
-private def cache295 : Array Theorem := cache294.push f4123
-private def node295 : ProofExecution.Receipt := ⟨f4126, .inference r4124, [294, 293], ("pointed-predicate-witness", 0)⟩
-private def cache296 : Array Theorem := cache295.push f4126
-private def node296 : ProofExecution.Receipt := ⟨f4128, .inference r4127, [295, 283], ("pointed-predicate-witness", 0)⟩
-private def cache297 : Array Theorem := cache296.push f4128
-private def node297 : ProofExecution.Receipt := ⟨f4130, .inference r4129, [], ("pointed-predicate-witness", 0)⟩
-private def cache298 : Array Theorem := cache297.push f4130
-private def node298 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache299 : Array Theorem := cache298.push f1336
-private def node299 : ProofExecution.Receipt := ⟨f4067, .inference r4026, [298], ("pointed-predicate-witness", 0)⟩
-private def cache300 : Array Theorem := cache299.push f4067
-private def node300 : ProofExecution.Receipt := ⟨f3700, .inference r3696, [], ("pointed-predicate-witness", 0)⟩
-private def cache301 : Array Theorem := cache300.push f3700
-private def node301 : ProofExecution.Receipt := ⟨f4074, .inference r4068, [299, 300], ("pointed-predicate-witness", 0)⟩
-private def cache302 : Array Theorem := cache301.push f4074
-private def node302 : ProofExecution.Receipt := ⟨f4097, .inference r4088, [], ("pointed-predicate-witness", 0)⟩
-private def cache303 : Array Theorem := cache302.push f4097
-private def node303 : ProofExecution.Receipt := ⟨f4102, .inference r4098, [302], ("pointed-predicate-witness", 0)⟩
-private def cache304 : Array Theorem := cache303.push f4102
-private def node304 : ProofExecution.Receipt := ⟨f4106, .inference r4103, [301, 303], ("pointed-predicate-witness", 0)⟩
-private def cache305 : Array Theorem := cache304.push f4106
-private def node305 : ProofExecution.Receipt := ⟨f4132, .inference r4131, [304, 297], ("pointed-predicate-witness", 0)⟩
-private def cache306 : Array Theorem := cache305.push f4132
-private def node306 : ProofExecution.Receipt := ⟨f1813, .inference r1809, [], ("pointed-predicate-witness", 0)⟩
-private def cache307 : Array Theorem := cache306.push f1813
-private def node307 : ProofExecution.Receipt := ⟨f4138, .inference r4133, [305, 306], ("pointed-predicate-witness", 0)⟩
-private def cache308 : Array Theorem := cache307.push f4138
-private def node308 : ProofExecution.Receipt := ⟨f4152, .inference r4148, [], ("pointed-predicate-witness", 0)⟩
-private def cache309 : Array Theorem := cache308.push f4152
-private def node309 : ProofExecution.Receipt := ⟨f4158, .inference r4153, [308], ("pointed-predicate-witness", 0)⟩
-private def cache310 : Array Theorem := cache309.push f4158
-private def node310 : ProofExecution.Receipt := ⟨f1874, .inference r1868, [], ("pointed-predicate-witness", 0)⟩
-private def cache311 : Array Theorem := cache310.push f1874
-private def node311 : ProofExecution.Receipt := ⟨f4165, .inference r4159, [310], ("pointed-predicate-witness", 0)⟩
-private def cache312 : Array Theorem := cache311.push f4165
-private def node312 : ProofExecution.Receipt := ⟨f3700, .inference r3696, [], ("pointed-predicate-witness", 0)⟩
-private def cache313 : Array Theorem := cache312.push f3700
-private def node313 : ProofExecution.Receipt := ⟨f4171, .inference r4166, [311, 312], ("pointed-predicate-witness", 0)⟩
-private def cache314 : Array Theorem := cache313.push f4171
-private def node314 : ProofExecution.Receipt := ⟨f4182, .inference r4178, [], ("pointed-predicate-witness", 0)⟩
-private def cache315 : Array Theorem := cache314.push f4182
-private def node315 : ProofExecution.Receipt := ⟨f4187, .inference r4183, [314], ("pointed-predicate-witness", 0)⟩
-private def cache316 : Array Theorem := cache315.push f4187
-private def node316 : ProofExecution.Receipt := ⟨f4191, .inference r4188, [313, 315], ("pointed-predicate-witness", 0)⟩
-private def cache317 : Array Theorem := cache316.push f4191
-private def node317 : ProofExecution.Receipt := ⟨f4195, .inference r4192, [309, 316], ("pointed-predicate-witness", 0)⟩
-private def cache318 : Array Theorem := cache317.push f4195
-private def node318 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache319 : Array Theorem := cache318.push f725
-private def node319 : ProofExecution.Receipt := ⟨f4200, .inference r4196, [318, 317], ("pointed-predicate-witness", 0)⟩
-private def cache320 : Array Theorem := cache319.push f4200
-private def node320 : ProofExecution.Receipt := ⟨f4205, .inference r4202, [], ("pointed-predicate-witness", 0)⟩
-private def cache321 : Array Theorem := cache320.push f4205
-private def node321 : ProofExecution.Receipt := ⟨f4211, .inference r4206, [319, 320], ("pointed-predicate-witness", 0)⟩
-private def cache322 : Array Theorem := cache321.push f4211
-private def node322 : ProofExecution.Receipt := ⟨f4214, .inference r4212, [321, 320], ("pointed-predicate-witness", 0)⟩
-private def cache323 : Array Theorem := cache322.push f4214
-private def node323 : ProofExecution.Receipt := ⟨f2179, .inference r2175, [], ("pointed-predicate-witness", 0)⟩
-private def cache324 : Array Theorem := cache323.push f2179
-private def node324 : ProofExecution.Receipt := ⟨f2186, .inference r2180, [323], ("pointed-predicate-witness", 0)⟩
-private def cache325 : Array Theorem := cache324.push f2186
-private def node325 : ProofExecution.Receipt := ⟨f1874, .inference r1868, [], ("pointed-predicate-witness", 0)⟩
-private def cache326 : Array Theorem := cache325.push f1874
-private def node326 : ProofExecution.Receipt := ⟨f2202, .inference r2192, [325], ("pointed-predicate-witness", 0)⟩
-private def cache327 : Array Theorem := cache326.push f2202
-private def node327 : ProofExecution.Receipt := ⟨f2207, .inference r2203, [], ("pointed-predicate-witness", 0)⟩
-private def cache328 : Array Theorem := cache327.push f2207
-private def node328 : ProofExecution.Receipt := ⟨f2213, .inference r2208, [326, 327], ("pointed-predicate-witness", 0)⟩
-private def cache329 : Array Theorem := cache328.push f2213
-private def node329 : ProofExecution.Receipt := ⟨f2224, .inference r2220, [], ("pointed-predicate-witness", 0)⟩
-private def cache330 : Array Theorem := cache329.push f2224
-private def node330 : ProofExecution.Receipt := ⟨f2229, .inference r2225, [329], ("pointed-predicate-witness", 0)⟩
-private def cache331 : Array Theorem := cache330.push f2229
-private def node331 : ProofExecution.Receipt := ⟨f2233, .inference r2230, [328, 330], ("pointed-predicate-witness", 0)⟩
-private def cache332 : Array Theorem := cache331.push f2233
-private def node332 : ProofExecution.Receipt := ⟨f2237, .inference r2234, [324, 331], ("pointed-predicate-witness", 0)⟩
-private def cache333 : Array Theorem := cache332.push f2237
-private def node333 : ProofExecution.Receipt := ⟨f4218, .inference r4215, [322, 307], ("pointed-predicate-witness", 0)⟩
-private def cache334 : Array Theorem := cache333.push f4218
-private def node334 : ProofExecution.Receipt := ⟨f4220, .inference r4219, [333, 332], ("pointed-predicate-witness", 0)⟩
-private def cache335 : Array Theorem := cache334.push f4220
-private def node335 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache336 : Array Theorem := cache335.push f725
-private def node336 : ProofExecution.Receipt := ⟨f4225, .inference r4221, [335, 334], ("pointed-predicate-witness", 0)⟩
-private def cache337 : Array Theorem := cache336.push f4225
-private def node337 : ProofExecution.Receipt := ⟨f4229, .inference r4226, [], ("pointed-predicate-witness", 0)⟩
-private def cache338 : Array Theorem := cache337.push f4229
-private def node338 : ProofExecution.Receipt := ⟨f4235, .inference r4230, [336, 337], ("pointed-predicate-witness", 0)⟩
-private def cache339 : Array Theorem := cache338.push f4235
-private def node339 : ProofExecution.Receipt := ⟨f4238, .inference r4236, [338, 337], ("pointed-predicate-witness", 0)⟩
-private def cache340 : Array Theorem := cache339.push f4238
-private def node340 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache341 : Array Theorem := cache340.push f777
-private def node341 : ProofExecution.Receipt := ⟨f4240, .inference r4239, [339, 340], ("pointed-predicate-witness", 0)⟩
-private def cache342 : Array Theorem := cache341.push f4240
-private def node342 : ProofExecution.Receipt := ⟨f4244, .inference r4241, [296, 341], ("pointed-predicate-witness", 0)⟩
-private def cache343 : Array Theorem := cache342.push f4244
-private def node343 : ProofExecution.Receipt := ⟨f2342, .inference r2313, [], ("pointed-predicate-witness", 0)⟩
-private def cache344 : Array Theorem := cache343.push f2342
-private def node344 : ProofExecution.Receipt := ⟨f4255, .inference r4245, [343], ("pointed-predicate-witness", 0)⟩
-private def cache345 : Array Theorem := cache344.push f4255
-private def node345 : ProofExecution.Receipt := ⟨f3700, .inference r3696, [], ("pointed-predicate-witness", 0)⟩
-private def cache346 : Array Theorem := cache345.push f3700
-private def node346 : ProofExecution.Receipt := ⟨f4262, .inference r4256, [344, 345], ("pointed-predicate-witness", 0)⟩
-private def cache347 : Array Theorem := cache346.push f4262
-private def node347 : ProofExecution.Receipt := ⟨f4280, .inference r4273, [], ("pointed-predicate-witness", 0)⟩
-private def cache348 : Array Theorem := cache347.push f4280
-private def node348 : ProofExecution.Receipt := ⟨f4285, .inference r4281, [347], ("pointed-predicate-witness", 0)⟩
-private def cache349 : Array Theorem := cache348.push f4285
-private def node349 : ProofExecution.Receipt := ⟨f4289, .inference r4286, [346, 348], ("pointed-predicate-witness", 0)⟩
-private def cache350 : Array Theorem := cache349.push f4289
-private def node350 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache351 : Array Theorem := cache350.push f725
-private def node351 : ProofExecution.Receipt := ⟨f4295, .inference r4290, [350, 349], ("pointed-predicate-witness", 0)⟩
-private def cache352 : Array Theorem := cache351.push f4295
-private def node352 : ProofExecution.Receipt := ⟨f4300, .inference r4297, [], ("pointed-predicate-witness", 0)⟩
-private def cache353 : Array Theorem := cache352.push f4300
-private def node353 : ProofExecution.Receipt := ⟨f4306, .inference r4301, [351, 352], ("pointed-predicate-witness", 0)⟩
-private def cache354 : Array Theorem := cache353.push f4306
-private def node354 : ProofExecution.Receipt := ⟨f4309, .inference r4307, [353, 352], ("pointed-predicate-witness", 0)⟩
-private def cache355 : Array Theorem := cache354.push f4309
-private def node355 : ProofExecution.Receipt := ⟨f4311, .inference r4310, [354, 342], ("pointed-predicate-witness", 0)⟩
-private def cache356 : Array Theorem := cache355.push f4311
-private def node356 : ProofExecution.Receipt := ⟨f3652, .inference r3651, [], ("pointed-predicate-witness", 0)⟩
-private def cache357 : Array Theorem := cache356.push f3652
-private def node357 : ProofExecution.Receipt := ⟨f4315, .inference r4312, [356, 355], ("pointed-predicate-witness", 0)⟩
-private def cache358 : Array Theorem := cache357.push f4315
-private def node358 : ProofExecution.Receipt := ⟨f4311, .inference r4316, [357, 356], ("pointed-predicate-witness", 0)⟩
-private def cache359 : Array Theorem := cache358.push f4311
-private def node359 : ProofExecution.Receipt := ⟨f3652, .inference r3651, [], ("pointed-predicate-witness", 0)⟩
-private def cache360 : Array Theorem := cache359.push f3652
-private def node360 : ProofExecution.Receipt := ⟨f3964, .inference r3960, [], ("pointed-predicate-witness", 0)⟩
-private def cache361 : Array Theorem := cache360.push f3964
-private def node361 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache362 : Array Theorem := cache361.push f777
-private def node362 : ProofExecution.Receipt := ⟨f4320, .inference r4317, [359, 361], ("pointed-predicate-witness", 0)⟩
-private def cache363 : Array Theorem := cache362.push f4320
-private def node363 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache364 : Array Theorem := cache363.push f777
-private def node364 : ProofExecution.Receipt := ⟨f4324, .inference r4321, [358, 363], ("pointed-predicate-witness", 0)⟩
-private def cache365 : Array Theorem := cache364.push f4324
-private def node365 : ProofExecution.Receipt := ⟨f4330, .inference r4325, [360, 362], ("pointed-predicate-witness", 0)⟩
-private def cache366 : Array Theorem := cache365.push f4330
-private def node366 : ProofExecution.Receipt := ⟨f4336, .inference r4331, [365, 364], ("pointed-predicate-witness", 0)⟩
-private def cache367 : Array Theorem := cache366.push f4336
-private def node367 : ProofExecution.Receipt := ⟨f4348, .inference r4337, [366], ("pointed-predicate-witness", 0)⟩
-private def cache368 : Array Theorem := cache367.push f4348
-private def node368 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache369 : Array Theorem := cache368.push f1336
-private def node369 : ProofExecution.Receipt := ⟨f4366, .inference r4353, [368], ("pointed-predicate-witness", 0)⟩
-private def cache370 : Array Theorem := cache369.push f4366
-private def node370 : ProofExecution.Receipt := ⟨f4300, .inference r4297, [], ("pointed-predicate-witness", 0)⟩
-private def cache371 : Array Theorem := cache370.push f4300
-private def node371 : ProofExecution.Receipt := ⟨f4373, .inference r4367, [369, 370], ("pointed-predicate-witness", 0)⟩
-private def cache372 : Array Theorem := cache371.push f4373
-private def node372 : ProofExecution.Receipt := ⟨f4394, .inference r4386, [], ("pointed-predicate-witness", 0)⟩
-private def cache373 : Array Theorem := cache372.push f4394
-private def node373 : ProofExecution.Receipt := ⟨f4403, .inference r4399, [372], ("pointed-predicate-witness", 0)⟩
-private def cache374 : Array Theorem := cache373.push f4403
-private def node374 : ProofExecution.Receipt := ⟨f4407, .inference r4404, [371, 373], ("pointed-predicate-witness", 0)⟩
-private def cache375 : Array Theorem := cache374.push f4407
-private def node375 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache376 : Array Theorem := cache375.push f725
-private def node376 : ProofExecution.Receipt := ⟨f4413, .inference r4408, [375, 374], ("pointed-predicate-witness", 0)⟩
-private def cache377 : Array Theorem := cache376.push f4413
-private def node377 : ProofExecution.Receipt := ⟨f4418, .inference r4415, [], ("pointed-predicate-witness", 0)⟩
-private def cache378 : Array Theorem := cache377.push f4418
-private def node378 : ProofExecution.Receipt := ⟨f4424, .inference r4419, [376, 377], ("pointed-predicate-witness", 0)⟩
-private def cache379 : Array Theorem := cache378.push f4424
-private def node379 : ProofExecution.Receipt := ⟨f4427, .inference r4425, [378, 377], ("pointed-predicate-witness", 0)⟩
-private def cache380 : Array Theorem := cache379.push f4427
-private def node380 : ProofExecution.Receipt := ⟨f4429, .inference r4428, [379, 367], ("pointed-predicate-witness", 0)⟩
-private def cache381 : Array Theorem := cache380.push f4429
-private def node381 : ProofExecution.Receipt := ⟨f4431, .inference r4430, [], ("pointed-predicate-witness", 0)⟩
-private def cache382 : Array Theorem := cache381.push f4431
-private def node382 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache383 : Array Theorem := cache382.push f1336
-private def node383 : ProofExecution.Receipt := ⟨f4366, .inference r4353, [382], ("pointed-predicate-witness", 0)⟩
-private def cache384 : Array Theorem := cache383.push f4366
-private def node384 : ProofExecution.Receipt := ⟨f4300, .inference r4297, [], ("pointed-predicate-witness", 0)⟩
-private def cache385 : Array Theorem := cache384.push f4300
-private def node385 : ProofExecution.Receipt := ⟨f4373, .inference r4367, [383, 384], ("pointed-predicate-witness", 0)⟩
-private def cache386 : Array Theorem := cache385.push f4373
-private def node386 : ProofExecution.Receipt := ⟨f4394, .inference r4386, [], ("pointed-predicate-witness", 0)⟩
-private def cache387 : Array Theorem := cache386.push f4394
-private def node387 : ProofExecution.Receipt := ⟨f4403, .inference r4399, [386], ("pointed-predicate-witness", 0)⟩
-private def cache388 : Array Theorem := cache387.push f4403
-private def node388 : ProofExecution.Receipt := ⟨f4407, .inference r4404, [385, 387], ("pointed-predicate-witness", 0)⟩
-private def cache389 : Array Theorem := cache388.push f4407
-private def node389 : ProofExecution.Receipt := ⟨f4433, .inference r4432, [388, 381], ("pointed-predicate-witness", 0)⟩
-private def cache390 : Array Theorem := cache389.push f4433
-private def node390 : ProofExecution.Receipt := ⟨f1813, .inference r1809, [], ("pointed-predicate-witness", 0)⟩
-private def cache391 : Array Theorem := cache390.push f1813
-private def node391 : ProofExecution.Receipt := ⟨f4439, .inference r4434, [389, 390], ("pointed-predicate-witness", 0)⟩
-private def cache392 : Array Theorem := cache391.push f4439
-private def node392 : ProofExecution.Receipt := ⟨f4455, .inference r4451, [], ("pointed-predicate-witness", 0)⟩
-private def cache393 : Array Theorem := cache392.push f4455
-private def node393 : ProofExecution.Receipt := ⟨f4461, .inference r4456, [392], ("pointed-predicate-witness", 0)⟩
-private def cache394 : Array Theorem := cache393.push f4461
-private def node394 : ProofExecution.Receipt := ⟨f1874, .inference r1868, [], ("pointed-predicate-witness", 0)⟩
-private def cache395 : Array Theorem := cache394.push f1874
-private def node395 : ProofExecution.Receipt := ⟨f4468, .inference r4462, [394], ("pointed-predicate-witness", 0)⟩
-private def cache396 : Array Theorem := cache395.push f4468
-private def node396 : ProofExecution.Receipt := ⟨f4300, .inference r4297, [], ("pointed-predicate-witness", 0)⟩
-private def cache397 : Array Theorem := cache396.push f4300
-private def node397 : ProofExecution.Receipt := ⟨f4474, .inference r4469, [395, 396], ("pointed-predicate-witness", 0)⟩
-private def cache398 : Array Theorem := cache397.push f4474
-private def node398 : ProofExecution.Receipt := ⟨f4485, .inference r4481, [], ("pointed-predicate-witness", 0)⟩
-private def cache399 : Array Theorem := cache398.push f4485
-private def node399 : ProofExecution.Receipt := ⟨f4490, .inference r4486, [398], ("pointed-predicate-witness", 0)⟩
-private def cache400 : Array Theorem := cache399.push f4490
-private def node400 : ProofExecution.Receipt := ⟨f4494, .inference r4491, [397, 399], ("pointed-predicate-witness", 0)⟩
-private def cache401 : Array Theorem := cache400.push f4494
-private def node401 : ProofExecution.Receipt := ⟨f4498, .inference r4495, [393, 400], ("pointed-predicate-witness", 0)⟩
-private def cache402 : Array Theorem := cache401.push f4498
-private def node402 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache403 : Array Theorem := cache402.push f725
-private def node403 : ProofExecution.Receipt := ⟨f4503, .inference r4499, [402, 401], ("pointed-predicate-witness", 0)⟩
-private def cache404 : Array Theorem := cache403.push f4503
-private def node404 : ProofExecution.Receipt := ⟨f4508, .inference r4505, [], ("pointed-predicate-witness", 0)⟩
-private def cache405 : Array Theorem := cache404.push f4508
-private def node405 : ProofExecution.Receipt := ⟨f4514, .inference r4509, [403, 404], ("pointed-predicate-witness", 0)⟩
-private def cache406 : Array Theorem := cache405.push f4514
-private def node406 : ProofExecution.Receipt := ⟨f4517, .inference r4515, [405, 404], ("pointed-predicate-witness", 0)⟩
-private def cache407 : Array Theorem := cache406.push f4517
-private def node407 : ProofExecution.Receipt := ⟨f2179, .inference r2175, [], ("pointed-predicate-witness", 0)⟩
-private def cache408 : Array Theorem := cache407.push f2179
-private def node408 : ProofExecution.Receipt := ⟨f2186, .inference r2180, [407], ("pointed-predicate-witness", 0)⟩
-private def cache409 : Array Theorem := cache408.push f2186
-private def node409 : ProofExecution.Receipt := ⟨f1874, .inference r1868, [], ("pointed-predicate-witness", 0)⟩
-private def cache410 : Array Theorem := cache409.push f1874
-private def node410 : ProofExecution.Receipt := ⟨f2202, .inference r2192, [409], ("pointed-predicate-witness", 0)⟩
-private def cache411 : Array Theorem := cache410.push f2202
-private def node411 : ProofExecution.Receipt := ⟨f2207, .inference r2203, [], ("pointed-predicate-witness", 0)⟩
-private def cache412 : Array Theorem := cache411.push f2207
-private def node412 : ProofExecution.Receipt := ⟨f2213, .inference r2208, [410, 411], ("pointed-predicate-witness", 0)⟩
-private def cache413 : Array Theorem := cache412.push f2213
-private def node413 : ProofExecution.Receipt := ⟨f2224, .inference r2220, [], ("pointed-predicate-witness", 0)⟩
-private def cache414 : Array Theorem := cache413.push f2224
-private def node414 : ProofExecution.Receipt := ⟨f2229, .inference r2225, [413], ("pointed-predicate-witness", 0)⟩
-private def cache415 : Array Theorem := cache414.push f2229
-private def node415 : ProofExecution.Receipt := ⟨f2233, .inference r2230, [412, 414], ("pointed-predicate-witness", 0)⟩
-private def cache416 : Array Theorem := cache415.push f2233
-private def node416 : ProofExecution.Receipt := ⟨f2237, .inference r2234, [408, 415], ("pointed-predicate-witness", 0)⟩
-private def cache417 : Array Theorem := cache416.push f2237
-private def node417 : ProofExecution.Receipt := ⟨f4521, .inference r4518, [406, 391], ("pointed-predicate-witness", 0)⟩
-private def cache418 : Array Theorem := cache417.push f4521
-private def node418 : ProofExecution.Receipt := ⟨f4523, .inference r4522, [417, 416], ("pointed-predicate-witness", 0)⟩
-private def cache419 : Array Theorem := cache418.push f4523
-private def node419 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache420 : Array Theorem := cache419.push f725
-private def node420 : ProofExecution.Receipt := ⟨f4528, .inference r4524, [419, 418], ("pointed-predicate-witness", 0)⟩
-private def cache421 : Array Theorem := cache420.push f4528
-private def node421 : ProofExecution.Receipt := ⟨f4530, .inference r4529, [], ("pointed-predicate-witness", 0)⟩
-private def cache422 : Array Theorem := cache421.push f4530
-private def node422 : ProofExecution.Receipt := ⟨f4536, .inference r4531, [420, 421], ("pointed-predicate-witness", 0)⟩
-private def cache423 : Array Theorem := cache422.push f4536
-private def node423 : ProofExecution.Receipt := ⟨f4539, .inference r4537, [422, 421], ("pointed-predicate-witness", 0)⟩
-private def cache424 : Array Theorem := cache423.push f4539
-private def node424 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache425 : Array Theorem := cache424.push f777
-private def node425 : ProofExecution.Receipt := ⟨f4541, .inference r4540, [423, 424], ("pointed-predicate-witness", 0)⟩
-private def cache426 : Array Theorem := cache425.push f4541
-private def node426 : ProofExecution.Receipt := ⟨f4545, .inference r4542, [380, 425], ("pointed-predicate-witness", 0)⟩
-private def cache427 : Array Theorem := cache426.push f4545
-private def node427 : ProofExecution.Receipt := ⟨f2342, .inference r2313, [], ("pointed-predicate-witness", 0)⟩
-private def cache428 : Array Theorem := cache427.push f2342
-private def node428 : ProofExecution.Receipt := ⟨f4556, .inference r4546, [427], ("pointed-predicate-witness", 0)⟩
-private def cache429 : Array Theorem := cache428.push f4556
-private def node429 : ProofExecution.Receipt := ⟨f4300, .inference r4297, [], ("pointed-predicate-witness", 0)⟩
-private def cache430 : Array Theorem := cache429.push f4300
-private def node430 : ProofExecution.Receipt := ⟨f4563, .inference r4557, [428, 429], ("pointed-predicate-witness", 0)⟩
-private def cache431 : Array Theorem := cache430.push f4563
-private def node431 : ProofExecution.Receipt := ⟨f4581, .inference r4574, [], ("pointed-predicate-witness", 0)⟩
-private def cache432 : Array Theorem := cache431.push f4581
-private def node432 : ProofExecution.Receipt := ⟨f4586, .inference r4582, [431], ("pointed-predicate-witness", 0)⟩
-private def cache433 : Array Theorem := cache432.push f4586
-private def node433 : ProofExecution.Receipt := ⟨f4590, .inference r4587, [430, 432], ("pointed-predicate-witness", 0)⟩
-private def cache434 : Array Theorem := cache433.push f4590
-private def node434 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache435 : Array Theorem := cache434.push f725
-private def node435 : ProofExecution.Receipt := ⟨f4596, .inference r4591, [434, 433], ("pointed-predicate-witness", 0)⟩
-private def cache436 : Array Theorem := cache435.push f4596
-private def node436 : ProofExecution.Receipt := ⟨f4601, .inference r4598, [], ("pointed-predicate-witness", 0)⟩
-private def cache437 : Array Theorem := cache436.push f4601
-private def node437 : ProofExecution.Receipt := ⟨f4607, .inference r4602, [435, 436], ("pointed-predicate-witness", 0)⟩
-private def cache438 : Array Theorem := cache437.push f4607
-private def node438 : ProofExecution.Receipt := ⟨f4610, .inference r4608, [437, 436], ("pointed-predicate-witness", 0)⟩
-private def cache439 : Array Theorem := cache438.push f4610
-private def node439 : ProofExecution.Receipt := ⟨f4612, .inference r4611, [438, 426], ("pointed-predicate-witness", 0)⟩
-private def cache440 : Array Theorem := cache439.push f4612
-private def node440 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache441 : Array Theorem := cache440.push f777
-private def node441 : ProofExecution.Receipt := ⟨f4616, .inference r4613, [439, 440], ("pointed-predicate-witness", 0)⟩
-private def cache442 : Array Theorem := cache441.push f4616
-private def node442 : ProofExecution.Receipt := ⟨f4621, .inference r4617, [441], ("pointed-predicate-witness", 0)⟩
-private def cache443 : Array Theorem := cache442.push f4621
-private def node443 : ProofExecution.Receipt := ⟨f4634, .inference r4628, [], ("pointed-predicate-witness", 0)⟩
-private def cache444 : Array Theorem := cache443.push f4634
-private def node444 : ProofExecution.Receipt := ⟨f4641, .inference r4638, [443], ("pointed-predicate-witness", 0)⟩
-private def cache445 : Array Theorem := cache444.push f4641
-private def node445 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache446 : Array Theorem := cache445.push f725
-private def node446 : ProofExecution.Receipt := ⟨f4646, .inference r4642, [445, 444], ("pointed-predicate-witness", 0)⟩
-private def cache447 : Array Theorem := cache446.push f4646
-private def node447 : ProofExecution.Receipt := ⟨f2635, .inference r3565, [], ("pointed-predicate-witness", 0)⟩
-private def cache448 : Array Theorem := cache447.push f2635
-private def node448 : ProofExecution.Receipt := ⟨f4651, .inference r4647, [446, 447], ("pointed-predicate-witness", 0)⟩
-private def cache449 : Array Theorem := cache448.push f4651
-private def node449 : ProofExecution.Receipt := ⟨f4654, .inference r4652, [448, 447], ("pointed-predicate-witness", 0)⟩
-private def cache450 : Array Theorem := cache449.push f4654
-private def node450 : ProofExecution.Receipt := ⟨f4656, .inference r4655, [449, 442], ("pointed-predicate-witness", 0)⟩
-private def cache451 : Array Theorem := cache450.push f4656
-private def node451 : ProofExecution.Receipt := ⟨f2342, .inference r2313, [], ("pointed-predicate-witness", 0)⟩
-private def cache452 : Array Theorem := cache451.push f2342
-private def node452 : ProofExecution.Receipt := ⟨f3591, .inference r3581, [451], ("pointed-predicate-witness", 0)⟩
-private def cache453 : Array Theorem := cache452.push f3591
-private def node453 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache454 : Array Theorem := cache453.push f759
-private def node454 : ProofExecution.Receipt := ⟨f3598, .inference r3592, [452, 453], ("pointed-predicate-witness", 0)⟩
-private def cache455 : Array Theorem := cache454.push f3598
-private def node455 : ProofExecution.Receipt := ⟨f3616, .inference r3609, [], ("pointed-predicate-witness", 0)⟩
-private def cache456 : Array Theorem := cache455.push f3616
-private def node456 : ProofExecution.Receipt := ⟨f3621, .inference r3617, [455], ("pointed-predicate-witness", 0)⟩
-private def cache457 : Array Theorem := cache456.push f3621
-private def node457 : ProofExecution.Receipt := ⟨f3625, .inference r3622, [454, 456], ("pointed-predicate-witness", 0)⟩
-private def cache458 : Array Theorem := cache457.push f3625
-private def node458 : ProofExecution.Receipt := ⟨f3580, .inference r4657, [457, 196], ("pointed-predicate-witness", 0)⟩
-private def cache459 : Array Theorem := cache458.push f3580
-private def node459 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache460 : Array Theorem := cache459.push f725
-private def node460 : ProofExecution.Receipt := ⟨f4661, .inference r4658, [459, 458], ("pointed-predicate-witness", 0)⟩
-private def cache461 : Array Theorem := cache460.push f4661
-private def node461 : ProofExecution.Receipt := ⟨f3283, .inference r3280, [], ("pointed-predicate-witness", 0)⟩
-private def cache462 : Array Theorem := cache461.push f3283
-private def node462 : ProofExecution.Receipt := ⟨f4666, .inference r4662, [460, 461], ("pointed-predicate-witness", 0)⟩
-private def cache463 : Array Theorem := cache462.push f4666
-private def node463 : ProofExecution.Receipt := ⟨f4669, .inference r4667, [462, 461], ("pointed-predicate-witness", 0)⟩
-private def cache464 : Array Theorem := cache463.push f4669
-private def node464 : ProofExecution.Receipt := ⟨f4671, .inference r4670, [463, 450], ("pointed-predicate-witness", 0)⟩
-private def cache465 : Array Theorem := cache464.push f4671
-private def node465 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache466 : Array Theorem := cache465.push f1336
-private def node466 : ProofExecution.Receipt := ⟨f3162, .inference r2925, [465], ("pointed-predicate-witness", 0)⟩
-private def cache467 : Array Theorem := cache466.push f3162
-private def node467 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache468 : Array Theorem := cache467.push f759
-private def node468 : ProofExecution.Receipt := ⟨f3169, .inference r3163, [466, 467], ("pointed-predicate-witness", 0)⟩
-private def cache469 : Array Theorem := cache468.push f3169
-private def node469 : ProofExecution.Receipt := ⟨f3263, .inference r3255, [], ("pointed-predicate-witness", 0)⟩
-private def cache470 : Array Theorem := cache469.push f3263
-private def node470 : ProofExecution.Receipt := ⟨f3268, .inference r3264, [469], ("pointed-predicate-witness", 0)⟩
-private def cache471 : Array Theorem := cache470.push f3268
-private def node471 : ProofExecution.Receipt := ⟨f3272, .inference r3269, [468, 470], ("pointed-predicate-witness", 0)⟩
-private def cache472 : Array Theorem := cache471.push f3272
-private def node472 : ProofExecution.Receipt := ⟨f4673, .inference r4672, [471, 464], ("pointed-predicate-witness", 0)⟩
-private def cache473 : Array Theorem := cache472.push f4673
-private def node473 : ProofExecution.Receipt := ⟨f3806, .inference r3802, [], ("pointed-predicate-witness", 0)⟩
-private def cache474 : Array Theorem := cache473.push f3806
-private def node474 : ProofExecution.Receipt := ⟨f4679, .inference r4674, [472, 473], ("pointed-predicate-witness", 0)⟩
-private def cache475 : Array Theorem := cache474.push f4679
-private def node475 : ProofExecution.Receipt := ⟨f3324, .inference r3320, [], ("pointed-predicate-witness", 0)⟩
-private def cache476 : Array Theorem := cache475.push f3324
-private def node476 : ProofExecution.Receipt := ⟨f4685, .inference r4680, [475], ("pointed-predicate-witness", 0)⟩
-private def cache477 : Array Theorem := cache476.push f4685
-private def node477 : ProofExecution.Receipt := ⟨f3845, .inference r3841, [], ("pointed-predicate-witness", 0)⟩
-private def cache478 : Array Theorem := cache477.push f3845
-private def node478 : ProofExecution.Receipt := ⟨f4690, .inference r4686, [477], ("pointed-predicate-witness", 0)⟩
-private def cache479 : Array Theorem := cache478.push f4690
-private def node479 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache480 : Array Theorem := cache479.push f759
-private def node480 : ProofExecution.Receipt := ⟨f4696, .inference r4691, [478, 479], ("pointed-predicate-witness", 0)⟩
-private def cache481 : Array Theorem := cache480.push f4696
-private def node481 : ProofExecution.Receipt := ⟨f3865, .inference r3861, [], ("pointed-predicate-witness", 0)⟩
-private def cache482 : Array Theorem := cache481.push f3865
-private def node482 : ProofExecution.Receipt := ⟨f4701, .inference r4697, [481], ("pointed-predicate-witness", 0)⟩
-private def cache483 : Array Theorem := cache482.push f4701
-private def node483 : ProofExecution.Receipt := ⟨f4705, .inference r4702, [480, 482], ("pointed-predicate-witness", 0)⟩
-private def cache484 : Array Theorem := cache483.push f4705
-private def node484 : ProofExecution.Receipt := ⟨f4709, .inference r4706, [476, 483], ("pointed-predicate-witness", 0)⟩
-private def cache485 : Array Theorem := cache484.push f4709
-private def node485 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache486 : Array Theorem := cache485.push f725
-private def node486 : ProofExecution.Receipt := ⟨f4714, .inference r4710, [485, 484], ("pointed-predicate-witness", 0)⟩
-private def cache487 : Array Theorem := cache486.push f4714
-private def node487 : ProofExecution.Receipt := ⟨f4719, .inference r4716, [], ("pointed-predicate-witness", 0)⟩
-private def cache488 : Array Theorem := cache487.push f4719
-private def node488 : ProofExecution.Receipt := ⟨f4725, .inference r4720, [486, 487], ("pointed-predicate-witness", 0)⟩
-private def cache489 : Array Theorem := cache488.push f4725
-private def node489 : ProofExecution.Receipt := ⟨f4728, .inference r4726, [488, 487], ("pointed-predicate-witness", 0)⟩
-private def cache490 : Array Theorem := cache489.push f4728
-private def node490 : ProofExecution.Receipt := ⟨f2179, .inference r2175, [], ("pointed-predicate-witness", 0)⟩
-private def cache491 : Array Theorem := cache490.push f2179
-private def node491 : ProofExecution.Receipt := ⟨f3900, .inference r3894, [490], ("pointed-predicate-witness", 0)⟩
-private def cache492 : Array Theorem := cache491.push f3900
-private def node492 : ProofExecution.Receipt := ⟨f3845, .inference r3841, [], ("pointed-predicate-witness", 0)⟩
-private def cache493 : Array Theorem := cache492.push f3845
-private def node493 : ProofExecution.Receipt := ⟨f3905, .inference r3901, [492], ("pointed-predicate-witness", 0)⟩
-private def cache494 : Array Theorem := cache493.push f3905
-private def node494 : ProofExecution.Receipt := ⟨f2207, .inference r2203, [], ("pointed-predicate-witness", 0)⟩
-private def cache495 : Array Theorem := cache494.push f2207
-private def node495 : ProofExecution.Receipt := ⟨f3911, .inference r3906, [493, 494], ("pointed-predicate-witness", 0)⟩
-private def cache496 : Array Theorem := cache495.push f3911
-private def node496 : ProofExecution.Receipt := ⟨f3865, .inference r3861, [], ("pointed-predicate-witness", 0)⟩
-private def cache497 : Array Theorem := cache496.push f3865
-private def node497 : ProofExecution.Receipt := ⟨f3916, .inference r3912, [496], ("pointed-predicate-witness", 0)⟩
-private def cache498 : Array Theorem := cache497.push f3916
-private def node498 : ProofExecution.Receipt := ⟨f3920, .inference r3917, [495, 497], ("pointed-predicate-witness", 0)⟩
-private def cache499 : Array Theorem := cache498.push f3920
-private def node499 : ProofExecution.Receipt := ⟨f3924, .inference r3921, [491, 498], ("pointed-predicate-witness", 0)⟩
-private def cache500 : Array Theorem := cache499.push f3924
-private def node500 : ProofExecution.Receipt := ⟨f4732, .inference r4729, [489, 474], ("pointed-predicate-witness", 0)⟩
-private def cache501 : Array Theorem := cache500.push f4732
-private def node501 : ProofExecution.Receipt := ⟨f4734, .inference r4733, [500, 499], ("pointed-predicate-witness", 0)⟩
-private def cache502 : Array Theorem := cache501.push f4734
-private def node502 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache503 : Array Theorem := cache502.push f725
-private def node503 : ProofExecution.Receipt := ⟨f4736, .inference r4735, [502, 501], ("pointed-predicate-witness", 0)⟩
-private def cache504 : Array Theorem := cache503.push f4736
-private def node504 : ProofExecution.Receipt := ⟨f759, .inference r2249, [], ("pointed-predicate-witness", 0)⟩
-private def cache505 : Array Theorem := cache504.push f759
-private def node505 : ProofExecution.Receipt := ⟨f4738, .inference r4737, [503, 504], ("pointed-predicate-witness", 0)⟩
-private def cache506 : Array Theorem := cache505.push f4738
-private def node506 : ProofExecution.Receipt := ⟨f4740, .inference r4739, [505, 504], ("pointed-predicate-witness", 0)⟩
-private def cache507 : Array Theorem := cache506.push f4740
-private def node507 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache508 : Array Theorem := cache507.push f777
-private def node508 : ProofExecution.Receipt := ⟨f4742, .inference r4741, [506, 507], ("pointed-predicate-witness", 0)⟩
-private def cache509 : Array Theorem := cache508.push f4742
-private def node509 : ProofExecution.Receipt := ⟨f2342, .inference r2313, [], ("pointed-predicate-witness", 0)⟩
-private def cache510 : Array Theorem := cache509.push f2342
-private def node510 : ProofExecution.Receipt := ⟨f2353, .inference r2343, [509], ("pointed-predicate-witness", 0)⟩
-private def cache511 : Array Theorem := cache510.push f2353
-private def node511 : ProofExecution.Receipt := ⟨f737, .inference r734, [], ("pointed-predicate-witness", 0)⟩
-private def cache512 : Array Theorem := cache511.push f737
-private def node512 : ProofExecution.Receipt := ⟨f2360, .inference r2354, [510, 511], ("pointed-predicate-witness", 0)⟩
-private def cache513 : Array Theorem := cache512.push f2360
-private def node513 : ProofExecution.Receipt := ⟨f2389, .inference r2382, [], ("pointed-predicate-witness", 0)⟩
-private def cache514 : Array Theorem := cache513.push f2389
-private def node514 : ProofExecution.Receipt := ⟨f2394, .inference r2390, [513], ("pointed-predicate-witness", 0)⟩
-private def cache515 : Array Theorem := cache514.push f2394
-private def node515 : ProofExecution.Receipt := ⟨f2398, .inference r2395, [512, 514], ("pointed-predicate-witness", 0)⟩
-private def cache516 : Array Theorem := cache515.push f2398
-private def node516 : ProofExecution.Receipt := ⟨f2264, .inference r4743, [515, 95], ("pointed-predicate-witness", 0)⟩
-private def cache517 : Array Theorem := cache516.push f2264
-private def node517 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache518 : Array Theorem := cache517.push f725
-private def node518 : ProofExecution.Receipt := ⟨f4747, .inference r4744, [517, 516], ("pointed-predicate-witness", 0)⟩
-private def cache519 : Array Theorem := cache518.push f4747
-private def node519 : ProofExecution.Receipt := ⟨f1789, .inference r1786, [], ("pointed-predicate-witness", 0)⟩
-private def cache520 : Array Theorem := cache519.push f1789
-private def node520 : ProofExecution.Receipt := ⟨f4752, .inference r4748, [518, 519], ("pointed-predicate-witness", 0)⟩
-private def cache521 : Array Theorem := cache520.push f4752
-private def node521 : ProofExecution.Receipt := ⟨f4755, .inference r4753, [520, 519], ("pointed-predicate-witness", 0)⟩
-private def cache522 : Array Theorem := cache521.push f4755
-private def node522 : ProofExecution.Receipt := ⟨f4757, .inference r4756, [521, 508], ("pointed-predicate-witness", 0)⟩
-private def cache523 : Array Theorem := cache522.push f4757
-private def node523 : ProofExecution.Receipt := ⟨f1336, .inference r1314, [], ("pointed-predicate-witness", 0)⟩
-private def cache524 : Array Theorem := cache523.push f1336
-private def node524 : ProofExecution.Receipt := ⟨f1654, .inference r1408, [523], ("pointed-predicate-witness", 0)⟩
-private def cache525 : Array Theorem := cache524.push f1654
-private def node525 : ProofExecution.Receipt := ⟨f737, .inference r734, [], ("pointed-predicate-witness", 0)⟩
-private def cache526 : Array Theorem := cache525.push f737
-private def node526 : ProofExecution.Receipt := ⟨f1661, .inference r1655, [524, 525], ("pointed-predicate-witness", 0)⟩
-private def cache527 : Array Theorem := cache526.push f1661
-private def node527 : ProofExecution.Receipt := ⟨f1766, .inference r1757, [], ("pointed-predicate-witness", 0)⟩
-private def cache528 : Array Theorem := cache527.push f1766
-private def node528 : ProofExecution.Receipt := ⟨f1774, .inference r1770, [527], ("pointed-predicate-witness", 0)⟩
-private def cache529 : Array Theorem := cache528.push f1774
-private def node529 : ProofExecution.Receipt := ⟨f1778, .inference r1775, [526, 528], ("pointed-predicate-witness", 0)⟩
-private def cache530 : Array Theorem := cache529.push f1778
-private def node530 : ProofExecution.Receipt := ⟨f4759, .inference r4758, [529, 522], ("pointed-predicate-witness", 0)⟩
-private def cache531 : Array Theorem := cache530.push f4759
-private def node531 : ProofExecution.Receipt := ⟨f3806, .inference r3802, [], ("pointed-predicate-witness", 0)⟩
-private def cache532 : Array Theorem := cache531.push f3806
-private def node532 : ProofExecution.Receipt := ⟨f4765, .inference r4760, [530, 531], ("pointed-predicate-witness", 0)⟩
-private def cache533 : Array Theorem := cache532.push f4765
-private def node533 : ProofExecution.Receipt := ⟨f1852, .inference r1848, [], ("pointed-predicate-witness", 0)⟩
-private def cache534 : Array Theorem := cache533.push f1852
-private def node534 : ProofExecution.Receipt := ⟨f4771, .inference r4766, [533], ("pointed-predicate-witness", 0)⟩
-private def cache535 : Array Theorem := cache534.push f4771
-private def node535 : ProofExecution.Receipt := ⟨f3845, .inference r3841, [], ("pointed-predicate-witness", 0)⟩
-private def cache536 : Array Theorem := cache535.push f3845
-private def node536 : ProofExecution.Receipt := ⟨f4776, .inference r4772, [535], ("pointed-predicate-witness", 0)⟩
-private def cache537 : Array Theorem := cache536.push f4776
-private def node537 : ProofExecution.Receipt := ⟨f737, .inference r734, [], ("pointed-predicate-witness", 0)⟩
-private def cache538 : Array Theorem := cache537.push f737
-private def node538 : ProofExecution.Receipt := ⟨f4782, .inference r4777, [536, 537], ("pointed-predicate-witness", 0)⟩
-private def cache539 : Array Theorem := cache538.push f4782
-private def node539 : ProofExecution.Receipt := ⟨f3865, .inference r3861, [], ("pointed-predicate-witness", 0)⟩
-private def cache540 : Array Theorem := cache539.push f3865
-private def node540 : ProofExecution.Receipt := ⟨f4787, .inference r4783, [539], ("pointed-predicate-witness", 0)⟩
-private def cache541 : Array Theorem := cache540.push f4787
-private def node541 : ProofExecution.Receipt := ⟨f4791, .inference r4788, [538, 540], ("pointed-predicate-witness", 0)⟩
-private def cache542 : Array Theorem := cache541.push f4791
-private def node542 : ProofExecution.Receipt := ⟨f4795, .inference r4792, [534, 541], ("pointed-predicate-witness", 0)⟩
-private def cache543 : Array Theorem := cache542.push f4795
-private def node543 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache544 : Array Theorem := cache543.push f725
-private def node544 : ProofExecution.Receipt := ⟨f4800, .inference r4796, [543, 542], ("pointed-predicate-witness", 0)⟩
-private def cache545 : Array Theorem := cache544.push f4800
-private def node545 : ProofExecution.Receipt := ⟨f4805, .inference r4802, [], ("pointed-predicate-witness", 0)⟩
-private def cache546 : Array Theorem := cache545.push f4805
-private def node546 : ProofExecution.Receipt := ⟨f4811, .inference r4806, [544, 545], ("pointed-predicate-witness", 0)⟩
-private def cache547 : Array Theorem := cache546.push f4811
-private def node547 : ProofExecution.Receipt := ⟨f4814, .inference r4812, [546, 545], ("pointed-predicate-witness", 0)⟩
-private def cache548 : Array Theorem := cache547.push f4814
-private def node548 : ProofExecution.Receipt := ⟨f2179, .inference r2175, [], ("pointed-predicate-witness", 0)⟩
-private def cache549 : Array Theorem := cache548.push f2179
-private def node549 : ProofExecution.Receipt := ⟨f3900, .inference r3894, [548], ("pointed-predicate-witness", 0)⟩
-private def cache550 : Array Theorem := cache549.push f3900
-private def node550 : ProofExecution.Receipt := ⟨f3845, .inference r3841, [], ("pointed-predicate-witness", 0)⟩
-private def cache551 : Array Theorem := cache550.push f3845
-private def node551 : ProofExecution.Receipt := ⟨f3905, .inference r3901, [550], ("pointed-predicate-witness", 0)⟩
-private def cache552 : Array Theorem := cache551.push f3905
-private def node552 : ProofExecution.Receipt := ⟨f2207, .inference r2203, [], ("pointed-predicate-witness", 0)⟩
-private def cache553 : Array Theorem := cache552.push f2207
-private def node553 : ProofExecution.Receipt := ⟨f3911, .inference r3906, [551, 552], ("pointed-predicate-witness", 0)⟩
-private def cache554 : Array Theorem := cache553.push f3911
-private def node554 : ProofExecution.Receipt := ⟨f3865, .inference r3861, [], ("pointed-predicate-witness", 0)⟩
-private def cache555 : Array Theorem := cache554.push f3865
-private def node555 : ProofExecution.Receipt := ⟨f3916, .inference r3912, [554], ("pointed-predicate-witness", 0)⟩
-private def cache556 : Array Theorem := cache555.push f3916
-private def node556 : ProofExecution.Receipt := ⟨f3920, .inference r3917, [553, 555], ("pointed-predicate-witness", 0)⟩
-private def cache557 : Array Theorem := cache556.push f3920
-private def node557 : ProofExecution.Receipt := ⟨f3924, .inference r3921, [549, 556], ("pointed-predicate-witness", 0)⟩
-private def cache558 : Array Theorem := cache557.push f3924
-private def node558 : ProofExecution.Receipt := ⟨f4818, .inference r4815, [547, 532], ("pointed-predicate-witness", 0)⟩
-private def cache559 : Array Theorem := cache558.push f4818
-private def node559 : ProofExecution.Receipt := ⟨f4820, .inference r4819, [558, 557], ("pointed-predicate-witness", 0)⟩
-private def cache560 : Array Theorem := cache559.push f4820
-private def node560 : ProofExecution.Receipt := ⟨f725, .inference r716, [], ("pointed-predicate-witness", 0)⟩
-private def cache561 : Array Theorem := cache560.push f725
-private def node561 : ProofExecution.Receipt := ⟨f4824, .inference r4821, [560, 559], ("pointed-predicate-witness", 0)⟩
-private def cache562 : Array Theorem := cache561.push f4824
-private def node562 : ProofExecution.Receipt := ⟨f737, .inference r734, [], ("pointed-predicate-witness", 0)⟩
-private def cache563 : Array Theorem := cache562.push f737
-private def node563 : ProofExecution.Receipt := ⟨f4829, .inference r4825, [561, 562], ("pointed-predicate-witness", 0)⟩
-private def cache564 : Array Theorem := cache563.push f4829
-private def node564 : ProofExecution.Receipt := ⟨f4832, .inference r4830, [563, 562], ("pointed-predicate-witness", 0)⟩
-private def cache565 : Array Theorem := cache564.push f4832
-private def node565 : ProofExecution.Receipt := ⟨f777, .inference r773, [], ("pointed-predicate-witness", 0)⟩
-private def cache566 : Array Theorem := cache565.push f777
-private def node566 : ProofExecution.Receipt := ⟨f4834, .inference r4833, [564, 565], ("pointed-predicate-witness", 0)⟩
-private def cache567 : Array Theorem := cache566.push f4834
-private theorem step0 : node0.replay (ruleWitness emptyAxiomPolicy) cache0 = some cache1 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed0 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node0.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node0.conclusion) = true := by decide +kernel
-private theorem step1 : node1.replay (ruleWitness emptyAxiomPolicy) cache1 = some cache2 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed1 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node1.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node1.conclusion) = true := by decide +kernel
-private theorem step2 : node2.replay (ruleWitness emptyAxiomPolicy) cache2 = some cache3 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed2 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node2.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node2.conclusion) = true := by decide +kernel
-private theorem step3 : node3.replay (ruleWitness emptyAxiomPolicy) cache3 = some cache4 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed3 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node3.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node3.conclusion) = true := by decide +kernel
-private theorem step4 : node4.replay (ruleWitness emptyAxiomPolicy) cache4 = some cache5 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed4 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node4.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node4.conclusion) = true := by decide +kernel
-private theorem step5 : node5.replay (ruleWitness emptyAxiomPolicy) cache5 = some cache6 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed5 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node5.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node5.conclusion) = true := by decide +kernel
-private theorem step6 : node6.replay (ruleWitness emptyAxiomPolicy) cache6 = some cache7 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed6 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node6.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node6.conclusion) = true := by decide +kernel
-private theorem step7 : node7.replay (ruleWitness emptyAxiomPolicy) cache7 = some cache8 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed7 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node7.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node7.conclusion) = true := by decide +kernel
-private theorem step8 : node8.replay (ruleWitness emptyAxiomPolicy) cache8 = some cache9 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed8 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node8.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node8.conclusion) = true := by decide +kernel
-private theorem step9 : node9.replay (ruleWitness emptyAxiomPolicy) cache9 = some cache10 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed9 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node9.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node9.conclusion) = true := by decide +kernel
-private theorem step10 : node10.replay (ruleWitness emptyAxiomPolicy) cache10 = some cache11 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed10 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node10.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node10.conclusion) = true := by decide +kernel
-private theorem step11 : node11.replay (ruleWitness emptyAxiomPolicy) cache11 = some cache12 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed11 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node11.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node11.conclusion) = true := by decide +kernel
-private theorem step12 : node12.replay (ruleWitness emptyAxiomPolicy) cache12 = some cache13 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed12 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node12.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node12.conclusion) = true := by decide +kernel
-private theorem step13 : node13.replay (ruleWitness emptyAxiomPolicy) cache13 = some cache14 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed13 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node13.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node13.conclusion) = true := by decide +kernel
-private theorem step14 : node14.replay (ruleWitness emptyAxiomPolicy) cache14 = some cache15 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed14 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node14.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node14.conclusion) = true := by decide +kernel
-private theorem step15 : node15.replay (ruleWitness emptyAxiomPolicy) cache15 = some cache16 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed15 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node15.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node15.conclusion) = true := by decide +kernel
-private theorem step16 : node16.replay (ruleWitness emptyAxiomPolicy) cache16 = some cache17 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed16 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node16.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node16.conclusion) = true := by decide +kernel
-private theorem step17 : node17.replay (ruleWitness emptyAxiomPolicy) cache17 = some cache18 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed17 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node17.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node17.conclusion) = true := by decide +kernel
-private theorem step18 : node18.replay (ruleWitness emptyAxiomPolicy) cache18 = some cache19 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed18 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node18.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node18.conclusion) = true := by decide +kernel
-private theorem step19 : node19.replay (ruleWitness emptyAxiomPolicy) cache19 = some cache20 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed19 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node19.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node19.conclusion) = true := by decide +kernel
-private theorem step20 : node20.replay (ruleWitness emptyAxiomPolicy) cache20 = some cache21 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed20 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node20.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node20.conclusion) = true := by decide +kernel
-private theorem step21 : node21.replay (ruleWitness emptyAxiomPolicy) cache21 = some cache22 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed21 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node21.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node21.conclusion) = true := by decide +kernel
-private theorem step22 : node22.replay (ruleWitness emptyAxiomPolicy) cache22 = some cache23 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed22 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node22.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node22.conclusion) = true := by decide +kernel
-private theorem step23 : node23.replay (ruleWitness emptyAxiomPolicy) cache23 = some cache24 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed23 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node23.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node23.conclusion) = true := by decide +kernel
-private theorem step24 : node24.replay (ruleWitness emptyAxiomPolicy) cache24 = some cache25 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed24 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node24.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node24.conclusion) = true := by decide +kernel
-private theorem step25 : node25.replay (ruleWitness emptyAxiomPolicy) cache25 = some cache26 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed25 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node25.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node25.conclusion) = true := by decide +kernel
-private theorem step26 : node26.replay (ruleWitness emptyAxiomPolicy) cache26 = some cache27 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed26 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node26.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node26.conclusion) = true := by decide +kernel
-private theorem step27 : node27.replay (ruleWitness emptyAxiomPolicy) cache27 = some cache28 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed27 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node27.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node27.conclusion) = true := by decide +kernel
-private theorem step28 : node28.replay (ruleWitness emptyAxiomPolicy) cache28 = some cache29 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed28 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node28.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node28.conclusion) = true := by decide +kernel
-private theorem step29 : node29.replay (ruleWitness emptyAxiomPolicy) cache29 = some cache30 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed29 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node29.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node29.conclusion) = true := by decide +kernel
-private theorem step30 : node30.replay (ruleWitness emptyAxiomPolicy) cache30 = some cache31 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed30 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node30.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node30.conclusion) = true := by decide +kernel
-private theorem step31 : node31.replay (ruleWitness emptyAxiomPolicy) cache31 = some cache32 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed31 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node31.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node31.conclusion) = true := by decide +kernel
-private theorem step32 : node32.replay (ruleWitness emptyAxiomPolicy) cache32 = some cache33 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed32 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node32.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node32.conclusion) = true := by decide +kernel
-private theorem step33 : node33.replay (ruleWitness emptyAxiomPolicy) cache33 = some cache34 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed33 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node33.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node33.conclusion) = true := by decide +kernel
-private theorem step34 : node34.replay (ruleWitness emptyAxiomPolicy) cache34 = some cache35 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed34 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node34.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node34.conclusion) = true := by decide +kernel
-private theorem step35 : node35.replay (ruleWitness emptyAxiomPolicy) cache35 = some cache36 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed35 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node35.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node35.conclusion) = true := by decide +kernel
-private theorem step36 : node36.replay (ruleWitness emptyAxiomPolicy) cache36 = some cache37 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed36 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node36.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node36.conclusion) = true := by decide +kernel
-private theorem step37 : node37.replay (ruleWitness emptyAxiomPolicy) cache37 = some cache38 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed37 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node37.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node37.conclusion) = true := by decide +kernel
-private theorem step38 : node38.replay (ruleWitness emptyAxiomPolicy) cache38 = some cache39 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed38 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node38.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node38.conclusion) = true := by decide +kernel
-private theorem step39 : node39.replay (ruleWitness emptyAxiomPolicy) cache39 = some cache40 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed39 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node39.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node39.conclusion) = true := by decide +kernel
-private theorem step40 : node40.replay (ruleWitness emptyAxiomPolicy) cache40 = some cache41 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed40 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node40.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node40.conclusion) = true := by decide +kernel
-private theorem step41 : node41.replay (ruleWitness emptyAxiomPolicy) cache41 = some cache42 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed41 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node41.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node41.conclusion) = true := by decide +kernel
-private theorem step42 : node42.replay (ruleWitness emptyAxiomPolicy) cache42 = some cache43 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed42 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node42.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node42.conclusion) = true := by decide +kernel
-private theorem step43 : node43.replay (ruleWitness emptyAxiomPolicy) cache43 = some cache44 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed43 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node43.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node43.conclusion) = true := by decide +kernel
-private theorem step44 : node44.replay (ruleWitness emptyAxiomPolicy) cache44 = some cache45 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed44 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node44.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node44.conclusion) = true := by decide +kernel
-private theorem step45 : node45.replay (ruleWitness emptyAxiomPolicy) cache45 = some cache46 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed45 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node45.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node45.conclusion) = true := by decide +kernel
-private theorem step46 : node46.replay (ruleWitness emptyAxiomPolicy) cache46 = some cache47 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed46 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node46.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node46.conclusion) = true := by decide +kernel
-private theorem step47 : node47.replay (ruleWitness emptyAxiomPolicy) cache47 = some cache48 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed47 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node47.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node47.conclusion) = true := by decide +kernel
-private theorem step48 : node48.replay (ruleWitness emptyAxiomPolicy) cache48 = some cache49 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed48 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node48.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node48.conclusion) = true := by decide +kernel
-private theorem step49 : node49.replay (ruleWitness emptyAxiomPolicy) cache49 = some cache50 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed49 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node49.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node49.conclusion) = true := by decide +kernel
-private theorem step50 : node50.replay (ruleWitness emptyAxiomPolicy) cache50 = some cache51 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed50 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node50.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node50.conclusion) = true := by decide +kernel
-private theorem step51 : node51.replay (ruleWitness emptyAxiomPolicy) cache51 = some cache52 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed51 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node51.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node51.conclusion) = true := by decide +kernel
-private theorem step52 : node52.replay (ruleWitness emptyAxiomPolicy) cache52 = some cache53 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed52 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node52.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node52.conclusion) = true := by decide +kernel
-private theorem step53 : node53.replay (ruleWitness emptyAxiomPolicy) cache53 = some cache54 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed53 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node53.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node53.conclusion) = true := by decide +kernel
-private theorem step54 : node54.replay (ruleWitness emptyAxiomPolicy) cache54 = some cache55 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed54 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node54.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node54.conclusion) = true := by decide +kernel
-private theorem step55 : node55.replay (ruleWitness emptyAxiomPolicy) cache55 = some cache56 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed55 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node55.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node55.conclusion) = true := by decide +kernel
-private theorem step56 : node56.replay (ruleWitness emptyAxiomPolicy) cache56 = some cache57 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed56 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node56.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node56.conclusion) = true := by decide +kernel
-private theorem step57 : node57.replay (ruleWitness emptyAxiomPolicy) cache57 = some cache58 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed57 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node57.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node57.conclusion) = true := by decide +kernel
-private theorem step58 : node58.replay (ruleWitness emptyAxiomPolicy) cache58 = some cache59 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed58 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node58.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node58.conclusion) = true := by decide +kernel
-private theorem step59 : node59.replay (ruleWitness emptyAxiomPolicy) cache59 = some cache60 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed59 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node59.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node59.conclusion) = true := by decide +kernel
-private theorem step60 : node60.replay (ruleWitness emptyAxiomPolicy) cache60 = some cache61 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed60 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node60.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node60.conclusion) = true := by decide +kernel
-private theorem step61 : node61.replay (ruleWitness emptyAxiomPolicy) cache61 = some cache62 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed61 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node61.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node61.conclusion) = true := by decide +kernel
-private theorem step62 : node62.replay (ruleWitness emptyAxiomPolicy) cache62 = some cache63 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed62 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node62.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node62.conclusion) = true := by decide +kernel
-private theorem step63 : node63.replay (ruleWitness emptyAxiomPolicy) cache63 = some cache64 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed63 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node63.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node63.conclusion) = true := by decide +kernel
-private theorem step64 : node64.replay (ruleWitness emptyAxiomPolicy) cache64 = some cache65 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed64 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node64.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node64.conclusion) = true := by decide +kernel
-private theorem step65 : node65.replay (ruleWitness emptyAxiomPolicy) cache65 = some cache66 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed65 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node65.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node65.conclusion) = true := by decide +kernel
-private theorem step66 : node66.replay (ruleWitness emptyAxiomPolicy) cache66 = some cache67 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed66 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node66.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node66.conclusion) = true := by decide +kernel
-private theorem step67 : node67.replay (ruleWitness emptyAxiomPolicy) cache67 = some cache68 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed67 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node67.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node67.conclusion) = true := by decide +kernel
-private theorem step68 : node68.replay (ruleWitness emptyAxiomPolicy) cache68 = some cache69 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed68 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node68.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node68.conclusion) = true := by decide +kernel
-private theorem step69 : node69.replay (ruleWitness emptyAxiomPolicy) cache69 = some cache70 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed69 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node69.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node69.conclusion) = true := by decide +kernel
-private theorem step70 : node70.replay (ruleWitness emptyAxiomPolicy) cache70 = some cache71 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed70 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node70.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node70.conclusion) = true := by decide +kernel
-private theorem step71 : node71.replay (ruleWitness emptyAxiomPolicy) cache71 = some cache72 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed71 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node71.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node71.conclusion) = true := by decide +kernel
-private theorem step72 : node72.replay (ruleWitness emptyAxiomPolicy) cache72 = some cache73 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed72 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node72.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node72.conclusion) = true := by decide +kernel
-private theorem step73 : node73.replay (ruleWitness emptyAxiomPolicy) cache73 = some cache74 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed73 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node73.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node73.conclusion) = true := by decide +kernel
-private theorem step74 : node74.replay (ruleWitness emptyAxiomPolicy) cache74 = some cache75 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed74 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node74.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node74.conclusion) = true := by decide +kernel
-private theorem step75 : node75.replay (ruleWitness emptyAxiomPolicy) cache75 = some cache76 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed75 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node75.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node75.conclusion) = true := by decide +kernel
-private theorem step76 : node76.replay (ruleWitness emptyAxiomPolicy) cache76 = some cache77 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed76 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node76.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node76.conclusion) = true := by decide +kernel
-private theorem step77 : node77.replay (ruleWitness emptyAxiomPolicy) cache77 = some cache78 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed77 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node77.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node77.conclusion) = true := by decide +kernel
-private theorem step78 : node78.replay (ruleWitness emptyAxiomPolicy) cache78 = some cache79 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed78 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node78.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node78.conclusion) = true := by decide +kernel
-private theorem step79 : node79.replay (ruleWitness emptyAxiomPolicy) cache79 = some cache80 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed79 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node79.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node79.conclusion) = true := by decide +kernel
-private theorem step80 : node80.replay (ruleWitness emptyAxiomPolicy) cache80 = some cache81 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed80 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node80.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node80.conclusion) = true := by decide +kernel
-private theorem step81 : node81.replay (ruleWitness emptyAxiomPolicy) cache81 = some cache82 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed81 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node81.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node81.conclusion) = true := by decide +kernel
-private theorem step82 : node82.replay (ruleWitness emptyAxiomPolicy) cache82 = some cache83 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed82 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node82.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node82.conclusion) = true := by decide +kernel
-private theorem step83 : node83.replay (ruleWitness emptyAxiomPolicy) cache83 = some cache84 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed83 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node83.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node83.conclusion) = true := by decide +kernel
-private theorem step84 : node84.replay (ruleWitness emptyAxiomPolicy) cache84 = some cache85 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed84 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node84.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node84.conclusion) = true := by decide +kernel
-private theorem step85 : node85.replay (ruleWitness emptyAxiomPolicy) cache85 = some cache86 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed85 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node85.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node85.conclusion) = true := by decide +kernel
-private theorem step86 : node86.replay (ruleWitness emptyAxiomPolicy) cache86 = some cache87 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed86 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node86.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node86.conclusion) = true := by decide +kernel
-private theorem step87 : node87.replay (ruleWitness emptyAxiomPolicy) cache87 = some cache88 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed87 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node87.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node87.conclusion) = true := by decide +kernel
-private theorem step88 : node88.replay (ruleWitness emptyAxiomPolicy) cache88 = some cache89 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed88 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node88.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node88.conclusion) = true := by decide +kernel
-private theorem step89 : node89.replay (ruleWitness emptyAxiomPolicy) cache89 = some cache90 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed89 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node89.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node89.conclusion) = true := by decide +kernel
-private theorem step90 : node90.replay (ruleWitness emptyAxiomPolicy) cache90 = some cache91 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed90 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node90.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node90.conclusion) = true := by decide +kernel
-private theorem step91 : node91.replay (ruleWitness emptyAxiomPolicy) cache91 = some cache92 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed91 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node91.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node91.conclusion) = true := by decide +kernel
-private theorem step92 : node92.replay (ruleWitness emptyAxiomPolicy) cache92 = some cache93 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed92 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node92.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node92.conclusion) = true := by decide +kernel
-private theorem step93 : node93.replay (ruleWitness emptyAxiomPolicy) cache93 = some cache94 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed93 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node93.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node93.conclusion) = true := by decide +kernel
-private theorem step94 : node94.replay (ruleWitness emptyAxiomPolicy) cache94 = some cache95 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed94 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node94.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node94.conclusion) = true := by decide +kernel
-private theorem step95 : node95.replay (ruleWitness emptyAxiomPolicy) cache95 = some cache96 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed95 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node95.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node95.conclusion) = true := by decide +kernel
-private theorem step96 : node96.replay (ruleWitness emptyAxiomPolicy) cache96 = some cache97 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed96 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node96.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node96.conclusion) = true := by decide +kernel
-private theorem step97 : node97.replay (ruleWitness emptyAxiomPolicy) cache97 = some cache98 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed97 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node97.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node97.conclusion) = true := by decide +kernel
-private theorem step98 : node98.replay (ruleWitness emptyAxiomPolicy) cache98 = some cache99 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed98 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node98.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node98.conclusion) = true := by decide +kernel
-private theorem step99 : node99.replay (ruleWitness emptyAxiomPolicy) cache99 = some cache100 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed99 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node99.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node99.conclusion) = true := by decide +kernel
-private theorem step100 : node100.replay (ruleWitness emptyAxiomPolicy) cache100 = some cache101 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed100 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node100.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node100.conclusion) = true := by decide +kernel
-private theorem step101 : node101.replay (ruleWitness emptyAxiomPolicy) cache101 = some cache102 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed101 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node101.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node101.conclusion) = true := by decide +kernel
-private theorem step102 : node102.replay (ruleWitness emptyAxiomPolicy) cache102 = some cache103 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed102 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node102.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node102.conclusion) = true := by decide +kernel
-private theorem step103 : node103.replay (ruleWitness emptyAxiomPolicy) cache103 = some cache104 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed103 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node103.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node103.conclusion) = true := by decide +kernel
-private theorem step104 : node104.replay (ruleWitness emptyAxiomPolicy) cache104 = some cache105 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed104 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node104.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node104.conclusion) = true := by decide +kernel
-private theorem step105 : node105.replay (ruleWitness emptyAxiomPolicy) cache105 = some cache106 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed105 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node105.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node105.conclusion) = true := by decide +kernel
-private theorem step106 : node106.replay (ruleWitness emptyAxiomPolicy) cache106 = some cache107 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed106 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node106.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node106.conclusion) = true := by decide +kernel
-private theorem step107 : node107.replay (ruleWitness emptyAxiomPolicy) cache107 = some cache108 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed107 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node107.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node107.conclusion) = true := by decide +kernel
-private theorem step108 : node108.replay (ruleWitness emptyAxiomPolicy) cache108 = some cache109 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed108 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node108.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node108.conclusion) = true := by decide +kernel
-private theorem step109 : node109.replay (ruleWitness emptyAxiomPolicy) cache109 = some cache110 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed109 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node109.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node109.conclusion) = true := by decide +kernel
-private theorem step110 : node110.replay (ruleWitness emptyAxiomPolicy) cache110 = some cache111 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed110 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node110.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node110.conclusion) = true := by decide +kernel
-private theorem step111 : node111.replay (ruleWitness emptyAxiomPolicy) cache111 = some cache112 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed111 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node111.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node111.conclusion) = true := by decide +kernel
-private theorem step112 : node112.replay (ruleWitness emptyAxiomPolicy) cache112 = some cache113 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed112 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node112.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node112.conclusion) = true := by decide +kernel
-private theorem step113 : node113.replay (ruleWitness emptyAxiomPolicy) cache113 = some cache114 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed113 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node113.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node113.conclusion) = true := by decide +kernel
-private theorem step114 : node114.replay (ruleWitness emptyAxiomPolicy) cache114 = some cache115 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed114 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node114.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node114.conclusion) = true := by decide +kernel
-private theorem step115 : node115.replay (ruleWitness emptyAxiomPolicy) cache115 = some cache116 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed115 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node115.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node115.conclusion) = true := by decide +kernel
-private theorem step116 : node116.replay (ruleWitness emptyAxiomPolicy) cache116 = some cache117 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed116 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node116.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node116.conclusion) = true := by decide +kernel
-private theorem step117 : node117.replay (ruleWitness emptyAxiomPolicy) cache117 = some cache118 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed117 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node117.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node117.conclusion) = true := by decide +kernel
-private theorem step118 : node118.replay (ruleWitness emptyAxiomPolicy) cache118 = some cache119 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed118 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node118.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node118.conclusion) = true := by decide +kernel
-private theorem step119 : node119.replay (ruleWitness emptyAxiomPolicy) cache119 = some cache120 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed119 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node119.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node119.conclusion) = true := by decide +kernel
-private theorem step120 : node120.replay (ruleWitness emptyAxiomPolicy) cache120 = some cache121 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed120 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node120.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node120.conclusion) = true := by decide +kernel
-private theorem step121 : node121.replay (ruleWitness emptyAxiomPolicy) cache121 = some cache122 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed121 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node121.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node121.conclusion) = true := by decide +kernel
-private theorem step122 : node122.replay (ruleWitness emptyAxiomPolicy) cache122 = some cache123 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed122 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node122.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node122.conclusion) = true := by decide +kernel
-private theorem step123 : node123.replay (ruleWitness emptyAxiomPolicy) cache123 = some cache124 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed123 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node123.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node123.conclusion) = true := by decide +kernel
-private theorem step124 : node124.replay (ruleWitness emptyAxiomPolicy) cache124 = some cache125 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed124 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node124.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node124.conclusion) = true := by decide +kernel
-private theorem step125 : node125.replay (ruleWitness emptyAxiomPolicy) cache125 = some cache126 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed125 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node125.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node125.conclusion) = true := by decide +kernel
-private theorem step126 : node126.replay (ruleWitness emptyAxiomPolicy) cache126 = some cache127 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed126 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node126.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node126.conclusion) = true := by decide +kernel
-private theorem step127 : node127.replay (ruleWitness emptyAxiomPolicy) cache127 = some cache128 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed127 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node127.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node127.conclusion) = true := by decide +kernel
-private theorem step128 : node128.replay (ruleWitness emptyAxiomPolicy) cache128 = some cache129 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed128 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node128.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node128.conclusion) = true := by decide +kernel
-private theorem step129 : node129.replay (ruleWitness emptyAxiomPolicy) cache129 = some cache130 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed129 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node129.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node129.conclusion) = true := by decide +kernel
-private theorem step130 : node130.replay (ruleWitness emptyAxiomPolicy) cache130 = some cache131 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed130 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node130.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node130.conclusion) = true := by decide +kernel
-private theorem step131 : node131.replay (ruleWitness emptyAxiomPolicy) cache131 = some cache132 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed131 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node131.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node131.conclusion) = true := by decide +kernel
-private theorem step132 : node132.replay (ruleWitness emptyAxiomPolicy) cache132 = some cache133 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed132 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node132.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node132.conclusion) = true := by decide +kernel
-private theorem step133 : node133.replay (ruleWitness emptyAxiomPolicy) cache133 = some cache134 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed133 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node133.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node133.conclusion) = true := by decide +kernel
-private theorem step134 : node134.replay (ruleWitness emptyAxiomPolicy) cache134 = some cache135 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed134 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node134.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node134.conclusion) = true := by decide +kernel
-private theorem step135 : node135.replay (ruleWitness emptyAxiomPolicy) cache135 = some cache136 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed135 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node135.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node135.conclusion) = true := by decide +kernel
-private theorem step136 : node136.replay (ruleWitness emptyAxiomPolicy) cache136 = some cache137 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed136 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node136.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node136.conclusion) = true := by decide +kernel
-private theorem step137 : node137.replay (ruleWitness emptyAxiomPolicy) cache137 = some cache138 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed137 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node137.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node137.conclusion) = true := by decide +kernel
-private theorem step138 : node138.replay (ruleWitness emptyAxiomPolicy) cache138 = some cache139 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed138 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node138.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node138.conclusion) = true := by decide +kernel
-private theorem step139 : node139.replay (ruleWitness emptyAxiomPolicy) cache139 = some cache140 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed139 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node139.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node139.conclusion) = true := by decide +kernel
-private theorem step140 : node140.replay (ruleWitness emptyAxiomPolicy) cache140 = some cache141 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed140 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node140.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node140.conclusion) = true := by decide +kernel
-private theorem step141 : node141.replay (ruleWitness emptyAxiomPolicy) cache141 = some cache142 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed141 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node141.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node141.conclusion) = true := by decide +kernel
-private theorem step142 : node142.replay (ruleWitness emptyAxiomPolicy) cache142 = some cache143 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed142 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node142.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node142.conclusion) = true := by decide +kernel
-private theorem step143 : node143.replay (ruleWitness emptyAxiomPolicy) cache143 = some cache144 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed143 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node143.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node143.conclusion) = true := by decide +kernel
-private theorem step144 : node144.replay (ruleWitness emptyAxiomPolicy) cache144 = some cache145 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed144 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node144.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node144.conclusion) = true := by decide +kernel
-private theorem step145 : node145.replay (ruleWitness emptyAxiomPolicy) cache145 = some cache146 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed145 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node145.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node145.conclusion) = true := by decide +kernel
-private theorem step146 : node146.replay (ruleWitness emptyAxiomPolicy) cache146 = some cache147 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed146 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node146.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node146.conclusion) = true := by decide +kernel
-private theorem step147 : node147.replay (ruleWitness emptyAxiomPolicy) cache147 = some cache148 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed147 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node147.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node147.conclusion) = true := by decide +kernel
-private theorem step148 : node148.replay (ruleWitness emptyAxiomPolicy) cache148 = some cache149 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed148 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node148.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node148.conclusion) = true := by decide +kernel
-private theorem step149 : node149.replay (ruleWitness emptyAxiomPolicy) cache149 = some cache150 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed149 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node149.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node149.conclusion) = true := by decide +kernel
-private theorem step150 : node150.replay (ruleWitness emptyAxiomPolicy) cache150 = some cache151 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed150 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node150.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node150.conclusion) = true := by decide +kernel
-private theorem step151 : node151.replay (ruleWitness emptyAxiomPolicy) cache151 = some cache152 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed151 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node151.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node151.conclusion) = true := by decide +kernel
-private theorem step152 : node152.replay (ruleWitness emptyAxiomPolicy) cache152 = some cache153 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed152 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node152.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node152.conclusion) = true := by decide +kernel
-private theorem step153 : node153.replay (ruleWitness emptyAxiomPolicy) cache153 = some cache154 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed153 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node153.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node153.conclusion) = true := by decide +kernel
-private theorem step154 : node154.replay (ruleWitness emptyAxiomPolicy) cache154 = some cache155 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed154 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node154.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node154.conclusion) = true := by decide +kernel
-private theorem step155 : node155.replay (ruleWitness emptyAxiomPolicy) cache155 = some cache156 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed155 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node155.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node155.conclusion) = true := by decide +kernel
-private theorem step156 : node156.replay (ruleWitness emptyAxiomPolicy) cache156 = some cache157 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed156 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node156.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node156.conclusion) = true := by decide +kernel
-private theorem step157 : node157.replay (ruleWitness emptyAxiomPolicy) cache157 = some cache158 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed157 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node157.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node157.conclusion) = true := by decide +kernel
-private theorem step158 : node158.replay (ruleWitness emptyAxiomPolicy) cache158 = some cache159 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed158 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node158.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node158.conclusion) = true := by decide +kernel
-private theorem step159 : node159.replay (ruleWitness emptyAxiomPolicy) cache159 = some cache160 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed159 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node159.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node159.conclusion) = true := by decide +kernel
-private theorem step160 : node160.replay (ruleWitness emptyAxiomPolicy) cache160 = some cache161 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed160 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node160.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node160.conclusion) = true := by decide +kernel
-private theorem step161 : node161.replay (ruleWitness emptyAxiomPolicy) cache161 = some cache162 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed161 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node161.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node161.conclusion) = true := by decide +kernel
-private theorem step162 : node162.replay (ruleWitness emptyAxiomPolicy) cache162 = some cache163 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed162 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node162.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node162.conclusion) = true := by decide +kernel
-private theorem step163 : node163.replay (ruleWitness emptyAxiomPolicy) cache163 = some cache164 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed163 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node163.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node163.conclusion) = true := by decide +kernel
-private theorem step164 : node164.replay (ruleWitness emptyAxiomPolicy) cache164 = some cache165 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed164 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node164.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node164.conclusion) = true := by decide +kernel
-private theorem step165 : node165.replay (ruleWitness emptyAxiomPolicy) cache165 = some cache166 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed165 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node165.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node165.conclusion) = true := by decide +kernel
-private theorem step166 : node166.replay (ruleWitness emptyAxiomPolicy) cache166 = some cache167 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed166 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node166.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node166.conclusion) = true := by decide +kernel
-private theorem step167 : node167.replay (ruleWitness emptyAxiomPolicy) cache167 = some cache168 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed167 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node167.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node167.conclusion) = true := by decide +kernel
-private theorem step168 : node168.replay (ruleWitness emptyAxiomPolicy) cache168 = some cache169 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed168 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node168.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node168.conclusion) = true := by decide +kernel
-private theorem step169 : node169.replay (ruleWitness emptyAxiomPolicy) cache169 = some cache170 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed169 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node169.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node169.conclusion) = true := by decide +kernel
-private theorem step170 : node170.replay (ruleWitness emptyAxiomPolicy) cache170 = some cache171 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed170 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node170.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node170.conclusion) = true := by decide +kernel
-private theorem step171 : node171.replay (ruleWitness emptyAxiomPolicy) cache171 = some cache172 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed171 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node171.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node171.conclusion) = true := by decide +kernel
-private theorem step172 : node172.replay (ruleWitness emptyAxiomPolicy) cache172 = some cache173 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed172 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node172.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node172.conclusion) = true := by decide +kernel
-private theorem step173 : node173.replay (ruleWitness emptyAxiomPolicy) cache173 = some cache174 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed173 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node173.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node173.conclusion) = true := by decide +kernel
-private theorem step174 : node174.replay (ruleWitness emptyAxiomPolicy) cache174 = some cache175 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed174 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node174.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node174.conclusion) = true := by decide +kernel
-private theorem step175 : node175.replay (ruleWitness emptyAxiomPolicy) cache175 = some cache176 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed175 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node175.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node175.conclusion) = true := by decide +kernel
-private theorem step176 : node176.replay (ruleWitness emptyAxiomPolicy) cache176 = some cache177 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed176 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node176.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node176.conclusion) = true := by decide +kernel
-private theorem step177 : node177.replay (ruleWitness emptyAxiomPolicy) cache177 = some cache178 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed177 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node177.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node177.conclusion) = true := by decide +kernel
-private theorem step178 : node178.replay (ruleWitness emptyAxiomPolicy) cache178 = some cache179 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed178 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node178.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node178.conclusion) = true := by decide +kernel
-private theorem step179 : node179.replay (ruleWitness emptyAxiomPolicy) cache179 = some cache180 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed179 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node179.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node179.conclusion) = true := by decide +kernel
-private theorem step180 : node180.replay (ruleWitness emptyAxiomPolicy) cache180 = some cache181 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed180 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node180.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node180.conclusion) = true := by decide +kernel
-private theorem step181 : node181.replay (ruleWitness emptyAxiomPolicy) cache181 = some cache182 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed181 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node181.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node181.conclusion) = true := by decide +kernel
-private theorem step182 : node182.replay (ruleWitness emptyAxiomPolicy) cache182 = some cache183 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed182 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node182.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node182.conclusion) = true := by decide +kernel
-private theorem step183 : node183.replay (ruleWitness emptyAxiomPolicy) cache183 = some cache184 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed183 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node183.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node183.conclusion) = true := by decide +kernel
-private theorem step184 : node184.replay (ruleWitness emptyAxiomPolicy) cache184 = some cache185 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed184 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node184.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node184.conclusion) = true := by decide +kernel
-private theorem step185 : node185.replay (ruleWitness emptyAxiomPolicy) cache185 = some cache186 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed185 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node185.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node185.conclusion) = true := by decide +kernel
-private theorem step186 : node186.replay (ruleWitness emptyAxiomPolicy) cache186 = some cache187 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed186 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node186.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node186.conclusion) = true := by decide +kernel
-private theorem step187 : node187.replay (ruleWitness emptyAxiomPolicy) cache187 = some cache188 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed187 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node187.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node187.conclusion) = true := by decide +kernel
-private theorem step188 : node188.replay (ruleWitness emptyAxiomPolicy) cache188 = some cache189 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed188 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node188.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node188.conclusion) = true := by decide +kernel
-private theorem step189 : node189.replay (ruleWitness emptyAxiomPolicy) cache189 = some cache190 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed189 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node189.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node189.conclusion) = true := by decide +kernel
-private theorem step190 : node190.replay (ruleWitness emptyAxiomPolicy) cache190 = some cache191 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed190 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node190.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node190.conclusion) = true := by decide +kernel
-private theorem step191 : node191.replay (ruleWitness emptyAxiomPolicy) cache191 = some cache192 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed191 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node191.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node191.conclusion) = true := by decide +kernel
-private theorem step192 : node192.replay (ruleWitness emptyAxiomPolicy) cache192 = some cache193 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed192 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node192.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node192.conclusion) = true := by decide +kernel
-private theorem step193 : node193.replay (ruleWitness emptyAxiomPolicy) cache193 = some cache194 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed193 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node193.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node193.conclusion) = true := by decide +kernel
-private theorem step194 : node194.replay (ruleWitness emptyAxiomPolicy) cache194 = some cache195 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed194 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node194.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node194.conclusion) = true := by decide +kernel
-private theorem step195 : node195.replay (ruleWitness emptyAxiomPolicy) cache195 = some cache196 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed195 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node195.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node195.conclusion) = true := by decide +kernel
-private theorem step196 : node196.replay (ruleWitness emptyAxiomPolicy) cache196 = some cache197 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed196 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node196.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node196.conclusion) = true := by decide +kernel
-private theorem step197 : node197.replay (ruleWitness emptyAxiomPolicy) cache197 = some cache198 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed197 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node197.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node197.conclusion) = true := by decide +kernel
-private theorem step198 : node198.replay (ruleWitness emptyAxiomPolicy) cache198 = some cache199 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed198 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node198.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node198.conclusion) = true := by decide +kernel
-private theorem step199 : node199.replay (ruleWitness emptyAxiomPolicy) cache199 = some cache200 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, check199, rfl⟩
-private theorem formed199 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node199.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node199.conclusion) = true := by decide +kernel
-private theorem step200 : node200.replay (ruleWitness emptyAxiomPolicy) cache200 = some cache201 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed200 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node200.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node200.conclusion) = true := by decide +kernel
-private theorem step201 : node201.replay (ruleWitness emptyAxiomPolicy) cache201 = some cache202 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed201 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node201.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node201.conclusion) = true := by decide +kernel
-private theorem step202 : node202.replay (ruleWitness emptyAxiomPolicy) cache202 = some cache203 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed202 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node202.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node202.conclusion) = true := by decide +kernel
-private theorem step203 : node203.replay (ruleWitness emptyAxiomPolicy) cache203 = some cache204 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, check203, rfl⟩
-private theorem formed203 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node203.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node203.conclusion) = true := by decide +kernel
-private theorem step204 : node204.replay (ruleWitness emptyAxiomPolicy) cache204 = some cache205 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed204 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node204.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node204.conclusion) = true := by decide +kernel
-private theorem step205 : node205.replay (ruleWitness emptyAxiomPolicy) cache205 = some cache206 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed205 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node205.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node205.conclusion) = true := by decide +kernel
-private theorem step206 : node206.replay (ruleWitness emptyAxiomPolicy) cache206 = some cache207 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed206 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node206.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node206.conclusion) = true := by decide +kernel
-private theorem step207 : node207.replay (ruleWitness emptyAxiomPolicy) cache207 = some cache208 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed207 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node207.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node207.conclusion) = true := by decide +kernel
-private theorem step208 : node208.replay (ruleWitness emptyAxiomPolicy) cache208 = some cache209 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed208 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node208.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node208.conclusion) = true := by decide +kernel
-private theorem step209 : node209.replay (ruleWitness emptyAxiomPolicy) cache209 = some cache210 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed209 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node209.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node209.conclusion) = true := by decide +kernel
-private theorem step210 : node210.replay (ruleWitness emptyAxiomPolicy) cache210 = some cache211 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, check210, rfl⟩
-private theorem formed210 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node210.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node210.conclusion) = true := by decide +kernel
-private theorem step211 : node211.replay (ruleWitness emptyAxiomPolicy) cache211 = some cache212 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed211 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node211.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node211.conclusion) = true := by decide +kernel
-private theorem step212 : node212.replay (ruleWitness emptyAxiomPolicy) cache212 = some cache213 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed212 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node212.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node212.conclusion) = true := by decide +kernel
-private theorem step213 : node213.replay (ruleWitness emptyAxiomPolicy) cache213 = some cache214 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed213 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node213.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node213.conclusion) = true := by decide +kernel
-private theorem step214 : node214.replay (ruleWitness emptyAxiomPolicy) cache214 = some cache215 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed214 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node214.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node214.conclusion) = true := by decide +kernel
-private theorem step215 : node215.replay (ruleWitness emptyAxiomPolicy) cache215 = some cache216 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed215 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node215.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node215.conclusion) = true := by decide +kernel
-private theorem step216 : node216.replay (ruleWitness emptyAxiomPolicy) cache216 = some cache217 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed216 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node216.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node216.conclusion) = true := by decide +kernel
-private theorem step217 : node217.replay (ruleWitness emptyAxiomPolicy) cache217 = some cache218 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed217 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node217.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node217.conclusion) = true := by decide +kernel
-private theorem step218 : node218.replay (ruleWitness emptyAxiomPolicy) cache218 = some cache219 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed218 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node218.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node218.conclusion) = true := by decide +kernel
-private theorem step219 : node219.replay (ruleWitness emptyAxiomPolicy) cache219 = some cache220 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed219 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node219.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node219.conclusion) = true := by decide +kernel
-private theorem step220 : node220.replay (ruleWitness emptyAxiomPolicy) cache220 = some cache221 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed220 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node220.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node220.conclusion) = true := by decide +kernel
-private theorem step221 : node221.replay (ruleWitness emptyAxiomPolicy) cache221 = some cache222 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed221 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node221.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node221.conclusion) = true := by decide +kernel
-private theorem step222 : node222.replay (ruleWitness emptyAxiomPolicy) cache222 = some cache223 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed222 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node222.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node222.conclusion) = true := by decide +kernel
-private theorem step223 : node223.replay (ruleWitness emptyAxiomPolicy) cache223 = some cache224 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed223 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node223.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node223.conclusion) = true := by decide +kernel
-private theorem step224 : node224.replay (ruleWitness emptyAxiomPolicy) cache224 = some cache225 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed224 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node224.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node224.conclusion) = true := by decide +kernel
-private theorem step225 : node225.replay (ruleWitness emptyAxiomPolicy) cache225 = some cache226 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed225 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node225.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node225.conclusion) = true := by decide +kernel
-private theorem step226 : node226.replay (ruleWitness emptyAxiomPolicy) cache226 = some cache227 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed226 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node226.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node226.conclusion) = true := by decide +kernel
-private theorem step227 : node227.replay (ruleWitness emptyAxiomPolicy) cache227 = some cache228 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed227 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node227.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node227.conclusion) = true := by decide +kernel
-private theorem step228 : node228.replay (ruleWitness emptyAxiomPolicy) cache228 = some cache229 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed228 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node228.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node228.conclusion) = true := by decide +kernel
-private theorem step229 : node229.replay (ruleWitness emptyAxiomPolicy) cache229 = some cache230 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed229 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node229.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node229.conclusion) = true := by decide +kernel
-private theorem step230 : node230.replay (ruleWitness emptyAxiomPolicy) cache230 = some cache231 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed230 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node230.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node230.conclusion) = true := by decide +kernel
-private theorem step231 : node231.replay (ruleWitness emptyAxiomPolicy) cache231 = some cache232 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed231 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node231.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node231.conclusion) = true := by decide +kernel
-private theorem step232 : node232.replay (ruleWitness emptyAxiomPolicy) cache232 = some cache233 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed232 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node232.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node232.conclusion) = true := by decide +kernel
-private theorem step233 : node233.replay (ruleWitness emptyAxiomPolicy) cache233 = some cache234 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed233 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node233.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node233.conclusion) = true := by decide +kernel
-private theorem step234 : node234.replay (ruleWitness emptyAxiomPolicy) cache234 = some cache235 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed234 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node234.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node234.conclusion) = true := by decide +kernel
-private theorem step235 : node235.replay (ruleWitness emptyAxiomPolicy) cache235 = some cache236 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed235 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node235.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node235.conclusion) = true := by decide +kernel
-private theorem step236 : node236.replay (ruleWitness emptyAxiomPolicy) cache236 = some cache237 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed236 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node236.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node236.conclusion) = true := by decide +kernel
-private theorem step237 : node237.replay (ruleWitness emptyAxiomPolicy) cache237 = some cache238 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed237 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node237.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node237.conclusion) = true := by decide +kernel
-private theorem step238 : node238.replay (ruleWitness emptyAxiomPolicy) cache238 = some cache239 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed238 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node238.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node238.conclusion) = true := by decide +kernel
-private theorem step239 : node239.replay (ruleWitness emptyAxiomPolicy) cache239 = some cache240 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed239 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node239.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node239.conclusion) = true := by decide +kernel
-private theorem step240 : node240.replay (ruleWitness emptyAxiomPolicy) cache240 = some cache241 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed240 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node240.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node240.conclusion) = true := by decide +kernel
-private theorem step241 : node241.replay (ruleWitness emptyAxiomPolicy) cache241 = some cache242 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed241 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node241.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node241.conclusion) = true := by decide +kernel
-private theorem step242 : node242.replay (ruleWitness emptyAxiomPolicy) cache242 = some cache243 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed242 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node242.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node242.conclusion) = true := by decide +kernel
-private theorem step243 : node243.replay (ruleWitness emptyAxiomPolicy) cache243 = some cache244 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed243 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node243.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node243.conclusion) = true := by decide +kernel
-private theorem step244 : node244.replay (ruleWitness emptyAxiomPolicy) cache244 = some cache245 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed244 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node244.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node244.conclusion) = true := by decide +kernel
-private theorem step245 : node245.replay (ruleWitness emptyAxiomPolicy) cache245 = some cache246 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed245 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node245.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node245.conclusion) = true := by decide +kernel
-private theorem step246 : node246.replay (ruleWitness emptyAxiomPolicy) cache246 = some cache247 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed246 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node246.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node246.conclusion) = true := by decide +kernel
-private theorem step247 : node247.replay (ruleWitness emptyAxiomPolicy) cache247 = some cache248 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed247 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node247.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node247.conclusion) = true := by decide +kernel
-private theorem step248 : node248.replay (ruleWitness emptyAxiomPolicy) cache248 = some cache249 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed248 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node248.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node248.conclusion) = true := by decide +kernel
-private theorem step249 : node249.replay (ruleWitness emptyAxiomPolicy) cache249 = some cache250 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed249 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node249.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node249.conclusion) = true := by decide +kernel
-private theorem step250 : node250.replay (ruleWitness emptyAxiomPolicy) cache250 = some cache251 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed250 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node250.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node250.conclusion) = true := by decide +kernel
-private theorem step251 : node251.replay (ruleWitness emptyAxiomPolicy) cache251 = some cache252 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed251 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node251.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node251.conclusion) = true := by decide +kernel
-private theorem step252 : node252.replay (ruleWitness emptyAxiomPolicy) cache252 = some cache253 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed252 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node252.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node252.conclusion) = true := by decide +kernel
-private theorem step253 : node253.replay (ruleWitness emptyAxiomPolicy) cache253 = some cache254 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed253 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node253.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node253.conclusion) = true := by decide +kernel
-private theorem step254 : node254.replay (ruleWitness emptyAxiomPolicy) cache254 = some cache255 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed254 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node254.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node254.conclusion) = true := by decide +kernel
-private theorem step255 : node255.replay (ruleWitness emptyAxiomPolicy) cache255 = some cache256 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed255 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node255.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node255.conclusion) = true := by decide +kernel
-private theorem step256 : node256.replay (ruleWitness emptyAxiomPolicy) cache256 = some cache257 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed256 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node256.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node256.conclusion) = true := by decide +kernel
-private theorem step257 : node257.replay (ruleWitness emptyAxiomPolicy) cache257 = some cache258 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed257 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node257.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node257.conclusion) = true := by decide +kernel
-private theorem step258 : node258.replay (ruleWitness emptyAxiomPolicy) cache258 = some cache259 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed258 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node258.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node258.conclusion) = true := by decide +kernel
-private theorem step259 : node259.replay (ruleWitness emptyAxiomPolicy) cache259 = some cache260 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed259 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node259.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node259.conclusion) = true := by decide +kernel
-private theorem step260 : node260.replay (ruleWitness emptyAxiomPolicy) cache260 = some cache261 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed260 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node260.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node260.conclusion) = true := by decide +kernel
-private theorem step261 : node261.replay (ruleWitness emptyAxiomPolicy) cache261 = some cache262 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed261 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node261.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node261.conclusion) = true := by decide +kernel
-private theorem step262 : node262.replay (ruleWitness emptyAxiomPolicy) cache262 = some cache263 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed262 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node262.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node262.conclusion) = true := by decide +kernel
-private theorem step263 : node263.replay (ruleWitness emptyAxiomPolicy) cache263 = some cache264 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed263 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node263.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node263.conclusion) = true := by decide +kernel
-private theorem step264 : node264.replay (ruleWitness emptyAxiomPolicy) cache264 = some cache265 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed264 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node264.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node264.conclusion) = true := by decide +kernel
-private theorem step265 : node265.replay (ruleWitness emptyAxiomPolicy) cache265 = some cache266 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed265 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node265.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node265.conclusion) = true := by decide +kernel
-private theorem step266 : node266.replay (ruleWitness emptyAxiomPolicy) cache266 = some cache267 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed266 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node266.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node266.conclusion) = true := by decide +kernel
-private theorem step267 : node267.replay (ruleWitness emptyAxiomPolicy) cache267 = some cache268 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed267 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node267.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node267.conclusion) = true := by decide +kernel
-private theorem step268 : node268.replay (ruleWitness emptyAxiomPolicy) cache268 = some cache269 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed268 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node268.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node268.conclusion) = true := by decide +kernel
-private theorem step269 : node269.replay (ruleWitness emptyAxiomPolicy) cache269 = some cache270 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed269 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node269.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node269.conclusion) = true := by decide +kernel
-private theorem step270 : node270.replay (ruleWitness emptyAxiomPolicy) cache270 = some cache271 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, check270, rfl⟩
-private theorem formed270 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node270.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node270.conclusion) = true := by decide +kernel
-private theorem step271 : node271.replay (ruleWitness emptyAxiomPolicy) cache271 = some cache272 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed271 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node271.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node271.conclusion) = true := by decide +kernel
-private theorem step272 : node272.replay (ruleWitness emptyAxiomPolicy) cache272 = some cache273 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed272 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node272.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node272.conclusion) = true := by decide +kernel
-private theorem step273 : node273.replay (ruleWitness emptyAxiomPolicy) cache273 = some cache274 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed273 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node273.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node273.conclusion) = true := by decide +kernel
-private theorem step274 : node274.replay (ruleWitness emptyAxiomPolicy) cache274 = some cache275 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, check274, rfl⟩
-private theorem formed274 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node274.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node274.conclusion) = true := by decide +kernel
-private theorem step275 : node275.replay (ruleWitness emptyAxiomPolicy) cache275 = some cache276 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed275 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node275.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node275.conclusion) = true := by decide +kernel
-private theorem step276 : node276.replay (ruleWitness emptyAxiomPolicy) cache276 = some cache277 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed276 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node276.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node276.conclusion) = true := by decide +kernel
-private theorem step277 : node277.replay (ruleWitness emptyAxiomPolicy) cache277 = some cache278 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed277 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node277.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node277.conclusion) = true := by decide +kernel
-private theorem step278 : node278.replay (ruleWitness emptyAxiomPolicy) cache278 = some cache279 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed278 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node278.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node278.conclusion) = true := by decide +kernel
-private theorem step279 : node279.replay (ruleWitness emptyAxiomPolicy) cache279 = some cache280 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed279 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node279.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node279.conclusion) = true := by decide +kernel
-private theorem step280 : node280.replay (ruleWitness emptyAxiomPolicy) cache280 = some cache281 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed280 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node280.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node280.conclusion) = true := by decide +kernel
-private theorem step281 : node281.replay (ruleWitness emptyAxiomPolicy) cache281 = some cache282 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed281 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node281.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node281.conclusion) = true := by decide +kernel
-private theorem step282 : node282.replay (ruleWitness emptyAxiomPolicy) cache282 = some cache283 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed282 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node282.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node282.conclusion) = true := by decide +kernel
-private theorem step283 : node283.replay (ruleWitness emptyAxiomPolicy) cache283 = some cache284 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed283 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node283.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node283.conclusion) = true := by decide +kernel
-private theorem step284 : node284.replay (ruleWitness emptyAxiomPolicy) cache284 = some cache285 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed284 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node284.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node284.conclusion) = true := by decide +kernel
-private theorem step285 : node285.replay (ruleWitness emptyAxiomPolicy) cache285 = some cache286 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed285 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node285.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node285.conclusion) = true := by decide +kernel
-private theorem step286 : node286.replay (ruleWitness emptyAxiomPolicy) cache286 = some cache287 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed286 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node286.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node286.conclusion) = true := by decide +kernel
-private theorem step287 : node287.replay (ruleWitness emptyAxiomPolicy) cache287 = some cache288 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed287 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node287.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node287.conclusion) = true := by decide +kernel
-private theorem step288 : node288.replay (ruleWitness emptyAxiomPolicy) cache288 = some cache289 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed288 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node288.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node288.conclusion) = true := by decide +kernel
-private theorem step289 : node289.replay (ruleWitness emptyAxiomPolicy) cache289 = some cache290 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed289 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node289.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node289.conclusion) = true := by decide +kernel
-private theorem step290 : node290.replay (ruleWitness emptyAxiomPolicy) cache290 = some cache291 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed290 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node290.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node290.conclusion) = true := by decide +kernel
-private theorem step291 : node291.replay (ruleWitness emptyAxiomPolicy) cache291 = some cache292 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed291 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node291.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node291.conclusion) = true := by decide +kernel
-private theorem step292 : node292.replay (ruleWitness emptyAxiomPolicy) cache292 = some cache293 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed292 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node292.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node292.conclusion) = true := by decide +kernel
-private theorem step293 : node293.replay (ruleWitness emptyAxiomPolicy) cache293 = some cache294 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed293 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node293.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node293.conclusion) = true := by decide +kernel
-private theorem step294 : node294.replay (ruleWitness emptyAxiomPolicy) cache294 = some cache295 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed294 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node294.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node294.conclusion) = true := by decide +kernel
-private theorem step295 : node295.replay (ruleWitness emptyAxiomPolicy) cache295 = some cache296 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed295 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node295.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node295.conclusion) = true := by decide +kernel
-private theorem step296 : node296.replay (ruleWitness emptyAxiomPolicy) cache296 = some cache297 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed296 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node296.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node296.conclusion) = true := by decide +kernel
-private theorem step297 : node297.replay (ruleWitness emptyAxiomPolicy) cache297 = some cache298 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed297 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node297.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node297.conclusion) = true := by decide +kernel
-private theorem step298 : node298.replay (ruleWitness emptyAxiomPolicy) cache298 = some cache299 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed298 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node298.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node298.conclusion) = true := by decide +kernel
-private theorem step299 : node299.replay (ruleWitness emptyAxiomPolicy) cache299 = some cache300 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed299 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node299.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node299.conclusion) = true := by decide +kernel
-private theorem step300 : node300.replay (ruleWitness emptyAxiomPolicy) cache300 = some cache301 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed300 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node300.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node300.conclusion) = true := by decide +kernel
-private theorem step301 : node301.replay (ruleWitness emptyAxiomPolicy) cache301 = some cache302 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed301 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node301.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node301.conclusion) = true := by decide +kernel
-private theorem step302 : node302.replay (ruleWitness emptyAxiomPolicy) cache302 = some cache303 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed302 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node302.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node302.conclusion) = true := by decide +kernel
-private theorem step303 : node303.replay (ruleWitness emptyAxiomPolicy) cache303 = some cache304 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed303 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node303.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node303.conclusion) = true := by decide +kernel
-private theorem step304 : node304.replay (ruleWitness emptyAxiomPolicy) cache304 = some cache305 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed304 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node304.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node304.conclusion) = true := by decide +kernel
-private theorem step305 : node305.replay (ruleWitness emptyAxiomPolicy) cache305 = some cache306 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed305 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node305.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node305.conclusion) = true := by decide +kernel
-private theorem step306 : node306.replay (ruleWitness emptyAxiomPolicy) cache306 = some cache307 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed306 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node306.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node306.conclusion) = true := by decide +kernel
-private theorem step307 : node307.replay (ruleWitness emptyAxiomPolicy) cache307 = some cache308 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed307 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node307.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node307.conclusion) = true := by decide +kernel
-private theorem step308 : node308.replay (ruleWitness emptyAxiomPolicy) cache308 = some cache309 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed308 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node308.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node308.conclusion) = true := by decide +kernel
-private theorem step309 : node309.replay (ruleWitness emptyAxiomPolicy) cache309 = some cache310 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed309 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node309.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node309.conclusion) = true := by decide +kernel
-private theorem step310 : node310.replay (ruleWitness emptyAxiomPolicy) cache310 = some cache311 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed310 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node310.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node310.conclusion) = true := by decide +kernel
-private theorem step311 : node311.replay (ruleWitness emptyAxiomPolicy) cache311 = some cache312 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed311 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node311.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node311.conclusion) = true := by decide +kernel
-private theorem step312 : node312.replay (ruleWitness emptyAxiomPolicy) cache312 = some cache313 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed312 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node312.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node312.conclusion) = true := by decide +kernel
-private theorem step313 : node313.replay (ruleWitness emptyAxiomPolicy) cache313 = some cache314 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed313 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node313.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node313.conclusion) = true := by decide +kernel
-private theorem step314 : node314.replay (ruleWitness emptyAxiomPolicy) cache314 = some cache315 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed314 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node314.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node314.conclusion) = true := by decide +kernel
-private theorem step315 : node315.replay (ruleWitness emptyAxiomPolicy) cache315 = some cache316 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed315 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node315.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node315.conclusion) = true := by decide +kernel
-private theorem step316 : node316.replay (ruleWitness emptyAxiomPolicy) cache316 = some cache317 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed316 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node316.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node316.conclusion) = true := by decide +kernel
-private theorem step317 : node317.replay (ruleWitness emptyAxiomPolicy) cache317 = some cache318 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed317 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node317.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node317.conclusion) = true := by decide +kernel
-private theorem step318 : node318.replay (ruleWitness emptyAxiomPolicy) cache318 = some cache319 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed318 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node318.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node318.conclusion) = true := by decide +kernel
-private theorem step319 : node319.replay (ruleWitness emptyAxiomPolicy) cache319 = some cache320 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed319 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node319.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node319.conclusion) = true := by decide +kernel
-private theorem step320 : node320.replay (ruleWitness emptyAxiomPolicy) cache320 = some cache321 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed320 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node320.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node320.conclusion) = true := by decide +kernel
-private theorem step321 : node321.replay (ruleWitness emptyAxiomPolicy) cache321 = some cache322 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed321 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node321.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node321.conclusion) = true := by decide +kernel
-private theorem step322 : node322.replay (ruleWitness emptyAxiomPolicy) cache322 = some cache323 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed322 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node322.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node322.conclusion) = true := by decide +kernel
-private theorem step323 : node323.replay (ruleWitness emptyAxiomPolicy) cache323 = some cache324 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed323 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node323.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node323.conclusion) = true := by decide +kernel
-private theorem step324 : node324.replay (ruleWitness emptyAxiomPolicy) cache324 = some cache325 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed324 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node324.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node324.conclusion) = true := by decide +kernel
-private theorem step325 : node325.replay (ruleWitness emptyAxiomPolicy) cache325 = some cache326 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed325 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node325.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node325.conclusion) = true := by decide +kernel
-private theorem step326 : node326.replay (ruleWitness emptyAxiomPolicy) cache326 = some cache327 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed326 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node326.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node326.conclusion) = true := by decide +kernel
-private theorem step327 : node327.replay (ruleWitness emptyAxiomPolicy) cache327 = some cache328 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed327 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node327.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node327.conclusion) = true := by decide +kernel
-private theorem step328 : node328.replay (ruleWitness emptyAxiomPolicy) cache328 = some cache329 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed328 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node328.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node328.conclusion) = true := by decide +kernel
-private theorem step329 : node329.replay (ruleWitness emptyAxiomPolicy) cache329 = some cache330 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed329 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node329.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node329.conclusion) = true := by decide +kernel
-private theorem step330 : node330.replay (ruleWitness emptyAxiomPolicy) cache330 = some cache331 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed330 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node330.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node330.conclusion) = true := by decide +kernel
-private theorem step331 : node331.replay (ruleWitness emptyAxiomPolicy) cache331 = some cache332 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed331 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node331.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node331.conclusion) = true := by decide +kernel
-private theorem step332 : node332.replay (ruleWitness emptyAxiomPolicy) cache332 = some cache333 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed332 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node332.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node332.conclusion) = true := by decide +kernel
-private theorem step333 : node333.replay (ruleWitness emptyAxiomPolicy) cache333 = some cache334 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed333 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node333.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node333.conclusion) = true := by decide +kernel
-private theorem step334 : node334.replay (ruleWitness emptyAxiomPolicy) cache334 = some cache335 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed334 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node334.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node334.conclusion) = true := by decide +kernel
-private theorem step335 : node335.replay (ruleWitness emptyAxiomPolicy) cache335 = some cache336 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed335 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node335.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node335.conclusion) = true := by decide +kernel
-private theorem step336 : node336.replay (ruleWitness emptyAxiomPolicy) cache336 = some cache337 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed336 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node336.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node336.conclusion) = true := by decide +kernel
-private theorem step337 : node337.replay (ruleWitness emptyAxiomPolicy) cache337 = some cache338 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed337 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node337.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node337.conclusion) = true := by decide +kernel
-private theorem step338 : node338.replay (ruleWitness emptyAxiomPolicy) cache338 = some cache339 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed338 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node338.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node338.conclusion) = true := by decide +kernel
-private theorem step339 : node339.replay (ruleWitness emptyAxiomPolicy) cache339 = some cache340 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed339 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node339.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node339.conclusion) = true := by decide +kernel
-private theorem step340 : node340.replay (ruleWitness emptyAxiomPolicy) cache340 = some cache341 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed340 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node340.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node340.conclusion) = true := by decide +kernel
-private theorem step341 : node341.replay (ruleWitness emptyAxiomPolicy) cache341 = some cache342 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed341 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node341.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node341.conclusion) = true := by decide +kernel
-private theorem step342 : node342.replay (ruleWitness emptyAxiomPolicy) cache342 = some cache343 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed342 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node342.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node342.conclusion) = true := by decide +kernel
-private theorem step343 : node343.replay (ruleWitness emptyAxiomPolicy) cache343 = some cache344 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed343 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node343.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node343.conclusion) = true := by decide +kernel
-private theorem step344 : node344.replay (ruleWitness emptyAxiomPolicy) cache344 = some cache345 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed344 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node344.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node344.conclusion) = true := by decide +kernel
-private theorem step345 : node345.replay (ruleWitness emptyAxiomPolicy) cache345 = some cache346 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed345 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node345.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node345.conclusion) = true := by decide +kernel
-private theorem step346 : node346.replay (ruleWitness emptyAxiomPolicy) cache346 = some cache347 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed346 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node346.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node346.conclusion) = true := by decide +kernel
-private theorem step347 : node347.replay (ruleWitness emptyAxiomPolicy) cache347 = some cache348 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed347 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node347.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node347.conclusion) = true := by decide +kernel
-private theorem step348 : node348.replay (ruleWitness emptyAxiomPolicy) cache348 = some cache349 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed348 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node348.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node348.conclusion) = true := by decide +kernel
-private theorem step349 : node349.replay (ruleWitness emptyAxiomPolicy) cache349 = some cache350 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed349 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node349.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node349.conclusion) = true := by decide +kernel
-private theorem step350 : node350.replay (ruleWitness emptyAxiomPolicy) cache350 = some cache351 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed350 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node350.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node350.conclusion) = true := by decide +kernel
-private theorem step351 : node351.replay (ruleWitness emptyAxiomPolicy) cache351 = some cache352 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed351 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node351.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node351.conclusion) = true := by decide +kernel
-private theorem step352 : node352.replay (ruleWitness emptyAxiomPolicy) cache352 = some cache353 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed352 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node352.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node352.conclusion) = true := by decide +kernel
-private theorem step353 : node353.replay (ruleWitness emptyAxiomPolicy) cache353 = some cache354 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed353 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node353.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node353.conclusion) = true := by decide +kernel
-private theorem step354 : node354.replay (ruleWitness emptyAxiomPolicy) cache354 = some cache355 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed354 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node354.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node354.conclusion) = true := by decide +kernel
-private theorem step355 : node355.replay (ruleWitness emptyAxiomPolicy) cache355 = some cache356 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed355 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node355.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node355.conclusion) = true := by decide +kernel
-private theorem step356 : node356.replay (ruleWitness emptyAxiomPolicy) cache356 = some cache357 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed356 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node356.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node356.conclusion) = true := by decide +kernel
-private theorem step357 : node357.replay (ruleWitness emptyAxiomPolicy) cache357 = some cache358 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed357 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node357.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node357.conclusion) = true := by decide +kernel
-private theorem step358 : node358.replay (ruleWitness emptyAxiomPolicy) cache358 = some cache359 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed358 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node358.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node358.conclusion) = true := by decide +kernel
-private theorem step359 : node359.replay (ruleWitness emptyAxiomPolicy) cache359 = some cache360 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed359 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node359.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node359.conclusion) = true := by decide +kernel
-private theorem step360 : node360.replay (ruleWitness emptyAxiomPolicy) cache360 = some cache361 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed360 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node360.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node360.conclusion) = true := by decide +kernel
-private theorem step361 : node361.replay (ruleWitness emptyAxiomPolicy) cache361 = some cache362 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed361 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node361.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node361.conclusion) = true := by decide +kernel
-private theorem step362 : node362.replay (ruleWitness emptyAxiomPolicy) cache362 = some cache363 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed362 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node362.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node362.conclusion) = true := by decide +kernel
-private theorem step363 : node363.replay (ruleWitness emptyAxiomPolicy) cache363 = some cache364 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed363 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node363.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node363.conclusion) = true := by decide +kernel
-private theorem step364 : node364.replay (ruleWitness emptyAxiomPolicy) cache364 = some cache365 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed364 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node364.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node364.conclusion) = true := by decide +kernel
-private theorem step365 : node365.replay (ruleWitness emptyAxiomPolicy) cache365 = some cache366 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed365 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node365.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node365.conclusion) = true := by decide +kernel
-private theorem step366 : node366.replay (ruleWitness emptyAxiomPolicy) cache366 = some cache367 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed366 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node366.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node366.conclusion) = true := by decide +kernel
-private theorem step367 : node367.replay (ruleWitness emptyAxiomPolicy) cache367 = some cache368 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed367 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node367.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node367.conclusion) = true := by decide +kernel
-private theorem step368 : node368.replay (ruleWitness emptyAxiomPolicy) cache368 = some cache369 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed368 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node368.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node368.conclusion) = true := by decide +kernel
-private theorem step369 : node369.replay (ruleWitness emptyAxiomPolicy) cache369 = some cache370 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed369 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node369.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node369.conclusion) = true := by decide +kernel
-private theorem step370 : node370.replay (ruleWitness emptyAxiomPolicy) cache370 = some cache371 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed370 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node370.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node370.conclusion) = true := by decide +kernel
-private theorem step371 : node371.replay (ruleWitness emptyAxiomPolicy) cache371 = some cache372 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed371 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node371.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node371.conclusion) = true := by decide +kernel
-private theorem step372 : node372.replay (ruleWitness emptyAxiomPolicy) cache372 = some cache373 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed372 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node372.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node372.conclusion) = true := by decide +kernel
-private theorem step373 : node373.replay (ruleWitness emptyAxiomPolicy) cache373 = some cache374 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed373 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node373.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node373.conclusion) = true := by decide +kernel
-private theorem step374 : node374.replay (ruleWitness emptyAxiomPolicy) cache374 = some cache375 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed374 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node374.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node374.conclusion) = true := by decide +kernel
-private theorem step375 : node375.replay (ruleWitness emptyAxiomPolicy) cache375 = some cache376 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed375 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node375.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node375.conclusion) = true := by decide +kernel
-private theorem step376 : node376.replay (ruleWitness emptyAxiomPolicy) cache376 = some cache377 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed376 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node376.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node376.conclusion) = true := by decide +kernel
-private theorem step377 : node377.replay (ruleWitness emptyAxiomPolicy) cache377 = some cache378 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed377 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node377.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node377.conclusion) = true := by decide +kernel
-private theorem step378 : node378.replay (ruleWitness emptyAxiomPolicy) cache378 = some cache379 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed378 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node378.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node378.conclusion) = true := by decide +kernel
-private theorem step379 : node379.replay (ruleWitness emptyAxiomPolicy) cache379 = some cache380 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed379 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node379.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node379.conclusion) = true := by decide +kernel
-private theorem step380 : node380.replay (ruleWitness emptyAxiomPolicy) cache380 = some cache381 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed380 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node380.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node380.conclusion) = true := by decide +kernel
-private theorem step381 : node381.replay (ruleWitness emptyAxiomPolicy) cache381 = some cache382 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed381 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node381.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node381.conclusion) = true := by decide +kernel
-private theorem step382 : node382.replay (ruleWitness emptyAxiomPolicy) cache382 = some cache383 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed382 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node382.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node382.conclusion) = true := by decide +kernel
-private theorem step383 : node383.replay (ruleWitness emptyAxiomPolicy) cache383 = some cache384 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed383 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node383.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node383.conclusion) = true := by decide +kernel
-private theorem step384 : node384.replay (ruleWitness emptyAxiomPolicy) cache384 = some cache385 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed384 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node384.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node384.conclusion) = true := by decide +kernel
-private theorem step385 : node385.replay (ruleWitness emptyAxiomPolicy) cache385 = some cache386 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed385 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node385.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node385.conclusion) = true := by decide +kernel
-private theorem step386 : node386.replay (ruleWitness emptyAxiomPolicy) cache386 = some cache387 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed386 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node386.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node386.conclusion) = true := by decide +kernel
-private theorem step387 : node387.replay (ruleWitness emptyAxiomPolicy) cache387 = some cache388 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed387 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node387.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node387.conclusion) = true := by decide +kernel
-private theorem step388 : node388.replay (ruleWitness emptyAxiomPolicy) cache388 = some cache389 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed388 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node388.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node388.conclusion) = true := by decide +kernel
-private theorem step389 : node389.replay (ruleWitness emptyAxiomPolicy) cache389 = some cache390 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed389 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node389.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node389.conclusion) = true := by decide +kernel
-private theorem step390 : node390.replay (ruleWitness emptyAxiomPolicy) cache390 = some cache391 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed390 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node390.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node390.conclusion) = true := by decide +kernel
-private theorem step391 : node391.replay (ruleWitness emptyAxiomPolicy) cache391 = some cache392 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed391 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node391.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node391.conclusion) = true := by decide +kernel
-private theorem step392 : node392.replay (ruleWitness emptyAxiomPolicy) cache392 = some cache393 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed392 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node392.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node392.conclusion) = true := by decide +kernel
-private theorem step393 : node393.replay (ruleWitness emptyAxiomPolicy) cache393 = some cache394 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed393 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node393.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node393.conclusion) = true := by decide +kernel
-private theorem step394 : node394.replay (ruleWitness emptyAxiomPolicy) cache394 = some cache395 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed394 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node394.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node394.conclusion) = true := by decide +kernel
-private theorem step395 : node395.replay (ruleWitness emptyAxiomPolicy) cache395 = some cache396 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed395 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node395.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node395.conclusion) = true := by decide +kernel
-private theorem step396 : node396.replay (ruleWitness emptyAxiomPolicy) cache396 = some cache397 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed396 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node396.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node396.conclusion) = true := by decide +kernel
-private theorem step397 : node397.replay (ruleWitness emptyAxiomPolicy) cache397 = some cache398 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed397 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node397.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node397.conclusion) = true := by decide +kernel
-private theorem step398 : node398.replay (ruleWitness emptyAxiomPolicy) cache398 = some cache399 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed398 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node398.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node398.conclusion) = true := by decide +kernel
-private theorem step399 : node399.replay (ruleWitness emptyAxiomPolicy) cache399 = some cache400 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed399 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node399.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node399.conclusion) = true := by decide +kernel
-private theorem step400 : node400.replay (ruleWitness emptyAxiomPolicy) cache400 = some cache401 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed400 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node400.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node400.conclusion) = true := by decide +kernel
-private theorem step401 : node401.replay (ruleWitness emptyAxiomPolicy) cache401 = some cache402 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed401 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node401.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node401.conclusion) = true := by decide +kernel
-private theorem step402 : node402.replay (ruleWitness emptyAxiomPolicy) cache402 = some cache403 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed402 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node402.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node402.conclusion) = true := by decide +kernel
-private theorem step403 : node403.replay (ruleWitness emptyAxiomPolicy) cache403 = some cache404 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed403 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node403.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node403.conclusion) = true := by decide +kernel
-private theorem step404 : node404.replay (ruleWitness emptyAxiomPolicy) cache404 = some cache405 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed404 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node404.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node404.conclusion) = true := by decide +kernel
-private theorem step405 : node405.replay (ruleWitness emptyAxiomPolicy) cache405 = some cache406 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed405 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node405.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node405.conclusion) = true := by decide +kernel
-private theorem step406 : node406.replay (ruleWitness emptyAxiomPolicy) cache406 = some cache407 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed406 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node406.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node406.conclusion) = true := by decide +kernel
-private theorem step407 : node407.replay (ruleWitness emptyAxiomPolicy) cache407 = some cache408 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed407 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node407.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node407.conclusion) = true := by decide +kernel
-private theorem step408 : node408.replay (ruleWitness emptyAxiomPolicy) cache408 = some cache409 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed408 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node408.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node408.conclusion) = true := by decide +kernel
-private theorem step409 : node409.replay (ruleWitness emptyAxiomPolicy) cache409 = some cache410 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed409 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node409.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node409.conclusion) = true := by decide +kernel
-private theorem step410 : node410.replay (ruleWitness emptyAxiomPolicy) cache410 = some cache411 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed410 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node410.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node410.conclusion) = true := by decide +kernel
-private theorem step411 : node411.replay (ruleWitness emptyAxiomPolicy) cache411 = some cache412 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed411 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node411.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node411.conclusion) = true := by decide +kernel
-private theorem step412 : node412.replay (ruleWitness emptyAxiomPolicy) cache412 = some cache413 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed412 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node412.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node412.conclusion) = true := by decide +kernel
-private theorem step413 : node413.replay (ruleWitness emptyAxiomPolicy) cache413 = some cache414 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed413 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node413.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node413.conclusion) = true := by decide +kernel
-private theorem step414 : node414.replay (ruleWitness emptyAxiomPolicy) cache414 = some cache415 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed414 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node414.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node414.conclusion) = true := by decide +kernel
-private theorem step415 : node415.replay (ruleWitness emptyAxiomPolicy) cache415 = some cache416 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed415 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node415.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node415.conclusion) = true := by decide +kernel
-private theorem step416 : node416.replay (ruleWitness emptyAxiomPolicy) cache416 = some cache417 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed416 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node416.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node416.conclusion) = true := by decide +kernel
-private theorem step417 : node417.replay (ruleWitness emptyAxiomPolicy) cache417 = some cache418 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed417 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node417.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node417.conclusion) = true := by decide +kernel
-private theorem step418 : node418.replay (ruleWitness emptyAxiomPolicy) cache418 = some cache419 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed418 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node418.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node418.conclusion) = true := by decide +kernel
-private theorem step419 : node419.replay (ruleWitness emptyAxiomPolicy) cache419 = some cache420 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed419 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node419.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node419.conclusion) = true := by decide +kernel
-private theorem step420 : node420.replay (ruleWitness emptyAxiomPolicy) cache420 = some cache421 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed420 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node420.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node420.conclusion) = true := by decide +kernel
-private theorem step421 : node421.replay (ruleWitness emptyAxiomPolicy) cache421 = some cache422 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed421 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node421.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node421.conclusion) = true := by decide +kernel
-private theorem step422 : node422.replay (ruleWitness emptyAxiomPolicy) cache422 = some cache423 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed422 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node422.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node422.conclusion) = true := by decide +kernel
-private theorem step423 : node423.replay (ruleWitness emptyAxiomPolicy) cache423 = some cache424 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed423 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node423.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node423.conclusion) = true := by decide +kernel
-private theorem step424 : node424.replay (ruleWitness emptyAxiomPolicy) cache424 = some cache425 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed424 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node424.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node424.conclusion) = true := by decide +kernel
-private theorem step425 : node425.replay (ruleWitness emptyAxiomPolicy) cache425 = some cache426 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed425 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node425.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node425.conclusion) = true := by decide +kernel
-private theorem step426 : node426.replay (ruleWitness emptyAxiomPolicy) cache426 = some cache427 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed426 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node426.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node426.conclusion) = true := by decide +kernel
-private theorem step427 : node427.replay (ruleWitness emptyAxiomPolicy) cache427 = some cache428 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed427 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node427.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node427.conclusion) = true := by decide +kernel
-private theorem step428 : node428.replay (ruleWitness emptyAxiomPolicy) cache428 = some cache429 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed428 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node428.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node428.conclusion) = true := by decide +kernel
-private theorem step429 : node429.replay (ruleWitness emptyAxiomPolicy) cache429 = some cache430 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed429 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node429.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node429.conclusion) = true := by decide +kernel
-private theorem step430 : node430.replay (ruleWitness emptyAxiomPolicy) cache430 = some cache431 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed430 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node430.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node430.conclusion) = true := by decide +kernel
-private theorem step431 : node431.replay (ruleWitness emptyAxiomPolicy) cache431 = some cache432 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed431 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node431.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node431.conclusion) = true := by decide +kernel
-private theorem step432 : node432.replay (ruleWitness emptyAxiomPolicy) cache432 = some cache433 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed432 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node432.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node432.conclusion) = true := by decide +kernel
-private theorem step433 : node433.replay (ruleWitness emptyAxiomPolicy) cache433 = some cache434 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed433 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node433.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node433.conclusion) = true := by decide +kernel
-private theorem step434 : node434.replay (ruleWitness emptyAxiomPolicy) cache434 = some cache435 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed434 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node434.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node434.conclusion) = true := by decide +kernel
-private theorem step435 : node435.replay (ruleWitness emptyAxiomPolicy) cache435 = some cache436 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed435 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node435.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node435.conclusion) = true := by decide +kernel
-private theorem step436 : node436.replay (ruleWitness emptyAxiomPolicy) cache436 = some cache437 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed436 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node436.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node436.conclusion) = true := by decide +kernel
-private theorem step437 : node437.replay (ruleWitness emptyAxiomPolicy) cache437 = some cache438 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed437 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node437.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node437.conclusion) = true := by decide +kernel
-private theorem step438 : node438.replay (ruleWitness emptyAxiomPolicy) cache438 = some cache439 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed438 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node438.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node438.conclusion) = true := by decide +kernel
-private theorem step439 : node439.replay (ruleWitness emptyAxiomPolicy) cache439 = some cache440 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed439 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node439.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node439.conclusion) = true := by decide +kernel
-private theorem step440 : node440.replay (ruleWitness emptyAxiomPolicy) cache440 = some cache441 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed440 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node440.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node440.conclusion) = true := by decide +kernel
-private theorem step441 : node441.replay (ruleWitness emptyAxiomPolicy) cache441 = some cache442 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed441 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node441.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node441.conclusion) = true := by decide +kernel
-private theorem step442 : node442.replay (ruleWitness emptyAxiomPolicy) cache442 = some cache443 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed442 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node442.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node442.conclusion) = true := by decide +kernel
-private theorem step443 : node443.replay (ruleWitness emptyAxiomPolicy) cache443 = some cache444 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed443 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node443.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node443.conclusion) = true := by decide +kernel
-private theorem step444 : node444.replay (ruleWitness emptyAxiomPolicy) cache444 = some cache445 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed444 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node444.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node444.conclusion) = true := by decide +kernel
-private theorem step445 : node445.replay (ruleWitness emptyAxiomPolicy) cache445 = some cache446 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed445 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node445.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node445.conclusion) = true := by decide +kernel
-private theorem step446 : node446.replay (ruleWitness emptyAxiomPolicy) cache446 = some cache447 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed446 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node446.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node446.conclusion) = true := by decide +kernel
-private theorem step447 : node447.replay (ruleWitness emptyAxiomPolicy) cache447 = some cache448 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed447 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node447.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node447.conclusion) = true := by decide +kernel
-private theorem step448 : node448.replay (ruleWitness emptyAxiomPolicy) cache448 = some cache449 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed448 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node448.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node448.conclusion) = true := by decide +kernel
-private theorem step449 : node449.replay (ruleWitness emptyAxiomPolicy) cache449 = some cache450 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed449 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node449.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node449.conclusion) = true := by decide +kernel
-private theorem step450 : node450.replay (ruleWitness emptyAxiomPolicy) cache450 = some cache451 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed450 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node450.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node450.conclusion) = true := by decide +kernel
-private theorem step451 : node451.replay (ruleWitness emptyAxiomPolicy) cache451 = some cache452 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed451 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node451.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node451.conclusion) = true := by decide +kernel
-private theorem step452 : node452.replay (ruleWitness emptyAxiomPolicy) cache452 = some cache453 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed452 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node452.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node452.conclusion) = true := by decide +kernel
-private theorem step453 : node453.replay (ruleWitness emptyAxiomPolicy) cache453 = some cache454 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed453 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node453.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node453.conclusion) = true := by decide +kernel
-private theorem step454 : node454.replay (ruleWitness emptyAxiomPolicy) cache454 = some cache455 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed454 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node454.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node454.conclusion) = true := by decide +kernel
-private theorem step455 : node455.replay (ruleWitness emptyAxiomPolicy) cache455 = some cache456 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed455 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node455.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node455.conclusion) = true := by decide +kernel
-private theorem step456 : node456.replay (ruleWitness emptyAxiomPolicy) cache456 = some cache457 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed456 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node456.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node456.conclusion) = true := by decide +kernel
-private theorem step457 : node457.replay (ruleWitness emptyAxiomPolicy) cache457 = some cache458 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed457 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node457.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node457.conclusion) = true := by decide +kernel
-private theorem step458 : node458.replay (ruleWitness emptyAxiomPolicy) cache458 = some cache459 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed458 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node458.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node458.conclusion) = true := by decide +kernel
-private theorem step459 : node459.replay (ruleWitness emptyAxiomPolicy) cache459 = some cache460 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed459 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node459.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node459.conclusion) = true := by decide +kernel
-private theorem step460 : node460.replay (ruleWitness emptyAxiomPolicy) cache460 = some cache461 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed460 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node460.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node460.conclusion) = true := by decide +kernel
-private theorem step461 : node461.replay (ruleWitness emptyAxiomPolicy) cache461 = some cache462 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed461 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node461.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node461.conclusion) = true := by decide +kernel
-private theorem step462 : node462.replay (ruleWitness emptyAxiomPolicy) cache462 = some cache463 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed462 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node462.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node462.conclusion) = true := by decide +kernel
-private theorem step463 : node463.replay (ruleWitness emptyAxiomPolicy) cache463 = some cache464 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed463 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node463.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node463.conclusion) = true := by decide +kernel
-private theorem step464 : node464.replay (ruleWitness emptyAxiomPolicy) cache464 = some cache465 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed464 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node464.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node464.conclusion) = true := by decide +kernel
-private theorem step465 : node465.replay (ruleWitness emptyAxiomPolicy) cache465 = some cache466 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed465 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node465.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node465.conclusion) = true := by decide +kernel
-private theorem step466 : node466.replay (ruleWitness emptyAxiomPolicy) cache466 = some cache467 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed466 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node466.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node466.conclusion) = true := by decide +kernel
-private theorem step467 : node467.replay (ruleWitness emptyAxiomPolicy) cache467 = some cache468 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed467 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node467.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node467.conclusion) = true := by decide +kernel
-private theorem step468 : node468.replay (ruleWitness emptyAxiomPolicy) cache468 = some cache469 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed468 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node468.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node468.conclusion) = true := by decide +kernel
-private theorem step469 : node469.replay (ruleWitness emptyAxiomPolicy) cache469 = some cache470 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed469 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node469.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node469.conclusion) = true := by decide +kernel
-private theorem step470 : node470.replay (ruleWitness emptyAxiomPolicy) cache470 = some cache471 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed470 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node470.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node470.conclusion) = true := by decide +kernel
-private theorem step471 : node471.replay (ruleWitness emptyAxiomPolicy) cache471 = some cache472 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed471 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node471.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node471.conclusion) = true := by decide +kernel
-private theorem step472 : node472.replay (ruleWitness emptyAxiomPolicy) cache472 = some cache473 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed472 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node472.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node472.conclusion) = true := by decide +kernel
-private theorem step473 : node473.replay (ruleWitness emptyAxiomPolicy) cache473 = some cache474 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed473 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node473.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node473.conclusion) = true := by decide +kernel
-private theorem step474 : node474.replay (ruleWitness emptyAxiomPolicy) cache474 = some cache475 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed474 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node474.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node474.conclusion) = true := by decide +kernel
-private theorem step475 : node475.replay (ruleWitness emptyAxiomPolicy) cache475 = some cache476 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed475 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node475.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node475.conclusion) = true := by decide +kernel
-private theorem step476 : node476.replay (ruleWitness emptyAxiomPolicy) cache476 = some cache477 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed476 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node476.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node476.conclusion) = true := by decide +kernel
-private theorem step477 : node477.replay (ruleWitness emptyAxiomPolicy) cache477 = some cache478 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed477 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node477.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node477.conclusion) = true := by decide +kernel
-private theorem step478 : node478.replay (ruleWitness emptyAxiomPolicy) cache478 = some cache479 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed478 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node478.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node478.conclusion) = true := by decide +kernel
-private theorem step479 : node479.replay (ruleWitness emptyAxiomPolicy) cache479 = some cache480 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed479 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node479.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node479.conclusion) = true := by decide +kernel
-private theorem step480 : node480.replay (ruleWitness emptyAxiomPolicy) cache480 = some cache481 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed480 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node480.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node480.conclusion) = true := by decide +kernel
-private theorem step481 : node481.replay (ruleWitness emptyAxiomPolicy) cache481 = some cache482 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed481 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node481.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node481.conclusion) = true := by decide +kernel
-private theorem step482 : node482.replay (ruleWitness emptyAxiomPolicy) cache482 = some cache483 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed482 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node482.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node482.conclusion) = true := by decide +kernel
-private theorem step483 : node483.replay (ruleWitness emptyAxiomPolicy) cache483 = some cache484 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed483 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node483.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node483.conclusion) = true := by decide +kernel
-private theorem step484 : node484.replay (ruleWitness emptyAxiomPolicy) cache484 = some cache485 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed484 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node484.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node484.conclusion) = true := by decide +kernel
-private theorem step485 : node485.replay (ruleWitness emptyAxiomPolicy) cache485 = some cache486 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed485 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node485.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node485.conclusion) = true := by decide +kernel
-private theorem step486 : node486.replay (ruleWitness emptyAxiomPolicy) cache486 = some cache487 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed486 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node486.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node486.conclusion) = true := by decide +kernel
-private theorem step487 : node487.replay (ruleWitness emptyAxiomPolicy) cache487 = some cache488 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed487 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node487.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node487.conclusion) = true := by decide +kernel
-private theorem step488 : node488.replay (ruleWitness emptyAxiomPolicy) cache488 = some cache489 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed488 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node488.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node488.conclusion) = true := by decide +kernel
-private theorem step489 : node489.replay (ruleWitness emptyAxiomPolicy) cache489 = some cache490 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed489 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node489.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node489.conclusion) = true := by decide +kernel
-private theorem step490 : node490.replay (ruleWitness emptyAxiomPolicy) cache490 = some cache491 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed490 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node490.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node490.conclusion) = true := by decide +kernel
-private theorem step491 : node491.replay (ruleWitness emptyAxiomPolicy) cache491 = some cache492 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed491 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node491.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node491.conclusion) = true := by decide +kernel
-private theorem step492 : node492.replay (ruleWitness emptyAxiomPolicy) cache492 = some cache493 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed492 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node492.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node492.conclusion) = true := by decide +kernel
-private theorem step493 : node493.replay (ruleWitness emptyAxiomPolicy) cache493 = some cache494 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed493 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node493.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node493.conclusion) = true := by decide +kernel
-private theorem step494 : node494.replay (ruleWitness emptyAxiomPolicy) cache494 = some cache495 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed494 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node494.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node494.conclusion) = true := by decide +kernel
-private theorem step495 : node495.replay (ruleWitness emptyAxiomPolicy) cache495 = some cache496 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed495 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node495.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node495.conclusion) = true := by decide +kernel
-private theorem step496 : node496.replay (ruleWitness emptyAxiomPolicy) cache496 = some cache497 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed496 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node496.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node496.conclusion) = true := by decide +kernel
-private theorem step497 : node497.replay (ruleWitness emptyAxiomPolicy) cache497 = some cache498 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed497 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node497.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node497.conclusion) = true := by decide +kernel
-private theorem step498 : node498.replay (ruleWitness emptyAxiomPolicy) cache498 = some cache499 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed498 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node498.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node498.conclusion) = true := by decide +kernel
-private theorem step499 : node499.replay (ruleWitness emptyAxiomPolicy) cache499 = some cache500 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed499 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node499.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node499.conclusion) = true := by decide +kernel
-private theorem step500 : node500.replay (ruleWitness emptyAxiomPolicy) cache500 = some cache501 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed500 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node500.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node500.conclusion) = true := by decide +kernel
-private theorem step501 : node501.replay (ruleWitness emptyAxiomPolicy) cache501 = some cache502 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed501 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node501.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node501.conclusion) = true := by decide +kernel
-private theorem step502 : node502.replay (ruleWitness emptyAxiomPolicy) cache502 = some cache503 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed502 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node502.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node502.conclusion) = true := by decide +kernel
-private theorem step503 : node503.replay (ruleWitness emptyAxiomPolicy) cache503 = some cache504 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed503 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node503.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node503.conclusion) = true := by decide +kernel
-private theorem step504 : node504.replay (ruleWitness emptyAxiomPolicy) cache504 = some cache505 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed504 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node504.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node504.conclusion) = true := by decide +kernel
-private theorem step505 : node505.replay (ruleWitness emptyAxiomPolicy) cache505 = some cache506 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed505 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node505.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node505.conclusion) = true := by decide +kernel
-private theorem step506 : node506.replay (ruleWitness emptyAxiomPolicy) cache506 = some cache507 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed506 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node506.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node506.conclusion) = true := by decide +kernel
-private theorem step507 : node507.replay (ruleWitness emptyAxiomPolicy) cache507 = some cache508 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed507 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node507.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node507.conclusion) = true := by decide +kernel
-private theorem step508 : node508.replay (ruleWitness emptyAxiomPolicy) cache508 = some cache509 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed508 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node508.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node508.conclusion) = true := by decide +kernel
-private theorem step509 : node509.replay (ruleWitness emptyAxiomPolicy) cache509 = some cache510 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed509 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node509.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node509.conclusion) = true := by decide +kernel
-private theorem step510 : node510.replay (ruleWitness emptyAxiomPolicy) cache510 = some cache511 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed510 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node510.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node510.conclusion) = true := by decide +kernel
-private theorem step511 : node511.replay (ruleWitness emptyAxiomPolicy) cache511 = some cache512 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed511 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node511.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node511.conclusion) = true := by decide +kernel
-private theorem step512 : node512.replay (ruleWitness emptyAxiomPolicy) cache512 = some cache513 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed512 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node512.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node512.conclusion) = true := by decide +kernel
-private theorem step513 : node513.replay (ruleWitness emptyAxiomPolicy) cache513 = some cache514 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed513 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node513.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node513.conclusion) = true := by decide +kernel
-private theorem step514 : node514.replay (ruleWitness emptyAxiomPolicy) cache514 = some cache515 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed514 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node514.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node514.conclusion) = true := by decide +kernel
-private theorem step515 : node515.replay (ruleWitness emptyAxiomPolicy) cache515 = some cache516 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed515 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node515.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node515.conclusion) = true := by decide +kernel
-private theorem step516 : node516.replay (ruleWitness emptyAxiomPolicy) cache516 = some cache517 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed516 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node516.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node516.conclusion) = true := by decide +kernel
-private theorem step517 : node517.replay (ruleWitness emptyAxiomPolicy) cache517 = some cache518 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed517 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node517.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node517.conclusion) = true := by decide +kernel
-private theorem step518 : node518.replay (ruleWitness emptyAxiomPolicy) cache518 = some cache519 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed518 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node518.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node518.conclusion) = true := by decide +kernel
-private theorem step519 : node519.replay (ruleWitness emptyAxiomPolicy) cache519 = some cache520 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed519 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node519.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node519.conclusion) = true := by decide +kernel
-private theorem step520 : node520.replay (ruleWitness emptyAxiomPolicy) cache520 = some cache521 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed520 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node520.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node520.conclusion) = true := by decide +kernel
-private theorem step521 : node521.replay (ruleWitness emptyAxiomPolicy) cache521 = some cache522 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed521 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node521.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node521.conclusion) = true := by decide +kernel
-private theorem step522 : node522.replay (ruleWitness emptyAxiomPolicy) cache522 = some cache523 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed522 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node522.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node522.conclusion) = true := by decide +kernel
-private theorem step523 : node523.replay (ruleWitness emptyAxiomPolicy) cache523 = some cache524 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed523 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node523.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node523.conclusion) = true := by decide +kernel
-private theorem step524 : node524.replay (ruleWitness emptyAxiomPolicy) cache524 = some cache525 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed524 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node524.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node524.conclusion) = true := by decide +kernel
-private theorem step525 : node525.replay (ruleWitness emptyAxiomPolicy) cache525 = some cache526 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed525 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node525.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node525.conclusion) = true := by decide +kernel
-private theorem step526 : node526.replay (ruleWitness emptyAxiomPolicy) cache526 = some cache527 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed526 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node526.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node526.conclusion) = true := by decide +kernel
-private theorem step527 : node527.replay (ruleWitness emptyAxiomPolicy) cache527 = some cache528 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed527 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node527.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node527.conclusion) = true := by decide +kernel
-private theorem step528 : node528.replay (ruleWitness emptyAxiomPolicy) cache528 = some cache529 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed528 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node528.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node528.conclusion) = true := by decide +kernel
-private theorem step529 : node529.replay (ruleWitness emptyAxiomPolicy) cache529 = some cache530 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed529 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node529.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node529.conclusion) = true := by decide +kernel
-private theorem step530 : node530.replay (ruleWitness emptyAxiomPolicy) cache530 = some cache531 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed530 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node530.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node530.conclusion) = true := by decide +kernel
-private theorem step531 : node531.replay (ruleWitness emptyAxiomPolicy) cache531 = some cache532 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed531 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node531.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node531.conclusion) = true := by decide +kernel
-private theorem step532 : node532.replay (ruleWitness emptyAxiomPolicy) cache532 = some cache533 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed532 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node532.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node532.conclusion) = true := by decide +kernel
-private theorem step533 : node533.replay (ruleWitness emptyAxiomPolicy) cache533 = some cache534 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed533 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node533.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node533.conclusion) = true := by decide +kernel
-private theorem step534 : node534.replay (ruleWitness emptyAxiomPolicy) cache534 = some cache535 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed534 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node534.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node534.conclusion) = true := by decide +kernel
-private theorem step535 : node535.replay (ruleWitness emptyAxiomPolicy) cache535 = some cache536 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed535 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node535.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node535.conclusion) = true := by decide +kernel
-private theorem step536 : node536.replay (ruleWitness emptyAxiomPolicy) cache536 = some cache537 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed536 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node536.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node536.conclusion) = true := by decide +kernel
-private theorem step537 : node537.replay (ruleWitness emptyAxiomPolicy) cache537 = some cache538 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed537 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node537.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node537.conclusion) = true := by decide +kernel
-private theorem step538 : node538.replay (ruleWitness emptyAxiomPolicy) cache538 = some cache539 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed538 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node538.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node538.conclusion) = true := by decide +kernel
-private theorem step539 : node539.replay (ruleWitness emptyAxiomPolicy) cache539 = some cache540 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed539 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node539.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node539.conclusion) = true := by decide +kernel
-private theorem step540 : node540.replay (ruleWitness emptyAxiomPolicy) cache540 = some cache541 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed540 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node540.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node540.conclusion) = true := by decide +kernel
-private theorem step541 : node541.replay (ruleWitness emptyAxiomPolicy) cache541 = some cache542 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed541 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node541.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node541.conclusion) = true := by decide +kernel
-private theorem step542 : node542.replay (ruleWitness emptyAxiomPolicy) cache542 = some cache543 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed542 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node542.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node542.conclusion) = true := by decide +kernel
-private theorem step543 : node543.replay (ruleWitness emptyAxiomPolicy) cache543 = some cache544 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed543 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node543.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node543.conclusion) = true := by decide +kernel
-private theorem step544 : node544.replay (ruleWitness emptyAxiomPolicy) cache544 = some cache545 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed544 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node544.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node544.conclusion) = true := by decide +kernel
-private theorem step545 : node545.replay (ruleWitness emptyAxiomPolicy) cache545 = some cache546 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed545 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node545.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node545.conclusion) = true := by decide +kernel
-private theorem step546 : node546.replay (ruleWitness emptyAxiomPolicy) cache546 = some cache547 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed546 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node546.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node546.conclusion) = true := by decide +kernel
-private theorem step547 : node547.replay (ruleWitness emptyAxiomPolicy) cache547 = some cache548 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed547 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node547.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node547.conclusion) = true := by decide +kernel
-private theorem step548 : node548.replay (ruleWitness emptyAxiomPolicy) cache548 = some cache549 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed548 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node548.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node548.conclusion) = true := by decide +kernel
-private theorem step549 : node549.replay (ruleWitness emptyAxiomPolicy) cache549 = some cache550 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed549 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node549.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node549.conclusion) = true := by decide +kernel
-private theorem step550 : node550.replay (ruleWitness emptyAxiomPolicy) cache550 = some cache551 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed550 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node550.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node550.conclusion) = true := by decide +kernel
-private theorem step551 : node551.replay (ruleWitness emptyAxiomPolicy) cache551 = some cache552 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed551 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node551.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node551.conclusion) = true := by decide +kernel
-private theorem step552 : node552.replay (ruleWitness emptyAxiomPolicy) cache552 = some cache553 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed552 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node552.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node552.conclusion) = true := by decide +kernel
-private theorem step553 : node553.replay (ruleWitness emptyAxiomPolicy) cache553 = some cache554 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed553 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node553.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node553.conclusion) = true := by decide +kernel
-private theorem step554 : node554.replay (ruleWitness emptyAxiomPolicy) cache554 = some cache555 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed554 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node554.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node554.conclusion) = true := by decide +kernel
-private theorem step555 : node555.replay (ruleWitness emptyAxiomPolicy) cache555 = some cache556 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed555 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node555.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node555.conclusion) = true := by decide +kernel
-private theorem step556 : node556.replay (ruleWitness emptyAxiomPolicy) cache556 = some cache557 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed556 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node556.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node556.conclusion) = true := by decide +kernel
-private theorem step557 : node557.replay (ruleWitness emptyAxiomPolicy) cache557 = some cache558 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed557 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node557.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node557.conclusion) = true := by decide +kernel
-private theorem step558 : node558.replay (ruleWitness emptyAxiomPolicy) cache558 = some cache559 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed558 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node558.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node558.conclusion) = true := by decide +kernel
-private theorem step559 : node559.replay (ruleWitness emptyAxiomPolicy) cache559 = some cache560 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed559 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node559.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node559.conclusion) = true := by decide +kernel
-private theorem step560 : node560.replay (ruleWitness emptyAxiomPolicy) cache560 = some cache561 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed560 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node560.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node560.conclusion) = true := by decide +kernel
-private theorem step561 : node561.replay (ruleWitness emptyAxiomPolicy) cache561 = some cache562 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed561 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node561.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node561.conclusion) = true := by decide +kernel
-private theorem step562 : node562.replay (ruleWitness emptyAxiomPolicy) cache562 = some cache563 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed562 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node562.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node562.conclusion) = true := by decide +kernel
-private theorem step563 : node563.replay (ruleWitness emptyAxiomPolicy) cache563 = some cache564 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed563 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node563.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node563.conclusion) = true := by decide +kernel
-private theorem step564 : node564.replay (ruleWitness emptyAxiomPolicy) cache564 = some cache565 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed564 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node564.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node564.conclusion) = true := by decide +kernel
-private theorem step565 : node565.replay (ruleWitness emptyAxiomPolicy) cache565 = some cache566 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed565 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node565.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node565.conclusion) = true := by decide +kernel
-private theorem step566 : node566.replay (ruleWitness emptyAxiomPolicy) cache566 = some cache567 := by
-  apply (ProofSystem.node_replay_iff emptyAxiomPolicy _ _ _).mpr
-  exact ⟨rfl, by decide +kernel, rfl⟩
-private theorem formed566 : (ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node566.witness && theoremFormedB ContextControls.coreContext.signature (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node566.conclusion) = true := by decide +kernel
-
-private theorem replay_cons (cache middle final : Array Theorem)
-    (node : ProofExecution.Receipt) (rest : List ProofExecution.Receipt)
-    (first : node.replay (ruleWitness emptyAxiomPolicy) cache = some middle)
-    (tail : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) middle rest = some final) :
-    DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache (node :: rest) = some final := by
-  simp only [DerivationGraph.replayFrom, first]
-  exact tail
+private def requestFormation (witness : RuleRequest) (conclusion : Theorem) : Bool :=
+  ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature
+    (ExportReplay.instanceCertificates ContextControls.coreContext.signature) witness &&
+    theoremFormedB ContextControls.coreContext.signature
+      (ExportReplay.instanceCertificates ContextControls.coreContext.signature) conclusion
 
 private def nodeFormed (node : ProofExecution.Receipt) : Bool :=
-  ProofExecution.Registered.requestFormedB ContextControls.coreContext.signature
-    (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node.witness &&
-    theoremFormedB ContextControls.coreContext.signature
-      (ExportReplay.instanceCertificates ContextControls.coreContext.signature) node.conclusion
+  requestFormation node.witness node.conclusion
 
-private theorem formed_cons (node : ProofExecution.Receipt) (rest : List ProofExecution.Receipt)
-    (first : nodeFormed node = true) (tail : rest.all nodeFormed = true) :
-    (node :: rest).all nodeFormed = true := by
-  simp only [List.all_cons, first, tail, Bool.and_self]
-
-private def suffix567 : List ProofExecution.Receipt := []
-private theorem replaySuffix567 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache567 suffix567 = some cache567 := rfl
-private theorem formedSuffix567 : suffix567.all nodeFormed = true := rfl
-private def suffix566 : List ProofExecution.Receipt := node566 :: suffix567
-private theorem replaySuffix566 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache566 suffix566 = some cache567 := replay_cons _ _ _ _ _ step566 replaySuffix567
-private theorem formedSuffix566 : suffix566.all nodeFormed = true := formed_cons _ _ formed566 formedSuffix567
-private def suffix565 : List ProofExecution.Receipt := node565 :: suffix566
-private theorem replaySuffix565 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache565 suffix565 = some cache567 := replay_cons _ _ _ _ _ step565 replaySuffix566
-private theorem formedSuffix565 : suffix565.all nodeFormed = true := formed_cons _ _ formed565 formedSuffix566
-private def suffix564 : List ProofExecution.Receipt := node564 :: suffix565
-private theorem replaySuffix564 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache564 suffix564 = some cache567 := replay_cons _ _ _ _ _ step564 replaySuffix565
-private theorem formedSuffix564 : suffix564.all nodeFormed = true := formed_cons _ _ formed564 formedSuffix565
-private def suffix563 : List ProofExecution.Receipt := node563 :: suffix564
-private theorem replaySuffix563 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache563 suffix563 = some cache567 := replay_cons _ _ _ _ _ step563 replaySuffix564
-private theorem formedSuffix563 : suffix563.all nodeFormed = true := formed_cons _ _ formed563 formedSuffix564
-private def suffix562 : List ProofExecution.Receipt := node562 :: suffix563
-private theorem replaySuffix562 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache562 suffix562 = some cache567 := replay_cons _ _ _ _ _ step562 replaySuffix563
-private theorem formedSuffix562 : suffix562.all nodeFormed = true := formed_cons _ _ formed562 formedSuffix563
-private def suffix561 : List ProofExecution.Receipt := node561 :: suffix562
-private theorem replaySuffix561 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache561 suffix561 = some cache567 := replay_cons _ _ _ _ _ step561 replaySuffix562
-private theorem formedSuffix561 : suffix561.all nodeFormed = true := formed_cons _ _ formed561 formedSuffix562
-private def suffix560 : List ProofExecution.Receipt := node560 :: suffix561
-private theorem replaySuffix560 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache560 suffix560 = some cache567 := replay_cons _ _ _ _ _ step560 replaySuffix561
-private theorem formedSuffix560 : suffix560.all nodeFormed = true := formed_cons _ _ formed560 formedSuffix561
-private def suffix559 : List ProofExecution.Receipt := node559 :: suffix560
-private theorem replaySuffix559 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache559 suffix559 = some cache567 := replay_cons _ _ _ _ _ step559 replaySuffix560
-private theorem formedSuffix559 : suffix559.all nodeFormed = true := formed_cons _ _ formed559 formedSuffix560
-private def suffix558 : List ProofExecution.Receipt := node558 :: suffix559
-private theorem replaySuffix558 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache558 suffix558 = some cache567 := replay_cons _ _ _ _ _ step558 replaySuffix559
-private theorem formedSuffix558 : suffix558.all nodeFormed = true := formed_cons _ _ formed558 formedSuffix559
-private def suffix557 : List ProofExecution.Receipt := node557 :: suffix558
-private theorem replaySuffix557 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache557 suffix557 = some cache567 := replay_cons _ _ _ _ _ step557 replaySuffix558
-private theorem formedSuffix557 : suffix557.all nodeFormed = true := formed_cons _ _ formed557 formedSuffix558
-private def suffix556 : List ProofExecution.Receipt := node556 :: suffix557
-private theorem replaySuffix556 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache556 suffix556 = some cache567 := replay_cons _ _ _ _ _ step556 replaySuffix557
-private theorem formedSuffix556 : suffix556.all nodeFormed = true := formed_cons _ _ formed556 formedSuffix557
-private def suffix555 : List ProofExecution.Receipt := node555 :: suffix556
-private theorem replaySuffix555 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache555 suffix555 = some cache567 := replay_cons _ _ _ _ _ step555 replaySuffix556
-private theorem formedSuffix555 : suffix555.all nodeFormed = true := formed_cons _ _ formed555 formedSuffix556
-private def suffix554 : List ProofExecution.Receipt := node554 :: suffix555
-private theorem replaySuffix554 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache554 suffix554 = some cache567 := replay_cons _ _ _ _ _ step554 replaySuffix555
-private theorem formedSuffix554 : suffix554.all nodeFormed = true := formed_cons _ _ formed554 formedSuffix555
-private def suffix553 : List ProofExecution.Receipt := node553 :: suffix554
-private theorem replaySuffix553 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache553 suffix553 = some cache567 := replay_cons _ _ _ _ _ step553 replaySuffix554
-private theorem formedSuffix553 : suffix553.all nodeFormed = true := formed_cons _ _ formed553 formedSuffix554
-private def suffix552 : List ProofExecution.Receipt := node552 :: suffix553
-private theorem replaySuffix552 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache552 suffix552 = some cache567 := replay_cons _ _ _ _ _ step552 replaySuffix553
-private theorem formedSuffix552 : suffix552.all nodeFormed = true := formed_cons _ _ formed552 formedSuffix553
-private def suffix551 : List ProofExecution.Receipt := node551 :: suffix552
-private theorem replaySuffix551 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache551 suffix551 = some cache567 := replay_cons _ _ _ _ _ step551 replaySuffix552
-private theorem formedSuffix551 : suffix551.all nodeFormed = true := formed_cons _ _ formed551 formedSuffix552
-private def suffix550 : List ProofExecution.Receipt := node550 :: suffix551
-private theorem replaySuffix550 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache550 suffix550 = some cache567 := replay_cons _ _ _ _ _ step550 replaySuffix551
-private theorem formedSuffix550 : suffix550.all nodeFormed = true := formed_cons _ _ formed550 formedSuffix551
-private def suffix549 : List ProofExecution.Receipt := node549 :: suffix550
-private theorem replaySuffix549 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache549 suffix549 = some cache567 := replay_cons _ _ _ _ _ step549 replaySuffix550
-private theorem formedSuffix549 : suffix549.all nodeFormed = true := formed_cons _ _ formed549 formedSuffix550
-private def suffix548 : List ProofExecution.Receipt := node548 :: suffix549
-private theorem replaySuffix548 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache548 suffix548 = some cache567 := replay_cons _ _ _ _ _ step548 replaySuffix549
-private theorem formedSuffix548 : suffix548.all nodeFormed = true := formed_cons _ _ formed548 formedSuffix549
-private def suffix547 : List ProofExecution.Receipt := node547 :: suffix548
-private theorem replaySuffix547 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache547 suffix547 = some cache567 := replay_cons _ _ _ _ _ step547 replaySuffix548
-private theorem formedSuffix547 : suffix547.all nodeFormed = true := formed_cons _ _ formed547 formedSuffix548
-private def suffix546 : List ProofExecution.Receipt := node546 :: suffix547
-private theorem replaySuffix546 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache546 suffix546 = some cache567 := replay_cons _ _ _ _ _ step546 replaySuffix547
-private theorem formedSuffix546 : suffix546.all nodeFormed = true := formed_cons _ _ formed546 formedSuffix547
-private def suffix545 : List ProofExecution.Receipt := node545 :: suffix546
-private theorem replaySuffix545 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache545 suffix545 = some cache567 := replay_cons _ _ _ _ _ step545 replaySuffix546
-private theorem formedSuffix545 : suffix545.all nodeFormed = true := formed_cons _ _ formed545 formedSuffix546
-private def suffix544 : List ProofExecution.Receipt := node544 :: suffix545
-private theorem replaySuffix544 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache544 suffix544 = some cache567 := replay_cons _ _ _ _ _ step544 replaySuffix545
-private theorem formedSuffix544 : suffix544.all nodeFormed = true := formed_cons _ _ formed544 formedSuffix545
-private def suffix543 : List ProofExecution.Receipt := node543 :: suffix544
-private theorem replaySuffix543 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache543 suffix543 = some cache567 := replay_cons _ _ _ _ _ step543 replaySuffix544
-private theorem formedSuffix543 : suffix543.all nodeFormed = true := formed_cons _ _ formed543 formedSuffix544
-private def suffix542 : List ProofExecution.Receipt := node542 :: suffix543
-private theorem replaySuffix542 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache542 suffix542 = some cache567 := replay_cons _ _ _ _ _ step542 replaySuffix543
-private theorem formedSuffix542 : suffix542.all nodeFormed = true := formed_cons _ _ formed542 formedSuffix543
-private def suffix541 : List ProofExecution.Receipt := node541 :: suffix542
-private theorem replaySuffix541 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache541 suffix541 = some cache567 := replay_cons _ _ _ _ _ step541 replaySuffix542
-private theorem formedSuffix541 : suffix541.all nodeFormed = true := formed_cons _ _ formed541 formedSuffix542
-private def suffix540 : List ProofExecution.Receipt := node540 :: suffix541
-private theorem replaySuffix540 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache540 suffix540 = some cache567 := replay_cons _ _ _ _ _ step540 replaySuffix541
-private theorem formedSuffix540 : suffix540.all nodeFormed = true := formed_cons _ _ formed540 formedSuffix541
-private def suffix539 : List ProofExecution.Receipt := node539 :: suffix540
-private theorem replaySuffix539 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache539 suffix539 = some cache567 := replay_cons _ _ _ _ _ step539 replaySuffix540
-private theorem formedSuffix539 : suffix539.all nodeFormed = true := formed_cons _ _ formed539 formedSuffix540
-private def suffix538 : List ProofExecution.Receipt := node538 :: suffix539
-private theorem replaySuffix538 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache538 suffix538 = some cache567 := replay_cons _ _ _ _ _ step538 replaySuffix539
-private theorem formedSuffix538 : suffix538.all nodeFormed = true := formed_cons _ _ formed538 formedSuffix539
-private def suffix537 : List ProofExecution.Receipt := node537 :: suffix538
-private theorem replaySuffix537 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache537 suffix537 = some cache567 := replay_cons _ _ _ _ _ step537 replaySuffix538
-private theorem formedSuffix537 : suffix537.all nodeFormed = true := formed_cons _ _ formed537 formedSuffix538
-private def suffix536 : List ProofExecution.Receipt := node536 :: suffix537
-private theorem replaySuffix536 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache536 suffix536 = some cache567 := replay_cons _ _ _ _ _ step536 replaySuffix537
-private theorem formedSuffix536 : suffix536.all nodeFormed = true := formed_cons _ _ formed536 formedSuffix537
-private def suffix535 : List ProofExecution.Receipt := node535 :: suffix536
-private theorem replaySuffix535 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache535 suffix535 = some cache567 := replay_cons _ _ _ _ _ step535 replaySuffix536
-private theorem formedSuffix535 : suffix535.all nodeFormed = true := formed_cons _ _ formed535 formedSuffix536
-private def suffix534 : List ProofExecution.Receipt := node534 :: suffix535
-private theorem replaySuffix534 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache534 suffix534 = some cache567 := replay_cons _ _ _ _ _ step534 replaySuffix535
-private theorem formedSuffix534 : suffix534.all nodeFormed = true := formed_cons _ _ formed534 formedSuffix535
-private def suffix533 : List ProofExecution.Receipt := node533 :: suffix534
-private theorem replaySuffix533 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache533 suffix533 = some cache567 := replay_cons _ _ _ _ _ step533 replaySuffix534
-private theorem formedSuffix533 : suffix533.all nodeFormed = true := formed_cons _ _ formed533 formedSuffix534
-private def suffix532 : List ProofExecution.Receipt := node532 :: suffix533
-private theorem replaySuffix532 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache532 suffix532 = some cache567 := replay_cons _ _ _ _ _ step532 replaySuffix533
-private theorem formedSuffix532 : suffix532.all nodeFormed = true := formed_cons _ _ formed532 formedSuffix533
-private def suffix531 : List ProofExecution.Receipt := node531 :: suffix532
-private theorem replaySuffix531 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache531 suffix531 = some cache567 := replay_cons _ _ _ _ _ step531 replaySuffix532
-private theorem formedSuffix531 : suffix531.all nodeFormed = true := formed_cons _ _ formed531 formedSuffix532
-private def suffix530 : List ProofExecution.Receipt := node530 :: suffix531
-private theorem replaySuffix530 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache530 suffix530 = some cache567 := replay_cons _ _ _ _ _ step530 replaySuffix531
-private theorem formedSuffix530 : suffix530.all nodeFormed = true := formed_cons _ _ formed530 formedSuffix531
-private def suffix529 : List ProofExecution.Receipt := node529 :: suffix530
-private theorem replaySuffix529 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache529 suffix529 = some cache567 := replay_cons _ _ _ _ _ step529 replaySuffix530
-private theorem formedSuffix529 : suffix529.all nodeFormed = true := formed_cons _ _ formed529 formedSuffix530
-private def suffix528 : List ProofExecution.Receipt := node528 :: suffix529
-private theorem replaySuffix528 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache528 suffix528 = some cache567 := replay_cons _ _ _ _ _ step528 replaySuffix529
-private theorem formedSuffix528 : suffix528.all nodeFormed = true := formed_cons _ _ formed528 formedSuffix529
-private def suffix527 : List ProofExecution.Receipt := node527 :: suffix528
-private theorem replaySuffix527 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache527 suffix527 = some cache567 := replay_cons _ _ _ _ _ step527 replaySuffix528
-private theorem formedSuffix527 : suffix527.all nodeFormed = true := formed_cons _ _ formed527 formedSuffix528
-private def suffix526 : List ProofExecution.Receipt := node526 :: suffix527
-private theorem replaySuffix526 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache526 suffix526 = some cache567 := replay_cons _ _ _ _ _ step526 replaySuffix527
-private theorem formedSuffix526 : suffix526.all nodeFormed = true := formed_cons _ _ formed526 formedSuffix527
-private def suffix525 : List ProofExecution.Receipt := node525 :: suffix526
-private theorem replaySuffix525 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache525 suffix525 = some cache567 := replay_cons _ _ _ _ _ step525 replaySuffix526
-private theorem formedSuffix525 : suffix525.all nodeFormed = true := formed_cons _ _ formed525 formedSuffix526
-private def suffix524 : List ProofExecution.Receipt := node524 :: suffix525
-private theorem replaySuffix524 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache524 suffix524 = some cache567 := replay_cons _ _ _ _ _ step524 replaySuffix525
-private theorem formedSuffix524 : suffix524.all nodeFormed = true := formed_cons _ _ formed524 formedSuffix525
-private def suffix523 : List ProofExecution.Receipt := node523 :: suffix524
-private theorem replaySuffix523 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache523 suffix523 = some cache567 := replay_cons _ _ _ _ _ step523 replaySuffix524
-private theorem formedSuffix523 : suffix523.all nodeFormed = true := formed_cons _ _ formed523 formedSuffix524
-private def suffix522 : List ProofExecution.Receipt := node522 :: suffix523
-private theorem replaySuffix522 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache522 suffix522 = some cache567 := replay_cons _ _ _ _ _ step522 replaySuffix523
-private theorem formedSuffix522 : suffix522.all nodeFormed = true := formed_cons _ _ formed522 formedSuffix523
-private def suffix521 : List ProofExecution.Receipt := node521 :: suffix522
-private theorem replaySuffix521 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache521 suffix521 = some cache567 := replay_cons _ _ _ _ _ step521 replaySuffix522
-private theorem formedSuffix521 : suffix521.all nodeFormed = true := formed_cons _ _ formed521 formedSuffix522
-private def suffix520 : List ProofExecution.Receipt := node520 :: suffix521
-private theorem replaySuffix520 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache520 suffix520 = some cache567 := replay_cons _ _ _ _ _ step520 replaySuffix521
-private theorem formedSuffix520 : suffix520.all nodeFormed = true := formed_cons _ _ formed520 formedSuffix521
-private def suffix519 : List ProofExecution.Receipt := node519 :: suffix520
-private theorem replaySuffix519 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache519 suffix519 = some cache567 := replay_cons _ _ _ _ _ step519 replaySuffix520
-private theorem formedSuffix519 : suffix519.all nodeFormed = true := formed_cons _ _ formed519 formedSuffix520
-private def suffix518 : List ProofExecution.Receipt := node518 :: suffix519
-private theorem replaySuffix518 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache518 suffix518 = some cache567 := replay_cons _ _ _ _ _ step518 replaySuffix519
-private theorem formedSuffix518 : suffix518.all nodeFormed = true := formed_cons _ _ formed518 formedSuffix519
-private def suffix517 : List ProofExecution.Receipt := node517 :: suffix518
-private theorem replaySuffix517 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache517 suffix517 = some cache567 := replay_cons _ _ _ _ _ step517 replaySuffix518
-private theorem formedSuffix517 : suffix517.all nodeFormed = true := formed_cons _ _ formed517 formedSuffix518
-private def suffix516 : List ProofExecution.Receipt := node516 :: suffix517
-private theorem replaySuffix516 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache516 suffix516 = some cache567 := replay_cons _ _ _ _ _ step516 replaySuffix517
-private theorem formedSuffix516 : suffix516.all nodeFormed = true := formed_cons _ _ formed516 formedSuffix517
-private def suffix515 : List ProofExecution.Receipt := node515 :: suffix516
-private theorem replaySuffix515 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache515 suffix515 = some cache567 := replay_cons _ _ _ _ _ step515 replaySuffix516
-private theorem formedSuffix515 : suffix515.all nodeFormed = true := formed_cons _ _ formed515 formedSuffix516
-private def suffix514 : List ProofExecution.Receipt := node514 :: suffix515
-private theorem replaySuffix514 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache514 suffix514 = some cache567 := replay_cons _ _ _ _ _ step514 replaySuffix515
-private theorem formedSuffix514 : suffix514.all nodeFormed = true := formed_cons _ _ formed514 formedSuffix515
-private def suffix513 : List ProofExecution.Receipt := node513 :: suffix514
-private theorem replaySuffix513 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache513 suffix513 = some cache567 := replay_cons _ _ _ _ _ step513 replaySuffix514
-private theorem formedSuffix513 : suffix513.all nodeFormed = true := formed_cons _ _ formed513 formedSuffix514
-private def suffix512 : List ProofExecution.Receipt := node512 :: suffix513
-private theorem replaySuffix512 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache512 suffix512 = some cache567 := replay_cons _ _ _ _ _ step512 replaySuffix513
-private theorem formedSuffix512 : suffix512.all nodeFormed = true := formed_cons _ _ formed512 formedSuffix513
-private def suffix511 : List ProofExecution.Receipt := node511 :: suffix512
-private theorem replaySuffix511 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache511 suffix511 = some cache567 := replay_cons _ _ _ _ _ step511 replaySuffix512
-private theorem formedSuffix511 : suffix511.all nodeFormed = true := formed_cons _ _ formed511 formedSuffix512
-private def suffix510 : List ProofExecution.Receipt := node510 :: suffix511
-private theorem replaySuffix510 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache510 suffix510 = some cache567 := replay_cons _ _ _ _ _ step510 replaySuffix511
-private theorem formedSuffix510 : suffix510.all nodeFormed = true := formed_cons _ _ formed510 formedSuffix511
-private def suffix509 : List ProofExecution.Receipt := node509 :: suffix510
-private theorem replaySuffix509 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache509 suffix509 = some cache567 := replay_cons _ _ _ _ _ step509 replaySuffix510
-private theorem formedSuffix509 : suffix509.all nodeFormed = true := formed_cons _ _ formed509 formedSuffix510
-private def suffix508 : List ProofExecution.Receipt := node508 :: suffix509
-private theorem replaySuffix508 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache508 suffix508 = some cache567 := replay_cons _ _ _ _ _ step508 replaySuffix509
-private theorem formedSuffix508 : suffix508.all nodeFormed = true := formed_cons _ _ formed508 formedSuffix509
-private def suffix507 : List ProofExecution.Receipt := node507 :: suffix508
-private theorem replaySuffix507 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache507 suffix507 = some cache567 := replay_cons _ _ _ _ _ step507 replaySuffix508
-private theorem formedSuffix507 : suffix507.all nodeFormed = true := formed_cons _ _ formed507 formedSuffix508
-private def suffix506 : List ProofExecution.Receipt := node506 :: suffix507
-private theorem replaySuffix506 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache506 suffix506 = some cache567 := replay_cons _ _ _ _ _ step506 replaySuffix507
-private theorem formedSuffix506 : suffix506.all nodeFormed = true := formed_cons _ _ formed506 formedSuffix507
-private def suffix505 : List ProofExecution.Receipt := node505 :: suffix506
-private theorem replaySuffix505 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache505 suffix505 = some cache567 := replay_cons _ _ _ _ _ step505 replaySuffix506
-private theorem formedSuffix505 : suffix505.all nodeFormed = true := formed_cons _ _ formed505 formedSuffix506
-private def suffix504 : List ProofExecution.Receipt := node504 :: suffix505
-private theorem replaySuffix504 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache504 suffix504 = some cache567 := replay_cons _ _ _ _ _ step504 replaySuffix505
-private theorem formedSuffix504 : suffix504.all nodeFormed = true := formed_cons _ _ formed504 formedSuffix505
-private def suffix503 : List ProofExecution.Receipt := node503 :: suffix504
-private theorem replaySuffix503 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache503 suffix503 = some cache567 := replay_cons _ _ _ _ _ step503 replaySuffix504
-private theorem formedSuffix503 : suffix503.all nodeFormed = true := formed_cons _ _ formed503 formedSuffix504
-private def suffix502 : List ProofExecution.Receipt := node502 :: suffix503
-private theorem replaySuffix502 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache502 suffix502 = some cache567 := replay_cons _ _ _ _ _ step502 replaySuffix503
-private theorem formedSuffix502 : suffix502.all nodeFormed = true := formed_cons _ _ formed502 formedSuffix503
-private def suffix501 : List ProofExecution.Receipt := node501 :: suffix502
-private theorem replaySuffix501 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache501 suffix501 = some cache567 := replay_cons _ _ _ _ _ step501 replaySuffix502
-private theorem formedSuffix501 : suffix501.all nodeFormed = true := formed_cons _ _ formed501 formedSuffix502
-private def suffix500 : List ProofExecution.Receipt := node500 :: suffix501
-private theorem replaySuffix500 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache500 suffix500 = some cache567 := replay_cons _ _ _ _ _ step500 replaySuffix501
-private theorem formedSuffix500 : suffix500.all nodeFormed = true := formed_cons _ _ formed500 formedSuffix501
-private def suffix499 : List ProofExecution.Receipt := node499 :: suffix500
-private theorem replaySuffix499 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache499 suffix499 = some cache567 := replay_cons _ _ _ _ _ step499 replaySuffix500
-private theorem formedSuffix499 : suffix499.all nodeFormed = true := formed_cons _ _ formed499 formedSuffix500
-private def suffix498 : List ProofExecution.Receipt := node498 :: suffix499
-private theorem replaySuffix498 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache498 suffix498 = some cache567 := replay_cons _ _ _ _ _ step498 replaySuffix499
-private theorem formedSuffix498 : suffix498.all nodeFormed = true := formed_cons _ _ formed498 formedSuffix499
-private def suffix497 : List ProofExecution.Receipt := node497 :: suffix498
-private theorem replaySuffix497 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache497 suffix497 = some cache567 := replay_cons _ _ _ _ _ step497 replaySuffix498
-private theorem formedSuffix497 : suffix497.all nodeFormed = true := formed_cons _ _ formed497 formedSuffix498
-private def suffix496 : List ProofExecution.Receipt := node496 :: suffix497
-private theorem replaySuffix496 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache496 suffix496 = some cache567 := replay_cons _ _ _ _ _ step496 replaySuffix497
-private theorem formedSuffix496 : suffix496.all nodeFormed = true := formed_cons _ _ formed496 formedSuffix497
-private def suffix495 : List ProofExecution.Receipt := node495 :: suffix496
-private theorem replaySuffix495 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache495 suffix495 = some cache567 := replay_cons _ _ _ _ _ step495 replaySuffix496
-private theorem formedSuffix495 : suffix495.all nodeFormed = true := formed_cons _ _ formed495 formedSuffix496
-private def suffix494 : List ProofExecution.Receipt := node494 :: suffix495
-private theorem replaySuffix494 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache494 suffix494 = some cache567 := replay_cons _ _ _ _ _ step494 replaySuffix495
-private theorem formedSuffix494 : suffix494.all nodeFormed = true := formed_cons _ _ formed494 formedSuffix495
-private def suffix493 : List ProofExecution.Receipt := node493 :: suffix494
-private theorem replaySuffix493 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache493 suffix493 = some cache567 := replay_cons _ _ _ _ _ step493 replaySuffix494
-private theorem formedSuffix493 : suffix493.all nodeFormed = true := formed_cons _ _ formed493 formedSuffix494
-private def suffix492 : List ProofExecution.Receipt := node492 :: suffix493
-private theorem replaySuffix492 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache492 suffix492 = some cache567 := replay_cons _ _ _ _ _ step492 replaySuffix493
-private theorem formedSuffix492 : suffix492.all nodeFormed = true := formed_cons _ _ formed492 formedSuffix493
-private def suffix491 : List ProofExecution.Receipt := node491 :: suffix492
-private theorem replaySuffix491 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache491 suffix491 = some cache567 := replay_cons _ _ _ _ _ step491 replaySuffix492
-private theorem formedSuffix491 : suffix491.all nodeFormed = true := formed_cons _ _ formed491 formedSuffix492
-private def suffix490 : List ProofExecution.Receipt := node490 :: suffix491
-private theorem replaySuffix490 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache490 suffix490 = some cache567 := replay_cons _ _ _ _ _ step490 replaySuffix491
-private theorem formedSuffix490 : suffix490.all nodeFormed = true := formed_cons _ _ formed490 formedSuffix491
-private def suffix489 : List ProofExecution.Receipt := node489 :: suffix490
-private theorem replaySuffix489 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache489 suffix489 = some cache567 := replay_cons _ _ _ _ _ step489 replaySuffix490
-private theorem formedSuffix489 : suffix489.all nodeFormed = true := formed_cons _ _ formed489 formedSuffix490
-private def suffix488 : List ProofExecution.Receipt := node488 :: suffix489
-private theorem replaySuffix488 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache488 suffix488 = some cache567 := replay_cons _ _ _ _ _ step488 replaySuffix489
-private theorem formedSuffix488 : suffix488.all nodeFormed = true := formed_cons _ _ formed488 formedSuffix489
-private def suffix487 : List ProofExecution.Receipt := node487 :: suffix488
-private theorem replaySuffix487 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache487 suffix487 = some cache567 := replay_cons _ _ _ _ _ step487 replaySuffix488
-private theorem formedSuffix487 : suffix487.all nodeFormed = true := formed_cons _ _ formed487 formedSuffix488
-private def suffix486 : List ProofExecution.Receipt := node486 :: suffix487
-private theorem replaySuffix486 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache486 suffix486 = some cache567 := replay_cons _ _ _ _ _ step486 replaySuffix487
-private theorem formedSuffix486 : suffix486.all nodeFormed = true := formed_cons _ _ formed486 formedSuffix487
-private def suffix485 : List ProofExecution.Receipt := node485 :: suffix486
-private theorem replaySuffix485 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache485 suffix485 = some cache567 := replay_cons _ _ _ _ _ step485 replaySuffix486
-private theorem formedSuffix485 : suffix485.all nodeFormed = true := formed_cons _ _ formed485 formedSuffix486
-private def suffix484 : List ProofExecution.Receipt := node484 :: suffix485
-private theorem replaySuffix484 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache484 suffix484 = some cache567 := replay_cons _ _ _ _ _ step484 replaySuffix485
-private theorem formedSuffix484 : suffix484.all nodeFormed = true := formed_cons _ _ formed484 formedSuffix485
-private def suffix483 : List ProofExecution.Receipt := node483 :: suffix484
-private theorem replaySuffix483 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache483 suffix483 = some cache567 := replay_cons _ _ _ _ _ step483 replaySuffix484
-private theorem formedSuffix483 : suffix483.all nodeFormed = true := formed_cons _ _ formed483 formedSuffix484
-private def suffix482 : List ProofExecution.Receipt := node482 :: suffix483
-private theorem replaySuffix482 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache482 suffix482 = some cache567 := replay_cons _ _ _ _ _ step482 replaySuffix483
-private theorem formedSuffix482 : suffix482.all nodeFormed = true := formed_cons _ _ formed482 formedSuffix483
-private def suffix481 : List ProofExecution.Receipt := node481 :: suffix482
-private theorem replaySuffix481 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache481 suffix481 = some cache567 := replay_cons _ _ _ _ _ step481 replaySuffix482
-private theorem formedSuffix481 : suffix481.all nodeFormed = true := formed_cons _ _ formed481 formedSuffix482
-private def suffix480 : List ProofExecution.Receipt := node480 :: suffix481
-private theorem replaySuffix480 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache480 suffix480 = some cache567 := replay_cons _ _ _ _ _ step480 replaySuffix481
-private theorem formedSuffix480 : suffix480.all nodeFormed = true := formed_cons _ _ formed480 formedSuffix481
-private def suffix479 : List ProofExecution.Receipt := node479 :: suffix480
-private theorem replaySuffix479 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache479 suffix479 = some cache567 := replay_cons _ _ _ _ _ step479 replaySuffix480
-private theorem formedSuffix479 : suffix479.all nodeFormed = true := formed_cons _ _ formed479 formedSuffix480
-private def suffix478 : List ProofExecution.Receipt := node478 :: suffix479
-private theorem replaySuffix478 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache478 suffix478 = some cache567 := replay_cons _ _ _ _ _ step478 replaySuffix479
-private theorem formedSuffix478 : suffix478.all nodeFormed = true := formed_cons _ _ formed478 formedSuffix479
-private def suffix477 : List ProofExecution.Receipt := node477 :: suffix478
-private theorem replaySuffix477 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache477 suffix477 = some cache567 := replay_cons _ _ _ _ _ step477 replaySuffix478
-private theorem formedSuffix477 : suffix477.all nodeFormed = true := formed_cons _ _ formed477 formedSuffix478
-private def suffix476 : List ProofExecution.Receipt := node476 :: suffix477
-private theorem replaySuffix476 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache476 suffix476 = some cache567 := replay_cons _ _ _ _ _ step476 replaySuffix477
-private theorem formedSuffix476 : suffix476.all nodeFormed = true := formed_cons _ _ formed476 formedSuffix477
-private def suffix475 : List ProofExecution.Receipt := node475 :: suffix476
-private theorem replaySuffix475 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache475 suffix475 = some cache567 := replay_cons _ _ _ _ _ step475 replaySuffix476
-private theorem formedSuffix475 : suffix475.all nodeFormed = true := formed_cons _ _ formed475 formedSuffix476
-private def suffix474 : List ProofExecution.Receipt := node474 :: suffix475
-private theorem replaySuffix474 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache474 suffix474 = some cache567 := replay_cons _ _ _ _ _ step474 replaySuffix475
-private theorem formedSuffix474 : suffix474.all nodeFormed = true := formed_cons _ _ formed474 formedSuffix475
-private def suffix473 : List ProofExecution.Receipt := node473 :: suffix474
-private theorem replaySuffix473 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache473 suffix473 = some cache567 := replay_cons _ _ _ _ _ step473 replaySuffix474
-private theorem formedSuffix473 : suffix473.all nodeFormed = true := formed_cons _ _ formed473 formedSuffix474
-private def suffix472 : List ProofExecution.Receipt := node472 :: suffix473
-private theorem replaySuffix472 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache472 suffix472 = some cache567 := replay_cons _ _ _ _ _ step472 replaySuffix473
-private theorem formedSuffix472 : suffix472.all nodeFormed = true := formed_cons _ _ formed472 formedSuffix473
-private def suffix471 : List ProofExecution.Receipt := node471 :: suffix472
-private theorem replaySuffix471 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache471 suffix471 = some cache567 := replay_cons _ _ _ _ _ step471 replaySuffix472
-private theorem formedSuffix471 : suffix471.all nodeFormed = true := formed_cons _ _ formed471 formedSuffix472
-private def suffix470 : List ProofExecution.Receipt := node470 :: suffix471
-private theorem replaySuffix470 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache470 suffix470 = some cache567 := replay_cons _ _ _ _ _ step470 replaySuffix471
-private theorem formedSuffix470 : suffix470.all nodeFormed = true := formed_cons _ _ formed470 formedSuffix471
-private def suffix469 : List ProofExecution.Receipt := node469 :: suffix470
-private theorem replaySuffix469 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache469 suffix469 = some cache567 := replay_cons _ _ _ _ _ step469 replaySuffix470
-private theorem formedSuffix469 : suffix469.all nodeFormed = true := formed_cons _ _ formed469 formedSuffix470
-private def suffix468 : List ProofExecution.Receipt := node468 :: suffix469
-private theorem replaySuffix468 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache468 suffix468 = some cache567 := replay_cons _ _ _ _ _ step468 replaySuffix469
-private theorem formedSuffix468 : suffix468.all nodeFormed = true := formed_cons _ _ formed468 formedSuffix469
-private def suffix467 : List ProofExecution.Receipt := node467 :: suffix468
-private theorem replaySuffix467 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache467 suffix467 = some cache567 := replay_cons _ _ _ _ _ step467 replaySuffix468
-private theorem formedSuffix467 : suffix467.all nodeFormed = true := formed_cons _ _ formed467 formedSuffix468
-private def suffix466 : List ProofExecution.Receipt := node466 :: suffix467
-private theorem replaySuffix466 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache466 suffix466 = some cache567 := replay_cons _ _ _ _ _ step466 replaySuffix467
-private theorem formedSuffix466 : suffix466.all nodeFormed = true := formed_cons _ _ formed466 formedSuffix467
-private def suffix465 : List ProofExecution.Receipt := node465 :: suffix466
-private theorem replaySuffix465 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache465 suffix465 = some cache567 := replay_cons _ _ _ _ _ step465 replaySuffix466
-private theorem formedSuffix465 : suffix465.all nodeFormed = true := formed_cons _ _ formed465 formedSuffix466
-private def suffix464 : List ProofExecution.Receipt := node464 :: suffix465
-private theorem replaySuffix464 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache464 suffix464 = some cache567 := replay_cons _ _ _ _ _ step464 replaySuffix465
-private theorem formedSuffix464 : suffix464.all nodeFormed = true := formed_cons _ _ formed464 formedSuffix465
-private def suffix463 : List ProofExecution.Receipt := node463 :: suffix464
-private theorem replaySuffix463 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache463 suffix463 = some cache567 := replay_cons _ _ _ _ _ step463 replaySuffix464
-private theorem formedSuffix463 : suffix463.all nodeFormed = true := formed_cons _ _ formed463 formedSuffix464
-private def suffix462 : List ProofExecution.Receipt := node462 :: suffix463
-private theorem replaySuffix462 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache462 suffix462 = some cache567 := replay_cons _ _ _ _ _ step462 replaySuffix463
-private theorem formedSuffix462 : suffix462.all nodeFormed = true := formed_cons _ _ formed462 formedSuffix463
-private def suffix461 : List ProofExecution.Receipt := node461 :: suffix462
-private theorem replaySuffix461 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache461 suffix461 = some cache567 := replay_cons _ _ _ _ _ step461 replaySuffix462
-private theorem formedSuffix461 : suffix461.all nodeFormed = true := formed_cons _ _ formed461 formedSuffix462
-private def suffix460 : List ProofExecution.Receipt := node460 :: suffix461
-private theorem replaySuffix460 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache460 suffix460 = some cache567 := replay_cons _ _ _ _ _ step460 replaySuffix461
-private theorem formedSuffix460 : suffix460.all nodeFormed = true := formed_cons _ _ formed460 formedSuffix461
-private def suffix459 : List ProofExecution.Receipt := node459 :: suffix460
-private theorem replaySuffix459 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache459 suffix459 = some cache567 := replay_cons _ _ _ _ _ step459 replaySuffix460
-private theorem formedSuffix459 : suffix459.all nodeFormed = true := formed_cons _ _ formed459 formedSuffix460
-private def suffix458 : List ProofExecution.Receipt := node458 :: suffix459
-private theorem replaySuffix458 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache458 suffix458 = some cache567 := replay_cons _ _ _ _ _ step458 replaySuffix459
-private theorem formedSuffix458 : suffix458.all nodeFormed = true := formed_cons _ _ formed458 formedSuffix459
-private def suffix457 : List ProofExecution.Receipt := node457 :: suffix458
-private theorem replaySuffix457 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache457 suffix457 = some cache567 := replay_cons _ _ _ _ _ step457 replaySuffix458
-private theorem formedSuffix457 : suffix457.all nodeFormed = true := formed_cons _ _ formed457 formedSuffix458
-private def suffix456 : List ProofExecution.Receipt := node456 :: suffix457
-private theorem replaySuffix456 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache456 suffix456 = some cache567 := replay_cons _ _ _ _ _ step456 replaySuffix457
-private theorem formedSuffix456 : suffix456.all nodeFormed = true := formed_cons _ _ formed456 formedSuffix457
-private def suffix455 : List ProofExecution.Receipt := node455 :: suffix456
-private theorem replaySuffix455 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache455 suffix455 = some cache567 := replay_cons _ _ _ _ _ step455 replaySuffix456
-private theorem formedSuffix455 : suffix455.all nodeFormed = true := formed_cons _ _ formed455 formedSuffix456
-private def suffix454 : List ProofExecution.Receipt := node454 :: suffix455
-private theorem replaySuffix454 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache454 suffix454 = some cache567 := replay_cons _ _ _ _ _ step454 replaySuffix455
-private theorem formedSuffix454 : suffix454.all nodeFormed = true := formed_cons _ _ formed454 formedSuffix455
-private def suffix453 : List ProofExecution.Receipt := node453 :: suffix454
-private theorem replaySuffix453 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache453 suffix453 = some cache567 := replay_cons _ _ _ _ _ step453 replaySuffix454
-private theorem formedSuffix453 : suffix453.all nodeFormed = true := formed_cons _ _ formed453 formedSuffix454
-private def suffix452 : List ProofExecution.Receipt := node452 :: suffix453
-private theorem replaySuffix452 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache452 suffix452 = some cache567 := replay_cons _ _ _ _ _ step452 replaySuffix453
-private theorem formedSuffix452 : suffix452.all nodeFormed = true := formed_cons _ _ formed452 formedSuffix453
-private def suffix451 : List ProofExecution.Receipt := node451 :: suffix452
-private theorem replaySuffix451 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache451 suffix451 = some cache567 := replay_cons _ _ _ _ _ step451 replaySuffix452
-private theorem formedSuffix451 : suffix451.all nodeFormed = true := formed_cons _ _ formed451 formedSuffix452
-private def suffix450 : List ProofExecution.Receipt := node450 :: suffix451
-private theorem replaySuffix450 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache450 suffix450 = some cache567 := replay_cons _ _ _ _ _ step450 replaySuffix451
-private theorem formedSuffix450 : suffix450.all nodeFormed = true := formed_cons _ _ formed450 formedSuffix451
-private def suffix449 : List ProofExecution.Receipt := node449 :: suffix450
-private theorem replaySuffix449 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache449 suffix449 = some cache567 := replay_cons _ _ _ _ _ step449 replaySuffix450
-private theorem formedSuffix449 : suffix449.all nodeFormed = true := formed_cons _ _ formed449 formedSuffix450
-private def suffix448 : List ProofExecution.Receipt := node448 :: suffix449
-private theorem replaySuffix448 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache448 suffix448 = some cache567 := replay_cons _ _ _ _ _ step448 replaySuffix449
-private theorem formedSuffix448 : suffix448.all nodeFormed = true := formed_cons _ _ formed448 formedSuffix449
-private def suffix447 : List ProofExecution.Receipt := node447 :: suffix448
-private theorem replaySuffix447 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache447 suffix447 = some cache567 := replay_cons _ _ _ _ _ step447 replaySuffix448
-private theorem formedSuffix447 : suffix447.all nodeFormed = true := formed_cons _ _ formed447 formedSuffix448
-private def suffix446 : List ProofExecution.Receipt := node446 :: suffix447
-private theorem replaySuffix446 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache446 suffix446 = some cache567 := replay_cons _ _ _ _ _ step446 replaySuffix447
-private theorem formedSuffix446 : suffix446.all nodeFormed = true := formed_cons _ _ formed446 formedSuffix447
-private def suffix445 : List ProofExecution.Receipt := node445 :: suffix446
-private theorem replaySuffix445 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache445 suffix445 = some cache567 := replay_cons _ _ _ _ _ step445 replaySuffix446
-private theorem formedSuffix445 : suffix445.all nodeFormed = true := formed_cons _ _ formed445 formedSuffix446
-private def suffix444 : List ProofExecution.Receipt := node444 :: suffix445
-private theorem replaySuffix444 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache444 suffix444 = some cache567 := replay_cons _ _ _ _ _ step444 replaySuffix445
-private theorem formedSuffix444 : suffix444.all nodeFormed = true := formed_cons _ _ formed444 formedSuffix445
-private def suffix443 : List ProofExecution.Receipt := node443 :: suffix444
-private theorem replaySuffix443 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache443 suffix443 = some cache567 := replay_cons _ _ _ _ _ step443 replaySuffix444
-private theorem formedSuffix443 : suffix443.all nodeFormed = true := formed_cons _ _ formed443 formedSuffix444
-private def suffix442 : List ProofExecution.Receipt := node442 :: suffix443
-private theorem replaySuffix442 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache442 suffix442 = some cache567 := replay_cons _ _ _ _ _ step442 replaySuffix443
-private theorem formedSuffix442 : suffix442.all nodeFormed = true := formed_cons _ _ formed442 formedSuffix443
-private def suffix441 : List ProofExecution.Receipt := node441 :: suffix442
-private theorem replaySuffix441 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache441 suffix441 = some cache567 := replay_cons _ _ _ _ _ step441 replaySuffix442
-private theorem formedSuffix441 : suffix441.all nodeFormed = true := formed_cons _ _ formed441 formedSuffix442
-private def suffix440 : List ProofExecution.Receipt := node440 :: suffix441
-private theorem replaySuffix440 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache440 suffix440 = some cache567 := replay_cons _ _ _ _ _ step440 replaySuffix441
-private theorem formedSuffix440 : suffix440.all nodeFormed = true := formed_cons _ _ formed440 formedSuffix441
-private def suffix439 : List ProofExecution.Receipt := node439 :: suffix440
-private theorem replaySuffix439 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache439 suffix439 = some cache567 := replay_cons _ _ _ _ _ step439 replaySuffix440
-private theorem formedSuffix439 : suffix439.all nodeFormed = true := formed_cons _ _ formed439 formedSuffix440
-private def suffix438 : List ProofExecution.Receipt := node438 :: suffix439
-private theorem replaySuffix438 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache438 suffix438 = some cache567 := replay_cons _ _ _ _ _ step438 replaySuffix439
-private theorem formedSuffix438 : suffix438.all nodeFormed = true := formed_cons _ _ formed438 formedSuffix439
-private def suffix437 : List ProofExecution.Receipt := node437 :: suffix438
-private theorem replaySuffix437 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache437 suffix437 = some cache567 := replay_cons _ _ _ _ _ step437 replaySuffix438
-private theorem formedSuffix437 : suffix437.all nodeFormed = true := formed_cons _ _ formed437 formedSuffix438
-private def suffix436 : List ProofExecution.Receipt := node436 :: suffix437
-private theorem replaySuffix436 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache436 suffix436 = some cache567 := replay_cons _ _ _ _ _ step436 replaySuffix437
-private theorem formedSuffix436 : suffix436.all nodeFormed = true := formed_cons _ _ formed436 formedSuffix437
-private def suffix435 : List ProofExecution.Receipt := node435 :: suffix436
-private theorem replaySuffix435 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache435 suffix435 = some cache567 := replay_cons _ _ _ _ _ step435 replaySuffix436
-private theorem formedSuffix435 : suffix435.all nodeFormed = true := formed_cons _ _ formed435 formedSuffix436
-private def suffix434 : List ProofExecution.Receipt := node434 :: suffix435
-private theorem replaySuffix434 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache434 suffix434 = some cache567 := replay_cons _ _ _ _ _ step434 replaySuffix435
-private theorem formedSuffix434 : suffix434.all nodeFormed = true := formed_cons _ _ formed434 formedSuffix435
-private def suffix433 : List ProofExecution.Receipt := node433 :: suffix434
-private theorem replaySuffix433 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache433 suffix433 = some cache567 := replay_cons _ _ _ _ _ step433 replaySuffix434
-private theorem formedSuffix433 : suffix433.all nodeFormed = true := formed_cons _ _ formed433 formedSuffix434
-private def suffix432 : List ProofExecution.Receipt := node432 :: suffix433
-private theorem replaySuffix432 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache432 suffix432 = some cache567 := replay_cons _ _ _ _ _ step432 replaySuffix433
-private theorem formedSuffix432 : suffix432.all nodeFormed = true := formed_cons _ _ formed432 formedSuffix433
-private def suffix431 : List ProofExecution.Receipt := node431 :: suffix432
-private theorem replaySuffix431 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache431 suffix431 = some cache567 := replay_cons _ _ _ _ _ step431 replaySuffix432
-private theorem formedSuffix431 : suffix431.all nodeFormed = true := formed_cons _ _ formed431 formedSuffix432
-private def suffix430 : List ProofExecution.Receipt := node430 :: suffix431
-private theorem replaySuffix430 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache430 suffix430 = some cache567 := replay_cons _ _ _ _ _ step430 replaySuffix431
-private theorem formedSuffix430 : suffix430.all nodeFormed = true := formed_cons _ _ formed430 formedSuffix431
-private def suffix429 : List ProofExecution.Receipt := node429 :: suffix430
-private theorem replaySuffix429 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache429 suffix429 = some cache567 := replay_cons _ _ _ _ _ step429 replaySuffix430
-private theorem formedSuffix429 : suffix429.all nodeFormed = true := formed_cons _ _ formed429 formedSuffix430
-private def suffix428 : List ProofExecution.Receipt := node428 :: suffix429
-private theorem replaySuffix428 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache428 suffix428 = some cache567 := replay_cons _ _ _ _ _ step428 replaySuffix429
-private theorem formedSuffix428 : suffix428.all nodeFormed = true := formed_cons _ _ formed428 formedSuffix429
-private def suffix427 : List ProofExecution.Receipt := node427 :: suffix428
-private theorem replaySuffix427 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache427 suffix427 = some cache567 := replay_cons _ _ _ _ _ step427 replaySuffix428
-private theorem formedSuffix427 : suffix427.all nodeFormed = true := formed_cons _ _ formed427 formedSuffix428
-private def suffix426 : List ProofExecution.Receipt := node426 :: suffix427
-private theorem replaySuffix426 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache426 suffix426 = some cache567 := replay_cons _ _ _ _ _ step426 replaySuffix427
-private theorem formedSuffix426 : suffix426.all nodeFormed = true := formed_cons _ _ formed426 formedSuffix427
-private def suffix425 : List ProofExecution.Receipt := node425 :: suffix426
-private theorem replaySuffix425 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache425 suffix425 = some cache567 := replay_cons _ _ _ _ _ step425 replaySuffix426
-private theorem formedSuffix425 : suffix425.all nodeFormed = true := formed_cons _ _ formed425 formedSuffix426
-private def suffix424 : List ProofExecution.Receipt := node424 :: suffix425
-private theorem replaySuffix424 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache424 suffix424 = some cache567 := replay_cons _ _ _ _ _ step424 replaySuffix425
-private theorem formedSuffix424 : suffix424.all nodeFormed = true := formed_cons _ _ formed424 formedSuffix425
-private def suffix423 : List ProofExecution.Receipt := node423 :: suffix424
-private theorem replaySuffix423 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache423 suffix423 = some cache567 := replay_cons _ _ _ _ _ step423 replaySuffix424
-private theorem formedSuffix423 : suffix423.all nodeFormed = true := formed_cons _ _ formed423 formedSuffix424
-private def suffix422 : List ProofExecution.Receipt := node422 :: suffix423
-private theorem replaySuffix422 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache422 suffix422 = some cache567 := replay_cons _ _ _ _ _ step422 replaySuffix423
-private theorem formedSuffix422 : suffix422.all nodeFormed = true := formed_cons _ _ formed422 formedSuffix423
-private def suffix421 : List ProofExecution.Receipt := node421 :: suffix422
-private theorem replaySuffix421 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache421 suffix421 = some cache567 := replay_cons _ _ _ _ _ step421 replaySuffix422
-private theorem formedSuffix421 : suffix421.all nodeFormed = true := formed_cons _ _ formed421 formedSuffix422
-private def suffix420 : List ProofExecution.Receipt := node420 :: suffix421
-private theorem replaySuffix420 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache420 suffix420 = some cache567 := replay_cons _ _ _ _ _ step420 replaySuffix421
-private theorem formedSuffix420 : suffix420.all nodeFormed = true := formed_cons _ _ formed420 formedSuffix421
-private def suffix419 : List ProofExecution.Receipt := node419 :: suffix420
-private theorem replaySuffix419 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache419 suffix419 = some cache567 := replay_cons _ _ _ _ _ step419 replaySuffix420
-private theorem formedSuffix419 : suffix419.all nodeFormed = true := formed_cons _ _ formed419 formedSuffix420
-private def suffix418 : List ProofExecution.Receipt := node418 :: suffix419
-private theorem replaySuffix418 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache418 suffix418 = some cache567 := replay_cons _ _ _ _ _ step418 replaySuffix419
-private theorem formedSuffix418 : suffix418.all nodeFormed = true := formed_cons _ _ formed418 formedSuffix419
-private def suffix417 : List ProofExecution.Receipt := node417 :: suffix418
-private theorem replaySuffix417 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache417 suffix417 = some cache567 := replay_cons _ _ _ _ _ step417 replaySuffix418
-private theorem formedSuffix417 : suffix417.all nodeFormed = true := formed_cons _ _ formed417 formedSuffix418
-private def suffix416 : List ProofExecution.Receipt := node416 :: suffix417
-private theorem replaySuffix416 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache416 suffix416 = some cache567 := replay_cons _ _ _ _ _ step416 replaySuffix417
-private theorem formedSuffix416 : suffix416.all nodeFormed = true := formed_cons _ _ formed416 formedSuffix417
-private def suffix415 : List ProofExecution.Receipt := node415 :: suffix416
-private theorem replaySuffix415 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache415 suffix415 = some cache567 := replay_cons _ _ _ _ _ step415 replaySuffix416
-private theorem formedSuffix415 : suffix415.all nodeFormed = true := formed_cons _ _ formed415 formedSuffix416
-private def suffix414 : List ProofExecution.Receipt := node414 :: suffix415
-private theorem replaySuffix414 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache414 suffix414 = some cache567 := replay_cons _ _ _ _ _ step414 replaySuffix415
-private theorem formedSuffix414 : suffix414.all nodeFormed = true := formed_cons _ _ formed414 formedSuffix415
-private def suffix413 : List ProofExecution.Receipt := node413 :: suffix414
-private theorem replaySuffix413 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache413 suffix413 = some cache567 := replay_cons _ _ _ _ _ step413 replaySuffix414
-private theorem formedSuffix413 : suffix413.all nodeFormed = true := formed_cons _ _ formed413 formedSuffix414
-private def suffix412 : List ProofExecution.Receipt := node412 :: suffix413
-private theorem replaySuffix412 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache412 suffix412 = some cache567 := replay_cons _ _ _ _ _ step412 replaySuffix413
-private theorem formedSuffix412 : suffix412.all nodeFormed = true := formed_cons _ _ formed412 formedSuffix413
-private def suffix411 : List ProofExecution.Receipt := node411 :: suffix412
-private theorem replaySuffix411 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache411 suffix411 = some cache567 := replay_cons _ _ _ _ _ step411 replaySuffix412
-private theorem formedSuffix411 : suffix411.all nodeFormed = true := formed_cons _ _ formed411 formedSuffix412
-private def suffix410 : List ProofExecution.Receipt := node410 :: suffix411
-private theorem replaySuffix410 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache410 suffix410 = some cache567 := replay_cons _ _ _ _ _ step410 replaySuffix411
-private theorem formedSuffix410 : suffix410.all nodeFormed = true := formed_cons _ _ formed410 formedSuffix411
-private def suffix409 : List ProofExecution.Receipt := node409 :: suffix410
-private theorem replaySuffix409 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache409 suffix409 = some cache567 := replay_cons _ _ _ _ _ step409 replaySuffix410
-private theorem formedSuffix409 : suffix409.all nodeFormed = true := formed_cons _ _ formed409 formedSuffix410
-private def suffix408 : List ProofExecution.Receipt := node408 :: suffix409
-private theorem replaySuffix408 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache408 suffix408 = some cache567 := replay_cons _ _ _ _ _ step408 replaySuffix409
-private theorem formedSuffix408 : suffix408.all nodeFormed = true := formed_cons _ _ formed408 formedSuffix409
-private def suffix407 : List ProofExecution.Receipt := node407 :: suffix408
-private theorem replaySuffix407 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache407 suffix407 = some cache567 := replay_cons _ _ _ _ _ step407 replaySuffix408
-private theorem formedSuffix407 : suffix407.all nodeFormed = true := formed_cons _ _ formed407 formedSuffix408
-private def suffix406 : List ProofExecution.Receipt := node406 :: suffix407
-private theorem replaySuffix406 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache406 suffix406 = some cache567 := replay_cons _ _ _ _ _ step406 replaySuffix407
-private theorem formedSuffix406 : suffix406.all nodeFormed = true := formed_cons _ _ formed406 formedSuffix407
-private def suffix405 : List ProofExecution.Receipt := node405 :: suffix406
-private theorem replaySuffix405 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache405 suffix405 = some cache567 := replay_cons _ _ _ _ _ step405 replaySuffix406
-private theorem formedSuffix405 : suffix405.all nodeFormed = true := formed_cons _ _ formed405 formedSuffix406
-private def suffix404 : List ProofExecution.Receipt := node404 :: suffix405
-private theorem replaySuffix404 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache404 suffix404 = some cache567 := replay_cons _ _ _ _ _ step404 replaySuffix405
-private theorem formedSuffix404 : suffix404.all nodeFormed = true := formed_cons _ _ formed404 formedSuffix405
-private def suffix403 : List ProofExecution.Receipt := node403 :: suffix404
-private theorem replaySuffix403 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache403 suffix403 = some cache567 := replay_cons _ _ _ _ _ step403 replaySuffix404
-private theorem formedSuffix403 : suffix403.all nodeFormed = true := formed_cons _ _ formed403 formedSuffix404
-private def suffix402 : List ProofExecution.Receipt := node402 :: suffix403
-private theorem replaySuffix402 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache402 suffix402 = some cache567 := replay_cons _ _ _ _ _ step402 replaySuffix403
-private theorem formedSuffix402 : suffix402.all nodeFormed = true := formed_cons _ _ formed402 formedSuffix403
-private def suffix401 : List ProofExecution.Receipt := node401 :: suffix402
-private theorem replaySuffix401 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache401 suffix401 = some cache567 := replay_cons _ _ _ _ _ step401 replaySuffix402
-private theorem formedSuffix401 : suffix401.all nodeFormed = true := formed_cons _ _ formed401 formedSuffix402
-private def suffix400 : List ProofExecution.Receipt := node400 :: suffix401
-private theorem replaySuffix400 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache400 suffix400 = some cache567 := replay_cons _ _ _ _ _ step400 replaySuffix401
-private theorem formedSuffix400 : suffix400.all nodeFormed = true := formed_cons _ _ formed400 formedSuffix401
-private def suffix399 : List ProofExecution.Receipt := node399 :: suffix400
-private theorem replaySuffix399 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache399 suffix399 = some cache567 := replay_cons _ _ _ _ _ step399 replaySuffix400
-private theorem formedSuffix399 : suffix399.all nodeFormed = true := formed_cons _ _ formed399 formedSuffix400
-private def suffix398 : List ProofExecution.Receipt := node398 :: suffix399
-private theorem replaySuffix398 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache398 suffix398 = some cache567 := replay_cons _ _ _ _ _ step398 replaySuffix399
-private theorem formedSuffix398 : suffix398.all nodeFormed = true := formed_cons _ _ formed398 formedSuffix399
-private def suffix397 : List ProofExecution.Receipt := node397 :: suffix398
-private theorem replaySuffix397 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache397 suffix397 = some cache567 := replay_cons _ _ _ _ _ step397 replaySuffix398
-private theorem formedSuffix397 : suffix397.all nodeFormed = true := formed_cons _ _ formed397 formedSuffix398
-private def suffix396 : List ProofExecution.Receipt := node396 :: suffix397
-private theorem replaySuffix396 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache396 suffix396 = some cache567 := replay_cons _ _ _ _ _ step396 replaySuffix397
-private theorem formedSuffix396 : suffix396.all nodeFormed = true := formed_cons _ _ formed396 formedSuffix397
-private def suffix395 : List ProofExecution.Receipt := node395 :: suffix396
-private theorem replaySuffix395 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache395 suffix395 = some cache567 := replay_cons _ _ _ _ _ step395 replaySuffix396
-private theorem formedSuffix395 : suffix395.all nodeFormed = true := formed_cons _ _ formed395 formedSuffix396
-private def suffix394 : List ProofExecution.Receipt := node394 :: suffix395
-private theorem replaySuffix394 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache394 suffix394 = some cache567 := replay_cons _ _ _ _ _ step394 replaySuffix395
-private theorem formedSuffix394 : suffix394.all nodeFormed = true := formed_cons _ _ formed394 formedSuffix395
-private def suffix393 : List ProofExecution.Receipt := node393 :: suffix394
-private theorem replaySuffix393 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache393 suffix393 = some cache567 := replay_cons _ _ _ _ _ step393 replaySuffix394
-private theorem formedSuffix393 : suffix393.all nodeFormed = true := formed_cons _ _ formed393 formedSuffix394
-private def suffix392 : List ProofExecution.Receipt := node392 :: suffix393
-private theorem replaySuffix392 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache392 suffix392 = some cache567 := replay_cons _ _ _ _ _ step392 replaySuffix393
-private theorem formedSuffix392 : suffix392.all nodeFormed = true := formed_cons _ _ formed392 formedSuffix393
-private def suffix391 : List ProofExecution.Receipt := node391 :: suffix392
-private theorem replaySuffix391 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache391 suffix391 = some cache567 := replay_cons _ _ _ _ _ step391 replaySuffix392
-private theorem formedSuffix391 : suffix391.all nodeFormed = true := formed_cons _ _ formed391 formedSuffix392
-private def suffix390 : List ProofExecution.Receipt := node390 :: suffix391
-private theorem replaySuffix390 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache390 suffix390 = some cache567 := replay_cons _ _ _ _ _ step390 replaySuffix391
-private theorem formedSuffix390 : suffix390.all nodeFormed = true := formed_cons _ _ formed390 formedSuffix391
-private def suffix389 : List ProofExecution.Receipt := node389 :: suffix390
-private theorem replaySuffix389 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache389 suffix389 = some cache567 := replay_cons _ _ _ _ _ step389 replaySuffix390
-private theorem formedSuffix389 : suffix389.all nodeFormed = true := formed_cons _ _ formed389 formedSuffix390
-private def suffix388 : List ProofExecution.Receipt := node388 :: suffix389
-private theorem replaySuffix388 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache388 suffix388 = some cache567 := replay_cons _ _ _ _ _ step388 replaySuffix389
-private theorem formedSuffix388 : suffix388.all nodeFormed = true := formed_cons _ _ formed388 formedSuffix389
-private def suffix387 : List ProofExecution.Receipt := node387 :: suffix388
-private theorem replaySuffix387 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache387 suffix387 = some cache567 := replay_cons _ _ _ _ _ step387 replaySuffix388
-private theorem formedSuffix387 : suffix387.all nodeFormed = true := formed_cons _ _ formed387 formedSuffix388
-private def suffix386 : List ProofExecution.Receipt := node386 :: suffix387
-private theorem replaySuffix386 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache386 suffix386 = some cache567 := replay_cons _ _ _ _ _ step386 replaySuffix387
-private theorem formedSuffix386 : suffix386.all nodeFormed = true := formed_cons _ _ formed386 formedSuffix387
-private def suffix385 : List ProofExecution.Receipt := node385 :: suffix386
-private theorem replaySuffix385 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache385 suffix385 = some cache567 := replay_cons _ _ _ _ _ step385 replaySuffix386
-private theorem formedSuffix385 : suffix385.all nodeFormed = true := formed_cons _ _ formed385 formedSuffix386
-private def suffix384 : List ProofExecution.Receipt := node384 :: suffix385
-private theorem replaySuffix384 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache384 suffix384 = some cache567 := replay_cons _ _ _ _ _ step384 replaySuffix385
-private theorem formedSuffix384 : suffix384.all nodeFormed = true := formed_cons _ _ formed384 formedSuffix385
-private def suffix383 : List ProofExecution.Receipt := node383 :: suffix384
-private theorem replaySuffix383 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache383 suffix383 = some cache567 := replay_cons _ _ _ _ _ step383 replaySuffix384
-private theorem formedSuffix383 : suffix383.all nodeFormed = true := formed_cons _ _ formed383 formedSuffix384
-private def suffix382 : List ProofExecution.Receipt := node382 :: suffix383
-private theorem replaySuffix382 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache382 suffix382 = some cache567 := replay_cons _ _ _ _ _ step382 replaySuffix383
-private theorem formedSuffix382 : suffix382.all nodeFormed = true := formed_cons _ _ formed382 formedSuffix383
-private def suffix381 : List ProofExecution.Receipt := node381 :: suffix382
-private theorem replaySuffix381 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache381 suffix381 = some cache567 := replay_cons _ _ _ _ _ step381 replaySuffix382
-private theorem formedSuffix381 : suffix381.all nodeFormed = true := formed_cons _ _ formed381 formedSuffix382
-private def suffix380 : List ProofExecution.Receipt := node380 :: suffix381
-private theorem replaySuffix380 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache380 suffix380 = some cache567 := replay_cons _ _ _ _ _ step380 replaySuffix381
-private theorem formedSuffix380 : suffix380.all nodeFormed = true := formed_cons _ _ formed380 formedSuffix381
-private def suffix379 : List ProofExecution.Receipt := node379 :: suffix380
-private theorem replaySuffix379 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache379 suffix379 = some cache567 := replay_cons _ _ _ _ _ step379 replaySuffix380
-private theorem formedSuffix379 : suffix379.all nodeFormed = true := formed_cons _ _ formed379 formedSuffix380
-private def suffix378 : List ProofExecution.Receipt := node378 :: suffix379
-private theorem replaySuffix378 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache378 suffix378 = some cache567 := replay_cons _ _ _ _ _ step378 replaySuffix379
-private theorem formedSuffix378 : suffix378.all nodeFormed = true := formed_cons _ _ formed378 formedSuffix379
-private def suffix377 : List ProofExecution.Receipt := node377 :: suffix378
-private theorem replaySuffix377 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache377 suffix377 = some cache567 := replay_cons _ _ _ _ _ step377 replaySuffix378
-private theorem formedSuffix377 : suffix377.all nodeFormed = true := formed_cons _ _ formed377 formedSuffix378
-private def suffix376 : List ProofExecution.Receipt := node376 :: suffix377
-private theorem replaySuffix376 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache376 suffix376 = some cache567 := replay_cons _ _ _ _ _ step376 replaySuffix377
-private theorem formedSuffix376 : suffix376.all nodeFormed = true := formed_cons _ _ formed376 formedSuffix377
-private def suffix375 : List ProofExecution.Receipt := node375 :: suffix376
-private theorem replaySuffix375 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache375 suffix375 = some cache567 := replay_cons _ _ _ _ _ step375 replaySuffix376
-private theorem formedSuffix375 : suffix375.all nodeFormed = true := formed_cons _ _ formed375 formedSuffix376
-private def suffix374 : List ProofExecution.Receipt := node374 :: suffix375
-private theorem replaySuffix374 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache374 suffix374 = some cache567 := replay_cons _ _ _ _ _ step374 replaySuffix375
-private theorem formedSuffix374 : suffix374.all nodeFormed = true := formed_cons _ _ formed374 formedSuffix375
-private def suffix373 : List ProofExecution.Receipt := node373 :: suffix374
-private theorem replaySuffix373 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache373 suffix373 = some cache567 := replay_cons _ _ _ _ _ step373 replaySuffix374
-private theorem formedSuffix373 : suffix373.all nodeFormed = true := formed_cons _ _ formed373 formedSuffix374
-private def suffix372 : List ProofExecution.Receipt := node372 :: suffix373
-private theorem replaySuffix372 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache372 suffix372 = some cache567 := replay_cons _ _ _ _ _ step372 replaySuffix373
-private theorem formedSuffix372 : suffix372.all nodeFormed = true := formed_cons _ _ formed372 formedSuffix373
-private def suffix371 : List ProofExecution.Receipt := node371 :: suffix372
-private theorem replaySuffix371 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache371 suffix371 = some cache567 := replay_cons _ _ _ _ _ step371 replaySuffix372
-private theorem formedSuffix371 : suffix371.all nodeFormed = true := formed_cons _ _ formed371 formedSuffix372
-private def suffix370 : List ProofExecution.Receipt := node370 :: suffix371
-private theorem replaySuffix370 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache370 suffix370 = some cache567 := replay_cons _ _ _ _ _ step370 replaySuffix371
-private theorem formedSuffix370 : suffix370.all nodeFormed = true := formed_cons _ _ formed370 formedSuffix371
-private def suffix369 : List ProofExecution.Receipt := node369 :: suffix370
-private theorem replaySuffix369 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache369 suffix369 = some cache567 := replay_cons _ _ _ _ _ step369 replaySuffix370
-private theorem formedSuffix369 : suffix369.all nodeFormed = true := formed_cons _ _ formed369 formedSuffix370
-private def suffix368 : List ProofExecution.Receipt := node368 :: suffix369
-private theorem replaySuffix368 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache368 suffix368 = some cache567 := replay_cons _ _ _ _ _ step368 replaySuffix369
-private theorem formedSuffix368 : suffix368.all nodeFormed = true := formed_cons _ _ formed368 formedSuffix369
-private def suffix367 : List ProofExecution.Receipt := node367 :: suffix368
-private theorem replaySuffix367 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache367 suffix367 = some cache567 := replay_cons _ _ _ _ _ step367 replaySuffix368
-private theorem formedSuffix367 : suffix367.all nodeFormed = true := formed_cons _ _ formed367 formedSuffix368
-private def suffix366 : List ProofExecution.Receipt := node366 :: suffix367
-private theorem replaySuffix366 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache366 suffix366 = some cache567 := replay_cons _ _ _ _ _ step366 replaySuffix367
-private theorem formedSuffix366 : suffix366.all nodeFormed = true := formed_cons _ _ formed366 formedSuffix367
-private def suffix365 : List ProofExecution.Receipt := node365 :: suffix366
-private theorem replaySuffix365 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache365 suffix365 = some cache567 := replay_cons _ _ _ _ _ step365 replaySuffix366
-private theorem formedSuffix365 : suffix365.all nodeFormed = true := formed_cons _ _ formed365 formedSuffix366
-private def suffix364 : List ProofExecution.Receipt := node364 :: suffix365
-private theorem replaySuffix364 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache364 suffix364 = some cache567 := replay_cons _ _ _ _ _ step364 replaySuffix365
-private theorem formedSuffix364 : suffix364.all nodeFormed = true := formed_cons _ _ formed364 formedSuffix365
-private def suffix363 : List ProofExecution.Receipt := node363 :: suffix364
-private theorem replaySuffix363 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache363 suffix363 = some cache567 := replay_cons _ _ _ _ _ step363 replaySuffix364
-private theorem formedSuffix363 : suffix363.all nodeFormed = true := formed_cons _ _ formed363 formedSuffix364
-private def suffix362 : List ProofExecution.Receipt := node362 :: suffix363
-private theorem replaySuffix362 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache362 suffix362 = some cache567 := replay_cons _ _ _ _ _ step362 replaySuffix363
-private theorem formedSuffix362 : suffix362.all nodeFormed = true := formed_cons _ _ formed362 formedSuffix363
-private def suffix361 : List ProofExecution.Receipt := node361 :: suffix362
-private theorem replaySuffix361 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache361 suffix361 = some cache567 := replay_cons _ _ _ _ _ step361 replaySuffix362
-private theorem formedSuffix361 : suffix361.all nodeFormed = true := formed_cons _ _ formed361 formedSuffix362
-private def suffix360 : List ProofExecution.Receipt := node360 :: suffix361
-private theorem replaySuffix360 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache360 suffix360 = some cache567 := replay_cons _ _ _ _ _ step360 replaySuffix361
-private theorem formedSuffix360 : suffix360.all nodeFormed = true := formed_cons _ _ formed360 formedSuffix361
-private def suffix359 : List ProofExecution.Receipt := node359 :: suffix360
-private theorem replaySuffix359 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache359 suffix359 = some cache567 := replay_cons _ _ _ _ _ step359 replaySuffix360
-private theorem formedSuffix359 : suffix359.all nodeFormed = true := formed_cons _ _ formed359 formedSuffix360
-private def suffix358 : List ProofExecution.Receipt := node358 :: suffix359
-private theorem replaySuffix358 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache358 suffix358 = some cache567 := replay_cons _ _ _ _ _ step358 replaySuffix359
-private theorem formedSuffix358 : suffix358.all nodeFormed = true := formed_cons _ _ formed358 formedSuffix359
-private def suffix357 : List ProofExecution.Receipt := node357 :: suffix358
-private theorem replaySuffix357 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache357 suffix357 = some cache567 := replay_cons _ _ _ _ _ step357 replaySuffix358
-private theorem formedSuffix357 : suffix357.all nodeFormed = true := formed_cons _ _ formed357 formedSuffix358
-private def suffix356 : List ProofExecution.Receipt := node356 :: suffix357
-private theorem replaySuffix356 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache356 suffix356 = some cache567 := replay_cons _ _ _ _ _ step356 replaySuffix357
-private theorem formedSuffix356 : suffix356.all nodeFormed = true := formed_cons _ _ formed356 formedSuffix357
-private def suffix355 : List ProofExecution.Receipt := node355 :: suffix356
-private theorem replaySuffix355 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache355 suffix355 = some cache567 := replay_cons _ _ _ _ _ step355 replaySuffix356
-private theorem formedSuffix355 : suffix355.all nodeFormed = true := formed_cons _ _ formed355 formedSuffix356
-private def suffix354 : List ProofExecution.Receipt := node354 :: suffix355
-private theorem replaySuffix354 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache354 suffix354 = some cache567 := replay_cons _ _ _ _ _ step354 replaySuffix355
-private theorem formedSuffix354 : suffix354.all nodeFormed = true := formed_cons _ _ formed354 formedSuffix355
-private def suffix353 : List ProofExecution.Receipt := node353 :: suffix354
-private theorem replaySuffix353 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache353 suffix353 = some cache567 := replay_cons _ _ _ _ _ step353 replaySuffix354
-private theorem formedSuffix353 : suffix353.all nodeFormed = true := formed_cons _ _ formed353 formedSuffix354
-private def suffix352 : List ProofExecution.Receipt := node352 :: suffix353
-private theorem replaySuffix352 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache352 suffix352 = some cache567 := replay_cons _ _ _ _ _ step352 replaySuffix353
-private theorem formedSuffix352 : suffix352.all nodeFormed = true := formed_cons _ _ formed352 formedSuffix353
-private def suffix351 : List ProofExecution.Receipt := node351 :: suffix352
-private theorem replaySuffix351 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache351 suffix351 = some cache567 := replay_cons _ _ _ _ _ step351 replaySuffix352
-private theorem formedSuffix351 : suffix351.all nodeFormed = true := formed_cons _ _ formed351 formedSuffix352
-private def suffix350 : List ProofExecution.Receipt := node350 :: suffix351
-private theorem replaySuffix350 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache350 suffix350 = some cache567 := replay_cons _ _ _ _ _ step350 replaySuffix351
-private theorem formedSuffix350 : suffix350.all nodeFormed = true := formed_cons _ _ formed350 formedSuffix351
-private def suffix349 : List ProofExecution.Receipt := node349 :: suffix350
-private theorem replaySuffix349 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache349 suffix349 = some cache567 := replay_cons _ _ _ _ _ step349 replaySuffix350
-private theorem formedSuffix349 : suffix349.all nodeFormed = true := formed_cons _ _ formed349 formedSuffix350
-private def suffix348 : List ProofExecution.Receipt := node348 :: suffix349
-private theorem replaySuffix348 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache348 suffix348 = some cache567 := replay_cons _ _ _ _ _ step348 replaySuffix349
-private theorem formedSuffix348 : suffix348.all nodeFormed = true := formed_cons _ _ formed348 formedSuffix349
-private def suffix347 : List ProofExecution.Receipt := node347 :: suffix348
-private theorem replaySuffix347 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache347 suffix347 = some cache567 := replay_cons _ _ _ _ _ step347 replaySuffix348
-private theorem formedSuffix347 : suffix347.all nodeFormed = true := formed_cons _ _ formed347 formedSuffix348
-private def suffix346 : List ProofExecution.Receipt := node346 :: suffix347
-private theorem replaySuffix346 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache346 suffix346 = some cache567 := replay_cons _ _ _ _ _ step346 replaySuffix347
-private theorem formedSuffix346 : suffix346.all nodeFormed = true := formed_cons _ _ formed346 formedSuffix347
-private def suffix345 : List ProofExecution.Receipt := node345 :: suffix346
-private theorem replaySuffix345 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache345 suffix345 = some cache567 := replay_cons _ _ _ _ _ step345 replaySuffix346
-private theorem formedSuffix345 : suffix345.all nodeFormed = true := formed_cons _ _ formed345 formedSuffix346
-private def suffix344 : List ProofExecution.Receipt := node344 :: suffix345
-private theorem replaySuffix344 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache344 suffix344 = some cache567 := replay_cons _ _ _ _ _ step344 replaySuffix345
-private theorem formedSuffix344 : suffix344.all nodeFormed = true := formed_cons _ _ formed344 formedSuffix345
-private def suffix343 : List ProofExecution.Receipt := node343 :: suffix344
-private theorem replaySuffix343 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache343 suffix343 = some cache567 := replay_cons _ _ _ _ _ step343 replaySuffix344
-private theorem formedSuffix343 : suffix343.all nodeFormed = true := formed_cons _ _ formed343 formedSuffix344
-private def suffix342 : List ProofExecution.Receipt := node342 :: suffix343
-private theorem replaySuffix342 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache342 suffix342 = some cache567 := replay_cons _ _ _ _ _ step342 replaySuffix343
-private theorem formedSuffix342 : suffix342.all nodeFormed = true := formed_cons _ _ formed342 formedSuffix343
-private def suffix341 : List ProofExecution.Receipt := node341 :: suffix342
-private theorem replaySuffix341 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache341 suffix341 = some cache567 := replay_cons _ _ _ _ _ step341 replaySuffix342
-private theorem formedSuffix341 : suffix341.all nodeFormed = true := formed_cons _ _ formed341 formedSuffix342
-private def suffix340 : List ProofExecution.Receipt := node340 :: suffix341
-private theorem replaySuffix340 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache340 suffix340 = some cache567 := replay_cons _ _ _ _ _ step340 replaySuffix341
-private theorem formedSuffix340 : suffix340.all nodeFormed = true := formed_cons _ _ formed340 formedSuffix341
-private def suffix339 : List ProofExecution.Receipt := node339 :: suffix340
-private theorem replaySuffix339 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache339 suffix339 = some cache567 := replay_cons _ _ _ _ _ step339 replaySuffix340
-private theorem formedSuffix339 : suffix339.all nodeFormed = true := formed_cons _ _ formed339 formedSuffix340
-private def suffix338 : List ProofExecution.Receipt := node338 :: suffix339
-private theorem replaySuffix338 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache338 suffix338 = some cache567 := replay_cons _ _ _ _ _ step338 replaySuffix339
-private theorem formedSuffix338 : suffix338.all nodeFormed = true := formed_cons _ _ formed338 formedSuffix339
-private def suffix337 : List ProofExecution.Receipt := node337 :: suffix338
-private theorem replaySuffix337 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache337 suffix337 = some cache567 := replay_cons _ _ _ _ _ step337 replaySuffix338
-private theorem formedSuffix337 : suffix337.all nodeFormed = true := formed_cons _ _ formed337 formedSuffix338
-private def suffix336 : List ProofExecution.Receipt := node336 :: suffix337
-private theorem replaySuffix336 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache336 suffix336 = some cache567 := replay_cons _ _ _ _ _ step336 replaySuffix337
-private theorem formedSuffix336 : suffix336.all nodeFormed = true := formed_cons _ _ formed336 formedSuffix337
-private def suffix335 : List ProofExecution.Receipt := node335 :: suffix336
-private theorem replaySuffix335 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache335 suffix335 = some cache567 := replay_cons _ _ _ _ _ step335 replaySuffix336
-private theorem formedSuffix335 : suffix335.all nodeFormed = true := formed_cons _ _ formed335 formedSuffix336
-private def suffix334 : List ProofExecution.Receipt := node334 :: suffix335
-private theorem replaySuffix334 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache334 suffix334 = some cache567 := replay_cons _ _ _ _ _ step334 replaySuffix335
-private theorem formedSuffix334 : suffix334.all nodeFormed = true := formed_cons _ _ formed334 formedSuffix335
-private def suffix333 : List ProofExecution.Receipt := node333 :: suffix334
-private theorem replaySuffix333 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache333 suffix333 = some cache567 := replay_cons _ _ _ _ _ step333 replaySuffix334
-private theorem formedSuffix333 : suffix333.all nodeFormed = true := formed_cons _ _ formed333 formedSuffix334
-private def suffix332 : List ProofExecution.Receipt := node332 :: suffix333
-private theorem replaySuffix332 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache332 suffix332 = some cache567 := replay_cons _ _ _ _ _ step332 replaySuffix333
-private theorem formedSuffix332 : suffix332.all nodeFormed = true := formed_cons _ _ formed332 formedSuffix333
-private def suffix331 : List ProofExecution.Receipt := node331 :: suffix332
-private theorem replaySuffix331 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache331 suffix331 = some cache567 := replay_cons _ _ _ _ _ step331 replaySuffix332
-private theorem formedSuffix331 : suffix331.all nodeFormed = true := formed_cons _ _ formed331 formedSuffix332
-private def suffix330 : List ProofExecution.Receipt := node330 :: suffix331
-private theorem replaySuffix330 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache330 suffix330 = some cache567 := replay_cons _ _ _ _ _ step330 replaySuffix331
-private theorem formedSuffix330 : suffix330.all nodeFormed = true := formed_cons _ _ formed330 formedSuffix331
-private def suffix329 : List ProofExecution.Receipt := node329 :: suffix330
-private theorem replaySuffix329 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache329 suffix329 = some cache567 := replay_cons _ _ _ _ _ step329 replaySuffix330
-private theorem formedSuffix329 : suffix329.all nodeFormed = true := formed_cons _ _ formed329 formedSuffix330
-private def suffix328 : List ProofExecution.Receipt := node328 :: suffix329
-private theorem replaySuffix328 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache328 suffix328 = some cache567 := replay_cons _ _ _ _ _ step328 replaySuffix329
-private theorem formedSuffix328 : suffix328.all nodeFormed = true := formed_cons _ _ formed328 formedSuffix329
-private def suffix327 : List ProofExecution.Receipt := node327 :: suffix328
-private theorem replaySuffix327 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache327 suffix327 = some cache567 := replay_cons _ _ _ _ _ step327 replaySuffix328
-private theorem formedSuffix327 : suffix327.all nodeFormed = true := formed_cons _ _ formed327 formedSuffix328
-private def suffix326 : List ProofExecution.Receipt := node326 :: suffix327
-private theorem replaySuffix326 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache326 suffix326 = some cache567 := replay_cons _ _ _ _ _ step326 replaySuffix327
-private theorem formedSuffix326 : suffix326.all nodeFormed = true := formed_cons _ _ formed326 formedSuffix327
-private def suffix325 : List ProofExecution.Receipt := node325 :: suffix326
-private theorem replaySuffix325 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache325 suffix325 = some cache567 := replay_cons _ _ _ _ _ step325 replaySuffix326
-private theorem formedSuffix325 : suffix325.all nodeFormed = true := formed_cons _ _ formed325 formedSuffix326
-private def suffix324 : List ProofExecution.Receipt := node324 :: suffix325
-private theorem replaySuffix324 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache324 suffix324 = some cache567 := replay_cons _ _ _ _ _ step324 replaySuffix325
-private theorem formedSuffix324 : suffix324.all nodeFormed = true := formed_cons _ _ formed324 formedSuffix325
-private def suffix323 : List ProofExecution.Receipt := node323 :: suffix324
-private theorem replaySuffix323 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache323 suffix323 = some cache567 := replay_cons _ _ _ _ _ step323 replaySuffix324
-private theorem formedSuffix323 : suffix323.all nodeFormed = true := formed_cons _ _ formed323 formedSuffix324
-private def suffix322 : List ProofExecution.Receipt := node322 :: suffix323
-private theorem replaySuffix322 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache322 suffix322 = some cache567 := replay_cons _ _ _ _ _ step322 replaySuffix323
-private theorem formedSuffix322 : suffix322.all nodeFormed = true := formed_cons _ _ formed322 formedSuffix323
-private def suffix321 : List ProofExecution.Receipt := node321 :: suffix322
-private theorem replaySuffix321 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache321 suffix321 = some cache567 := replay_cons _ _ _ _ _ step321 replaySuffix322
-private theorem formedSuffix321 : suffix321.all nodeFormed = true := formed_cons _ _ formed321 formedSuffix322
-private def suffix320 : List ProofExecution.Receipt := node320 :: suffix321
-private theorem replaySuffix320 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache320 suffix320 = some cache567 := replay_cons _ _ _ _ _ step320 replaySuffix321
-private theorem formedSuffix320 : suffix320.all nodeFormed = true := formed_cons _ _ formed320 formedSuffix321
-private def suffix319 : List ProofExecution.Receipt := node319 :: suffix320
-private theorem replaySuffix319 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache319 suffix319 = some cache567 := replay_cons _ _ _ _ _ step319 replaySuffix320
-private theorem formedSuffix319 : suffix319.all nodeFormed = true := formed_cons _ _ formed319 formedSuffix320
-private def suffix318 : List ProofExecution.Receipt := node318 :: suffix319
-private theorem replaySuffix318 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache318 suffix318 = some cache567 := replay_cons _ _ _ _ _ step318 replaySuffix319
-private theorem formedSuffix318 : suffix318.all nodeFormed = true := formed_cons _ _ formed318 formedSuffix319
-private def suffix317 : List ProofExecution.Receipt := node317 :: suffix318
-private theorem replaySuffix317 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache317 suffix317 = some cache567 := replay_cons _ _ _ _ _ step317 replaySuffix318
-private theorem formedSuffix317 : suffix317.all nodeFormed = true := formed_cons _ _ formed317 formedSuffix318
-private def suffix316 : List ProofExecution.Receipt := node316 :: suffix317
-private theorem replaySuffix316 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache316 suffix316 = some cache567 := replay_cons _ _ _ _ _ step316 replaySuffix317
-private theorem formedSuffix316 : suffix316.all nodeFormed = true := formed_cons _ _ formed316 formedSuffix317
-private def suffix315 : List ProofExecution.Receipt := node315 :: suffix316
-private theorem replaySuffix315 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache315 suffix315 = some cache567 := replay_cons _ _ _ _ _ step315 replaySuffix316
-private theorem formedSuffix315 : suffix315.all nodeFormed = true := formed_cons _ _ formed315 formedSuffix316
-private def suffix314 : List ProofExecution.Receipt := node314 :: suffix315
-private theorem replaySuffix314 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache314 suffix314 = some cache567 := replay_cons _ _ _ _ _ step314 replaySuffix315
-private theorem formedSuffix314 : suffix314.all nodeFormed = true := formed_cons _ _ formed314 formedSuffix315
-private def suffix313 : List ProofExecution.Receipt := node313 :: suffix314
-private theorem replaySuffix313 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache313 suffix313 = some cache567 := replay_cons _ _ _ _ _ step313 replaySuffix314
-private theorem formedSuffix313 : suffix313.all nodeFormed = true := formed_cons _ _ formed313 formedSuffix314
-private def suffix312 : List ProofExecution.Receipt := node312 :: suffix313
-private theorem replaySuffix312 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache312 suffix312 = some cache567 := replay_cons _ _ _ _ _ step312 replaySuffix313
-private theorem formedSuffix312 : suffix312.all nodeFormed = true := formed_cons _ _ formed312 formedSuffix313
-private def suffix311 : List ProofExecution.Receipt := node311 :: suffix312
-private theorem replaySuffix311 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache311 suffix311 = some cache567 := replay_cons _ _ _ _ _ step311 replaySuffix312
-private theorem formedSuffix311 : suffix311.all nodeFormed = true := formed_cons _ _ formed311 formedSuffix312
-private def suffix310 : List ProofExecution.Receipt := node310 :: suffix311
-private theorem replaySuffix310 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache310 suffix310 = some cache567 := replay_cons _ _ _ _ _ step310 replaySuffix311
-private theorem formedSuffix310 : suffix310.all nodeFormed = true := formed_cons _ _ formed310 formedSuffix311
-private def suffix309 : List ProofExecution.Receipt := node309 :: suffix310
-private theorem replaySuffix309 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache309 suffix309 = some cache567 := replay_cons _ _ _ _ _ step309 replaySuffix310
-private theorem formedSuffix309 : suffix309.all nodeFormed = true := formed_cons _ _ formed309 formedSuffix310
-private def suffix308 : List ProofExecution.Receipt := node308 :: suffix309
-private theorem replaySuffix308 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache308 suffix308 = some cache567 := replay_cons _ _ _ _ _ step308 replaySuffix309
-private theorem formedSuffix308 : suffix308.all nodeFormed = true := formed_cons _ _ formed308 formedSuffix309
-private def suffix307 : List ProofExecution.Receipt := node307 :: suffix308
-private theorem replaySuffix307 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache307 suffix307 = some cache567 := replay_cons _ _ _ _ _ step307 replaySuffix308
-private theorem formedSuffix307 : suffix307.all nodeFormed = true := formed_cons _ _ formed307 formedSuffix308
-private def suffix306 : List ProofExecution.Receipt := node306 :: suffix307
-private theorem replaySuffix306 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache306 suffix306 = some cache567 := replay_cons _ _ _ _ _ step306 replaySuffix307
-private theorem formedSuffix306 : suffix306.all nodeFormed = true := formed_cons _ _ formed306 formedSuffix307
-private def suffix305 : List ProofExecution.Receipt := node305 :: suffix306
-private theorem replaySuffix305 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache305 suffix305 = some cache567 := replay_cons _ _ _ _ _ step305 replaySuffix306
-private theorem formedSuffix305 : suffix305.all nodeFormed = true := formed_cons _ _ formed305 formedSuffix306
-private def suffix304 : List ProofExecution.Receipt := node304 :: suffix305
-private theorem replaySuffix304 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache304 suffix304 = some cache567 := replay_cons _ _ _ _ _ step304 replaySuffix305
-private theorem formedSuffix304 : suffix304.all nodeFormed = true := formed_cons _ _ formed304 formedSuffix305
-private def suffix303 : List ProofExecution.Receipt := node303 :: suffix304
-private theorem replaySuffix303 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache303 suffix303 = some cache567 := replay_cons _ _ _ _ _ step303 replaySuffix304
-private theorem formedSuffix303 : suffix303.all nodeFormed = true := formed_cons _ _ formed303 formedSuffix304
-private def suffix302 : List ProofExecution.Receipt := node302 :: suffix303
-private theorem replaySuffix302 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache302 suffix302 = some cache567 := replay_cons _ _ _ _ _ step302 replaySuffix303
-private theorem formedSuffix302 : suffix302.all nodeFormed = true := formed_cons _ _ formed302 formedSuffix303
-private def suffix301 : List ProofExecution.Receipt := node301 :: suffix302
-private theorem replaySuffix301 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache301 suffix301 = some cache567 := replay_cons _ _ _ _ _ step301 replaySuffix302
-private theorem formedSuffix301 : suffix301.all nodeFormed = true := formed_cons _ _ formed301 formedSuffix302
-private def suffix300 : List ProofExecution.Receipt := node300 :: suffix301
-private theorem replaySuffix300 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache300 suffix300 = some cache567 := replay_cons _ _ _ _ _ step300 replaySuffix301
-private theorem formedSuffix300 : suffix300.all nodeFormed = true := formed_cons _ _ formed300 formedSuffix301
-private def suffix299 : List ProofExecution.Receipt := node299 :: suffix300
-private theorem replaySuffix299 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache299 suffix299 = some cache567 := replay_cons _ _ _ _ _ step299 replaySuffix300
-private theorem formedSuffix299 : suffix299.all nodeFormed = true := formed_cons _ _ formed299 formedSuffix300
-private def suffix298 : List ProofExecution.Receipt := node298 :: suffix299
-private theorem replaySuffix298 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache298 suffix298 = some cache567 := replay_cons _ _ _ _ _ step298 replaySuffix299
-private theorem formedSuffix298 : suffix298.all nodeFormed = true := formed_cons _ _ formed298 formedSuffix299
-private def suffix297 : List ProofExecution.Receipt := node297 :: suffix298
-private theorem replaySuffix297 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache297 suffix297 = some cache567 := replay_cons _ _ _ _ _ step297 replaySuffix298
-private theorem formedSuffix297 : suffix297.all nodeFormed = true := formed_cons _ _ formed297 formedSuffix298
-private def suffix296 : List ProofExecution.Receipt := node296 :: suffix297
-private theorem replaySuffix296 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache296 suffix296 = some cache567 := replay_cons _ _ _ _ _ step296 replaySuffix297
-private theorem formedSuffix296 : suffix296.all nodeFormed = true := formed_cons _ _ formed296 formedSuffix297
-private def suffix295 : List ProofExecution.Receipt := node295 :: suffix296
-private theorem replaySuffix295 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache295 suffix295 = some cache567 := replay_cons _ _ _ _ _ step295 replaySuffix296
-private theorem formedSuffix295 : suffix295.all nodeFormed = true := formed_cons _ _ formed295 formedSuffix296
-private def suffix294 : List ProofExecution.Receipt := node294 :: suffix295
-private theorem replaySuffix294 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache294 suffix294 = some cache567 := replay_cons _ _ _ _ _ step294 replaySuffix295
-private theorem formedSuffix294 : suffix294.all nodeFormed = true := formed_cons _ _ formed294 formedSuffix295
-private def suffix293 : List ProofExecution.Receipt := node293 :: suffix294
-private theorem replaySuffix293 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache293 suffix293 = some cache567 := replay_cons _ _ _ _ _ step293 replaySuffix294
-private theorem formedSuffix293 : suffix293.all nodeFormed = true := formed_cons _ _ formed293 formedSuffix294
-private def suffix292 : List ProofExecution.Receipt := node292 :: suffix293
-private theorem replaySuffix292 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache292 suffix292 = some cache567 := replay_cons _ _ _ _ _ step292 replaySuffix293
-private theorem formedSuffix292 : suffix292.all nodeFormed = true := formed_cons _ _ formed292 formedSuffix293
-private def suffix291 : List ProofExecution.Receipt := node291 :: suffix292
-private theorem replaySuffix291 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache291 suffix291 = some cache567 := replay_cons _ _ _ _ _ step291 replaySuffix292
-private theorem formedSuffix291 : suffix291.all nodeFormed = true := formed_cons _ _ formed291 formedSuffix292
-private def suffix290 : List ProofExecution.Receipt := node290 :: suffix291
-private theorem replaySuffix290 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache290 suffix290 = some cache567 := replay_cons _ _ _ _ _ step290 replaySuffix291
-private theorem formedSuffix290 : suffix290.all nodeFormed = true := formed_cons _ _ formed290 formedSuffix291
-private def suffix289 : List ProofExecution.Receipt := node289 :: suffix290
-private theorem replaySuffix289 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache289 suffix289 = some cache567 := replay_cons _ _ _ _ _ step289 replaySuffix290
-private theorem formedSuffix289 : suffix289.all nodeFormed = true := formed_cons _ _ formed289 formedSuffix290
-private def suffix288 : List ProofExecution.Receipt := node288 :: suffix289
-private theorem replaySuffix288 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache288 suffix288 = some cache567 := replay_cons _ _ _ _ _ step288 replaySuffix289
-private theorem formedSuffix288 : suffix288.all nodeFormed = true := formed_cons _ _ formed288 formedSuffix289
-private def suffix287 : List ProofExecution.Receipt := node287 :: suffix288
-private theorem replaySuffix287 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache287 suffix287 = some cache567 := replay_cons _ _ _ _ _ step287 replaySuffix288
-private theorem formedSuffix287 : suffix287.all nodeFormed = true := formed_cons _ _ formed287 formedSuffix288
-private def suffix286 : List ProofExecution.Receipt := node286 :: suffix287
-private theorem replaySuffix286 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache286 suffix286 = some cache567 := replay_cons _ _ _ _ _ step286 replaySuffix287
-private theorem formedSuffix286 : suffix286.all nodeFormed = true := formed_cons _ _ formed286 formedSuffix287
-private def suffix285 : List ProofExecution.Receipt := node285 :: suffix286
-private theorem replaySuffix285 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache285 suffix285 = some cache567 := replay_cons _ _ _ _ _ step285 replaySuffix286
-private theorem formedSuffix285 : suffix285.all nodeFormed = true := formed_cons _ _ formed285 formedSuffix286
-private def suffix284 : List ProofExecution.Receipt := node284 :: suffix285
-private theorem replaySuffix284 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache284 suffix284 = some cache567 := replay_cons _ _ _ _ _ step284 replaySuffix285
-private theorem formedSuffix284 : suffix284.all nodeFormed = true := formed_cons _ _ formed284 formedSuffix285
-private def suffix283 : List ProofExecution.Receipt := node283 :: suffix284
-private theorem replaySuffix283 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache283 suffix283 = some cache567 := replay_cons _ _ _ _ _ step283 replaySuffix284
-private theorem formedSuffix283 : suffix283.all nodeFormed = true := formed_cons _ _ formed283 formedSuffix284
-private def suffix282 : List ProofExecution.Receipt := node282 :: suffix283
-private theorem replaySuffix282 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache282 suffix282 = some cache567 := replay_cons _ _ _ _ _ step282 replaySuffix283
-private theorem formedSuffix282 : suffix282.all nodeFormed = true := formed_cons _ _ formed282 formedSuffix283
-private def suffix281 : List ProofExecution.Receipt := node281 :: suffix282
-private theorem replaySuffix281 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache281 suffix281 = some cache567 := replay_cons _ _ _ _ _ step281 replaySuffix282
-private theorem formedSuffix281 : suffix281.all nodeFormed = true := formed_cons _ _ formed281 formedSuffix282
-private def suffix280 : List ProofExecution.Receipt := node280 :: suffix281
-private theorem replaySuffix280 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache280 suffix280 = some cache567 := replay_cons _ _ _ _ _ step280 replaySuffix281
-private theorem formedSuffix280 : suffix280.all nodeFormed = true := formed_cons _ _ formed280 formedSuffix281
-private def suffix279 : List ProofExecution.Receipt := node279 :: suffix280
-private theorem replaySuffix279 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache279 suffix279 = some cache567 := replay_cons _ _ _ _ _ step279 replaySuffix280
-private theorem formedSuffix279 : suffix279.all nodeFormed = true := formed_cons _ _ formed279 formedSuffix280
-private def suffix278 : List ProofExecution.Receipt := node278 :: suffix279
-private theorem replaySuffix278 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache278 suffix278 = some cache567 := replay_cons _ _ _ _ _ step278 replaySuffix279
-private theorem formedSuffix278 : suffix278.all nodeFormed = true := formed_cons _ _ formed278 formedSuffix279
-private def suffix277 : List ProofExecution.Receipt := node277 :: suffix278
-private theorem replaySuffix277 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache277 suffix277 = some cache567 := replay_cons _ _ _ _ _ step277 replaySuffix278
-private theorem formedSuffix277 : suffix277.all nodeFormed = true := formed_cons _ _ formed277 formedSuffix278
-private def suffix276 : List ProofExecution.Receipt := node276 :: suffix277
-private theorem replaySuffix276 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache276 suffix276 = some cache567 := replay_cons _ _ _ _ _ step276 replaySuffix277
-private theorem formedSuffix276 : suffix276.all nodeFormed = true := formed_cons _ _ formed276 formedSuffix277
-private def suffix275 : List ProofExecution.Receipt := node275 :: suffix276
-private theorem replaySuffix275 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache275 suffix275 = some cache567 := replay_cons _ _ _ _ _ step275 replaySuffix276
-private theorem formedSuffix275 : suffix275.all nodeFormed = true := formed_cons _ _ formed275 formedSuffix276
-private def suffix274 : List ProofExecution.Receipt := node274 :: suffix275
-private theorem replaySuffix274 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache274 suffix274 = some cache567 := replay_cons _ _ _ _ _ step274 replaySuffix275
-private theorem formedSuffix274 : suffix274.all nodeFormed = true := formed_cons _ _ formed274 formedSuffix275
-private def suffix273 : List ProofExecution.Receipt := node273 :: suffix274
-private theorem replaySuffix273 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache273 suffix273 = some cache567 := replay_cons _ _ _ _ _ step273 replaySuffix274
-private theorem formedSuffix273 : suffix273.all nodeFormed = true := formed_cons _ _ formed273 formedSuffix274
-private def suffix272 : List ProofExecution.Receipt := node272 :: suffix273
-private theorem replaySuffix272 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache272 suffix272 = some cache567 := replay_cons _ _ _ _ _ step272 replaySuffix273
-private theorem formedSuffix272 : suffix272.all nodeFormed = true := formed_cons _ _ formed272 formedSuffix273
-private def suffix271 : List ProofExecution.Receipt := node271 :: suffix272
-private theorem replaySuffix271 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache271 suffix271 = some cache567 := replay_cons _ _ _ _ _ step271 replaySuffix272
-private theorem formedSuffix271 : suffix271.all nodeFormed = true := formed_cons _ _ formed271 formedSuffix272
-private def suffix270 : List ProofExecution.Receipt := node270 :: suffix271
-private theorem replaySuffix270 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache270 suffix270 = some cache567 := replay_cons _ _ _ _ _ step270 replaySuffix271
-private theorem formedSuffix270 : suffix270.all nodeFormed = true := formed_cons _ _ formed270 formedSuffix271
-private def suffix269 : List ProofExecution.Receipt := node269 :: suffix270
-private theorem replaySuffix269 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache269 suffix269 = some cache567 := replay_cons _ _ _ _ _ step269 replaySuffix270
-private theorem formedSuffix269 : suffix269.all nodeFormed = true := formed_cons _ _ formed269 formedSuffix270
-private def suffix268 : List ProofExecution.Receipt := node268 :: suffix269
-private theorem replaySuffix268 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache268 suffix268 = some cache567 := replay_cons _ _ _ _ _ step268 replaySuffix269
-private theorem formedSuffix268 : suffix268.all nodeFormed = true := formed_cons _ _ formed268 formedSuffix269
-private def suffix267 : List ProofExecution.Receipt := node267 :: suffix268
-private theorem replaySuffix267 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache267 suffix267 = some cache567 := replay_cons _ _ _ _ _ step267 replaySuffix268
-private theorem formedSuffix267 : suffix267.all nodeFormed = true := formed_cons _ _ formed267 formedSuffix268
-private def suffix266 : List ProofExecution.Receipt := node266 :: suffix267
-private theorem replaySuffix266 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache266 suffix266 = some cache567 := replay_cons _ _ _ _ _ step266 replaySuffix267
-private theorem formedSuffix266 : suffix266.all nodeFormed = true := formed_cons _ _ formed266 formedSuffix267
-private def suffix265 : List ProofExecution.Receipt := node265 :: suffix266
-private theorem replaySuffix265 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache265 suffix265 = some cache567 := replay_cons _ _ _ _ _ step265 replaySuffix266
-private theorem formedSuffix265 : suffix265.all nodeFormed = true := formed_cons _ _ formed265 formedSuffix266
-private def suffix264 : List ProofExecution.Receipt := node264 :: suffix265
-private theorem replaySuffix264 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache264 suffix264 = some cache567 := replay_cons _ _ _ _ _ step264 replaySuffix265
-private theorem formedSuffix264 : suffix264.all nodeFormed = true := formed_cons _ _ formed264 formedSuffix265
-private def suffix263 : List ProofExecution.Receipt := node263 :: suffix264
-private theorem replaySuffix263 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache263 suffix263 = some cache567 := replay_cons _ _ _ _ _ step263 replaySuffix264
-private theorem formedSuffix263 : suffix263.all nodeFormed = true := formed_cons _ _ formed263 formedSuffix264
-private def suffix262 : List ProofExecution.Receipt := node262 :: suffix263
-private theorem replaySuffix262 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache262 suffix262 = some cache567 := replay_cons _ _ _ _ _ step262 replaySuffix263
-private theorem formedSuffix262 : suffix262.all nodeFormed = true := formed_cons _ _ formed262 formedSuffix263
-private def suffix261 : List ProofExecution.Receipt := node261 :: suffix262
-private theorem replaySuffix261 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache261 suffix261 = some cache567 := replay_cons _ _ _ _ _ step261 replaySuffix262
-private theorem formedSuffix261 : suffix261.all nodeFormed = true := formed_cons _ _ formed261 formedSuffix262
-private def suffix260 : List ProofExecution.Receipt := node260 :: suffix261
-private theorem replaySuffix260 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache260 suffix260 = some cache567 := replay_cons _ _ _ _ _ step260 replaySuffix261
-private theorem formedSuffix260 : suffix260.all nodeFormed = true := formed_cons _ _ formed260 formedSuffix261
-private def suffix259 : List ProofExecution.Receipt := node259 :: suffix260
-private theorem replaySuffix259 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache259 suffix259 = some cache567 := replay_cons _ _ _ _ _ step259 replaySuffix260
-private theorem formedSuffix259 : suffix259.all nodeFormed = true := formed_cons _ _ formed259 formedSuffix260
-private def suffix258 : List ProofExecution.Receipt := node258 :: suffix259
-private theorem replaySuffix258 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache258 suffix258 = some cache567 := replay_cons _ _ _ _ _ step258 replaySuffix259
-private theorem formedSuffix258 : suffix258.all nodeFormed = true := formed_cons _ _ formed258 formedSuffix259
-private def suffix257 : List ProofExecution.Receipt := node257 :: suffix258
-private theorem replaySuffix257 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache257 suffix257 = some cache567 := replay_cons _ _ _ _ _ step257 replaySuffix258
-private theorem formedSuffix257 : suffix257.all nodeFormed = true := formed_cons _ _ formed257 formedSuffix258
-private def suffix256 : List ProofExecution.Receipt := node256 :: suffix257
-private theorem replaySuffix256 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache256 suffix256 = some cache567 := replay_cons _ _ _ _ _ step256 replaySuffix257
-private theorem formedSuffix256 : suffix256.all nodeFormed = true := formed_cons _ _ formed256 formedSuffix257
-private def suffix255 : List ProofExecution.Receipt := node255 :: suffix256
-private theorem replaySuffix255 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache255 suffix255 = some cache567 := replay_cons _ _ _ _ _ step255 replaySuffix256
-private theorem formedSuffix255 : suffix255.all nodeFormed = true := formed_cons _ _ formed255 formedSuffix256
-private def suffix254 : List ProofExecution.Receipt := node254 :: suffix255
-private theorem replaySuffix254 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache254 suffix254 = some cache567 := replay_cons _ _ _ _ _ step254 replaySuffix255
-private theorem formedSuffix254 : suffix254.all nodeFormed = true := formed_cons _ _ formed254 formedSuffix255
-private def suffix253 : List ProofExecution.Receipt := node253 :: suffix254
-private theorem replaySuffix253 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache253 suffix253 = some cache567 := replay_cons _ _ _ _ _ step253 replaySuffix254
-private theorem formedSuffix253 : suffix253.all nodeFormed = true := formed_cons _ _ formed253 formedSuffix254
-private def suffix252 : List ProofExecution.Receipt := node252 :: suffix253
-private theorem replaySuffix252 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache252 suffix252 = some cache567 := replay_cons _ _ _ _ _ step252 replaySuffix253
-private theorem formedSuffix252 : suffix252.all nodeFormed = true := formed_cons _ _ formed252 formedSuffix253
-private def suffix251 : List ProofExecution.Receipt := node251 :: suffix252
-private theorem replaySuffix251 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache251 suffix251 = some cache567 := replay_cons _ _ _ _ _ step251 replaySuffix252
-private theorem formedSuffix251 : suffix251.all nodeFormed = true := formed_cons _ _ formed251 formedSuffix252
-private def suffix250 : List ProofExecution.Receipt := node250 :: suffix251
-private theorem replaySuffix250 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache250 suffix250 = some cache567 := replay_cons _ _ _ _ _ step250 replaySuffix251
-private theorem formedSuffix250 : suffix250.all nodeFormed = true := formed_cons _ _ formed250 formedSuffix251
-private def suffix249 : List ProofExecution.Receipt := node249 :: suffix250
-private theorem replaySuffix249 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache249 suffix249 = some cache567 := replay_cons _ _ _ _ _ step249 replaySuffix250
-private theorem formedSuffix249 : suffix249.all nodeFormed = true := formed_cons _ _ formed249 formedSuffix250
-private def suffix248 : List ProofExecution.Receipt := node248 :: suffix249
-private theorem replaySuffix248 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache248 suffix248 = some cache567 := replay_cons _ _ _ _ _ step248 replaySuffix249
-private theorem formedSuffix248 : suffix248.all nodeFormed = true := formed_cons _ _ formed248 formedSuffix249
-private def suffix247 : List ProofExecution.Receipt := node247 :: suffix248
-private theorem replaySuffix247 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache247 suffix247 = some cache567 := replay_cons _ _ _ _ _ step247 replaySuffix248
-private theorem formedSuffix247 : suffix247.all nodeFormed = true := formed_cons _ _ formed247 formedSuffix248
-private def suffix246 : List ProofExecution.Receipt := node246 :: suffix247
-private theorem replaySuffix246 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache246 suffix246 = some cache567 := replay_cons _ _ _ _ _ step246 replaySuffix247
-private theorem formedSuffix246 : suffix246.all nodeFormed = true := formed_cons _ _ formed246 formedSuffix247
-private def suffix245 : List ProofExecution.Receipt := node245 :: suffix246
-private theorem replaySuffix245 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache245 suffix245 = some cache567 := replay_cons _ _ _ _ _ step245 replaySuffix246
-private theorem formedSuffix245 : suffix245.all nodeFormed = true := formed_cons _ _ formed245 formedSuffix246
-private def suffix244 : List ProofExecution.Receipt := node244 :: suffix245
-private theorem replaySuffix244 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache244 suffix244 = some cache567 := replay_cons _ _ _ _ _ step244 replaySuffix245
-private theorem formedSuffix244 : suffix244.all nodeFormed = true := formed_cons _ _ formed244 formedSuffix245
-private def suffix243 : List ProofExecution.Receipt := node243 :: suffix244
-private theorem replaySuffix243 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache243 suffix243 = some cache567 := replay_cons _ _ _ _ _ step243 replaySuffix244
-private theorem formedSuffix243 : suffix243.all nodeFormed = true := formed_cons _ _ formed243 formedSuffix244
-private def suffix242 : List ProofExecution.Receipt := node242 :: suffix243
-private theorem replaySuffix242 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache242 suffix242 = some cache567 := replay_cons _ _ _ _ _ step242 replaySuffix243
-private theorem formedSuffix242 : suffix242.all nodeFormed = true := formed_cons _ _ formed242 formedSuffix243
-private def suffix241 : List ProofExecution.Receipt := node241 :: suffix242
-private theorem replaySuffix241 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache241 suffix241 = some cache567 := replay_cons _ _ _ _ _ step241 replaySuffix242
-private theorem formedSuffix241 : suffix241.all nodeFormed = true := formed_cons _ _ formed241 formedSuffix242
-private def suffix240 : List ProofExecution.Receipt := node240 :: suffix241
-private theorem replaySuffix240 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache240 suffix240 = some cache567 := replay_cons _ _ _ _ _ step240 replaySuffix241
-private theorem formedSuffix240 : suffix240.all nodeFormed = true := formed_cons _ _ formed240 formedSuffix241
-private def suffix239 : List ProofExecution.Receipt := node239 :: suffix240
-private theorem replaySuffix239 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache239 suffix239 = some cache567 := replay_cons _ _ _ _ _ step239 replaySuffix240
-private theorem formedSuffix239 : suffix239.all nodeFormed = true := formed_cons _ _ formed239 formedSuffix240
-private def suffix238 : List ProofExecution.Receipt := node238 :: suffix239
-private theorem replaySuffix238 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache238 suffix238 = some cache567 := replay_cons _ _ _ _ _ step238 replaySuffix239
-private theorem formedSuffix238 : suffix238.all nodeFormed = true := formed_cons _ _ formed238 formedSuffix239
-private def suffix237 : List ProofExecution.Receipt := node237 :: suffix238
-private theorem replaySuffix237 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache237 suffix237 = some cache567 := replay_cons _ _ _ _ _ step237 replaySuffix238
-private theorem formedSuffix237 : suffix237.all nodeFormed = true := formed_cons _ _ formed237 formedSuffix238
-private def suffix236 : List ProofExecution.Receipt := node236 :: suffix237
-private theorem replaySuffix236 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache236 suffix236 = some cache567 := replay_cons _ _ _ _ _ step236 replaySuffix237
-private theorem formedSuffix236 : suffix236.all nodeFormed = true := formed_cons _ _ formed236 formedSuffix237
-private def suffix235 : List ProofExecution.Receipt := node235 :: suffix236
-private theorem replaySuffix235 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache235 suffix235 = some cache567 := replay_cons _ _ _ _ _ step235 replaySuffix236
-private theorem formedSuffix235 : suffix235.all nodeFormed = true := formed_cons _ _ formed235 formedSuffix236
-private def suffix234 : List ProofExecution.Receipt := node234 :: suffix235
-private theorem replaySuffix234 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache234 suffix234 = some cache567 := replay_cons _ _ _ _ _ step234 replaySuffix235
-private theorem formedSuffix234 : suffix234.all nodeFormed = true := formed_cons _ _ formed234 formedSuffix235
-private def suffix233 : List ProofExecution.Receipt := node233 :: suffix234
-private theorem replaySuffix233 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache233 suffix233 = some cache567 := replay_cons _ _ _ _ _ step233 replaySuffix234
-private theorem formedSuffix233 : suffix233.all nodeFormed = true := formed_cons _ _ formed233 formedSuffix234
-private def suffix232 : List ProofExecution.Receipt := node232 :: suffix233
-private theorem replaySuffix232 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache232 suffix232 = some cache567 := replay_cons _ _ _ _ _ step232 replaySuffix233
-private theorem formedSuffix232 : suffix232.all nodeFormed = true := formed_cons _ _ formed232 formedSuffix233
-private def suffix231 : List ProofExecution.Receipt := node231 :: suffix232
-private theorem replaySuffix231 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache231 suffix231 = some cache567 := replay_cons _ _ _ _ _ step231 replaySuffix232
-private theorem formedSuffix231 : suffix231.all nodeFormed = true := formed_cons _ _ formed231 formedSuffix232
-private def suffix230 : List ProofExecution.Receipt := node230 :: suffix231
-private theorem replaySuffix230 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache230 suffix230 = some cache567 := replay_cons _ _ _ _ _ step230 replaySuffix231
-private theorem formedSuffix230 : suffix230.all nodeFormed = true := formed_cons _ _ formed230 formedSuffix231
-private def suffix229 : List ProofExecution.Receipt := node229 :: suffix230
-private theorem replaySuffix229 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache229 suffix229 = some cache567 := replay_cons _ _ _ _ _ step229 replaySuffix230
-private theorem formedSuffix229 : suffix229.all nodeFormed = true := formed_cons _ _ formed229 formedSuffix230
-private def suffix228 : List ProofExecution.Receipt := node228 :: suffix229
-private theorem replaySuffix228 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache228 suffix228 = some cache567 := replay_cons _ _ _ _ _ step228 replaySuffix229
-private theorem formedSuffix228 : suffix228.all nodeFormed = true := formed_cons _ _ formed228 formedSuffix229
-private def suffix227 : List ProofExecution.Receipt := node227 :: suffix228
-private theorem replaySuffix227 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache227 suffix227 = some cache567 := replay_cons _ _ _ _ _ step227 replaySuffix228
-private theorem formedSuffix227 : suffix227.all nodeFormed = true := formed_cons _ _ formed227 formedSuffix228
-private def suffix226 : List ProofExecution.Receipt := node226 :: suffix227
-private theorem replaySuffix226 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache226 suffix226 = some cache567 := replay_cons _ _ _ _ _ step226 replaySuffix227
-private theorem formedSuffix226 : suffix226.all nodeFormed = true := formed_cons _ _ formed226 formedSuffix227
-private def suffix225 : List ProofExecution.Receipt := node225 :: suffix226
-private theorem replaySuffix225 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache225 suffix225 = some cache567 := replay_cons _ _ _ _ _ step225 replaySuffix226
-private theorem formedSuffix225 : suffix225.all nodeFormed = true := formed_cons _ _ formed225 formedSuffix226
-private def suffix224 : List ProofExecution.Receipt := node224 :: suffix225
-private theorem replaySuffix224 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache224 suffix224 = some cache567 := replay_cons _ _ _ _ _ step224 replaySuffix225
-private theorem formedSuffix224 : suffix224.all nodeFormed = true := formed_cons _ _ formed224 formedSuffix225
-private def suffix223 : List ProofExecution.Receipt := node223 :: suffix224
-private theorem replaySuffix223 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache223 suffix223 = some cache567 := replay_cons _ _ _ _ _ step223 replaySuffix224
-private theorem formedSuffix223 : suffix223.all nodeFormed = true := formed_cons _ _ formed223 formedSuffix224
-private def suffix222 : List ProofExecution.Receipt := node222 :: suffix223
-private theorem replaySuffix222 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache222 suffix222 = some cache567 := replay_cons _ _ _ _ _ step222 replaySuffix223
-private theorem formedSuffix222 : suffix222.all nodeFormed = true := formed_cons _ _ formed222 formedSuffix223
-private def suffix221 : List ProofExecution.Receipt := node221 :: suffix222
-private theorem replaySuffix221 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache221 suffix221 = some cache567 := replay_cons _ _ _ _ _ step221 replaySuffix222
-private theorem formedSuffix221 : suffix221.all nodeFormed = true := formed_cons _ _ formed221 formedSuffix222
-private def suffix220 : List ProofExecution.Receipt := node220 :: suffix221
-private theorem replaySuffix220 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache220 suffix220 = some cache567 := replay_cons _ _ _ _ _ step220 replaySuffix221
-private theorem formedSuffix220 : suffix220.all nodeFormed = true := formed_cons _ _ formed220 formedSuffix221
-private def suffix219 : List ProofExecution.Receipt := node219 :: suffix220
-private theorem replaySuffix219 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache219 suffix219 = some cache567 := replay_cons _ _ _ _ _ step219 replaySuffix220
-private theorem formedSuffix219 : suffix219.all nodeFormed = true := formed_cons _ _ formed219 formedSuffix220
-private def suffix218 : List ProofExecution.Receipt := node218 :: suffix219
-private theorem replaySuffix218 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache218 suffix218 = some cache567 := replay_cons _ _ _ _ _ step218 replaySuffix219
-private theorem formedSuffix218 : suffix218.all nodeFormed = true := formed_cons _ _ formed218 formedSuffix219
-private def suffix217 : List ProofExecution.Receipt := node217 :: suffix218
-private theorem replaySuffix217 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache217 suffix217 = some cache567 := replay_cons _ _ _ _ _ step217 replaySuffix218
-private theorem formedSuffix217 : suffix217.all nodeFormed = true := formed_cons _ _ formed217 formedSuffix218
-private def suffix216 : List ProofExecution.Receipt := node216 :: suffix217
-private theorem replaySuffix216 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache216 suffix216 = some cache567 := replay_cons _ _ _ _ _ step216 replaySuffix217
-private theorem formedSuffix216 : suffix216.all nodeFormed = true := formed_cons _ _ formed216 formedSuffix217
-private def suffix215 : List ProofExecution.Receipt := node215 :: suffix216
-private theorem replaySuffix215 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache215 suffix215 = some cache567 := replay_cons _ _ _ _ _ step215 replaySuffix216
-private theorem formedSuffix215 : suffix215.all nodeFormed = true := formed_cons _ _ formed215 formedSuffix216
-private def suffix214 : List ProofExecution.Receipt := node214 :: suffix215
-private theorem replaySuffix214 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache214 suffix214 = some cache567 := replay_cons _ _ _ _ _ step214 replaySuffix215
-private theorem formedSuffix214 : suffix214.all nodeFormed = true := formed_cons _ _ formed214 formedSuffix215
-private def suffix213 : List ProofExecution.Receipt := node213 :: suffix214
-private theorem replaySuffix213 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache213 suffix213 = some cache567 := replay_cons _ _ _ _ _ step213 replaySuffix214
-private theorem formedSuffix213 : suffix213.all nodeFormed = true := formed_cons _ _ formed213 formedSuffix214
-private def suffix212 : List ProofExecution.Receipt := node212 :: suffix213
-private theorem replaySuffix212 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache212 suffix212 = some cache567 := replay_cons _ _ _ _ _ step212 replaySuffix213
-private theorem formedSuffix212 : suffix212.all nodeFormed = true := formed_cons _ _ formed212 formedSuffix213
-private def suffix211 : List ProofExecution.Receipt := node211 :: suffix212
-private theorem replaySuffix211 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache211 suffix211 = some cache567 := replay_cons _ _ _ _ _ step211 replaySuffix212
-private theorem formedSuffix211 : suffix211.all nodeFormed = true := formed_cons _ _ formed211 formedSuffix212
-private def suffix210 : List ProofExecution.Receipt := node210 :: suffix211
-private theorem replaySuffix210 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache210 suffix210 = some cache567 := replay_cons _ _ _ _ _ step210 replaySuffix211
-private theorem formedSuffix210 : suffix210.all nodeFormed = true := formed_cons _ _ formed210 formedSuffix211
-private def suffix209 : List ProofExecution.Receipt := node209 :: suffix210
-private theorem replaySuffix209 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache209 suffix209 = some cache567 := replay_cons _ _ _ _ _ step209 replaySuffix210
-private theorem formedSuffix209 : suffix209.all nodeFormed = true := formed_cons _ _ formed209 formedSuffix210
-private def suffix208 : List ProofExecution.Receipt := node208 :: suffix209
-private theorem replaySuffix208 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache208 suffix208 = some cache567 := replay_cons _ _ _ _ _ step208 replaySuffix209
-private theorem formedSuffix208 : suffix208.all nodeFormed = true := formed_cons _ _ formed208 formedSuffix209
-private def suffix207 : List ProofExecution.Receipt := node207 :: suffix208
-private theorem replaySuffix207 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache207 suffix207 = some cache567 := replay_cons _ _ _ _ _ step207 replaySuffix208
-private theorem formedSuffix207 : suffix207.all nodeFormed = true := formed_cons _ _ formed207 formedSuffix208
-private def suffix206 : List ProofExecution.Receipt := node206 :: suffix207
-private theorem replaySuffix206 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache206 suffix206 = some cache567 := replay_cons _ _ _ _ _ step206 replaySuffix207
-private theorem formedSuffix206 : suffix206.all nodeFormed = true := formed_cons _ _ formed206 formedSuffix207
-private def suffix205 : List ProofExecution.Receipt := node205 :: suffix206
-private theorem replaySuffix205 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache205 suffix205 = some cache567 := replay_cons _ _ _ _ _ step205 replaySuffix206
-private theorem formedSuffix205 : suffix205.all nodeFormed = true := formed_cons _ _ formed205 formedSuffix206
-private def suffix204 : List ProofExecution.Receipt := node204 :: suffix205
-private theorem replaySuffix204 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache204 suffix204 = some cache567 := replay_cons _ _ _ _ _ step204 replaySuffix205
-private theorem formedSuffix204 : suffix204.all nodeFormed = true := formed_cons _ _ formed204 formedSuffix205
-private def suffix203 : List ProofExecution.Receipt := node203 :: suffix204
-private theorem replaySuffix203 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache203 suffix203 = some cache567 := replay_cons _ _ _ _ _ step203 replaySuffix204
-private theorem formedSuffix203 : suffix203.all nodeFormed = true := formed_cons _ _ formed203 formedSuffix204
-private def suffix202 : List ProofExecution.Receipt := node202 :: suffix203
-private theorem replaySuffix202 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache202 suffix202 = some cache567 := replay_cons _ _ _ _ _ step202 replaySuffix203
-private theorem formedSuffix202 : suffix202.all nodeFormed = true := formed_cons _ _ formed202 formedSuffix203
-private def suffix201 : List ProofExecution.Receipt := node201 :: suffix202
-private theorem replaySuffix201 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache201 suffix201 = some cache567 := replay_cons _ _ _ _ _ step201 replaySuffix202
-private theorem formedSuffix201 : suffix201.all nodeFormed = true := formed_cons _ _ formed201 formedSuffix202
-private def suffix200 : List ProofExecution.Receipt := node200 :: suffix201
-private theorem replaySuffix200 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache200 suffix200 = some cache567 := replay_cons _ _ _ _ _ step200 replaySuffix201
-private theorem formedSuffix200 : suffix200.all nodeFormed = true := formed_cons _ _ formed200 formedSuffix201
-private def suffix199 : List ProofExecution.Receipt := node199 :: suffix200
-private theorem replaySuffix199 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache199 suffix199 = some cache567 := replay_cons _ _ _ _ _ step199 replaySuffix200
-private theorem formedSuffix199 : suffix199.all nodeFormed = true := formed_cons _ _ formed199 formedSuffix200
-private def suffix198 : List ProofExecution.Receipt := node198 :: suffix199
-private theorem replaySuffix198 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache198 suffix198 = some cache567 := replay_cons _ _ _ _ _ step198 replaySuffix199
-private theorem formedSuffix198 : suffix198.all nodeFormed = true := formed_cons _ _ formed198 formedSuffix199
-private def suffix197 : List ProofExecution.Receipt := node197 :: suffix198
-private theorem replaySuffix197 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache197 suffix197 = some cache567 := replay_cons _ _ _ _ _ step197 replaySuffix198
-private theorem formedSuffix197 : suffix197.all nodeFormed = true := formed_cons _ _ formed197 formedSuffix198
-private def suffix196 : List ProofExecution.Receipt := node196 :: suffix197
-private theorem replaySuffix196 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache196 suffix196 = some cache567 := replay_cons _ _ _ _ _ step196 replaySuffix197
-private theorem formedSuffix196 : suffix196.all nodeFormed = true := formed_cons _ _ formed196 formedSuffix197
-private def suffix195 : List ProofExecution.Receipt := node195 :: suffix196
-private theorem replaySuffix195 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache195 suffix195 = some cache567 := replay_cons _ _ _ _ _ step195 replaySuffix196
-private theorem formedSuffix195 : suffix195.all nodeFormed = true := formed_cons _ _ formed195 formedSuffix196
-private def suffix194 : List ProofExecution.Receipt := node194 :: suffix195
-private theorem replaySuffix194 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache194 suffix194 = some cache567 := replay_cons _ _ _ _ _ step194 replaySuffix195
-private theorem formedSuffix194 : suffix194.all nodeFormed = true := formed_cons _ _ formed194 formedSuffix195
-private def suffix193 : List ProofExecution.Receipt := node193 :: suffix194
-private theorem replaySuffix193 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache193 suffix193 = some cache567 := replay_cons _ _ _ _ _ step193 replaySuffix194
-private theorem formedSuffix193 : suffix193.all nodeFormed = true := formed_cons _ _ formed193 formedSuffix194
-private def suffix192 : List ProofExecution.Receipt := node192 :: suffix193
-private theorem replaySuffix192 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache192 suffix192 = some cache567 := replay_cons _ _ _ _ _ step192 replaySuffix193
-private theorem formedSuffix192 : suffix192.all nodeFormed = true := formed_cons _ _ formed192 formedSuffix193
-private def suffix191 : List ProofExecution.Receipt := node191 :: suffix192
-private theorem replaySuffix191 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache191 suffix191 = some cache567 := replay_cons _ _ _ _ _ step191 replaySuffix192
-private theorem formedSuffix191 : suffix191.all nodeFormed = true := formed_cons _ _ formed191 formedSuffix192
-private def suffix190 : List ProofExecution.Receipt := node190 :: suffix191
-private theorem replaySuffix190 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache190 suffix190 = some cache567 := replay_cons _ _ _ _ _ step190 replaySuffix191
-private theorem formedSuffix190 : suffix190.all nodeFormed = true := formed_cons _ _ formed190 formedSuffix191
-private def suffix189 : List ProofExecution.Receipt := node189 :: suffix190
-private theorem replaySuffix189 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache189 suffix189 = some cache567 := replay_cons _ _ _ _ _ step189 replaySuffix190
-private theorem formedSuffix189 : suffix189.all nodeFormed = true := formed_cons _ _ formed189 formedSuffix190
-private def suffix188 : List ProofExecution.Receipt := node188 :: suffix189
-private theorem replaySuffix188 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache188 suffix188 = some cache567 := replay_cons _ _ _ _ _ step188 replaySuffix189
-private theorem formedSuffix188 : suffix188.all nodeFormed = true := formed_cons _ _ formed188 formedSuffix189
-private def suffix187 : List ProofExecution.Receipt := node187 :: suffix188
-private theorem replaySuffix187 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache187 suffix187 = some cache567 := replay_cons _ _ _ _ _ step187 replaySuffix188
-private theorem formedSuffix187 : suffix187.all nodeFormed = true := formed_cons _ _ formed187 formedSuffix188
-private def suffix186 : List ProofExecution.Receipt := node186 :: suffix187
-private theorem replaySuffix186 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache186 suffix186 = some cache567 := replay_cons _ _ _ _ _ step186 replaySuffix187
-private theorem formedSuffix186 : suffix186.all nodeFormed = true := formed_cons _ _ formed186 formedSuffix187
-private def suffix185 : List ProofExecution.Receipt := node185 :: suffix186
-private theorem replaySuffix185 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache185 suffix185 = some cache567 := replay_cons _ _ _ _ _ step185 replaySuffix186
-private theorem formedSuffix185 : suffix185.all nodeFormed = true := formed_cons _ _ formed185 formedSuffix186
-private def suffix184 : List ProofExecution.Receipt := node184 :: suffix185
-private theorem replaySuffix184 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache184 suffix184 = some cache567 := replay_cons _ _ _ _ _ step184 replaySuffix185
-private theorem formedSuffix184 : suffix184.all nodeFormed = true := formed_cons _ _ formed184 formedSuffix185
-private def suffix183 : List ProofExecution.Receipt := node183 :: suffix184
-private theorem replaySuffix183 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache183 suffix183 = some cache567 := replay_cons _ _ _ _ _ step183 replaySuffix184
-private theorem formedSuffix183 : suffix183.all nodeFormed = true := formed_cons _ _ formed183 formedSuffix184
-private def suffix182 : List ProofExecution.Receipt := node182 :: suffix183
-private theorem replaySuffix182 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache182 suffix182 = some cache567 := replay_cons _ _ _ _ _ step182 replaySuffix183
-private theorem formedSuffix182 : suffix182.all nodeFormed = true := formed_cons _ _ formed182 formedSuffix183
-private def suffix181 : List ProofExecution.Receipt := node181 :: suffix182
-private theorem replaySuffix181 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache181 suffix181 = some cache567 := replay_cons _ _ _ _ _ step181 replaySuffix182
-private theorem formedSuffix181 : suffix181.all nodeFormed = true := formed_cons _ _ formed181 formedSuffix182
-private def suffix180 : List ProofExecution.Receipt := node180 :: suffix181
-private theorem replaySuffix180 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache180 suffix180 = some cache567 := replay_cons _ _ _ _ _ step180 replaySuffix181
-private theorem formedSuffix180 : suffix180.all nodeFormed = true := formed_cons _ _ formed180 formedSuffix181
-private def suffix179 : List ProofExecution.Receipt := node179 :: suffix180
-private theorem replaySuffix179 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache179 suffix179 = some cache567 := replay_cons _ _ _ _ _ step179 replaySuffix180
-private theorem formedSuffix179 : suffix179.all nodeFormed = true := formed_cons _ _ formed179 formedSuffix180
-private def suffix178 : List ProofExecution.Receipt := node178 :: suffix179
-private theorem replaySuffix178 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache178 suffix178 = some cache567 := replay_cons _ _ _ _ _ step178 replaySuffix179
-private theorem formedSuffix178 : suffix178.all nodeFormed = true := formed_cons _ _ formed178 formedSuffix179
-private def suffix177 : List ProofExecution.Receipt := node177 :: suffix178
-private theorem replaySuffix177 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache177 suffix177 = some cache567 := replay_cons _ _ _ _ _ step177 replaySuffix178
-private theorem formedSuffix177 : suffix177.all nodeFormed = true := formed_cons _ _ formed177 formedSuffix178
-private def suffix176 : List ProofExecution.Receipt := node176 :: suffix177
-private theorem replaySuffix176 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache176 suffix176 = some cache567 := replay_cons _ _ _ _ _ step176 replaySuffix177
-private theorem formedSuffix176 : suffix176.all nodeFormed = true := formed_cons _ _ formed176 formedSuffix177
-private def suffix175 : List ProofExecution.Receipt := node175 :: suffix176
-private theorem replaySuffix175 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache175 suffix175 = some cache567 := replay_cons _ _ _ _ _ step175 replaySuffix176
-private theorem formedSuffix175 : suffix175.all nodeFormed = true := formed_cons _ _ formed175 formedSuffix176
-private def suffix174 : List ProofExecution.Receipt := node174 :: suffix175
-private theorem replaySuffix174 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache174 suffix174 = some cache567 := replay_cons _ _ _ _ _ step174 replaySuffix175
-private theorem formedSuffix174 : suffix174.all nodeFormed = true := formed_cons _ _ formed174 formedSuffix175
-private def suffix173 : List ProofExecution.Receipt := node173 :: suffix174
-private theorem replaySuffix173 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache173 suffix173 = some cache567 := replay_cons _ _ _ _ _ step173 replaySuffix174
-private theorem formedSuffix173 : suffix173.all nodeFormed = true := formed_cons _ _ formed173 formedSuffix174
-private def suffix172 : List ProofExecution.Receipt := node172 :: suffix173
-private theorem replaySuffix172 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache172 suffix172 = some cache567 := replay_cons _ _ _ _ _ step172 replaySuffix173
-private theorem formedSuffix172 : suffix172.all nodeFormed = true := formed_cons _ _ formed172 formedSuffix173
-private def suffix171 : List ProofExecution.Receipt := node171 :: suffix172
-private theorem replaySuffix171 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache171 suffix171 = some cache567 := replay_cons _ _ _ _ _ step171 replaySuffix172
-private theorem formedSuffix171 : suffix171.all nodeFormed = true := formed_cons _ _ formed171 formedSuffix172
-private def suffix170 : List ProofExecution.Receipt := node170 :: suffix171
-private theorem replaySuffix170 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache170 suffix170 = some cache567 := replay_cons _ _ _ _ _ step170 replaySuffix171
-private theorem formedSuffix170 : suffix170.all nodeFormed = true := formed_cons _ _ formed170 formedSuffix171
-private def suffix169 : List ProofExecution.Receipt := node169 :: suffix170
-private theorem replaySuffix169 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache169 suffix169 = some cache567 := replay_cons _ _ _ _ _ step169 replaySuffix170
-private theorem formedSuffix169 : suffix169.all nodeFormed = true := formed_cons _ _ formed169 formedSuffix170
-private def suffix168 : List ProofExecution.Receipt := node168 :: suffix169
-private theorem replaySuffix168 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache168 suffix168 = some cache567 := replay_cons _ _ _ _ _ step168 replaySuffix169
-private theorem formedSuffix168 : suffix168.all nodeFormed = true := formed_cons _ _ formed168 formedSuffix169
-private def suffix167 : List ProofExecution.Receipt := node167 :: suffix168
-private theorem replaySuffix167 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache167 suffix167 = some cache567 := replay_cons _ _ _ _ _ step167 replaySuffix168
-private theorem formedSuffix167 : suffix167.all nodeFormed = true := formed_cons _ _ formed167 formedSuffix168
-private def suffix166 : List ProofExecution.Receipt := node166 :: suffix167
-private theorem replaySuffix166 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache166 suffix166 = some cache567 := replay_cons _ _ _ _ _ step166 replaySuffix167
-private theorem formedSuffix166 : suffix166.all nodeFormed = true := formed_cons _ _ formed166 formedSuffix167
-private def suffix165 : List ProofExecution.Receipt := node165 :: suffix166
-private theorem replaySuffix165 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache165 suffix165 = some cache567 := replay_cons _ _ _ _ _ step165 replaySuffix166
-private theorem formedSuffix165 : suffix165.all nodeFormed = true := formed_cons _ _ formed165 formedSuffix166
-private def suffix164 : List ProofExecution.Receipt := node164 :: suffix165
-private theorem replaySuffix164 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache164 suffix164 = some cache567 := replay_cons _ _ _ _ _ step164 replaySuffix165
-private theorem formedSuffix164 : suffix164.all nodeFormed = true := formed_cons _ _ formed164 formedSuffix165
-private def suffix163 : List ProofExecution.Receipt := node163 :: suffix164
-private theorem replaySuffix163 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache163 suffix163 = some cache567 := replay_cons _ _ _ _ _ step163 replaySuffix164
-private theorem formedSuffix163 : suffix163.all nodeFormed = true := formed_cons _ _ formed163 formedSuffix164
-private def suffix162 : List ProofExecution.Receipt := node162 :: suffix163
-private theorem replaySuffix162 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache162 suffix162 = some cache567 := replay_cons _ _ _ _ _ step162 replaySuffix163
-private theorem formedSuffix162 : suffix162.all nodeFormed = true := formed_cons _ _ formed162 formedSuffix163
-private def suffix161 : List ProofExecution.Receipt := node161 :: suffix162
-private theorem replaySuffix161 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache161 suffix161 = some cache567 := replay_cons _ _ _ _ _ step161 replaySuffix162
-private theorem formedSuffix161 : suffix161.all nodeFormed = true := formed_cons _ _ formed161 formedSuffix162
-private def suffix160 : List ProofExecution.Receipt := node160 :: suffix161
-private theorem replaySuffix160 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache160 suffix160 = some cache567 := replay_cons _ _ _ _ _ step160 replaySuffix161
-private theorem formedSuffix160 : suffix160.all nodeFormed = true := formed_cons _ _ formed160 formedSuffix161
-private def suffix159 : List ProofExecution.Receipt := node159 :: suffix160
-private theorem replaySuffix159 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache159 suffix159 = some cache567 := replay_cons _ _ _ _ _ step159 replaySuffix160
-private theorem formedSuffix159 : suffix159.all nodeFormed = true := formed_cons _ _ formed159 formedSuffix160
-private def suffix158 : List ProofExecution.Receipt := node158 :: suffix159
-private theorem replaySuffix158 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache158 suffix158 = some cache567 := replay_cons _ _ _ _ _ step158 replaySuffix159
-private theorem formedSuffix158 : suffix158.all nodeFormed = true := formed_cons _ _ formed158 formedSuffix159
-private def suffix157 : List ProofExecution.Receipt := node157 :: suffix158
-private theorem replaySuffix157 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache157 suffix157 = some cache567 := replay_cons _ _ _ _ _ step157 replaySuffix158
-private theorem formedSuffix157 : suffix157.all nodeFormed = true := formed_cons _ _ formed157 formedSuffix158
-private def suffix156 : List ProofExecution.Receipt := node156 :: suffix157
-private theorem replaySuffix156 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache156 suffix156 = some cache567 := replay_cons _ _ _ _ _ step156 replaySuffix157
-private theorem formedSuffix156 : suffix156.all nodeFormed = true := formed_cons _ _ formed156 formedSuffix157
-private def suffix155 : List ProofExecution.Receipt := node155 :: suffix156
-private theorem replaySuffix155 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache155 suffix155 = some cache567 := replay_cons _ _ _ _ _ step155 replaySuffix156
-private theorem formedSuffix155 : suffix155.all nodeFormed = true := formed_cons _ _ formed155 formedSuffix156
-private def suffix154 : List ProofExecution.Receipt := node154 :: suffix155
-private theorem replaySuffix154 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache154 suffix154 = some cache567 := replay_cons _ _ _ _ _ step154 replaySuffix155
-private theorem formedSuffix154 : suffix154.all nodeFormed = true := formed_cons _ _ formed154 formedSuffix155
-private def suffix153 : List ProofExecution.Receipt := node153 :: suffix154
-private theorem replaySuffix153 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache153 suffix153 = some cache567 := replay_cons _ _ _ _ _ step153 replaySuffix154
-private theorem formedSuffix153 : suffix153.all nodeFormed = true := formed_cons _ _ formed153 formedSuffix154
-private def suffix152 : List ProofExecution.Receipt := node152 :: suffix153
-private theorem replaySuffix152 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache152 suffix152 = some cache567 := replay_cons _ _ _ _ _ step152 replaySuffix153
-private theorem formedSuffix152 : suffix152.all nodeFormed = true := formed_cons _ _ formed152 formedSuffix153
-private def suffix151 : List ProofExecution.Receipt := node151 :: suffix152
-private theorem replaySuffix151 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache151 suffix151 = some cache567 := replay_cons _ _ _ _ _ step151 replaySuffix152
-private theorem formedSuffix151 : suffix151.all nodeFormed = true := formed_cons _ _ formed151 formedSuffix152
-private def suffix150 : List ProofExecution.Receipt := node150 :: suffix151
-private theorem replaySuffix150 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache150 suffix150 = some cache567 := replay_cons _ _ _ _ _ step150 replaySuffix151
-private theorem formedSuffix150 : suffix150.all nodeFormed = true := formed_cons _ _ formed150 formedSuffix151
-private def suffix149 : List ProofExecution.Receipt := node149 :: suffix150
-private theorem replaySuffix149 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache149 suffix149 = some cache567 := replay_cons _ _ _ _ _ step149 replaySuffix150
-private theorem formedSuffix149 : suffix149.all nodeFormed = true := formed_cons _ _ formed149 formedSuffix150
-private def suffix148 : List ProofExecution.Receipt := node148 :: suffix149
-private theorem replaySuffix148 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache148 suffix148 = some cache567 := replay_cons _ _ _ _ _ step148 replaySuffix149
-private theorem formedSuffix148 : suffix148.all nodeFormed = true := formed_cons _ _ formed148 formedSuffix149
-private def suffix147 : List ProofExecution.Receipt := node147 :: suffix148
-private theorem replaySuffix147 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache147 suffix147 = some cache567 := replay_cons _ _ _ _ _ step147 replaySuffix148
-private theorem formedSuffix147 : suffix147.all nodeFormed = true := formed_cons _ _ formed147 formedSuffix148
-private def suffix146 : List ProofExecution.Receipt := node146 :: suffix147
-private theorem replaySuffix146 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache146 suffix146 = some cache567 := replay_cons _ _ _ _ _ step146 replaySuffix147
-private theorem formedSuffix146 : suffix146.all nodeFormed = true := formed_cons _ _ formed146 formedSuffix147
-private def suffix145 : List ProofExecution.Receipt := node145 :: suffix146
-private theorem replaySuffix145 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache145 suffix145 = some cache567 := replay_cons _ _ _ _ _ step145 replaySuffix146
-private theorem formedSuffix145 : suffix145.all nodeFormed = true := formed_cons _ _ formed145 formedSuffix146
-private def suffix144 : List ProofExecution.Receipt := node144 :: suffix145
-private theorem replaySuffix144 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache144 suffix144 = some cache567 := replay_cons _ _ _ _ _ step144 replaySuffix145
-private theorem formedSuffix144 : suffix144.all nodeFormed = true := formed_cons _ _ formed144 formedSuffix145
-private def suffix143 : List ProofExecution.Receipt := node143 :: suffix144
-private theorem replaySuffix143 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache143 suffix143 = some cache567 := replay_cons _ _ _ _ _ step143 replaySuffix144
-private theorem formedSuffix143 : suffix143.all nodeFormed = true := formed_cons _ _ formed143 formedSuffix144
-private def suffix142 : List ProofExecution.Receipt := node142 :: suffix143
-private theorem replaySuffix142 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache142 suffix142 = some cache567 := replay_cons _ _ _ _ _ step142 replaySuffix143
-private theorem formedSuffix142 : suffix142.all nodeFormed = true := formed_cons _ _ formed142 formedSuffix143
-private def suffix141 : List ProofExecution.Receipt := node141 :: suffix142
-private theorem replaySuffix141 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache141 suffix141 = some cache567 := replay_cons _ _ _ _ _ step141 replaySuffix142
-private theorem formedSuffix141 : suffix141.all nodeFormed = true := formed_cons _ _ formed141 formedSuffix142
-private def suffix140 : List ProofExecution.Receipt := node140 :: suffix141
-private theorem replaySuffix140 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache140 suffix140 = some cache567 := replay_cons _ _ _ _ _ step140 replaySuffix141
-private theorem formedSuffix140 : suffix140.all nodeFormed = true := formed_cons _ _ formed140 formedSuffix141
-private def suffix139 : List ProofExecution.Receipt := node139 :: suffix140
-private theorem replaySuffix139 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache139 suffix139 = some cache567 := replay_cons _ _ _ _ _ step139 replaySuffix140
-private theorem formedSuffix139 : suffix139.all nodeFormed = true := formed_cons _ _ formed139 formedSuffix140
-private def suffix138 : List ProofExecution.Receipt := node138 :: suffix139
-private theorem replaySuffix138 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache138 suffix138 = some cache567 := replay_cons _ _ _ _ _ step138 replaySuffix139
-private theorem formedSuffix138 : suffix138.all nodeFormed = true := formed_cons _ _ formed138 formedSuffix139
-private def suffix137 : List ProofExecution.Receipt := node137 :: suffix138
-private theorem replaySuffix137 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache137 suffix137 = some cache567 := replay_cons _ _ _ _ _ step137 replaySuffix138
-private theorem formedSuffix137 : suffix137.all nodeFormed = true := formed_cons _ _ formed137 formedSuffix138
-private def suffix136 : List ProofExecution.Receipt := node136 :: suffix137
-private theorem replaySuffix136 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache136 suffix136 = some cache567 := replay_cons _ _ _ _ _ step136 replaySuffix137
-private theorem formedSuffix136 : suffix136.all nodeFormed = true := formed_cons _ _ formed136 formedSuffix137
-private def suffix135 : List ProofExecution.Receipt := node135 :: suffix136
-private theorem replaySuffix135 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache135 suffix135 = some cache567 := replay_cons _ _ _ _ _ step135 replaySuffix136
-private theorem formedSuffix135 : suffix135.all nodeFormed = true := formed_cons _ _ formed135 formedSuffix136
-private def suffix134 : List ProofExecution.Receipt := node134 :: suffix135
-private theorem replaySuffix134 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache134 suffix134 = some cache567 := replay_cons _ _ _ _ _ step134 replaySuffix135
-private theorem formedSuffix134 : suffix134.all nodeFormed = true := formed_cons _ _ formed134 formedSuffix135
-private def suffix133 : List ProofExecution.Receipt := node133 :: suffix134
-private theorem replaySuffix133 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache133 suffix133 = some cache567 := replay_cons _ _ _ _ _ step133 replaySuffix134
-private theorem formedSuffix133 : suffix133.all nodeFormed = true := formed_cons _ _ formed133 formedSuffix134
-private def suffix132 : List ProofExecution.Receipt := node132 :: suffix133
-private theorem replaySuffix132 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache132 suffix132 = some cache567 := replay_cons _ _ _ _ _ step132 replaySuffix133
-private theorem formedSuffix132 : suffix132.all nodeFormed = true := formed_cons _ _ formed132 formedSuffix133
-private def suffix131 : List ProofExecution.Receipt := node131 :: suffix132
-private theorem replaySuffix131 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache131 suffix131 = some cache567 := replay_cons _ _ _ _ _ step131 replaySuffix132
-private theorem formedSuffix131 : suffix131.all nodeFormed = true := formed_cons _ _ formed131 formedSuffix132
-private def suffix130 : List ProofExecution.Receipt := node130 :: suffix131
-private theorem replaySuffix130 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache130 suffix130 = some cache567 := replay_cons _ _ _ _ _ step130 replaySuffix131
-private theorem formedSuffix130 : suffix130.all nodeFormed = true := formed_cons _ _ formed130 formedSuffix131
-private def suffix129 : List ProofExecution.Receipt := node129 :: suffix130
-private theorem replaySuffix129 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache129 suffix129 = some cache567 := replay_cons _ _ _ _ _ step129 replaySuffix130
-private theorem formedSuffix129 : suffix129.all nodeFormed = true := formed_cons _ _ formed129 formedSuffix130
-private def suffix128 : List ProofExecution.Receipt := node128 :: suffix129
-private theorem replaySuffix128 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache128 suffix128 = some cache567 := replay_cons _ _ _ _ _ step128 replaySuffix129
-private theorem formedSuffix128 : suffix128.all nodeFormed = true := formed_cons _ _ formed128 formedSuffix129
-private def suffix127 : List ProofExecution.Receipt := node127 :: suffix128
-private theorem replaySuffix127 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache127 suffix127 = some cache567 := replay_cons _ _ _ _ _ step127 replaySuffix128
-private theorem formedSuffix127 : suffix127.all nodeFormed = true := formed_cons _ _ formed127 formedSuffix128
-private def suffix126 : List ProofExecution.Receipt := node126 :: suffix127
-private theorem replaySuffix126 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache126 suffix126 = some cache567 := replay_cons _ _ _ _ _ step126 replaySuffix127
-private theorem formedSuffix126 : suffix126.all nodeFormed = true := formed_cons _ _ formed126 formedSuffix127
-private def suffix125 : List ProofExecution.Receipt := node125 :: suffix126
-private theorem replaySuffix125 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache125 suffix125 = some cache567 := replay_cons _ _ _ _ _ step125 replaySuffix126
-private theorem formedSuffix125 : suffix125.all nodeFormed = true := formed_cons _ _ formed125 formedSuffix126
-private def suffix124 : List ProofExecution.Receipt := node124 :: suffix125
-private theorem replaySuffix124 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache124 suffix124 = some cache567 := replay_cons _ _ _ _ _ step124 replaySuffix125
-private theorem formedSuffix124 : suffix124.all nodeFormed = true := formed_cons _ _ formed124 formedSuffix125
-private def suffix123 : List ProofExecution.Receipt := node123 :: suffix124
-private theorem replaySuffix123 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache123 suffix123 = some cache567 := replay_cons _ _ _ _ _ step123 replaySuffix124
-private theorem formedSuffix123 : suffix123.all nodeFormed = true := formed_cons _ _ formed123 formedSuffix124
-private def suffix122 : List ProofExecution.Receipt := node122 :: suffix123
-private theorem replaySuffix122 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache122 suffix122 = some cache567 := replay_cons _ _ _ _ _ step122 replaySuffix123
-private theorem formedSuffix122 : suffix122.all nodeFormed = true := formed_cons _ _ formed122 formedSuffix123
-private def suffix121 : List ProofExecution.Receipt := node121 :: suffix122
-private theorem replaySuffix121 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache121 suffix121 = some cache567 := replay_cons _ _ _ _ _ step121 replaySuffix122
-private theorem formedSuffix121 : suffix121.all nodeFormed = true := formed_cons _ _ formed121 formedSuffix122
-private def suffix120 : List ProofExecution.Receipt := node120 :: suffix121
-private theorem replaySuffix120 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache120 suffix120 = some cache567 := replay_cons _ _ _ _ _ step120 replaySuffix121
-private theorem formedSuffix120 : suffix120.all nodeFormed = true := formed_cons _ _ formed120 formedSuffix121
-private def suffix119 : List ProofExecution.Receipt := node119 :: suffix120
-private theorem replaySuffix119 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache119 suffix119 = some cache567 := replay_cons _ _ _ _ _ step119 replaySuffix120
-private theorem formedSuffix119 : suffix119.all nodeFormed = true := formed_cons _ _ formed119 formedSuffix120
-private def suffix118 : List ProofExecution.Receipt := node118 :: suffix119
-private theorem replaySuffix118 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache118 suffix118 = some cache567 := replay_cons _ _ _ _ _ step118 replaySuffix119
-private theorem formedSuffix118 : suffix118.all nodeFormed = true := formed_cons _ _ formed118 formedSuffix119
-private def suffix117 : List ProofExecution.Receipt := node117 :: suffix118
-private theorem replaySuffix117 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache117 suffix117 = some cache567 := replay_cons _ _ _ _ _ step117 replaySuffix118
-private theorem formedSuffix117 : suffix117.all nodeFormed = true := formed_cons _ _ formed117 formedSuffix118
-private def suffix116 : List ProofExecution.Receipt := node116 :: suffix117
-private theorem replaySuffix116 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache116 suffix116 = some cache567 := replay_cons _ _ _ _ _ step116 replaySuffix117
-private theorem formedSuffix116 : suffix116.all nodeFormed = true := formed_cons _ _ formed116 formedSuffix117
-private def suffix115 : List ProofExecution.Receipt := node115 :: suffix116
-private theorem replaySuffix115 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache115 suffix115 = some cache567 := replay_cons _ _ _ _ _ step115 replaySuffix116
-private theorem formedSuffix115 : suffix115.all nodeFormed = true := formed_cons _ _ formed115 formedSuffix116
-private def suffix114 : List ProofExecution.Receipt := node114 :: suffix115
-private theorem replaySuffix114 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache114 suffix114 = some cache567 := replay_cons _ _ _ _ _ step114 replaySuffix115
-private theorem formedSuffix114 : suffix114.all nodeFormed = true := formed_cons _ _ formed114 formedSuffix115
-private def suffix113 : List ProofExecution.Receipt := node113 :: suffix114
-private theorem replaySuffix113 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache113 suffix113 = some cache567 := replay_cons _ _ _ _ _ step113 replaySuffix114
-private theorem formedSuffix113 : suffix113.all nodeFormed = true := formed_cons _ _ formed113 formedSuffix114
-private def suffix112 : List ProofExecution.Receipt := node112 :: suffix113
-private theorem replaySuffix112 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache112 suffix112 = some cache567 := replay_cons _ _ _ _ _ step112 replaySuffix113
-private theorem formedSuffix112 : suffix112.all nodeFormed = true := formed_cons _ _ formed112 formedSuffix113
-private def suffix111 : List ProofExecution.Receipt := node111 :: suffix112
-private theorem replaySuffix111 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache111 suffix111 = some cache567 := replay_cons _ _ _ _ _ step111 replaySuffix112
-private theorem formedSuffix111 : suffix111.all nodeFormed = true := formed_cons _ _ formed111 formedSuffix112
-private def suffix110 : List ProofExecution.Receipt := node110 :: suffix111
-private theorem replaySuffix110 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache110 suffix110 = some cache567 := replay_cons _ _ _ _ _ step110 replaySuffix111
-private theorem formedSuffix110 : suffix110.all nodeFormed = true := formed_cons _ _ formed110 formedSuffix111
-private def suffix109 : List ProofExecution.Receipt := node109 :: suffix110
-private theorem replaySuffix109 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache109 suffix109 = some cache567 := replay_cons _ _ _ _ _ step109 replaySuffix110
-private theorem formedSuffix109 : suffix109.all nodeFormed = true := formed_cons _ _ formed109 formedSuffix110
-private def suffix108 : List ProofExecution.Receipt := node108 :: suffix109
-private theorem replaySuffix108 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache108 suffix108 = some cache567 := replay_cons _ _ _ _ _ step108 replaySuffix109
-private theorem formedSuffix108 : suffix108.all nodeFormed = true := formed_cons _ _ formed108 formedSuffix109
-private def suffix107 : List ProofExecution.Receipt := node107 :: suffix108
-private theorem replaySuffix107 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache107 suffix107 = some cache567 := replay_cons _ _ _ _ _ step107 replaySuffix108
-private theorem formedSuffix107 : suffix107.all nodeFormed = true := formed_cons _ _ formed107 formedSuffix108
-private def suffix106 : List ProofExecution.Receipt := node106 :: suffix107
-private theorem replaySuffix106 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache106 suffix106 = some cache567 := replay_cons _ _ _ _ _ step106 replaySuffix107
-private theorem formedSuffix106 : suffix106.all nodeFormed = true := formed_cons _ _ formed106 formedSuffix107
-private def suffix105 : List ProofExecution.Receipt := node105 :: suffix106
-private theorem replaySuffix105 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache105 suffix105 = some cache567 := replay_cons _ _ _ _ _ step105 replaySuffix106
-private theorem formedSuffix105 : suffix105.all nodeFormed = true := formed_cons _ _ formed105 formedSuffix106
-private def suffix104 : List ProofExecution.Receipt := node104 :: suffix105
-private theorem replaySuffix104 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache104 suffix104 = some cache567 := replay_cons _ _ _ _ _ step104 replaySuffix105
-private theorem formedSuffix104 : suffix104.all nodeFormed = true := formed_cons _ _ formed104 formedSuffix105
-private def suffix103 : List ProofExecution.Receipt := node103 :: suffix104
-private theorem replaySuffix103 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache103 suffix103 = some cache567 := replay_cons _ _ _ _ _ step103 replaySuffix104
-private theorem formedSuffix103 : suffix103.all nodeFormed = true := formed_cons _ _ formed103 formedSuffix104
-private def suffix102 : List ProofExecution.Receipt := node102 :: suffix103
-private theorem replaySuffix102 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache102 suffix102 = some cache567 := replay_cons _ _ _ _ _ step102 replaySuffix103
-private theorem formedSuffix102 : suffix102.all nodeFormed = true := formed_cons _ _ formed102 formedSuffix103
-private def suffix101 : List ProofExecution.Receipt := node101 :: suffix102
-private theorem replaySuffix101 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache101 suffix101 = some cache567 := replay_cons _ _ _ _ _ step101 replaySuffix102
-private theorem formedSuffix101 : suffix101.all nodeFormed = true := formed_cons _ _ formed101 formedSuffix102
-private def suffix100 : List ProofExecution.Receipt := node100 :: suffix101
-private theorem replaySuffix100 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache100 suffix100 = some cache567 := replay_cons _ _ _ _ _ step100 replaySuffix101
-private theorem formedSuffix100 : suffix100.all nodeFormed = true := formed_cons _ _ formed100 formedSuffix101
-private def suffix99 : List ProofExecution.Receipt := node99 :: suffix100
-private theorem replaySuffix99 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache99 suffix99 = some cache567 := replay_cons _ _ _ _ _ step99 replaySuffix100
-private theorem formedSuffix99 : suffix99.all nodeFormed = true := formed_cons _ _ formed99 formedSuffix100
-private def suffix98 : List ProofExecution.Receipt := node98 :: suffix99
-private theorem replaySuffix98 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache98 suffix98 = some cache567 := replay_cons _ _ _ _ _ step98 replaySuffix99
-private theorem formedSuffix98 : suffix98.all nodeFormed = true := formed_cons _ _ formed98 formedSuffix99
-private def suffix97 : List ProofExecution.Receipt := node97 :: suffix98
-private theorem replaySuffix97 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache97 suffix97 = some cache567 := replay_cons _ _ _ _ _ step97 replaySuffix98
-private theorem formedSuffix97 : suffix97.all nodeFormed = true := formed_cons _ _ formed97 formedSuffix98
-private def suffix96 : List ProofExecution.Receipt := node96 :: suffix97
-private theorem replaySuffix96 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache96 suffix96 = some cache567 := replay_cons _ _ _ _ _ step96 replaySuffix97
-private theorem formedSuffix96 : suffix96.all nodeFormed = true := formed_cons _ _ formed96 formedSuffix97
-private def suffix95 : List ProofExecution.Receipt := node95 :: suffix96
-private theorem replaySuffix95 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache95 suffix95 = some cache567 := replay_cons _ _ _ _ _ step95 replaySuffix96
-private theorem formedSuffix95 : suffix95.all nodeFormed = true := formed_cons _ _ formed95 formedSuffix96
-private def suffix94 : List ProofExecution.Receipt := node94 :: suffix95
-private theorem replaySuffix94 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache94 suffix94 = some cache567 := replay_cons _ _ _ _ _ step94 replaySuffix95
-private theorem formedSuffix94 : suffix94.all nodeFormed = true := formed_cons _ _ formed94 formedSuffix95
-private def suffix93 : List ProofExecution.Receipt := node93 :: suffix94
-private theorem replaySuffix93 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache93 suffix93 = some cache567 := replay_cons _ _ _ _ _ step93 replaySuffix94
-private theorem formedSuffix93 : suffix93.all nodeFormed = true := formed_cons _ _ formed93 formedSuffix94
-private def suffix92 : List ProofExecution.Receipt := node92 :: suffix93
-private theorem replaySuffix92 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache92 suffix92 = some cache567 := replay_cons _ _ _ _ _ step92 replaySuffix93
-private theorem formedSuffix92 : suffix92.all nodeFormed = true := formed_cons _ _ formed92 formedSuffix93
-private def suffix91 : List ProofExecution.Receipt := node91 :: suffix92
-private theorem replaySuffix91 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache91 suffix91 = some cache567 := replay_cons _ _ _ _ _ step91 replaySuffix92
-private theorem formedSuffix91 : suffix91.all nodeFormed = true := formed_cons _ _ formed91 formedSuffix92
-private def suffix90 : List ProofExecution.Receipt := node90 :: suffix91
-private theorem replaySuffix90 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache90 suffix90 = some cache567 := replay_cons _ _ _ _ _ step90 replaySuffix91
-private theorem formedSuffix90 : suffix90.all nodeFormed = true := formed_cons _ _ formed90 formedSuffix91
-private def suffix89 : List ProofExecution.Receipt := node89 :: suffix90
-private theorem replaySuffix89 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache89 suffix89 = some cache567 := replay_cons _ _ _ _ _ step89 replaySuffix90
-private theorem formedSuffix89 : suffix89.all nodeFormed = true := formed_cons _ _ formed89 formedSuffix90
-private def suffix88 : List ProofExecution.Receipt := node88 :: suffix89
-private theorem replaySuffix88 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache88 suffix88 = some cache567 := replay_cons _ _ _ _ _ step88 replaySuffix89
-private theorem formedSuffix88 : suffix88.all nodeFormed = true := formed_cons _ _ formed88 formedSuffix89
-private def suffix87 : List ProofExecution.Receipt := node87 :: suffix88
-private theorem replaySuffix87 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache87 suffix87 = some cache567 := replay_cons _ _ _ _ _ step87 replaySuffix88
-private theorem formedSuffix87 : suffix87.all nodeFormed = true := formed_cons _ _ formed87 formedSuffix88
-private def suffix86 : List ProofExecution.Receipt := node86 :: suffix87
-private theorem replaySuffix86 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache86 suffix86 = some cache567 := replay_cons _ _ _ _ _ step86 replaySuffix87
-private theorem formedSuffix86 : suffix86.all nodeFormed = true := formed_cons _ _ formed86 formedSuffix87
-private def suffix85 : List ProofExecution.Receipt := node85 :: suffix86
-private theorem replaySuffix85 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache85 suffix85 = some cache567 := replay_cons _ _ _ _ _ step85 replaySuffix86
-private theorem formedSuffix85 : suffix85.all nodeFormed = true := formed_cons _ _ formed85 formedSuffix86
-private def suffix84 : List ProofExecution.Receipt := node84 :: suffix85
-private theorem replaySuffix84 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache84 suffix84 = some cache567 := replay_cons _ _ _ _ _ step84 replaySuffix85
-private theorem formedSuffix84 : suffix84.all nodeFormed = true := formed_cons _ _ formed84 formedSuffix85
-private def suffix83 : List ProofExecution.Receipt := node83 :: suffix84
-private theorem replaySuffix83 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache83 suffix83 = some cache567 := replay_cons _ _ _ _ _ step83 replaySuffix84
-private theorem formedSuffix83 : suffix83.all nodeFormed = true := formed_cons _ _ formed83 formedSuffix84
-private def suffix82 : List ProofExecution.Receipt := node82 :: suffix83
-private theorem replaySuffix82 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache82 suffix82 = some cache567 := replay_cons _ _ _ _ _ step82 replaySuffix83
-private theorem formedSuffix82 : suffix82.all nodeFormed = true := formed_cons _ _ formed82 formedSuffix83
-private def suffix81 : List ProofExecution.Receipt := node81 :: suffix82
-private theorem replaySuffix81 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache81 suffix81 = some cache567 := replay_cons _ _ _ _ _ step81 replaySuffix82
-private theorem formedSuffix81 : suffix81.all nodeFormed = true := formed_cons _ _ formed81 formedSuffix82
-private def suffix80 : List ProofExecution.Receipt := node80 :: suffix81
-private theorem replaySuffix80 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache80 suffix80 = some cache567 := replay_cons _ _ _ _ _ step80 replaySuffix81
-private theorem formedSuffix80 : suffix80.all nodeFormed = true := formed_cons _ _ formed80 formedSuffix81
-private def suffix79 : List ProofExecution.Receipt := node79 :: suffix80
-private theorem replaySuffix79 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache79 suffix79 = some cache567 := replay_cons _ _ _ _ _ step79 replaySuffix80
-private theorem formedSuffix79 : suffix79.all nodeFormed = true := formed_cons _ _ formed79 formedSuffix80
-private def suffix78 : List ProofExecution.Receipt := node78 :: suffix79
-private theorem replaySuffix78 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache78 suffix78 = some cache567 := replay_cons _ _ _ _ _ step78 replaySuffix79
-private theorem formedSuffix78 : suffix78.all nodeFormed = true := formed_cons _ _ formed78 formedSuffix79
-private def suffix77 : List ProofExecution.Receipt := node77 :: suffix78
-private theorem replaySuffix77 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache77 suffix77 = some cache567 := replay_cons _ _ _ _ _ step77 replaySuffix78
-private theorem formedSuffix77 : suffix77.all nodeFormed = true := formed_cons _ _ formed77 formedSuffix78
-private def suffix76 : List ProofExecution.Receipt := node76 :: suffix77
-private theorem replaySuffix76 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache76 suffix76 = some cache567 := replay_cons _ _ _ _ _ step76 replaySuffix77
-private theorem formedSuffix76 : suffix76.all nodeFormed = true := formed_cons _ _ formed76 formedSuffix77
-private def suffix75 : List ProofExecution.Receipt := node75 :: suffix76
-private theorem replaySuffix75 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache75 suffix75 = some cache567 := replay_cons _ _ _ _ _ step75 replaySuffix76
-private theorem formedSuffix75 : suffix75.all nodeFormed = true := formed_cons _ _ formed75 formedSuffix76
-private def suffix74 : List ProofExecution.Receipt := node74 :: suffix75
-private theorem replaySuffix74 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache74 suffix74 = some cache567 := replay_cons _ _ _ _ _ step74 replaySuffix75
-private theorem formedSuffix74 : suffix74.all nodeFormed = true := formed_cons _ _ formed74 formedSuffix75
-private def suffix73 : List ProofExecution.Receipt := node73 :: suffix74
-private theorem replaySuffix73 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache73 suffix73 = some cache567 := replay_cons _ _ _ _ _ step73 replaySuffix74
-private theorem formedSuffix73 : suffix73.all nodeFormed = true := formed_cons _ _ formed73 formedSuffix74
-private def suffix72 : List ProofExecution.Receipt := node72 :: suffix73
-private theorem replaySuffix72 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache72 suffix72 = some cache567 := replay_cons _ _ _ _ _ step72 replaySuffix73
-private theorem formedSuffix72 : suffix72.all nodeFormed = true := formed_cons _ _ formed72 formedSuffix73
-private def suffix71 : List ProofExecution.Receipt := node71 :: suffix72
-private theorem replaySuffix71 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache71 suffix71 = some cache567 := replay_cons _ _ _ _ _ step71 replaySuffix72
-private theorem formedSuffix71 : suffix71.all nodeFormed = true := formed_cons _ _ formed71 formedSuffix72
-private def suffix70 : List ProofExecution.Receipt := node70 :: suffix71
-private theorem replaySuffix70 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache70 suffix70 = some cache567 := replay_cons _ _ _ _ _ step70 replaySuffix71
-private theorem formedSuffix70 : suffix70.all nodeFormed = true := formed_cons _ _ formed70 formedSuffix71
-private def suffix69 : List ProofExecution.Receipt := node69 :: suffix70
-private theorem replaySuffix69 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache69 suffix69 = some cache567 := replay_cons _ _ _ _ _ step69 replaySuffix70
-private theorem formedSuffix69 : suffix69.all nodeFormed = true := formed_cons _ _ formed69 formedSuffix70
-private def suffix68 : List ProofExecution.Receipt := node68 :: suffix69
-private theorem replaySuffix68 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache68 suffix68 = some cache567 := replay_cons _ _ _ _ _ step68 replaySuffix69
-private theorem formedSuffix68 : suffix68.all nodeFormed = true := formed_cons _ _ formed68 formedSuffix69
-private def suffix67 : List ProofExecution.Receipt := node67 :: suffix68
-private theorem replaySuffix67 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache67 suffix67 = some cache567 := replay_cons _ _ _ _ _ step67 replaySuffix68
-private theorem formedSuffix67 : suffix67.all nodeFormed = true := formed_cons _ _ formed67 formedSuffix68
-private def suffix66 : List ProofExecution.Receipt := node66 :: suffix67
-private theorem replaySuffix66 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache66 suffix66 = some cache567 := replay_cons _ _ _ _ _ step66 replaySuffix67
-private theorem formedSuffix66 : suffix66.all nodeFormed = true := formed_cons _ _ formed66 formedSuffix67
-private def suffix65 : List ProofExecution.Receipt := node65 :: suffix66
-private theorem replaySuffix65 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache65 suffix65 = some cache567 := replay_cons _ _ _ _ _ step65 replaySuffix66
-private theorem formedSuffix65 : suffix65.all nodeFormed = true := formed_cons _ _ formed65 formedSuffix66
-private def suffix64 : List ProofExecution.Receipt := node64 :: suffix65
-private theorem replaySuffix64 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache64 suffix64 = some cache567 := replay_cons _ _ _ _ _ step64 replaySuffix65
-private theorem formedSuffix64 : suffix64.all nodeFormed = true := formed_cons _ _ formed64 formedSuffix65
-private def suffix63 : List ProofExecution.Receipt := node63 :: suffix64
-private theorem replaySuffix63 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache63 suffix63 = some cache567 := replay_cons _ _ _ _ _ step63 replaySuffix64
-private theorem formedSuffix63 : suffix63.all nodeFormed = true := formed_cons _ _ formed63 formedSuffix64
-private def suffix62 : List ProofExecution.Receipt := node62 :: suffix63
-private theorem replaySuffix62 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache62 suffix62 = some cache567 := replay_cons _ _ _ _ _ step62 replaySuffix63
-private theorem formedSuffix62 : suffix62.all nodeFormed = true := formed_cons _ _ formed62 formedSuffix63
-private def suffix61 : List ProofExecution.Receipt := node61 :: suffix62
-private theorem replaySuffix61 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache61 suffix61 = some cache567 := replay_cons _ _ _ _ _ step61 replaySuffix62
-private theorem formedSuffix61 : suffix61.all nodeFormed = true := formed_cons _ _ formed61 formedSuffix62
-private def suffix60 : List ProofExecution.Receipt := node60 :: suffix61
-private theorem replaySuffix60 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache60 suffix60 = some cache567 := replay_cons _ _ _ _ _ step60 replaySuffix61
-private theorem formedSuffix60 : suffix60.all nodeFormed = true := formed_cons _ _ formed60 formedSuffix61
-private def suffix59 : List ProofExecution.Receipt := node59 :: suffix60
-private theorem replaySuffix59 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache59 suffix59 = some cache567 := replay_cons _ _ _ _ _ step59 replaySuffix60
-private theorem formedSuffix59 : suffix59.all nodeFormed = true := formed_cons _ _ formed59 formedSuffix60
-private def suffix58 : List ProofExecution.Receipt := node58 :: suffix59
-private theorem replaySuffix58 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache58 suffix58 = some cache567 := replay_cons _ _ _ _ _ step58 replaySuffix59
-private theorem formedSuffix58 : suffix58.all nodeFormed = true := formed_cons _ _ formed58 formedSuffix59
-private def suffix57 : List ProofExecution.Receipt := node57 :: suffix58
-private theorem replaySuffix57 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache57 suffix57 = some cache567 := replay_cons _ _ _ _ _ step57 replaySuffix58
-private theorem formedSuffix57 : suffix57.all nodeFormed = true := formed_cons _ _ formed57 formedSuffix58
-private def suffix56 : List ProofExecution.Receipt := node56 :: suffix57
-private theorem replaySuffix56 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache56 suffix56 = some cache567 := replay_cons _ _ _ _ _ step56 replaySuffix57
-private theorem formedSuffix56 : suffix56.all nodeFormed = true := formed_cons _ _ formed56 formedSuffix57
-private def suffix55 : List ProofExecution.Receipt := node55 :: suffix56
-private theorem replaySuffix55 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache55 suffix55 = some cache567 := replay_cons _ _ _ _ _ step55 replaySuffix56
-private theorem formedSuffix55 : suffix55.all nodeFormed = true := formed_cons _ _ formed55 formedSuffix56
-private def suffix54 : List ProofExecution.Receipt := node54 :: suffix55
-private theorem replaySuffix54 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache54 suffix54 = some cache567 := replay_cons _ _ _ _ _ step54 replaySuffix55
-private theorem formedSuffix54 : suffix54.all nodeFormed = true := formed_cons _ _ formed54 formedSuffix55
-private def suffix53 : List ProofExecution.Receipt := node53 :: suffix54
-private theorem replaySuffix53 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache53 suffix53 = some cache567 := replay_cons _ _ _ _ _ step53 replaySuffix54
-private theorem formedSuffix53 : suffix53.all nodeFormed = true := formed_cons _ _ formed53 formedSuffix54
-private def suffix52 : List ProofExecution.Receipt := node52 :: suffix53
-private theorem replaySuffix52 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache52 suffix52 = some cache567 := replay_cons _ _ _ _ _ step52 replaySuffix53
-private theorem formedSuffix52 : suffix52.all nodeFormed = true := formed_cons _ _ formed52 formedSuffix53
-private def suffix51 : List ProofExecution.Receipt := node51 :: suffix52
-private theorem replaySuffix51 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache51 suffix51 = some cache567 := replay_cons _ _ _ _ _ step51 replaySuffix52
-private theorem formedSuffix51 : suffix51.all nodeFormed = true := formed_cons _ _ formed51 formedSuffix52
-private def suffix50 : List ProofExecution.Receipt := node50 :: suffix51
-private theorem replaySuffix50 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache50 suffix50 = some cache567 := replay_cons _ _ _ _ _ step50 replaySuffix51
-private theorem formedSuffix50 : suffix50.all nodeFormed = true := formed_cons _ _ formed50 formedSuffix51
-private def suffix49 : List ProofExecution.Receipt := node49 :: suffix50
-private theorem replaySuffix49 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache49 suffix49 = some cache567 := replay_cons _ _ _ _ _ step49 replaySuffix50
-private theorem formedSuffix49 : suffix49.all nodeFormed = true := formed_cons _ _ formed49 formedSuffix50
-private def suffix48 : List ProofExecution.Receipt := node48 :: suffix49
-private theorem replaySuffix48 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache48 suffix48 = some cache567 := replay_cons _ _ _ _ _ step48 replaySuffix49
-private theorem formedSuffix48 : suffix48.all nodeFormed = true := formed_cons _ _ formed48 formedSuffix49
-private def suffix47 : List ProofExecution.Receipt := node47 :: suffix48
-private theorem replaySuffix47 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache47 suffix47 = some cache567 := replay_cons _ _ _ _ _ step47 replaySuffix48
-private theorem formedSuffix47 : suffix47.all nodeFormed = true := formed_cons _ _ formed47 formedSuffix48
-private def suffix46 : List ProofExecution.Receipt := node46 :: suffix47
-private theorem replaySuffix46 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache46 suffix46 = some cache567 := replay_cons _ _ _ _ _ step46 replaySuffix47
-private theorem formedSuffix46 : suffix46.all nodeFormed = true := formed_cons _ _ formed46 formedSuffix47
-private def suffix45 : List ProofExecution.Receipt := node45 :: suffix46
-private theorem replaySuffix45 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache45 suffix45 = some cache567 := replay_cons _ _ _ _ _ step45 replaySuffix46
-private theorem formedSuffix45 : suffix45.all nodeFormed = true := formed_cons _ _ formed45 formedSuffix46
-private def suffix44 : List ProofExecution.Receipt := node44 :: suffix45
-private theorem replaySuffix44 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache44 suffix44 = some cache567 := replay_cons _ _ _ _ _ step44 replaySuffix45
-private theorem formedSuffix44 : suffix44.all nodeFormed = true := formed_cons _ _ formed44 formedSuffix45
-private def suffix43 : List ProofExecution.Receipt := node43 :: suffix44
-private theorem replaySuffix43 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache43 suffix43 = some cache567 := replay_cons _ _ _ _ _ step43 replaySuffix44
-private theorem formedSuffix43 : suffix43.all nodeFormed = true := formed_cons _ _ formed43 formedSuffix44
-private def suffix42 : List ProofExecution.Receipt := node42 :: suffix43
-private theorem replaySuffix42 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache42 suffix42 = some cache567 := replay_cons _ _ _ _ _ step42 replaySuffix43
-private theorem formedSuffix42 : suffix42.all nodeFormed = true := formed_cons _ _ formed42 formedSuffix43
-private def suffix41 : List ProofExecution.Receipt := node41 :: suffix42
-private theorem replaySuffix41 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache41 suffix41 = some cache567 := replay_cons _ _ _ _ _ step41 replaySuffix42
-private theorem formedSuffix41 : suffix41.all nodeFormed = true := formed_cons _ _ formed41 formedSuffix42
-private def suffix40 : List ProofExecution.Receipt := node40 :: suffix41
-private theorem replaySuffix40 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache40 suffix40 = some cache567 := replay_cons _ _ _ _ _ step40 replaySuffix41
-private theorem formedSuffix40 : suffix40.all nodeFormed = true := formed_cons _ _ formed40 formedSuffix41
-private def suffix39 : List ProofExecution.Receipt := node39 :: suffix40
-private theorem replaySuffix39 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache39 suffix39 = some cache567 := replay_cons _ _ _ _ _ step39 replaySuffix40
-private theorem formedSuffix39 : suffix39.all nodeFormed = true := formed_cons _ _ formed39 formedSuffix40
-private def suffix38 : List ProofExecution.Receipt := node38 :: suffix39
-private theorem replaySuffix38 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache38 suffix38 = some cache567 := replay_cons _ _ _ _ _ step38 replaySuffix39
-private theorem formedSuffix38 : suffix38.all nodeFormed = true := formed_cons _ _ formed38 formedSuffix39
-private def suffix37 : List ProofExecution.Receipt := node37 :: suffix38
-private theorem replaySuffix37 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache37 suffix37 = some cache567 := replay_cons _ _ _ _ _ step37 replaySuffix38
-private theorem formedSuffix37 : suffix37.all nodeFormed = true := formed_cons _ _ formed37 formedSuffix38
-private def suffix36 : List ProofExecution.Receipt := node36 :: suffix37
-private theorem replaySuffix36 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache36 suffix36 = some cache567 := replay_cons _ _ _ _ _ step36 replaySuffix37
-private theorem formedSuffix36 : suffix36.all nodeFormed = true := formed_cons _ _ formed36 formedSuffix37
-private def suffix35 : List ProofExecution.Receipt := node35 :: suffix36
-private theorem replaySuffix35 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache35 suffix35 = some cache567 := replay_cons _ _ _ _ _ step35 replaySuffix36
-private theorem formedSuffix35 : suffix35.all nodeFormed = true := formed_cons _ _ formed35 formedSuffix36
-private def suffix34 : List ProofExecution.Receipt := node34 :: suffix35
-private theorem replaySuffix34 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache34 suffix34 = some cache567 := replay_cons _ _ _ _ _ step34 replaySuffix35
-private theorem formedSuffix34 : suffix34.all nodeFormed = true := formed_cons _ _ formed34 formedSuffix35
-private def suffix33 : List ProofExecution.Receipt := node33 :: suffix34
-private theorem replaySuffix33 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache33 suffix33 = some cache567 := replay_cons _ _ _ _ _ step33 replaySuffix34
-private theorem formedSuffix33 : suffix33.all nodeFormed = true := formed_cons _ _ formed33 formedSuffix34
-private def suffix32 : List ProofExecution.Receipt := node32 :: suffix33
-private theorem replaySuffix32 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache32 suffix32 = some cache567 := replay_cons _ _ _ _ _ step32 replaySuffix33
-private theorem formedSuffix32 : suffix32.all nodeFormed = true := formed_cons _ _ formed32 formedSuffix33
-private def suffix31 : List ProofExecution.Receipt := node31 :: suffix32
-private theorem replaySuffix31 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache31 suffix31 = some cache567 := replay_cons _ _ _ _ _ step31 replaySuffix32
-private theorem formedSuffix31 : suffix31.all nodeFormed = true := formed_cons _ _ formed31 formedSuffix32
-private def suffix30 : List ProofExecution.Receipt := node30 :: suffix31
-private theorem replaySuffix30 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache30 suffix30 = some cache567 := replay_cons _ _ _ _ _ step30 replaySuffix31
-private theorem formedSuffix30 : suffix30.all nodeFormed = true := formed_cons _ _ formed30 formedSuffix31
-private def suffix29 : List ProofExecution.Receipt := node29 :: suffix30
-private theorem replaySuffix29 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache29 suffix29 = some cache567 := replay_cons _ _ _ _ _ step29 replaySuffix30
-private theorem formedSuffix29 : suffix29.all nodeFormed = true := formed_cons _ _ formed29 formedSuffix30
-private def suffix28 : List ProofExecution.Receipt := node28 :: suffix29
-private theorem replaySuffix28 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache28 suffix28 = some cache567 := replay_cons _ _ _ _ _ step28 replaySuffix29
-private theorem formedSuffix28 : suffix28.all nodeFormed = true := formed_cons _ _ formed28 formedSuffix29
-private def suffix27 : List ProofExecution.Receipt := node27 :: suffix28
-private theorem replaySuffix27 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache27 suffix27 = some cache567 := replay_cons _ _ _ _ _ step27 replaySuffix28
-private theorem formedSuffix27 : suffix27.all nodeFormed = true := formed_cons _ _ formed27 formedSuffix28
-private def suffix26 : List ProofExecution.Receipt := node26 :: suffix27
-private theorem replaySuffix26 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache26 suffix26 = some cache567 := replay_cons _ _ _ _ _ step26 replaySuffix27
-private theorem formedSuffix26 : suffix26.all nodeFormed = true := formed_cons _ _ formed26 formedSuffix27
-private def suffix25 : List ProofExecution.Receipt := node25 :: suffix26
-private theorem replaySuffix25 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache25 suffix25 = some cache567 := replay_cons _ _ _ _ _ step25 replaySuffix26
-private theorem formedSuffix25 : suffix25.all nodeFormed = true := formed_cons _ _ formed25 formedSuffix26
-private def suffix24 : List ProofExecution.Receipt := node24 :: suffix25
-private theorem replaySuffix24 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache24 suffix24 = some cache567 := replay_cons _ _ _ _ _ step24 replaySuffix25
-private theorem formedSuffix24 : suffix24.all nodeFormed = true := formed_cons _ _ formed24 formedSuffix25
-private def suffix23 : List ProofExecution.Receipt := node23 :: suffix24
-private theorem replaySuffix23 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache23 suffix23 = some cache567 := replay_cons _ _ _ _ _ step23 replaySuffix24
-private theorem formedSuffix23 : suffix23.all nodeFormed = true := formed_cons _ _ formed23 formedSuffix24
-private def suffix22 : List ProofExecution.Receipt := node22 :: suffix23
-private theorem replaySuffix22 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache22 suffix22 = some cache567 := replay_cons _ _ _ _ _ step22 replaySuffix23
-private theorem formedSuffix22 : suffix22.all nodeFormed = true := formed_cons _ _ formed22 formedSuffix23
-private def suffix21 : List ProofExecution.Receipt := node21 :: suffix22
-private theorem replaySuffix21 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache21 suffix21 = some cache567 := replay_cons _ _ _ _ _ step21 replaySuffix22
-private theorem formedSuffix21 : suffix21.all nodeFormed = true := formed_cons _ _ formed21 formedSuffix22
-private def suffix20 : List ProofExecution.Receipt := node20 :: suffix21
-private theorem replaySuffix20 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache20 suffix20 = some cache567 := replay_cons _ _ _ _ _ step20 replaySuffix21
-private theorem formedSuffix20 : suffix20.all nodeFormed = true := formed_cons _ _ formed20 formedSuffix21
-private def suffix19 : List ProofExecution.Receipt := node19 :: suffix20
-private theorem replaySuffix19 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache19 suffix19 = some cache567 := replay_cons _ _ _ _ _ step19 replaySuffix20
-private theorem formedSuffix19 : suffix19.all nodeFormed = true := formed_cons _ _ formed19 formedSuffix20
-private def suffix18 : List ProofExecution.Receipt := node18 :: suffix19
-private theorem replaySuffix18 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache18 suffix18 = some cache567 := replay_cons _ _ _ _ _ step18 replaySuffix19
-private theorem formedSuffix18 : suffix18.all nodeFormed = true := formed_cons _ _ formed18 formedSuffix19
-private def suffix17 : List ProofExecution.Receipt := node17 :: suffix18
-private theorem replaySuffix17 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache17 suffix17 = some cache567 := replay_cons _ _ _ _ _ step17 replaySuffix18
-private theorem formedSuffix17 : suffix17.all nodeFormed = true := formed_cons _ _ formed17 formedSuffix18
-private def suffix16 : List ProofExecution.Receipt := node16 :: suffix17
-private theorem replaySuffix16 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache16 suffix16 = some cache567 := replay_cons _ _ _ _ _ step16 replaySuffix17
-private theorem formedSuffix16 : suffix16.all nodeFormed = true := formed_cons _ _ formed16 formedSuffix17
-private def suffix15 : List ProofExecution.Receipt := node15 :: suffix16
-private theorem replaySuffix15 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache15 suffix15 = some cache567 := replay_cons _ _ _ _ _ step15 replaySuffix16
-private theorem formedSuffix15 : suffix15.all nodeFormed = true := formed_cons _ _ formed15 formedSuffix16
-private def suffix14 : List ProofExecution.Receipt := node14 :: suffix15
-private theorem replaySuffix14 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache14 suffix14 = some cache567 := replay_cons _ _ _ _ _ step14 replaySuffix15
-private theorem formedSuffix14 : suffix14.all nodeFormed = true := formed_cons _ _ formed14 formedSuffix15
-private def suffix13 : List ProofExecution.Receipt := node13 :: suffix14
-private theorem replaySuffix13 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache13 suffix13 = some cache567 := replay_cons _ _ _ _ _ step13 replaySuffix14
-private theorem formedSuffix13 : suffix13.all nodeFormed = true := formed_cons _ _ formed13 formedSuffix14
-private def suffix12 : List ProofExecution.Receipt := node12 :: suffix13
-private theorem replaySuffix12 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache12 suffix12 = some cache567 := replay_cons _ _ _ _ _ step12 replaySuffix13
-private theorem formedSuffix12 : suffix12.all nodeFormed = true := formed_cons _ _ formed12 formedSuffix13
-private def suffix11 : List ProofExecution.Receipt := node11 :: suffix12
-private theorem replaySuffix11 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache11 suffix11 = some cache567 := replay_cons _ _ _ _ _ step11 replaySuffix12
-private theorem formedSuffix11 : suffix11.all nodeFormed = true := formed_cons _ _ formed11 formedSuffix12
-private def suffix10 : List ProofExecution.Receipt := node10 :: suffix11
-private theorem replaySuffix10 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache10 suffix10 = some cache567 := replay_cons _ _ _ _ _ step10 replaySuffix11
-private theorem formedSuffix10 : suffix10.all nodeFormed = true := formed_cons _ _ formed10 formedSuffix11
-private def suffix9 : List ProofExecution.Receipt := node9 :: suffix10
-private theorem replaySuffix9 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache9 suffix9 = some cache567 := replay_cons _ _ _ _ _ step9 replaySuffix10
-private theorem formedSuffix9 : suffix9.all nodeFormed = true := formed_cons _ _ formed9 formedSuffix10
-private def suffix8 : List ProofExecution.Receipt := node8 :: suffix9
-private theorem replaySuffix8 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache8 suffix8 = some cache567 := replay_cons _ _ _ _ _ step8 replaySuffix9
-private theorem formedSuffix8 : suffix8.all nodeFormed = true := formed_cons _ _ formed8 formedSuffix9
-private def suffix7 : List ProofExecution.Receipt := node7 :: suffix8
-private theorem replaySuffix7 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache7 suffix7 = some cache567 := replay_cons _ _ _ _ _ step7 replaySuffix8
-private theorem formedSuffix7 : suffix7.all nodeFormed = true := formed_cons _ _ formed7 formedSuffix8
-private def suffix6 : List ProofExecution.Receipt := node6 :: suffix7
-private theorem replaySuffix6 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache6 suffix6 = some cache567 := replay_cons _ _ _ _ _ step6 replaySuffix7
-private theorem formedSuffix6 : suffix6.all nodeFormed = true := formed_cons _ _ formed6 formedSuffix7
-private def suffix5 : List ProofExecution.Receipt := node5 :: suffix6
-private theorem replaySuffix5 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache5 suffix5 = some cache567 := replay_cons _ _ _ _ _ step5 replaySuffix6
-private theorem formedSuffix5 : suffix5.all nodeFormed = true := formed_cons _ _ formed5 formedSuffix6
-private def suffix4 : List ProofExecution.Receipt := node4 :: suffix5
-private theorem replaySuffix4 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache4 suffix4 = some cache567 := replay_cons _ _ _ _ _ step4 replaySuffix5
-private theorem formedSuffix4 : suffix4.all nodeFormed = true := formed_cons _ _ formed4 formedSuffix5
-private def suffix3 : List ProofExecution.Receipt := node3 :: suffix4
-private theorem replaySuffix3 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache3 suffix3 = some cache567 := replay_cons _ _ _ _ _ step3 replaySuffix4
-private theorem formedSuffix3 : suffix3.all nodeFormed = true := formed_cons _ _ formed3 formedSuffix4
-private def suffix2 : List ProofExecution.Receipt := node2 :: suffix3
-private theorem replaySuffix2 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache2 suffix2 = some cache567 := replay_cons _ _ _ _ _ step2 replaySuffix3
-private theorem formedSuffix2 : suffix2.all nodeFormed = true := formed_cons _ _ formed2 formedSuffix3
-private def suffix1 : List ProofExecution.Receipt := node1 :: suffix2
-private theorem replaySuffix1 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache1 suffix1 = some cache567 := replay_cons _ _ _ _ _ step1 replaySuffix2
-private theorem formedSuffix1 : suffix1.all nodeFormed = true := formed_cons _ _ formed1 formedSuffix2
-private def suffix0 : List ProofExecution.Receipt := node0 :: suffix1
-private theorem replaySuffix0 : DerivationGraph.replayFrom (ruleWitness emptyAxiomPolicy) cache0 suffix0 = some cache567 := replay_cons _ _ _ _ _ step0 replaySuffix1
-private theorem formedSuffix0 : suffix0.all nodeFormed = true := formed_cons _ _ formed0 formedSuffix1
+checked_hol_trace witnessTrace emptyAxiomPolicy requestFormation ("pointed-predicate-witness", 0) [
+  f670 r444 [],
+  f714 r685 [0],
+  f725 r716 [],
+  f732 r726 [2, 1],
+  f737 r734 [],
+  f743 r738 [3, 4],
+  f746 r744 [5, 4],
+  f749 r748 [],
+  f753 r750 [7, 6],
+  f755 r754 [8, 7],
+  f749 r748 [],
+  f749 r748 [],
+  f759 r756 [11, 10],
+  f749 r760 [12, 11],
+  f762 r761 [9, 13],
+  f749 r748 [],
+  f769 r765 [],
+  f777 r773 [],
+  f781 r778 [15, 17],
+  f777 r773 [],
+  f785 r782 [14, 19],
+  f792 r786 [16, 18],
+  f799 r793 [21, 20],
+  f1276 r800 [22],
+  f1336 r1314 [],
+  f1654 r1408 [24],
+  f737 r734 [],
+  f1661 r1655 [25, 26],
+  f1766 r1757 [],
+  f1774 r1770 [28],
+  f1778 r1775 [27, 29],
+  f725 r716 [],
+  f1784 r1779 [31, 30],
+  f1789 r1786 [],
+  f1795 r1790 [32, 33],
+  f1798 r1796 [34, 33],
+  f1800 r1799 [35, 23],
+  f1802 r1801 [],
+  f1336 r1314 [],
+  f1654 r1408 [38],
+  f737 r734 [],
+  f1661 r1655 [39, 40],
+  f1766 r1757 [],
+  f1774 r1770 [42],
+  f1778 r1775 [41, 43],
+  f1804 r1803 [44, 37],
+  f1813 r1809 [],
+  f1820 r1814 [45, 46],
+  f1852 r1848 [],
+  f1862 r1857 [48],
+  f1874 r1868 [],
+  f2115 r1875 [50],
+  f737 r734 [],
+  f2121 r2116 [51, 52],
+  f2132 r2128 [],
+  f2137 r2133 [54],
+  f2141 r2138 [53, 55],
+  f2145 r2142 [49, 56],
+  f725 r716 [],
+  f2150 r2146 [58, 57],
+  f2155 r2152 [],
+  f2161 r2156 [59, 60],
+  f2164 r2162 [61, 60],
+  f2179 r2175 [],
+  f2186 r2180 [63],
+  f1874 r1868 [],
+  f2202 r2192 [65],
+  f2207 r2203 [],
+  f2213 r2208 [66, 67],
+  f2224 r2220 [],
+  f2229 r2225 [69],
+  f2233 r2230 [68, 70],
+  f2237 r2234 [64, 71],
+  f2241 r2238 [62, 47],
+  f2243 r2242 [73, 72],
+  f725 r716 [],
+  f2248 r2244 [75, 74],
+  f759 r2249 [],
+  f2255 r2250 [76, 77],
+  f2258 r2256 [78, 77],
+  f777 r773 [],
+  f2260 r2259 [79, 80],
+  f2264 r2261 [36, 81],
+  f2342 r2313 [],
+  f2353 r2343 [83],
+  f737 r734 [],
+  f2360 r2354 [84, 85],
+  f2389 r2382 [],
+  f2394 r2390 [87],
+  f2398 r2395 [86, 88],
+  f725 r716 [],
+  f2404 r2399 [90, 89],
+  f2409 r2406 [],
+  f2415 r2410 [91, 92],
+  f2418 r2416 [93, 92],
+  f2420 r2419 [94, 82],
+  f2479 r2426 [],
+  f2512 r2483 [96],
+  f2518 r2514 [],
+  f2523 r2519 [97, 98],
+  f2591 r2540 [],
+  f2605 r2594 [100],
+  f2609 r2606 [99, 101],
+  f725 r716 [],
+  f2614 r2610 [103, 102],
+  f759 r2249 [],
+  f2619 r2615 [104, 105],
+  f2622 r2620 [106, 105],
+  f2625 r2624 [],
+  f2629 r2626 [108, 107],
+  f2631 r2630 [109, 108],
+  f2625 r2624 [],
+  f2625 r2624 [],
+  f2635 r2632 [112, 111],
+  f2625 r2636 [113, 112],
+  f2638 r2637 [110, 114],
+  f2625 r2624 [],
+  f769 r765 [],
+  f777 r773 [],
+  f2642 r2639 [116, 118],
+  f777 r773 [],
+  f2644 r2643 [115, 120],
+  f2650 r2645 [117, 119],
+  f2656 r2651 [122, 121],
+  f2890 r2657 [123],
+  f1336 r1314 [],
+  f3162 r2925 [125],
+  f759 r2249 [],
+  f3169 r3163 [126, 127],
+  f3263 r3255 [],
+  f3268 r3264 [129],
+  f3272 r3269 [128, 130],
+  f725 r716 [],
+  f3278 r3273 [132, 131],
+  f3283 r3280 [],
+  f3289 r3284 [133, 134],
+  f3292 r3290 [135, 134],
+  f3294 r3293 [136, 124],
+  f3296 r3295 [],
+  f1336 r1314 [],
+  f3162 r2925 [139],
+  f759 r2249 [],
+  f3169 r3163 [140, 141],
+  f3263 r3255 [],
+  f3268 r3264 [143],
+  f3272 r3269 [142, 144],
+  f3298 r3297 [145, 138],
+  f1813 r1809 [],
+  f3304 r3299 [146, 147],
+  f3324 r3320 [],
+  f3330 r3325 [149],
+  f1874 r1868 [],
+  f3504 r3331 [151],
+  f759 r2249 [],
+  f3510 r3505 [152, 153],
+  f3521 r3517 [],
+  f3526 r3522 [155],
+  f3530 r3527 [154, 156],
+  f3534 r3531 [150, 157],
+  f725 r716 [],
+  f3539 r3535 [159, 158],
+  f3544 r3541 [],
+  f3550 r3545 [160, 161],
+  f3553 r3551 [162, 161],
+  f2179 r2175 [],
+  f2186 r2180 [164],
+  f1874 r1868 [],
+  f2202 r2192 [166],
+  f2207 r2203 [],
+  f2213 r2208 [167, 168],
+  f2224 r2220 [],
+  f2229 r2225 [170],
+  f2233 r2230 [169, 171],
+  f2237 r2234 [165, 172],
+  f3557 r3554 [163, 148],
+  f3559 r3558 [174, 173],
+  f725 r716 [],
+  f3564 r3560 [176, 175],
+  f2635 r3565 [],
+  f3571 r3566 [177, 178],
+  f3574 r3572 [179, 178],
+  f777 r773 [],
+  f3576 r3575 [180, 181],
+  f3580 r3577 [137, 182],
+  f2342 r2313 [],
+  f3591 r3581 [184],
+  f759 r2249 [],
+  f3598 r3592 [185, 186],
+  f3616 r3609 [],
+  f3621 r3617 [188],
+  f3625 r3622 [187, 189],
+  f725 r716 [],
+  f3631 r3626 [191, 190],
+  f3636 r3633 [],
+  f3642 r3637 [192, 193],
+  f3645 r3643 [194, 193],
+  f3647 r3646 [195, 183],
+  f3652 r3651 [],
+  f3657 r3656 [],
+  f3662 r3658 [198, 197] checked_by check199,
+  f3664 r3663 [199, 198],
+  f3652 r3651 [],
+  f3669 r3665 [201, 200],
+  f3664 r3670 [202, 201] checked_by check203,
+  f3672 r3671 [],
+  f3657 r3656 [],
+  f3676 r3673 [205, 204],
+  f3678 r3677 [206, 205],
+  f3652 r3651 [],
+  f3682 r3679 [208, 207],
+  f3684 r3683 [209, 208] checked_by check210,
+  f2342 r2313 [],
+  f3694 r3685 [211],
+  f3700 r3696 [],
+  f3705 r3701 [212, 213],
+  f3723 r3715 [],
+  f3723 r3726 [215],
+  f3730 r3727 [214, 216],
+  f3733 r3731 [217, 203],
+  f725 r716 [],
+  f3739 r3734 [219, 218],
+  f3744 r3741 [],
+  f3750 r3745 [220, 221],
+  f3753 r3751 [222, 221],
+  f3755 r3754 [223, 210],
+  f1336 r1314 [],
+  f3766 r3756 [225],
+  f3700 r3696 [],
+  f3771 r3767 [226, 227],
+  f3791 r3782 [],
+  f3791 r3792 [229],
+  f3796 r3793 [228, 230],
+  f3799 r3797 [231, 224],
+  f3806 r3802 [],
+  f3813 r3807 [232, 233],
+  f3826 r3820 [],
+  f3835 r3830 [235],
+  f3845 r3841 [],
+  f3850 r3846 [237],
+  f3700 r3696 [],
+  f3856 r3851 [238, 239],
+  f3865 r3861 [],
+  f3865 r3866 [241],
+  f3870 r3867 [240, 242],
+  f3874 r3871 [236, 243],
+  f725 r716 [],
+  f3879 r3875 [245, 244],
+  f3884 r3881 [],
+  f3890 r3885 [246, 247],
+  f3893 r3891 [248, 247],
+  f2179 r2175 [],
+  f3900 r3894 [250],
+  f3845 r3841 [],
+  f3905 r3901 [252],
+  f2207 r2203 [],
+  f3911 r3906 [253, 254],
+  f3865 r3861 [],
+  f3916 r3912 [256],
+  f3920 r3917 [255, 257],
+  f3924 r3921 [251, 258],
+  f3928 r3925 [249, 234],
+  f3932 r3929 [260, 259],
+  f725 r716 [],
+  f3937 r3933 [262, 261],
+  f3700 r3696 [],
+  f3943 r3938 [263, 264],
+  f3946 r3944 [265, 264],
+  f777 r773 [],
+  f3948 r3947 [266, 267],
+  f3657 r3656 [],
+  f3952 r3949 [269, 268] checked_by check270,
+  f3948 r3953 [270, 269],
+  f3652 r3651 [],
+  f3957 r3954 [272, 271],
+  f3948 r3958 [273, 272] checked_by check274,
+  f3657 r3656 [],
+  f3964 r3960 [],
+  f777 r773 [],
+  f3968 r3965 [275, 277],
+  f777 r773 [],
+  f3932 r3969 [274, 279],
+  f3976 r3970 [276, 278],
+  f3983 r3977 [281, 280],
+  f4021 r3984 [282],
+  f1336 r1314 [],
+  f4067 r4026 [284],
+  f3700 r3696 [],
+  f4074 r4068 [285, 286],
+  f4097 r4088 [],
+  f4102 r4098 [288],
+  f4106 r4103 [287, 289],
+  f725 r716 [],
+  f4112 r4107 [291, 290],
+  f4117 r4114 [],
+  f4123 r4118 [292, 293],
+  f4126 r4124 [294, 293],
+  f4128 r4127 [295, 283],
+  f4130 r4129 [],
+  f1336 r1314 [],
+  f4067 r4026 [298],
+  f3700 r3696 [],
+  f4074 r4068 [299, 300],
+  f4097 r4088 [],
+  f4102 r4098 [302],
+  f4106 r4103 [301, 303],
+  f4132 r4131 [304, 297],
+  f1813 r1809 [],
+  f4138 r4133 [305, 306],
+  f4152 r4148 [],
+  f4158 r4153 [308],
+  f1874 r1868 [],
+  f4165 r4159 [310],
+  f3700 r3696 [],
+  f4171 r4166 [311, 312],
+  f4182 r4178 [],
+  f4187 r4183 [314],
+  f4191 r4188 [313, 315],
+  f4195 r4192 [309, 316],
+  f725 r716 [],
+  f4200 r4196 [318, 317],
+  f4205 r4202 [],
+  f4211 r4206 [319, 320],
+  f4214 r4212 [321, 320],
+  f2179 r2175 [],
+  f2186 r2180 [323],
+  f1874 r1868 [],
+  f2202 r2192 [325],
+  f2207 r2203 [],
+  f2213 r2208 [326, 327],
+  f2224 r2220 [],
+  f2229 r2225 [329],
+  f2233 r2230 [328, 330],
+  f2237 r2234 [324, 331],
+  f4218 r4215 [322, 307],
+  f4220 r4219 [333, 332],
+  f725 r716 [],
+  f4225 r4221 [335, 334],
+  f4229 r4226 [],
+  f4235 r4230 [336, 337],
+  f4238 r4236 [338, 337],
+  f777 r773 [],
+  f4240 r4239 [339, 340],
+  f4244 r4241 [296, 341],
+  f2342 r2313 [],
+  f4255 r4245 [343],
+  f3700 r3696 [],
+  f4262 r4256 [344, 345],
+  f4280 r4273 [],
+  f4285 r4281 [347],
+  f4289 r4286 [346, 348],
+  f725 r716 [],
+  f4295 r4290 [350, 349],
+  f4300 r4297 [],
+  f4306 r4301 [351, 352],
+  f4309 r4307 [353, 352],
+  f4311 r4310 [354, 342],
+  f3652 r3651 [],
+  f4315 r4312 [356, 355],
+  f4311 r4316 [357, 356],
+  f3652 r3651 [],
+  f3964 r3960 [],
+  f777 r773 [],
+  f4320 r4317 [359, 361],
+  f777 r773 [],
+  f4324 r4321 [358, 363],
+  f4330 r4325 [360, 362],
+  f4336 r4331 [365, 364],
+  f4348 r4337 [366],
+  f1336 r1314 [],
+  f4366 r4353 [368],
+  f4300 r4297 [],
+  f4373 r4367 [369, 370],
+  f4394 r4386 [],
+  f4403 r4399 [372],
+  f4407 r4404 [371, 373],
+  f725 r716 [],
+  f4413 r4408 [375, 374],
+  f4418 r4415 [],
+  f4424 r4419 [376, 377],
+  f4427 r4425 [378, 377],
+  f4429 r4428 [379, 367],
+  f4431 r4430 [],
+  f1336 r1314 [],
+  f4366 r4353 [382],
+  f4300 r4297 [],
+  f4373 r4367 [383, 384],
+  f4394 r4386 [],
+  f4403 r4399 [386],
+  f4407 r4404 [385, 387],
+  f4433 r4432 [388, 381],
+  f1813 r1809 [],
+  f4439 r4434 [389, 390],
+  f4455 r4451 [],
+  f4461 r4456 [392],
+  f1874 r1868 [],
+  f4468 r4462 [394],
+  f4300 r4297 [],
+  f4474 r4469 [395, 396],
+  f4485 r4481 [],
+  f4490 r4486 [398],
+  f4494 r4491 [397, 399],
+  f4498 r4495 [393, 400],
+  f725 r716 [],
+  f4503 r4499 [402, 401],
+  f4508 r4505 [],
+  f4514 r4509 [403, 404],
+  f4517 r4515 [405, 404],
+  f2179 r2175 [],
+  f2186 r2180 [407],
+  f1874 r1868 [],
+  f2202 r2192 [409],
+  f2207 r2203 [],
+  f2213 r2208 [410, 411],
+  f2224 r2220 [],
+  f2229 r2225 [413],
+  f2233 r2230 [412, 414],
+  f2237 r2234 [408, 415],
+  f4521 r4518 [406, 391],
+  f4523 r4522 [417, 416],
+  f725 r716 [],
+  f4528 r4524 [419, 418],
+  f4530 r4529 [],
+  f4536 r4531 [420, 421],
+  f4539 r4537 [422, 421],
+  f777 r773 [],
+  f4541 r4540 [423, 424],
+  f4545 r4542 [380, 425],
+  f2342 r2313 [],
+  f4556 r4546 [427],
+  f4300 r4297 [],
+  f4563 r4557 [428, 429],
+  f4581 r4574 [],
+  f4586 r4582 [431],
+  f4590 r4587 [430, 432],
+  f725 r716 [],
+  f4596 r4591 [434, 433],
+  f4601 r4598 [],
+  f4607 r4602 [435, 436],
+  f4610 r4608 [437, 436],
+  f4612 r4611 [438, 426],
+  f777 r773 [],
+  f4616 r4613 [439, 440],
+  f4621 r4617 [441],
+  f4634 r4628 [],
+  f4641 r4638 [443],
+  f725 r716 [],
+  f4646 r4642 [445, 444],
+  f2635 r3565 [],
+  f4651 r4647 [446, 447],
+  f4654 r4652 [448, 447],
+  f4656 r4655 [449, 442],
+  f2342 r2313 [],
+  f3591 r3581 [451],
+  f759 r2249 [],
+  f3598 r3592 [452, 453],
+  f3616 r3609 [],
+  f3621 r3617 [455],
+  f3625 r3622 [454, 456],
+  f3580 r4657 [457, 196],
+  f725 r716 [],
+  f4661 r4658 [459, 458],
+  f3283 r3280 [],
+  f4666 r4662 [460, 461],
+  f4669 r4667 [462, 461],
+  f4671 r4670 [463, 450],
+  f1336 r1314 [],
+  f3162 r2925 [465],
+  f759 r2249 [],
+  f3169 r3163 [466, 467],
+  f3263 r3255 [],
+  f3268 r3264 [469],
+  f3272 r3269 [468, 470],
+  f4673 r4672 [471, 464],
+  f3806 r3802 [],
+  f4679 r4674 [472, 473],
+  f3324 r3320 [],
+  f4685 r4680 [475],
+  f3845 r3841 [],
+  f4690 r4686 [477],
+  f759 r2249 [],
+  f4696 r4691 [478, 479],
+  f3865 r3861 [],
+  f4701 r4697 [481],
+  f4705 r4702 [480, 482],
+  f4709 r4706 [476, 483],
+  f725 r716 [],
+  f4714 r4710 [485, 484],
+  f4719 r4716 [],
+  f4725 r4720 [486, 487],
+  f4728 r4726 [488, 487],
+  f2179 r2175 [],
+  f3900 r3894 [490],
+  f3845 r3841 [],
+  f3905 r3901 [492],
+  f2207 r2203 [],
+  f3911 r3906 [493, 494],
+  f3865 r3861 [],
+  f3916 r3912 [496],
+  f3920 r3917 [495, 497],
+  f3924 r3921 [491, 498],
+  f4732 r4729 [489, 474],
+  f4734 r4733 [500, 499],
+  f725 r716 [],
+  f4736 r4735 [502, 501],
+  f759 r2249 [],
+  f4738 r4737 [503, 504],
+  f4740 r4739 [505, 504],
+  f777 r773 [],
+  f4742 r4741 [506, 507],
+  f2342 r2313 [],
+  f2353 r2343 [509],
+  f737 r734 [],
+  f2360 r2354 [510, 511],
+  f2389 r2382 [],
+  f2394 r2390 [513],
+  f2398 r2395 [512, 514],
+  f2264 r4743 [515, 95],
+  f725 r716 [],
+  f4747 r4744 [517, 516],
+  f1789 r1786 [],
+  f4752 r4748 [518, 519],
+  f4755 r4753 [520, 519],
+  f4757 r4756 [521, 508],
+  f1336 r1314 [],
+  f1654 r1408 [523],
+  f737 r734 [],
+  f1661 r1655 [524, 525],
+  f1766 r1757 [],
+  f1774 r1770 [527],
+  f1778 r1775 [526, 528],
+  f4759 r4758 [529, 522],
+  f3806 r3802 [],
+  f4765 r4760 [530, 531],
+  f1852 r1848 [],
+  f4771 r4766 [533],
+  f3845 r3841 [],
+  f4776 r4772 [535],
+  f737 r734 [],
+  f4782 r4777 [536, 537],
+  f3865 r3861 [],
+  f4787 r4783 [539],
+  f4791 r4788 [538, 540],
+  f4795 r4792 [534, 541],
+  f725 r716 [],
+  f4800 r4796 [543, 542],
+  f4805 r4802 [],
+  f4811 r4806 [544, 545],
+  f4814 r4812 [546, 545],
+  f2179 r2175 [],
+  f3900 r3894 [548],
+  f3845 r3841 [],
+  f3905 r3901 [550],
+  f2207 r2203 [],
+  f3911 r3906 [551, 552],
+  f3865 r3861 [],
+  f3916 r3912 [554],
+  f3920 r3917 [553, 555],
+  f3924 r3921 [549, 556],
+  f4818 r4815 [547, 532],
+  f4820 r4819 [558, 557],
+  f725 r716 [],
+  f4824 r4821 [560, 559],
+  f737 r734 [],
+  f4829 r4825 [561, 562],
+  f4832 r4830 [563, 562],
+  f777 r773 [],
+  f4834 r4833 [564, 565]
+]
 
 def result : Theorem := f4834
-def certificate : ProofSystem.Certificate := (suffix0, 566)
+def certificate : ProofSystem.Certificate := (witnessTrace_suffix0, 566)
 theorem accepted : (ProofSystem.checker emptyAxiomPolicy).check result certificate = true := by
   apply (ProofSystem.checker_check_iff emptyAxiomPolicy _ _).mpr
-  exact ⟨cache567, replaySuffix0, rfl⟩
-theorem graph_formed : certificate.1.all nodeFormed = true := formedSuffix0
+  exact ⟨witnessTrace_cache567, witnessTrace_trace0.replayed, rfl⟩
+theorem graph_formed : certificate.1.all nodeFormed = true := witnessTrace_trace0.formed
 #print axioms accepted
 #print axioms graph_formed
 end Mettapedia.Languages.HOLLight.PointedPredicateTemplate

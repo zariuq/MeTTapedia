@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.CompletedInvocation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.IfAtFrames
 
 /-!
@@ -191,31 +192,18 @@ theorem five_source {results : List Result}
     intro result chosenRel
     rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom] at chosenRel
     exact five_selection chosenRel
-  cases derived with
-  | delivered entered => cases Entry.functional entered entry
-  | cast entered => cases Entry.functional entered entry
-  | tuple _ shaped occurs _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      rw [Entry.Value.erase_ofAtom] at occurs
-      have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-        if_types.occurrences
-      simp [Atom.undefinedType] at same
-  | fallback _ shaped chosenRel _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  obtain ⟨_, chosenRel, invocation⟩ :=
+    (Completed.AtomRel.iff_invocation entry shape (fun occurs => by
+        rw [Entry.Value.erase_ofAtom] at occurs
+        have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
+          if_types.occurrences
+        simp [Atom.undefinedType] at same)).mp derived
+  cases invocation with
+  | fallback _ _ _ =>
       cases outcome chosenRel
-  | function _ shaped chosenRel _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  | selected _ _ =>
       cases outcome chosenRel
-  | selectionFailed _ shaped chosenRel priority =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  | failed priority =>
       have exhausted := outcome chosenRel
       simp only [Completed.InvocationSelection.exhausted.injEq, and_true] at exhausted
       subst exhausted

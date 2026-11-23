@@ -1,0 +1,7 @@
+!(bind! &q (new-space))
+!(bind! &out (new-space))
+!(let $ignored (add-atom &q (job a)) (empty))
+!(let $ignored (add-atom &q (job b)) (empty))
+!(let $ignored (add-atom &q (job c)) (empty))
+!(let $ignored (add-atom &q (credit one)) (empty))
+!(let $ignored (add-atom &q (credit two)) (empty))

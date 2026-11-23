@@ -1,0 +1,5 @@
+sort s;
+term p: s;
+term plus: s;
+--         --V one $ too many
+delimiter $ $ $  $  $ ;

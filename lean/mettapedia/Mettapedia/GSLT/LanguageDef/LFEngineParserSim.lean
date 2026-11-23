@@ -3242,6 +3242,145 @@ theorem tmLam1_matches_raw_of_app_result (fuel : Nat) (ctx : List String) (x : S
               simp only [eval, encToks, encTok, os_tmLam1_id]
               exact matches_parse_raw_none (con0 "lam-malformed")
 
+private inductive BinderKind where
+  | pi
+  | lam
+
+private def BinderKind.token : BinderKind → LF.Tok
+  | .pi => .pi
+  | .lam => .lam
+
+private def BinderKind.bind : BinderKind → LF.Term → LF.Term → LF.Term
+  | .pi => .pi
+  | .lam => .lam
+
+private def BinderKind.domainFrame : BinderKind → AST → AST → AST → AST → AST
+  | .pi => tmPi1
+  | .lam => tmLam1
+
+private def BinderKind.bodyFrame : BinderKind → AST → AST → AST
+  | .pi => tmPi2
+  | .lam => tmLam2
+
+private def BinderKind.error : BinderKind → AST
+  | .pi => con0 "pi-malformed"
+  | .lam => con0 "lam-malformed"
+
+private def binderBody (kind : BinderKind) (fuel : Nat) (ctx : List String)
+    (x : String) (domain : LF.Term) (tokens : List LF.Tok) :
+    Option (LF.Term × List LF.Tok) :=
+  match LF.pTerm fuel (x :: ctx) tokens with
+  | some (body, rest) => some (kind.bind domain body, rest)
+  | none => none
+
+private theorem binder_after_domain (kind : BinderKind) (fuel : Nat)
+    (ctx : List String) (x : String) (tokens : List LF.Tok) :
+    LF.pTerm (fuel + 1) ctx (kind.token :: .id x :: .colon :: tokens) =
+      match LF.pApp fuel ctx tokens with
+      | some (domain, .dot :: rest) => binderBody kind fuel ctx x domain rest
+      | _ => none := by
+  cases kind <;> cases domain : LF.pApp fuel ctx tokens with
+  | none => simp [BinderKind.token, LF.pTerm, domain]
+  | some result =>
+      obtain ⟨domainTerm, rest⟩ := result
+      cases rest with
+      | nil => simp [BinderKind.token, LF.pTerm, domain]
+      | cons delimiter suffix =>
+          cases delimiter <;>
+            simp [BinderKind.token, binderBody, BinderKind.bind, LF.pTerm, domain] <;> rfl
+
+private theorem binder_domain_error (kind : BinderKind) (f ctx x e : AST) :
+    eval pLF 1 (kind.domainFrame f ctx x (PErr e)) = PErr kind.error := by
+  cases kind <;> simp only [BinderKind.domainFrame, BinderKind.error, eval,
+    os_tmPi1_err, os_tmLam1_err]
+
+private theorem binder_missing_dot (kind : BinderKind) (f ctx x u : AST)
+    (rest : List LF.Tok) (wrong : ∀ tail, rest ≠ .dot :: tail) :
+    eval pLF 1 (kind.domainFrame f ctx x (Pp u (encToks rest))) = PErr kind.error := by
+  cases kind <;> cases rest with
+  | nil =>
+      simp only [BinderKind.domainFrame, BinderKind.error, eval, encToks,
+        os_tmPi1_nil, os_tmLam1_nil]
+  | cons tok rest =>
+      cases tok <;> first
+        | exact (wrong rest rfl).elim
+        | simp only [BinderKind.domainFrame, BinderKind.error, eval, encToks, encTok,
+            os_tmPi1_pi, os_tmPi1_lam, os_tmPi1_arr, os_tmPi1_colon, os_tmPi1_lp,
+            os_tmPi1_rp, os_tmPi1_type, os_tmPi1_id, os_tmLam1_pi, os_tmLam1_lam,
+            os_tmLam1_arr, os_tmLam1_colon, os_tmLam1_lp, os_tmLam1_rp,
+            os_tmLam1_type, os_tmLam1_id]
+
+private theorem binder_continue (kind : BinderKind) (fuel : Nat) (ctx : List String)
+    (x : String) (raw : AST) (rest : List LF.Tok) :
+    eval pLF 1
+      (kind.domainFrame (peano fuel) (encCtx ctx) (con0 x) (Pp raw (encToks (.dot :: rest)))) =
+      kind.bodyFrame raw (tm (peano fuel) (encCtx (x :: ctx)) (encToks rest)) := by
+  cases kind <;>
+    rw [show encCtx (x :: ctx) = Cons (con0 x) (encCtx ctx) from rfl] <;>
+    simp only [BinderKind.domainFrame, BinderKind.bodyFrame, eval, encToks, encTok,
+      os_tmPi1_dot, os_tmLam1_dot]
+
+private def parseWith (payload : AST → LF.Term → Prop) :
+    Option (LF.Term × List LF.Tok) → AST → Prop
+  | some (term, rest), v => ∃ raw, v = Pp raw (encToks rest) ∧ payload raw term
+  | none, v => ∃ e, v = PErr e
+
+private def firstParseWith (payload : AST → LF.Term → Prop) (guard : AST → Prop)
+    (result : Option (LF.Term × List LF.Tok)) (call : AST) : Prop :=
+  ∃ fuel, parseWith payload result (eval pLF fuel call) ∧
+    ∀ k, k < fuel → guard (eval pLF k call)
+
+private theorem prepend_parser_step {payload : AST → LF.Term → Prop}
+    {guard : AST → Prop} {result : Option (LF.Term × List LF.Tok)} {call next : AST}
+    (step : eval pLF 1 call = next) (admissible : guard call)
+    (tail : firstParseWith payload guard result next) :
+    firstParseWith payload guard result call := by
+  obtain ⟨fuel, readout, guards⟩ := tail
+  refine ⟨1 + fuel, ?_, GuardedEvaluation.eval_guard_append pLF step ?_ guards⟩
+  · simpa only [eval_add, step] using readout
+  · intro k small
+    obtain rfl := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ small)
+    exact admissible
+
+/-- Observe a binder after reading its domain. The same transition preserves
+any licensed trace guard and any payload relation used by the continuation. -/
+private theorem binder_plan (kind : BinderKind) (fuel : Nat) (ctx : List String)
+    (x : String) (tokens : List LF.Tok) {v : AST}
+    {payload : AST → LF.Term → Prop} {guard : AST → Prop}
+    (licensed : ∀ r, guard (kind.domainFrame (peano fuel) (encCtx ctx) (con0 x) r))
+    (domain : parseWith payload (LF.pApp fuel ctx tokens) v)
+    (body : ∀ A rest raw, LF.pApp fuel ctx tokens = some (A, .dot :: rest) →
+      payload raw A → firstParseWith payload guard (binderBody kind fuel ctx x A rest)
+        (kind.bodyFrame raw (tm (peano fuel) (encCtx (x :: ctx)) (encToks rest)))) :
+    firstParseWith payload guard
+      (LF.pTerm (fuel + 1) ctx (kind.token :: .id x :: .colon :: tokens))
+      (kind.domainFrame (peano fuel) (encCtx ctx) (con0 x) v) := by
+  rw [binder_after_domain]
+  cases read : LF.pApp fuel ctx tokens with
+  | none =>
+      rw [read] at domain
+      obtain ⟨error, rfl⟩ := domain
+      exact prepend_parser_step (binder_domain_error _ _ _ _ _) (licensed _)
+        ⟨0, ⟨kind.error, rfl⟩, fun _ smaller => (Nat.not_lt_zero _ smaller).elim⟩
+  | some result =>
+      obtain ⟨A, rest⟩ := result
+      rw [read] at domain
+      obtain ⟨raw, rfl, evidence⟩ := domain
+      by_cases dot : ∃ tail, rest = .dot :: tail
+      · obtain ⟨tail, rfl⟩ := dot
+        exact prepend_parser_step (binder_continue _ _ _ _ _ _) (licensed _)
+          (body A tail raw read evidence)
+      · have wrong : ∀ tail, rest ≠ .dot :: tail := fun tail eq => dot ⟨tail, eq⟩
+        have refused : (match some (A, rest) with
+          | some (A, .dot :: tail) => binderBody kind fuel ctx x A tail
+          | _ => none) = none := by
+          cases rest with
+          | nil => rfl
+          | cons token tail => cases token <;> first | rfl | exact (wrong tail rfl).elim
+        rw [refused]
+        exact prepend_parser_step (binder_missing_dot _ _ _ _ _ _ wrong) (licensed _)
+          ⟨0, ⟨kind.error, rfl⟩, fun _ smaller => (Nat.not_lt_zero _ smaller).elim⟩
+
 theorem tmPi1_matches_first_raw_of_app_result (fuel : Nat) (ctx : List String) (x : String)
     (argToks : List LF.Tok) {v : AST}
     (h : MatchesParseRaw (LF.pApp fuel ctx argToks) v)
@@ -3253,105 +3392,10 @@ theorem tmPi1_matches_first_raw_of_app_result (fuel : Nat) (ctx : List String) (
            | none => none)
           (tmPi2 Araw (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)))) :
     FirstMatchesParseRaw (LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks))
-      (tmPi1 (peano fuel) (encCtx ctx) (con0 x) v) := by
-  cases happ : LF.pApp fuel ctx argToks with
-  | none =>
-      rw [happ] at h
-      rcases h with ⟨e, rfl⟩
-      rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-        simp [LF.pTerm, happ]]
-      exact first_matches_one (by simp only [eval, os_tmPi1_err])
-        (matches_parse_raw_none (con0 "pi-malformed"))
-        (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x) (PErr e))
-  | some pr =>
-      rcases pr with ⟨A, restAfterA⟩
-      rw [happ] at h
-      rcases h with ⟨Araw, rfl, hA⟩
-      cases restAfterA with
-      | nil =>
-          rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-            simp [LF.pTerm, happ]]
-          exact first_matches_one (by simp only [eval, encToks, os_tmPi1_nil])
-            (matches_parse_raw_none (con0 "pi-malformed"))
-            (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x) (Pp Araw Nil))
-      | cons tok bodyToks =>
-          cases tok with
-          | dot =>
-              obtain htail := tail A bodyToks Araw happ hA
-              have hstep : eval pLF 1
-                  (tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                    (Pp Araw (encToks (.dot :: bodyToks))))
-                  = tmPi2 Araw
-                    (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)) := by
-                rw [show encCtx (x :: ctx) = Cons (con0 x) (encCtx ctx) from rfl]
-                simp only [eval, encToks, encTok, os_tmPi1_dot]
-              rw [show
-                LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks)
-                  =
-                    (match LF.pTerm fuel (x :: ctx) bodyToks with
-                     | some (B, rest) => some (.pi A B, rest)
-                     | none => none) by
-                simp [LF.pTerm, happ]
-                rfl]
-              exact first_matches_prepend hstep
-                (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.dot :: bodyToks)))) htail
-          | pi =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmPi1_pi])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.pi :: bodyToks))))
-          | lam =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmPi1_lam])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lam :: bodyToks))))
-          | arr =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmPi1_arr])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.arr :: bodyToks))))
-          | colon =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmPi1_colon])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.colon :: bodyToks))))
-          | lpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmPi1_lp])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lpar :: bodyToks))))
-          | rpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmPi1_rp])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.rpar :: bodyToks))))
-          | type =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmPi1_type])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.type :: bodyToks))))
-          | id s =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmPi1_id])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.id s :: bodyToks))))
+      (tmPi1 (peano fuel) (encCtx ctx) (con0 x) v) :=
+  binder_plan .pi fuel ctx x argToks
+    (payload := ReducesToEncTerm) (guard := (fun state => ¬ ParserResultShape state))
+    (fun r => not_result_tmPi1 (peano fuel) (encCtx ctx) (con0 x) r) h tail
 
 theorem tmPi1_matches_first_active_of_app_result (fuel : Nat) (ctx : List String)
     (x : String) (argToks : List LF.Tok) {v : AST}
@@ -3364,105 +3408,10 @@ theorem tmPi1_matches_first_active_of_app_result (fuel : Nat) (ctx : List String
            | none => none)
           (tmPi2 Araw (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)))) :
     FirstActiveMatchesParseRaw (LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks))
-      (tmPi1 (peano fuel) (encCtx ctx) (con0 x) v) := by
-  cases happ : LF.pApp fuel ctx argToks with
-  | none =>
-      rw [happ] at h
-      rcases h with ⟨e, rfl⟩
-      rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-        simp [LF.pTerm, happ]]
-      exact first_active_one (by simp only [eval, os_tmPi1_err])
-        (matches_parse_raw_none (con0 "pi-malformed"))
-        (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x) (PErr e))
-  | some pr =>
-      rcases pr with ⟨A, restAfterA⟩
-      rw [happ] at h
-      rcases h with ⟨Araw, rfl, hA⟩
-      cases restAfterA with
-      | nil =>
-          rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-            simp [LF.pTerm, happ]]
-          exact first_active_one (by simp only [eval, encToks, os_tmPi1_nil])
-            (matches_parse_raw_none (con0 "pi-malformed"))
-            (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x) (Pp Araw Nil))
-      | cons tok bodyToks =>
-          cases tok with
-          | dot =>
-              obtain htail := tail A bodyToks Araw happ hA
-              have hstep : eval pLF 1
-                  (tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                    (Pp Araw (encToks (.dot :: bodyToks))))
-                  = tmPi2 Araw
-                    (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)) := by
-                rw [show encCtx (x :: ctx) = Cons (con0 x) (encCtx ctx) from rfl]
-                simp only [eval, encToks, encTok, os_tmPi1_dot]
-              rw [show
-                LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks)
-                  =
-                    (match LF.pTerm fuel (x :: ctx) bodyToks with
-                     | some (B, rest) => some (.pi A B, rest)
-                     | none => none) by
-                simp [LF.pTerm, happ]
-                rfl]
-              exact first_active_prepend hstep
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.dot :: bodyToks)))) htail
-          | pi =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmPi1_pi])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.pi :: bodyToks))))
-          | lam =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmPi1_lam])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lam :: bodyToks))))
-          | arr =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmPi1_arr])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.arr :: bodyToks))))
-          | colon =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmPi1_colon])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.colon :: bodyToks))))
-          | lpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmPi1_lp])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lpar :: bodyToks))))
-          | rpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmPi1_rp])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.rpar :: bodyToks))))
-          | type =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmPi1_type])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.type :: bodyToks))))
-          | id s =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmPi1_id])
-                (matches_parse_raw_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.id s :: bodyToks))))
+      (tmPi1 (peano fuel) (encCtx ctx) (con0 x) v) :=
+  binder_plan .pi fuel ctx x argToks
+    (payload := ReducesToEncTerm) (guard := ParserActiveShape)
+    (fun r => ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x) r) h tail
 
 theorem tmPi1_matches_first_active_of_app_first_active (fuel : Nat) (ctx : List String)
     (x : String) (argToks : List LF.Tok)
@@ -3497,105 +3446,10 @@ theorem tmLam1_matches_first_raw_of_app_result (fuel : Nat) (ctx : List String) 
            | none => none)
           (tmLam2 Araw (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)))) :
     FirstMatchesParseRaw (LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks))
-      (tmLam1 (peano fuel) (encCtx ctx) (con0 x) v) := by
-  cases happ : LF.pApp fuel ctx argToks with
-  | none =>
-      rw [happ] at h
-      rcases h with ⟨e, rfl⟩
-      rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-        simp [LF.pTerm, happ]]
-      exact first_matches_one (by simp only [eval, os_tmLam1_err])
-        (matches_parse_raw_none (con0 "lam-malformed"))
-        (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x) (PErr e))
-  | some pr =>
-      rcases pr with ⟨A, restAfterA⟩
-      rw [happ] at h
-      rcases h with ⟨Araw, rfl, hA⟩
-      cases restAfterA with
-      | nil =>
-          rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-            simp [LF.pTerm, happ]]
-          exact first_matches_one (by simp only [eval, encToks, os_tmLam1_nil])
-            (matches_parse_raw_none (con0 "lam-malformed"))
-            (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x) (Pp Araw Nil))
-      | cons tok bodyToks =>
-          cases tok with
-          | dot =>
-              obtain htail := tail A bodyToks Araw happ hA
-              have hstep : eval pLF 1
-                  (tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                    (Pp Araw (encToks (.dot :: bodyToks))))
-                  = tmLam2 Araw
-                    (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)) := by
-                rw [show encCtx (x :: ctx) = Cons (con0 x) (encCtx ctx) from rfl]
-                simp only [eval, encToks, encTok, os_tmLam1_dot]
-              rw [show
-                LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks)
-                  =
-                    (match LF.pTerm fuel (x :: ctx) bodyToks with
-                     | some (b, rest) => some (.lam A b, rest)
-                     | none => none) by
-                simp [LF.pTerm, happ]
-                rfl]
-              exact first_matches_prepend hstep
-                (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.dot :: bodyToks)))) htail
-          | pi =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmLam1_pi])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.pi :: bodyToks))))
-          | lam =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmLam1_lam])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lam :: bodyToks))))
-          | arr =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmLam1_arr])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.arr :: bodyToks))))
-          | colon =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmLam1_colon])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.colon :: bodyToks))))
-          | lpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmLam1_lp])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lpar :: bodyToks))))
-          | rpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmLam1_rp])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.rpar :: bodyToks))))
-          | type =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmLam1_type])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.type :: bodyToks))))
-          | id s =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_matches_one (by simp only [eval, encToks, encTok, os_tmLam1_id])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.id s :: bodyToks))))
+      (tmLam1 (peano fuel) (encCtx ctx) (con0 x) v) :=
+  binder_plan .lam fuel ctx x argToks
+    (payload := ReducesToEncTerm) (guard := (fun state => ¬ ParserResultShape state))
+    (fun r => not_result_tmLam1 (peano fuel) (encCtx ctx) (con0 x) r) h tail
 
 theorem tmLam1_matches_first_active_of_app_result (fuel : Nat) (ctx : List String)
     (x : String) (argToks : List LF.Tok) {v : AST}
@@ -3608,105 +3462,10 @@ theorem tmLam1_matches_first_active_of_app_result (fuel : Nat) (ctx : List Strin
            | none => none)
           (tmLam2 Araw (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)))) :
     FirstActiveMatchesParseRaw (LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks))
-      (tmLam1 (peano fuel) (encCtx ctx) (con0 x) v) := by
-  cases happ : LF.pApp fuel ctx argToks with
-  | none =>
-      rw [happ] at h
-      rcases h with ⟨e, rfl⟩
-      rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-        simp [LF.pTerm, happ]]
-      exact first_active_one (by simp only [eval, os_tmLam1_err])
-        (matches_parse_raw_none (con0 "lam-malformed"))
-        (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x) (PErr e))
-  | some pr =>
-      rcases pr with ⟨A, restAfterA⟩
-      rw [happ] at h
-      rcases h with ⟨Araw, rfl, hA⟩
-      cases restAfterA with
-      | nil =>
-          rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-            simp [LF.pTerm, happ]]
-          exact first_active_one (by simp only [eval, encToks, os_tmLam1_nil])
-            (matches_parse_raw_none (con0 "lam-malformed"))
-            (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x) (Pp Araw Nil))
-      | cons tok bodyToks =>
-          cases tok with
-          | dot =>
-              obtain htail := tail A bodyToks Araw happ hA
-              have hstep : eval pLF 1
-                  (tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                    (Pp Araw (encToks (.dot :: bodyToks))))
-                  = tmLam2 Araw
-                    (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)) := by
-                rw [show encCtx (x :: ctx) = Cons (con0 x) (encCtx ctx) from rfl]
-                simp only [eval, encToks, encTok, os_tmLam1_dot]
-              rw [show
-                LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks)
-                  =
-                    (match LF.pTerm fuel (x :: ctx) bodyToks with
-                     | some (b, rest) => some (.lam A b, rest)
-                     | none => none) by
-                simp [LF.pTerm, happ]
-                rfl]
-              exact first_active_prepend hstep
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.dot :: bodyToks)))) htail
-          | pi =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmLam1_pi])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.pi :: bodyToks))))
-          | lam =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmLam1_lam])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lam :: bodyToks))))
-          | arr =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmLam1_arr])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.arr :: bodyToks))))
-          | colon =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmLam1_colon])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.colon :: bodyToks))))
-          | lpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmLam1_lp])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lpar :: bodyToks))))
-          | rpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmLam1_rp])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.rpar :: bodyToks))))
-          | type =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmLam1_type])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.type :: bodyToks))))
-          | id s =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_one (by simp only [eval, encToks, encTok, os_tmLam1_id])
-                (matches_parse_raw_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.id s :: bodyToks))))
+      (tmLam1 (peano fuel) (encCtx ctx) (con0 x) v) :=
+  binder_plan .lam fuel ctx x argToks
+    (payload := ReducesToEncTerm) (guard := ParserActiveShape)
+    (fun r => ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x) r) h tail
 
 theorem tmLam1_matches_first_active_of_app_first_active (fuel : Nat) (ctx : List String)
     (x : String) (argToks : List LF.Tok)
@@ -3741,105 +3500,10 @@ theorem tmPi1_matches_first_active_shiftable_of_app_result (fuel : Nat) (ctx : L
            | none => none)
           (tmPi2 Araw (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)))) :
     FirstActiveMatchesParseShiftable (LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks))
-      (tmPi1 (peano fuel) (encCtx ctx) (con0 x) v) := by
-  cases happ : LF.pApp fuel ctx argToks with
-  | none =>
-      rw [happ] at h
-      rcases h with ⟨e, rfl⟩
-      rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-        simp [LF.pTerm, happ]]
-      exact first_active_shiftable_one (by simp only [eval, os_tmPi1_err])
-        (matches_parse_shiftable_none (con0 "pi-malformed"))
-        (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x) (PErr e))
-  | some pr =>
-      rcases pr with ⟨A, restAfterA⟩
-      rw [happ] at h
-      rcases h with ⟨Araw, rfl, hA⟩
-      cases restAfterA with
-      | nil =>
-          rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-            simp [LF.pTerm, happ]]
-          exact first_active_shiftable_one (by simp only [eval, encToks, os_tmPi1_nil])
-            (matches_parse_shiftable_none (con0 "pi-malformed"))
-            (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x) (Pp Araw Nil))
-      | cons tok bodyToks =>
-          cases tok with
-          | dot =>
-              obtain htail := tail A bodyToks Araw happ hA
-              have hstep : eval pLF 1
-                  (tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                    (Pp Araw (encToks (.dot :: bodyToks))))
-                  = tmPi2 Araw
-                    (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)) := by
-                rw [show encCtx (x :: ctx) = Cons (con0 x) (encCtx ctx) from rfl]
-                simp only [eval, encToks, encTok, os_tmPi1_dot]
-              rw [show
-                LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks)
-                  =
-                    (match LF.pTerm fuel (x :: ctx) bodyToks with
-                     | some (B, rest) => some (.pi A B, rest)
-                     | none => none) by
-                simp [LF.pTerm, happ]
-                rfl]
-              exact first_active_shiftable_prepend hstep
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.dot :: bodyToks)))) htail
-          | pi =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmPi1_pi])
-                (matches_parse_shiftable_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.pi :: bodyToks))))
-          | lam =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmPi1_lam])
-                (matches_parse_shiftable_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lam :: bodyToks))))
-          | arr =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmPi1_arr])
-                (matches_parse_shiftable_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.arr :: bodyToks))))
-          | colon =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmPi1_colon])
-                (matches_parse_shiftable_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.colon :: bodyToks))))
-          | lpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmPi1_lp])
-                (matches_parse_shiftable_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lpar :: bodyToks))))
-          | rpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmPi1_rp])
-                (matches_parse_shiftable_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.rpar :: bodyToks))))
-          | type =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmPi1_type])
-                (matches_parse_shiftable_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.type :: bodyToks))))
-          | id s =>
-              rw [show LF.pTerm (fuel + 1) ctx (.pi :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmPi1_id])
-                (matches_parse_shiftable_none (con0 "pi-malformed"))
-                (ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.id s :: bodyToks))))
+      (tmPi1 (peano fuel) (encCtx ctx) (con0 x) v) :=
+  binder_plan .pi fuel ctx x argToks
+    (payload := ShiftablePayload) (guard := ParserActiveShape)
+    (fun r => ParserActiveShape.tmPi1 (peano fuel) (encCtx ctx) (con0 x) r) h tail
 
 theorem tmPi1_matches_first_active_shiftable_of_app_first_active (fuel : Nat)
     (ctx : List String) (x : String) (argToks : List LF.Tok)
@@ -3875,105 +3539,10 @@ theorem tmLam1_matches_first_active_shiftable_of_app_result (fuel : Nat) (ctx : 
            | none => none)
           (tmLam2 Araw (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)))) :
     FirstActiveMatchesParseShiftable (LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks))
-      (tmLam1 (peano fuel) (encCtx ctx) (con0 x) v) := by
-  cases happ : LF.pApp fuel ctx argToks with
-  | none =>
-      rw [happ] at h
-      rcases h with ⟨e, rfl⟩
-      rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-        simp [LF.pTerm, happ]]
-      exact first_active_shiftable_one (by simp only [eval, os_tmLam1_err])
-        (matches_parse_shiftable_none (con0 "lam-malformed"))
-        (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x) (PErr e))
-  | some pr =>
-      rcases pr with ⟨A, restAfterA⟩
-      rw [happ] at h
-      rcases h with ⟨Araw, rfl, hA⟩
-      cases restAfterA with
-      | nil =>
-          rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-            simp [LF.pTerm, happ]]
-          exact first_active_shiftable_one (by simp only [eval, encToks, os_tmLam1_nil])
-            (matches_parse_shiftable_none (con0 "lam-malformed"))
-            (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x) (Pp Araw Nil))
-      | cons tok bodyToks =>
-          cases tok with
-          | dot =>
-              obtain htail := tail A bodyToks Araw happ hA
-              have hstep : eval pLF 1
-                  (tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                    (Pp Araw (encToks (.dot :: bodyToks))))
-                  = tmLam2 Araw
-                    (tm (peano fuel) (encCtx (x :: ctx)) (encToks bodyToks)) := by
-                rw [show encCtx (x :: ctx) = Cons (con0 x) (encCtx ctx) from rfl]
-                simp only [eval, encToks, encTok, os_tmLam1_dot]
-              rw [show
-                LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks)
-                  =
-                    (match LF.pTerm fuel (x :: ctx) bodyToks with
-                     | some (b, rest) => some (.lam A b, rest)
-                     | none => none) by
-                simp [LF.pTerm, happ]
-                rfl]
-              exact first_active_shiftable_prepend hstep
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.dot :: bodyToks)))) htail
-          | pi =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmLam1_pi])
-                (matches_parse_shiftable_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.pi :: bodyToks))))
-          | lam =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmLam1_lam])
-                (matches_parse_shiftable_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lam :: bodyToks))))
-          | arr =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmLam1_arr])
-                (matches_parse_shiftable_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.arr :: bodyToks))))
-          | colon =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmLam1_colon])
-                (matches_parse_shiftable_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.colon :: bodyToks))))
-          | lpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmLam1_lp])
-                (matches_parse_shiftable_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.lpar :: bodyToks))))
-          | rpar =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmLam1_rp])
-                (matches_parse_shiftable_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.rpar :: bodyToks))))
-          | type =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmLam1_type])
-                (matches_parse_shiftable_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.type :: bodyToks))))
-          | id s =>
-              rw [show LF.pTerm (fuel + 1) ctx (.lam :: .id x :: .colon :: argToks) = none by
-                simp [LF.pTerm, happ]]
-              exact first_active_shiftable_one (by simp only [eval, encToks, encTok, os_tmLam1_id])
-                (matches_parse_shiftable_none (con0 "lam-malformed"))
-                (ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x)
-                  (Pp Araw (encToks (.id s :: bodyToks))))
+      (tmLam1 (peano fuel) (encCtx ctx) (con0 x) v) :=
+  binder_plan .lam fuel ctx x argToks
+    (payload := ShiftablePayload) (guard := ParserActiveShape)
+    (fun r => ParserActiveShape.tmLam1 (peano fuel) (encCtx ctx) (con0 x) r) h tail
 
 theorem tmLam1_matches_first_active_shiftable_of_app_first_active (fuel : Nat)
     (ctx : List String) (x : String) (argToks : List LF.Tok)

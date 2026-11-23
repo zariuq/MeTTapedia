@@ -1,0 +1,41 @@
+--- pinned-namespace-adapted
++++ Mettapedia/Algorithms/Retrieval/NativeTensorRetrieval.lean
+@@ -14,6 +14,10 @@
+ *before* selection; the delta reads its latest source value. This preserves
+ updates and deletion even when the base index lags the source. Local top-k
+ selections suffice as candidates for a final top-k under a common total order.
++The rank-based selection permits ties; its definition alone does not bound the
++number selected by k. Such a bound needs distinct keys on the supplied source,
++for example a unique tie ordinal. The shaping bound takes cardinality premises
++explicitly rather than deriving them from this selection definition.
+ -/
+ 
+ set_option autoImplicit false
+@@ -147,11 +151,15 @@
+ 
+ variable {I B : Type*} [DecidableEq I] [LinearOrder B]
+ 
+-/-- `key` includes a stable tie ordinal. Smaller keys rank first. The numerical
+-score and tie order must agree between the two kernels and the final merge. -/
++/-- Smaller keys rank first. A caller can include a unique stable tie ordinal;
++the definition does not enforce uniqueness. The numerical score and tie order
++must agree between the two kernels and the final merge. -/
+ def rank (key : I → B) (source : Finset I) (i : I) : Nat :=
+   (source.filter (fun j => key j < key i)).card
+ 
++/-- Retain all items with fewer than k strictly better keys. Tied keys may
++select more than k items. A cardinality bound requires a separate distinct-key
++assumption on the source; no such bound is proved here. -/
+ def topK (key : I → B) (k : Nat) (source : Finset I) : Finset I :=
+   source.filter (fun i => rank key source i < k)
+ 
+@@ -181,7 +189,8 @@
+     topK key k base ∪ topK key k delta ⊆ base ∪ delta := by
+   exact Finset.union_subset_union (Finset.filter_subset _ _) (Finset.filter_subset _ _)
+ 
+-/-- The host-facing result shaping touches at most two kernel selections. -/
++/-- The union of two selections has at most 2k items when each supplied
++selection has at most k items. These size hypotheses are explicit. -/
+ theorem shaping_card_bound (k : Nat) (left right : Finset I)
+     (hl : left.card ≤ k) (hr : right.card ≤ k) : (left ∪ right).card ≤ k + k :=
+   (Finset.card_union_le _ _).trans (Nat.add_le_add hl hr)

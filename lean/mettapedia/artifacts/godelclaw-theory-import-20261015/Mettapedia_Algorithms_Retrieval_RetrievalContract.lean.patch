@@ -1,0 +1,31 @@
+--- pinned-namespace-adapted
++++ Mettapedia/Algorithms/Retrieval/RetrievalContract.lean
+@@ -32,8 +32,8 @@
+   conjunctions and disjunctions of filters.
+ * `lagging_sound` and `refine_lagging_card_le` (quantitative): an index built
+   from an older store, plus a scan of the records written since, stays sound.
+-  Deleted records need no index update. The exact check runs on at most
+-  `|candidates| + |delta|` records.
++  Deleted records need no index update. The refined result contains at most
++  `|candidates| + |delta|` records; no operational evaluation count is proved.
+ * `exists_topK`, `rerank_exact` and `rerank_exact_of_bound`: reranking a
+   candidate set by the exact score yields an exact top-k when the candidates
+   contain some true top-k, or when every non-candidate is certified to score no
+@@ -146,12 +146,14 @@
+   simp only [refine, Finset.mem_filter, Finset.mem_inter] at this
+   exact this.1.1
+ 
+-/-- The exact relation is evaluated at most once per candidate. -/
++/-- The refined result contains no more records than the candidate set.
++This is a cardinality bound, not an operational evaluation count. -/
+ theorem refine_card_le (q : Q) : (refine R store cand q).card ≤ (cand q).card :=
+   le_trans (Finset.card_filter_le _ _) (Finset.card_le_card Finset.inter_subset_left)
+ 
+-/-- The exact check over a lagging index touches at most the index's candidates
+-plus the records written since the index was built. -/
++/-- The refined result over a lagging index contains at most the index's
++candidate count plus the number of records written since the index was built.
++This statement supplies no operational cost model. -/
+ theorem refine_lagging_card_le (delta : Finset X) (q : Q) :
+     (refine R store (fun q => cand q ∪ delta) q).card ≤ (cand q).card + delta.card :=
+   le_trans (refine_card_le (cand := fun q => cand q ∪ delta) q) (Finset.card_union_le _ _)

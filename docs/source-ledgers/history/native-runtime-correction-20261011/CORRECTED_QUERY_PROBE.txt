@@ -1,0 +1,24 @@
+Corrected root query with spare budget [native outgoing possibility]
+  source: Bag[PInput(NQuote(PZero), lambda _. PDrop(#0)), POutput(NQuote(PZero), PZero)]
+  result: proved; budget=100000; work=29; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  retained native answers/responses: 1
+  decl #0 Comm @ root bound=[] -> Bag[PZero]
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[{ path := [0], selected := 0 }, { path := [1], selected := 0 }]
+    authored RHS=Bag[subst($p, NQuote($q)) | $rest]; scoped assignment={rest[dependencies=[]; ambient=0]=Bag[]; q[dependencies=[]; ambient=0]=PZero; p[dependencies=[Name]; ambient=0]=PDrop(#0); n[dependencies=[]; ambient=0]=NQuote(PZero)}
+Corrected parallel query with spare budget [native outgoing possibility]
+  source: Bag[PZero, Bag[PInput(NQuote(PZero), lambda _. PDrop(#0)), POutput(NQuote(PZero), PZero)]]
+  result: proved; budget=100000; work=45; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  retained native answers/responses: 1
+  decl #0 Comm @ 1 bound=[] -> Bag[PZero, Bag[PZero]]
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[{ path := [0], selected := 0 }, { path := [1], selected := 0 }]
+    authored RHS=Bag[subst($p, NQuote($q)) | $rest]; scoped assignment={rest[dependencies=[]; ambient=0]=Bag[]; q[dependencies=[]; ambient=0]=PZero; p[dependencies=[Name]; ambient=0]=PDrop(#0); n[dependencies=[]; ambient=0]=NQuote(PZero)}
+Corrected universal counterexample with spare budget [native outgoing universal (not the incoming OSLF box)]
+  source: Bag[PInput(NQuote(PZero), lambda _. PDrop(#0)), POutput(NQuote(PZero), PZero)]
+  result: refuted; budget=100000; work=29; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  retained native answers/responses: 0
+  decl #0 Comm @ root bound=[] -> Bag[PZero]
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[{ path := [0], selected := 0 }, { path := [1], selected := 0 }]
+    authored RHS=Bag[subst($p, NQuote($q)) | $rest]; scoped assignment={rest[dependencies=[]; ambient=0]=Bag[]; q[dependencies=[]; ambient=0]=PZero; p[dependencies=[Name]; ambient=0]=PDrop(#0); n[dependencies=[]; ambient=0]=NQuote(PZero)}

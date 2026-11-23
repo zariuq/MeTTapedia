@@ -1,0 +1,1 @@
+bind $ignored <- { erase &q : (item $x) } ; { collect { read &q : (item $y) => { emit $y } } }

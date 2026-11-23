@@ -2,6 +2,7 @@ import Mettapedia.Logic.ConstraintTypes.Audit
 import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.Controls
 import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CheckingPolicy
 import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes
+import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses
 
 /-! Kernel dependency audit of the call-protocol adapter and its controls. -/
 
@@ -53,3 +54,20 @@ import Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes
 #print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes.variable_untyped
 #print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes.waive_entry_iff_on_ground
 #print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.CanonicalTypes.waive_joint_iff_on_ground
+
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.ground_typed
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.waive_joint_iff_on_ground
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.split_extent_eq_conceptOf
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.split_extent_isConcept
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.split_metatype_of_witness
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.merged_extent_eq_union
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.merged_extent_isConcept
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.merged_extent_ne_conceptOf
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.merged_no_metatype_table
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.share_symbols_iff
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.share_split_iff
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.split_witness_eq_iff
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.witness_reading_adds_no_distinction
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.Control.plus_and_foo
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.Control.definition_edit
+#print axioms Mettapedia.Languages.MeTTa.PeTTa.RuntimeTyping.UnclassifiedWitnesses.Control.declaration_withdraws_sharing

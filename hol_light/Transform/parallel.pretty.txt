@@ -1,0 +1,198 @@
+core.ml — Definition tc_enabled
+|- forall present taken read made.
+       tc_enabled present taken read made <=>
+       (forall occ. taken occ ==> present occ) /\
+       (forall occ. read occ ==> present occ) /\
+       (forall occ. ~(taken occ /\ read occ)) /\
+       (forall occ. made occ ==> ~present occ)
+
+core.ml — Definition tc_fire
+|- forall present taken made occ.
+       tc_fire present taken made occ <=>
+       present occ /\ ~taken occ \/ made occ
+
+core.ml — Definition tc_models
+|- forall hom eq act a b sigma store.
+       tc_models hom eq act a b sigma store <=>
+       hom a b sigma /\
+       (forall x y. store x y ==> eq b (act sigma x) (act sigma y))
+
+core.ml — Definition tc_solvable
+|- forall hom eq act a store.
+       tc_solvable hom eq act a store <=>
+       (exists b sigma. tc_models hom eq act a b sigma store)
+
+core.ml — Definition tc_entails
+|- forall hom eq act a store holds.
+       tc_entails hom eq act a store holds <=>
+       (forall b sigma.
+            tc_models hom eq act a b sigma store ==> holds b sigma)
+
+core.ml — Definition tc_map_store
+|- forall act e store u v.
+       tc_map_store act e store u v <=>
+       (exists x y. store x y /\ u = act e x /\ v = act e y)
+
+core.ml — Definition tc_separates
+|- forall eq act b sigma apart.
+       tc_separates eq act b sigma apart <=>
+       (forall x y. apart x y ==> ~eq b (act sigma x) (act sigma y))
+
+core.ml — Definition tc_solution
+|- forall hom eq act a store apart b sigma.
+       tc_solution hom eq act a store apart b sigma <=>
+       tc_models hom eq act a b sigma store /\
+       tc_separates eq act b sigma apart
+
+core.ml — Definition tc_preparable
+|- forall ready solution.
+       tc_preparable ready solution <=> ready /\ (exists s. solution s)
+
+core.ml — Definition tc_admits
+|- forall ready solution holds.
+       tc_admits ready solution holds <=>
+       tc_preparable ready solution /\ (forall s. solution s ==> holds s)
+
+core.ml — Definition tc_faithful
+|- forall terms eq act b c j.
+       tc_faithful terms eq act b c j <=>
+       (forall x y.
+            terms b x /\ terms b y /\ eq c (act j x) (act j y) ==> eq b x y)
+
+core.ml — Definition tc_covers
+|- forall terms hom eq act a r e store settled.
+       tc_covers terms hom eq act a r e store settled <=>
+       (forall b sigma.
+            tc_models hom eq act a b sigma store
+            ==> (exists c j tau.
+                     hom b c j /\
+                     tc_faithful terms eq act b c j /\
+                     tc_models hom eq act r c tau settled /\
+                     (forall t.
+                          terms a t
+                          ==> eq c (act j (act sigma t)) (act tau (act e t)))))
+
+core.ml — Definition tc_same_target_covers
+|- forall terms hom eq act a r e store settled.
+       tc_same_target_covers terms hom eq act a r e store settled <=>
+       (forall b sigma.
+            tc_models hom eq act a b sigma store
+            ==> (exists tau.
+                     tc_models hom eq act r b tau settled /\
+                     (forall t.
+                          terms a t
+                          ==> eq b (act sigma t) (act tau (act e t)))))
+
+core.ml — Definition tc_covering_family
+|- forall source branch recovery.
+       tc_covering_family source branch recovery <=>
+       (forall i r. branch i r ==> (exists s. recovery s i r)) /\
+       (forall i r s. branch i r /\ recovery s i r ==> source s) /\
+       (forall s. source s ==> (exists i r. branch i r /\ recovery s i r))
+
+core.ml — Definition tc_prepares
+|- forall ready solution preparation.
+       tc_prepares ready solution preparation <=>
+       (forall f.
+            tc_preparable (ready f) (solution f)
+            ==> (exists p. preparation f p))
+
+core.ml — Definition tc_move
+|- forall ready solution holds preparation result f w.
+       tc_move ready solution holds preparation result f w <=>
+       tc_admits (ready f) (solution f) (holds f) /\
+       (exists p. preparation f p /\ w = result f p)
+
+core.ml — Definition tc_sound
+|- forall before after back.
+       tc_sound before after back <=> (forall r. after r ==> before (back r))
+
+parallel.ml — Definition tc_parallel_store
+|- forall left right x y.
+       tc_parallel_store left right x y <=> left x y \/ right x y
+
+parallel.ml — Definition tc_parallel_present
+|- forall left right occ.
+       tc_parallel_present left right occ <=> left occ \/ right occ
+
+parallel.ml — Theorem TC_PAR_STORE_ASSOC
+|- forall left middle right.
+       tc_parallel_store (tc_parallel_store left middle) right =
+       tc_parallel_store left (tc_parallel_store middle right)
+
+parallel.ml — Theorem TC_PAR_STORE_UNIT
+|- forall store.
+       tc_parallel_store (\x y. false) store = store /\
+       tc_parallel_store store (\x y. false) = store
+
+parallel.ml — Theorem TC_PAR_STORE_COMM
+|- forall left right.
+       tc_parallel_store left right = tc_parallel_store right left
+
+parallel.ml — Theorem TC_PAR_PRESENT_ASSOC
+|- forall left middle right.
+       tc_parallel_present (tc_parallel_present left middle) right =
+       tc_parallel_present left (tc_parallel_present middle right)
+
+parallel.ml — Theorem TC_PAR_PRESENT_UNIT
+|- forall present.
+       tc_parallel_present (\occ. false) present = present /\
+       tc_parallel_present present (\occ. false) = present
+
+parallel.ml — Theorem TC_PAR_PRESENT_COMM
+|- forall left right.
+       tc_parallel_present left right = tc_parallel_present right left
+
+parallel.ml — Theorem TC_PAR_MODELS
+|- forall hom eq act a b sigma left right.
+       tc_models hom eq act a b sigma (tc_parallel_store left right) <=>
+       tc_models hom eq act a b sigma left /\
+       tc_models hom eq act a b sigma right
+
+parallel.ml — Theorem TC_PAR_SOLVABLE_EXACT
+|- forall hom eq act a left right.
+       tc_solvable hom eq act a (tc_parallel_store left right) <=>
+       (exists b sigma.
+            tc_models hom eq act a b sigma left /\
+            tc_models hom eq act a b sigma right)
+
+parallel.ml — Theorem TC_PAR_MAP_STORE
+|- forall act map left right.
+       tc_map_store act map (tc_parallel_store left right) =
+       tc_parallel_store (tc_map_store act map left)
+       (tc_map_store act map right)
+
+parallel.ml — Theorem TC_PAR_ENABLED_EXACT
+|- forall present context taken read made.
+       tc_enabled present taken read made
+       ==> (tc_enabled (tc_parallel_present present context) taken read made <=>
+            (forall occ. made occ ==> ~context occ))
+
+parallel.ml — Theorem TC_PAR_FIRE_FRAME
+|- forall present context taken made.
+       (forall occ. taken occ ==> ~context occ)
+       ==> tc_fire (tc_parallel_present present context) taken made =
+           tc_parallel_present (tc_fire present taken made) context
+
+parallel.ml — Theorem TC_PAR_OCCURRENCE_ALIAS
+|- forall present. tc_parallel_present present present = present
+
+parallel.ml — Theorem TC_PAR_SHARED_READ
+|- tc_enabled (tc_parallel_present (\occ. occ) (\occ. occ)) (\occ. false)
+   (\occ. occ)
+   (\occ. false) /\
+   tc_fire (tc_parallel_present (\occ. occ) (\occ. occ)) (\occ. false)
+   (\occ. false)
+   true
+
+parallel.ml — Theorem TC_PAR_CONTEXT_ALLOCATION_COLLISION
+|- tc_enabled (\occ. false) (\occ. false) (\occ. false) (\occ. occ) /\
+   ~tc_enabled (tc_parallel_present (\occ. false) (\occ. occ)) (\occ. false)
+    (\occ. false)
+    (\occ. occ)
+
+parallel.ml — Theorem TC_PAR_TAKE_DESTROYS_CONTEXT
+|- ~(tc_fire (tc_parallel_present (\occ. occ) (\occ. occ)) (\occ. occ)
+     (\occ. false) =
+     tc_parallel_present (tc_fire (\occ. occ) (\occ. occ) (\occ. false))
+     (\occ. occ))

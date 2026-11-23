@@ -1,0 +1,22 @@
+Module Petri {
+  Theory Petri() {
+    Types {
+      Place;
+      Marking;
+    }
+    Terms {
+      "A" .  |- "A" : Place;
+      "B" .  |- "B" : Place;
+      "C" .  |- "C" : Place;
+      "D" .  |- "D" : Place;
+      "MarkingBag" . tokens:HashBag(Place) |- "{" tokens.*sep(",") "}" : Marking;
+    }
+    Equations {
+    }
+    Rewrites {
+      "ConsumeAB" . rest:HashBag(Place) |- {"A", "B", ...rest} ~> {"C", "D", ...rest};
+      "RecycleC" . rest:HashBag(Place) |- {"C", ...rest} ~> {"A", ...rest};
+    }
+  }
+  theory Petri()
+}

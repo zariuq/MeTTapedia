@@ -1,6 +1,6 @@
 /-
 Copyright (c) 2026 Mettapedia Authors. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
+SPDX-License-Identifier: MIT
 Authors: Mettapedia Project
 -/
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic

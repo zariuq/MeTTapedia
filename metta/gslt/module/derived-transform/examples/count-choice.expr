@@ -1,0 +1,1 @@
+(count (superpose ((value a) (value a) (value b))))

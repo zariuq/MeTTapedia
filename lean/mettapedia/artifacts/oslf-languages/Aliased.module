@@ -1,0 +1,19 @@
+Module AliasedAsWritten {
+  Theory AliasedAsWritten() {
+    Types {
+      Term;
+    }
+    Terms {
+      "A" .  |- "A" : Term;
+      "B" .  |- "B" : Term;
+      "C" .  |- "C" : Term;
+    }
+    Equations {
+      "Alias" .  |- "A" = "B";
+    }
+    Rewrites {
+      Fire : "B" ~> "C";
+    }
+  }
+  theory AliasedAsWritten()
+}

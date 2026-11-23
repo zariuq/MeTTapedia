@@ -1,0 +1,5 @@
+!(import! &self holkernel)
+!(let* (($k (hol:kernel standard))
+        ($_ (hol:replay $k "Mettapedia/hol_light/Transform/recording.holr")))
+    ((hol:sequent (hol:theorem $k "TC_RECORD_CONTINUATION"))
+     (hol:sequent (hol:theorem $k "TC_RECORD_NO_VALID_INITIAL"))))

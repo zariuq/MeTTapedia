@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.FirstSuccessContinuationPaths
 import Mettapedia.Languages.MeTTa.HE.FirstSuccessLeafEvaluation
 import Mettapedia.Languages.MeTTa.HE.FirstSuccessSourceScan
 import Mettapedia.Languages.MeTTa.HE.NativeArgumentControlHistory
@@ -9,6 +10,7 @@ import Mettapedia.Languages.MeTTa.HE.QueryBindingProjection
 import Mettapedia.Languages.MeTTa.HE.EvaluatorBindingExtension
 import Mettapedia.Languages.MeTTa.HE.RecursiveExecution
 import Mettapedia.Machines.OrderedProtocol
+open Mettapedia.Languages.MeTTa.HE.FirstSuccessContinuationPaths (AppendFrames BranchPlan FramedPath rawOutput checkedOutput)
 open Mettapedia.Languages.MeTTa.HE.Spec.Match.SolutionTheory
 open Mettapedia.Languages.MeTTa.HE.BindingComposition
 open Mettapedia.Languages.MeTTa.HE.MatchSizeTheory
@@ -588,16 +590,23 @@ abbrev Realizes (space : Space) (task : Task) (results : ResultSet) : Prop :=
   ∀ stack emitted, SilentPath HE.GroundedDispatch.none
     ⟨space, .work task, stack, emitted⟩ ⟨space, .returning results, stack, emitted⟩
 
+private theorem appendFrames (space : Space) :
+    AppendFrames (FirstSuccessRecursiveExecution.machine HE.GroundedDispatch.none).reading.silent space where
+  resumeTail rest head := by
+    intro stack emitted
+    simpa only [RecursiveMachine.resume, List.cons_append, List.nil_append] using
+      consume_continuation space HE.GroundedDispatch.none (.append rest) head stack emitted
+  restoreHead head tail := by
+    intro stack emitted
+    simpa only [RecursiveMachine.resume, List.cons_append, List.nil_append] using
+      consume_continuation space HE.GroundedDispatch.none (.prepend head) tail stack emitted
+
 theorem append_results (space : Space) (remaining : Task) (first second : ResultSet)
     (tail : Realizes space remaining second) (stack : List Frame) (emitted : ResultSet) :
     SilentPath HE.GroundedDispatch.none
       ⟨space, .returning first, .append remaining :: stack, emitted⟩
       ⟨space, .returning (first ++ second), stack, emitted⟩ := by
-  have begin := consume_continuation space HE.GroundedDispatch.none (.append remaining) first stack emitted
-  have endPath := consume_continuation space HE.GroundedDispatch.none (.prepend first) second stack emitted
-  exact begin.trans (by
-    simpa only [RecursiveMachine.resume, List.cons_append, List.nil_append] using
-      (tail (.prepend first :: stack) emitted).trans endPath)
+  exact (appendFrames space).collect remaining first second tail stack emitted
 
 /-- Each recursive body keeps its own input and output bindings. The actual
 `atoms` task evaluates the requests under the saved caller stack and appends
@@ -607,22 +616,14 @@ theorem atoms_realizes (space : Space) (expected : Atom) (fuel : Nat) (live : Li
     (children : List.Forall₂ (fun request output =>
       Realizes space (.atom request.1 expected request.2 fuel live) output) requests outputs) :
     Realizes space (.atoms expected fuel requests live) outputs.flatten := by
-  induction children with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatten_nil] using
-        enter_request space HE.GroundedDispatch.none (.atoms expected fuel [] live) stack emitted
-  | @cons request output requests outputs child children ih =>
-      intro stack emitted
-      let rest := Task.atoms expected fuel requests live
-      have begin := enter_request space HE.GroundedDispatch.none
-        (.atoms expected fuel (request :: requests) live) stack emitted
-      have body := child (.append rest :: stack) emitted
-      have finish := append_results space rest output outputs.flatten ih stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.flatten_cons, rest] using body.trans finish)
+  refine (appendFrames space).traverseTasks
+    (fun requests => Task.atoms expected fuel requests live)
+    (fun request => Task.atom request.1 expected request.2 fuel live) ?_ ?_ children
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none (Task.atoms expected fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stack emitted
+    exact enter_request space HE.GroundedDispatch.none (Task.atoms expected fuel (⟨value, bindings⟩ :: rest) live)
+      stack emitted
 
 /-- Ordinary refusal restores the retained original call, even at zero
 remaining evaluator depth. This administrative return does not re-evaluate it. -/
@@ -664,22 +665,14 @@ theorem returns_realizes (space : Space) (original expected : Atom) (fuel : Nat)
     (children : List.Forall₂ (fun request output =>
       Realizes space (.returned original request.1 expected request.2 fuel live) output) requests outputs) :
     Realizes space (.returns original expected fuel requests live) outputs.flatten := by
-  induction children with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatten_nil] using
-        enter_request space HE.GroundedDispatch.none (.returns original expected fuel [] live) stack emitted
-  | @cons request output requests outputs child children ih =>
-      intro stack emitted
-      let rest := Task.returns original expected fuel requests live
-      have begin := enter_request space HE.GroundedDispatch.none
-        (.returns original expected fuel (request :: requests) live) stack emitted
-      have body := child (.append rest :: stack) emitted
-      have finish := append_results space rest output outputs.flatten ih stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.flatten_cons, rest] using body.trans finish)
+  refine (appendFrames space).traverseTasks
+    (fun requests => Task.returns original expected fuel requests live)
+    (fun request => Task.returned original request.1 expected request.2 fuel live) ?_ ?_ children
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none (Task.returns original expected fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stack emitted
+    exact enter_request space HE.GroundedDispatch.none (Task.returns original expected fuel (⟨value, bindings⟩ :: rest) live)
+      stack emitted
 
 /-- The retained equation instruction prepares actual merged binding states.
 This is its input representation, not an independent equation semantics. -/
@@ -699,23 +692,15 @@ theorem equations_read_realizes (space : Space) (original expected : Atom)
     (incoming : Bindings) (fuel : Nat) (live : List Atom) (candidates : ResultSet) :
     Realizes space (.equations original expected incoming fuel candidates live)
       (candidates.flatMap (equationInputs incoming fuel)) := by
-  induction candidates with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatMap_nil] using
-        enter_request space GroundedDispatch.none
-          (.equations original expected incoming fuel [] live) stack emitted
-  | cons candidate candidates ih =>
-      intro stack emitted
-      let rest := Task.equations original expected incoming fuel candidates live
-      have begin := enter_request space GroundedDispatch.none
-        (.equations original expected incoming fuel (candidate :: candidates) live) stack emitted
-      have finish := append_results space rest (equationInputs incoming fuel candidate)
-        (candidates.flatMap (equationInputs incoming fuel)) ih stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          equationInputs, List.cons_append, List.nil_append, List.flatMap_cons, rest] using finish)
+  refine (appendFrames space).traverseMap
+    (fun rows => .equations original expected incoming fuel rows live)
+    (equationInputs incoming fuel) ?_ candidates ?_
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none
+      (.equations original expected incoming fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ _ rest stack emitted
+    exact enter_request space HE.GroundedDispatch.none
+      (.equations original expected incoming fuel (⟨value, bindings⟩ :: rest) live) stack emitted
 
 theorem produced_ordinary_realizes (space : Space) (value : Atom) (bindings : Bindings)
     (fuel : Nat) (live : List Atom) (caller : Option Atom)
@@ -741,23 +726,26 @@ theorem productions_ordinary_realizes (space : Space) (fuel : Nat)
     (live : List Atom) (caller : Option Atom) (results : ResultSet)
     (ordinary : ∀ result ∈ results, ¬Spec.Eval.Minimal.IsFunction result.1) :
     Realizes space (.productions (fuel + 1) results live caller) results := by
-  induction results with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, List.nil_append] using
-        enter_request space GroundedDispatch.none (.productions (fuel + 1) [] live caller) stack emitted
-  | cons result results ih =>
-      intro stack emitted
-      let rest := Task.productions (fuel + 1) results live caller
-      have begin := enter_request space GroundedDispatch.none
-        (.productions (fuel + 1) (result :: results) live caller) stack emitted
-      have body := produced_ordinary_realizes space result.1 result.2 fuel live caller
-        (ordinary result List.mem_cons_self) (.append rest :: stack) emitted
-      have finish := append_results space rest [result] results
-        (ih (fun r member => ordinary r (List.mem_cons_of_mem _ member))) stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.singleton_append, rest] using body.trans finish)
+  have children : List.Forall₂
+      (fun request output => Realizes space
+        (.produced request.1 request.2 (fuel + 1) live caller) output)
+      results (results.map fun row => [row]) := by
+    apply List.forall₂_map_right_iff.mpr
+    apply List.forall₂_same.mpr
+    intro row member
+    exact produced_ordinary_realizes space row.1 row.2 fuel live caller (ordinary row member)
+  have run := (appendFrames space).traverseTasks
+      (fun requests => Task.productions (fuel + 1) requests live caller)
+      (fun request => Task.produced request.1 request.2 (fuel + 1) live caller)
+      (fun stack emitted => enter_request space HE.GroundedDispatch.none
+        (.productions (fuel + 1) [] live caller) stack emitted)
+      (by
+        rintro ⟨value, bindings⟩ rest stack emitted
+        exact enter_request space HE.GroundedDispatch.none
+          (.productions (fuel + 1) (⟨value, bindings⟩ :: rest) live caller) stack emitted)
+      children
+  rw [← List.flatMap_def, List.flatMap_singleton'] at run
+  exact run
 
 theorem producer_ordinary_realizes (space : Space) (original expected : Atom)
     (incoming : Bindings) (fuel : Nat) (live : List Atom) (raw results : ResultSet)
@@ -970,22 +958,14 @@ theorem calls_realizes (space : Space) (expected : Atom) (fuel : Nat) (live : Li
     (children : List.Forall₂ (fun request output =>
       Realizes space (.call request.1 expected request.2 fuel live) output) requests outputs) :
     Realizes space (.calls expected fuel requests live) outputs.flatten := by
-  induction children with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatten_nil] using
-        enter_request space HE.GroundedDispatch.none (.calls expected fuel [] live) stack emitted
-  | @cons request output requests outputs child children ih =>
-      intro stack emitted
-      let rest := Task.calls expected fuel requests live
-      have begin := enter_request space HE.GroundedDispatch.none
-        (.calls expected fuel (request :: requests) live) stack emitted
-      have body := child (.append rest :: stack) emitted
-      have finish := append_results space rest output outputs.flatten ih stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.flatten_cons, rest] using body.trans finish)
+  refine (appendFrames space).traverseTasks
+    (fun requests => Task.calls expected fuel requests live)
+    (fun request => Task.call request.1 expected request.2 fuel live) ?_ ?_ children
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none (Task.calls expected fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stack emitted
+    exact enter_request space HE.GroundedDispatch.none (Task.calls expected fuel (⟨value, bindings⟩ :: rest) live)
+      stack emitted
 
 theorem calls_unreduced (space : Space) (free : EquationFree space)
     (name : String)
@@ -1016,6 +996,14 @@ def argumentOutputs (original : Atom) (heads : ResultSet)
     if head.1 != original && isEmptyOrError head.1 then [head]
     else RecursiveTasks.argumentTail head.1 (tails head)
 
+private def argumentBranchPlan (original : Atom) (remaining types : List Atom)
+    (fuel : Nat) (live : List Atom) : BranchPlan where
+  batch rows := .argumentHeads original remaining types fuel rows live
+  stopped row := row.1 != original && isEmptyOrError row.1
+  child row := .args remaining types row.2 fuel (row.1 :: live)
+  receiver row := .argumentTail row.1
+  readout row := RecursiveTasks.argumentTail row.1
+
 /-- The retained branch instruction composes a physical list of replies,
 including stopped branches and differently sized completed tail batches. -/
 theorem argument_heads_branches_realizes (space : Space) (original : Atom)
@@ -1026,42 +1014,23 @@ theorem argument_heads_branches_realizes (space : Space) (original : Atom)
       else ∃ tails, Realizes space (.args remaining types head.2 fuel (head.1 :: live)) tails ∧
         output = RecursiveTasks.argumentTail head.1 tails) heads outputs) :
     Realizes space (.argumentHeads original remaining types fuel heads live) outputs.flatten := by
-  induction branches with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.flatten_nil, List.nil_append] using enter_request space HE.GroundedDispatch.none
-          (.argumentHeads original remaining types fuel [] live) stack emitted
-  | @cons head output heads outputs branch branches ih =>
-      intro stack emitted
-      let rest := Task.argumentHeads original remaining types fuel heads live
-      have begin := enter_request space HE.GroundedDispatch.none
-        (.argumentHeads original remaining types fuel (head :: heads) live) stack emitted
-      cases guard : head.1 != original && isEmptyOrError head.1 with
-      | true =>
-          simp only [guard, if_true] at branch
-          subst output
-          have finish := append_results space rest [head] outputs.flatten ih stack emitted
-          exact begin.trans (by
-            simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, guard,
-              if_true, List.cons_append, List.nil_append, List.flatten_cons, rest] using finish)
-      | false =>
-          simp only [guard, Bool.false_eq_true, if_false] at branch
-          obtain ⟨tails, tailRun, rfl⟩ := branch
-          have child := tailRun (.argumentTail head.1 :: .append rest :: stack) emitted
-          have collect := consume_continuation space HE.GroundedDispatch.none
-            (.argumentTail head.1) tails (.append rest :: stack) emitted
-          have finish := append_results space rest (RecursiveTasks.argumentTail head.1 tails)
-            outputs.flatten ih stack emitted
-          have collected : SilentPath HE.GroundedDispatch.none
-              ⟨space, .returning tails, .argumentTail head.1 :: .append rest :: stack, emitted⟩
-              ⟨space, .returning (RecursiveTasks.argumentTail head.1 tails),
-                .append rest :: stack, emitted⟩ := by
-            simpa only [RecursiveMachine.resume, List.nil_append] using collect
-          exact begin.trans (by
-            simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, guard,
-              Bool.false_eq_true, if_false, List.cons_append, List.nil_append,
-              List.flatten_cons, rest] using child.trans (collected.trans finish))
+  let plan := argumentBranchPlan original remaining types fuel live
+  refine (appendFrames space).traverseBranches plan ?_ ?_ ?_ ?_ branches
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none (Task.argumentHeads original remaining types fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stopped stack emitted
+    simp only [plan, argumentBranchPlan] at stopped
+    simpa only [plan, argumentBranchPlan, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
+      stopped, if_true, List.cons_append, List.nil_append] using
+      enter_request space HE.GroundedDispatch.none (Task.argumentHeads original remaining types fuel (⟨value, bindings⟩ :: rest) live) stack emitted
+  · rintro ⟨value, bindings⟩ rest running stack emitted
+    simp only [plan, argumentBranchPlan] at running
+    simpa only [plan, argumentBranchPlan, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
+      running, Bool.false_eq_true, if_false, List.cons_append, List.nil_append] using
+      enter_request space HE.GroundedDispatch.none (Task.argumentHeads original remaining types fuel (⟨value, bindings⟩ :: rest) live) stack emitted
+  · intro row replies stack emitted
+    simpa only [plan, argumentBranchPlan, RecursiveMachine.resume, List.cons_append, List.nil_append] using
+      consume_continuation space HE.GroundedDispatch.none (Frame.argumentTail row.1) replies stack emitted
 
 /-- Both failed and selected occurrences pass through the existing controller.
 Only selected occurrences require a residual argument execution. -/
@@ -1073,23 +1042,11 @@ theorem argument_heads_mixed_realizes (space : Space) (original : Atom)
       Realizes space (.args remaining types head.2 fuel (head.1 :: live)) (tails head)) :
     Realizes space (.argumentHeads original remaining types fuel heads live)
       (argumentOutputs original heads tails) := by
-  let output := fun head : ResultPair =>
-    if head.1 != original && isEmptyOrError head.1 then [head]
-    else RecursiveTasks.argumentTail head.1 (tails head)
-  have branches : List.Forall₂ (fun head results =>
-      if head.1 != original && isEmptyOrError head.1 then results = [head]
-      else ∃ tail, Realizes space (.args remaining types head.2 fuel (head.1 :: live)) tail ∧
-        results = RecursiveTasks.argumentTail head.1 tail) heads (heads.map output) := by
-    apply List.forall₂_map_right_iff.mpr
-    apply List.forall₂_same.mpr
-    intro head member
-    cases guard : head.1 != original && isEmptyOrError head.1 with
-    | false =>
-        simp only [guard, Bool.false_eq_true, if_false, output]
-        exact ⟨tails head, children head member guard, rfl⟩
-    | true => simp only [guard, if_true, output]
-  simpa only [argumentOutputs, output, ← List.flatMap_def] using
-    argument_heads_branches_realizes space original remaining types fuel live branches
+  have branches := (argumentBranchPlan original remaining types fuel live).rowResults_map
+    (step := (FirstSuccessRecursiveExecution.machine HE.GroundedDispatch.none).reading.silent) (space := space) heads tails children
+  have run := argument_heads_branches_realizes space original remaining types fuel live branches
+  rw [← List.flatMap_def] at run
+  exact run
 
 theorem arguments_cons_mixed_realizes (space : Space) (original expected : Atom)
     (remaining types : List Atom) (incoming : Bindings) (fuel : Nat) (live : List Atom)
@@ -1100,18 +1057,12 @@ theorem arguments_cons_mixed_realizes (space : Space) (original expected : Atom)
       Realizes space (.args remaining types head.2 fuel (head.1 :: live)) (tails head)) :
     Realizes space (.args (original :: remaining) (expected :: types) incoming (fuel + 1) live)
       (argumentOutputs original heads tails) := by
-  intro stack emitted
-  have begin := enter_request space HE.GroundedDispatch.none
-    (.args (original :: remaining) (expected :: types) incoming (fuel + 1) live) stack emitted
-  have head := headRun (.argumentHeads original remaining types fuel live :: stack) emitted
-  have transfer := consume_continuation space HE.GroundedDispatch.none
-    (.argumentHeads original remaining types fuel live) heads stack emitted
-  have tails := argument_heads_mixed_realizes space original remaining types fuel live heads tails
-    children stack emitted
-  exact begin.trans (by
-    simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-      RecursiveMachine.resume, List.cons_append, List.nil_append] using
-      head.trans (transfer.trans tails))
+  refine FramedPath.trans (third := []) (FramedPath.receive (first := []) (last := []) (receiver := Frame.argumentHeads original remaining types fuel live) ?_ headRun ?_)
+    (argument_heads_mixed_realizes space original remaining types fuel live heads tails children)
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none (.args (original :: remaining) (expected :: types) incoming (fuel + 1) live) stack emitted
+  · intro stack emitted
+    exact consume_continuation space HE.GroundedDispatch.none (Frame.argumentHeads original remaining types fuel live) heads stack emitted
 
 /-- Resume directly at the saved head-return frame. The selected head service
 is not among the assumptions needed to execute this residual configuration. -/
@@ -1167,18 +1118,12 @@ theorem arguments_cons_with_branches_realizes (space : Space) (original expected
         output = RecursiveTasks.argumentTail head.1 tails) heads outputs) :
     Realizes space (.args (original :: remaining) (expected :: types) incoming (fuel + 1) live)
       outputs.flatten := by
-  intro stack emitted
-  have begin := enter_request space HE.GroundedDispatch.none
-    (.args (original :: remaining) (expected :: types) incoming (fuel + 1) live) stack emitted
-  have head := headRun (.argumentHeads original remaining types fuel live :: stack) emitted
-  have transfer := consume_continuation space HE.GroundedDispatch.none
-    (.argumentHeads original remaining types fuel live) heads stack emitted
-  have tails := argument_heads_realizes space original remaining types fuel live safe branches
-    stack emitted
-  exact begin.trans (by
-    simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-      RecursiveMachine.resume, List.cons_append, List.nil_append] using
-      head.trans (transfer.trans tails))
+  refine FramedPath.trans (third := []) (FramedPath.receive (first := []) (last := []) (receiver := Frame.argumentHeads original remaining types fuel live) ?_ headRun ?_)
+    (argument_heads_realizes space original remaining types fuel live safe branches)
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none (.args (original :: remaining) (expected :: types) incoming (fuel + 1) live) stack emitted
+  · intro stack emitted
+    exact consume_continuation space HE.GroundedDispatch.none (Frame.argumentHeads original remaining types fuel live) heads stack emitted
 
 theorem argument_heads (space : Space) (original : Atom) (remaining types : List Atom)
     (bindings : Bindings) (fuel : Nat) (live : List Atom) (heads : List Atom)
@@ -3504,16 +3449,23 @@ theorem consume_continuation (space : Space) (frame : Frame) (results : ResultSe
 
 
 
+private theorem appendFrames (space : Space) :
+    AppendFrames (Checked.machine HE.GroundedDispatch.none).reading.silent space where
+  resumeTail rest head := by
+    intro stack emitted
+    simpa only [RecursiveMachine.resume, List.cons_append, List.nil_append] using
+      consume_continuation space (.append rest) head stack emitted
+  restoreHead head tail := by
+    intro stack emitted
+    simpa only [RecursiveMachine.resume, List.cons_append, List.nil_append] using
+      consume_continuation space (.prepend head) tail stack emitted
+
 theorem append_results (space : Space) (remaining : Task) (first second : ResultSet)
     (tail : Realizes space remaining second) (stack : List Frame) (emitted : ResultSet) :
     SilentPath
       ⟨space, .returning first, .append remaining :: stack, emitted⟩
       ⟨space, .returning (first ++ second), stack, emitted⟩ := by
-  have begin := consume_continuation space (.append remaining) first stack emitted
-  have endPath := consume_continuation space (.prepend first) second stack emitted
-  exact begin.trans (by
-    simpa only [RecursiveMachine.resume, List.cons_append, List.nil_append] using
-      (tail (.prepend first :: stack) emitted).trans endPath)
+  exact (appendFrames space).collect remaining first second tail stack emitted
 
 
 theorem atoms_realizes (space : Space) (expected : Atom) (fuel : Nat) (live : List Atom)
@@ -3521,22 +3473,14 @@ theorem atoms_realizes (space : Space) (expected : Atom) (fuel : Nat) (live : Li
     (children : List.Forall₂ (fun request output =>
       Realizes space (.atom request.1 expected request.2 fuel live) output) requests outputs) :
     Realizes space (.atoms expected fuel requests live) outputs.flatten := by
-  induction children with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatten_nil] using
-        enter_request space (.atoms expected fuel [] live) stack emitted
-  | @cons request output requests outputs child children ih =>
-      intro stack emitted
-      let rest := Task.atoms expected fuel requests live
-      have begin := enter_request space
-        (.atoms expected fuel (request :: requests) live) stack emitted
-      have body := child (.append rest :: stack) emitted
-      have finish := append_results space rest output outputs.flatten ih stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.flatten_cons, rest] using body.trans finish)
+  refine (appendFrames space).traverseTasks
+    (fun requests => Task.atoms expected fuel requests live)
+    (fun request => Task.atom request.1 expected request.2 fuel live) ?_ ?_ children
+  · intro stack emitted
+    exact enter_request space (Task.atoms expected fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stack emitted
+    exact enter_request space (Task.atoms expected fuel (⟨value, bindings⟩ :: rest) live)
+      stack emitted
 
 
 theorem returned_notReducible_realizes (space : Space) (original expected : Atom)
@@ -3577,22 +3521,14 @@ theorem returns_realizes (space : Space) (original expected : Atom) (fuel : Nat)
     (children : List.Forall₂ (fun request output =>
       Realizes space (.returned original request.1 expected request.2 fuel live) output) requests outputs) :
     Realizes space (.returns original expected fuel requests live) outputs.flatten := by
-  induction children with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatten_nil] using
-        enter_request space (.returns original expected fuel [] live) stack emitted
-  | @cons request output requests outputs child children ih =>
-      intro stack emitted
-      let rest := Task.returns original expected fuel requests live
-      have begin := enter_request space
-        (.returns original expected fuel (request :: requests) live) stack emitted
-      have body := child (.append rest :: stack) emitted
-      have finish := append_results space rest output outputs.flatten ih stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.flatten_cons, rest] using body.trans finish)
+  refine (appendFrames space).traverseTasks
+    (fun requests => Task.returns original expected fuel requests live)
+    (fun request => Task.returned original request.1 expected request.2 fuel live) ?_ ?_ children
+  · intro stack emitted
+    exact enter_request space (Task.returns original expected fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stack emitted
+    exact enter_request space (Task.returns original expected fuel (⟨value, bindings⟩ :: rest) live)
+      stack emitted
 
 /-- Query preparation retains every surviving merge before any producer or
 typed return continuation is entered. -/
@@ -3604,34 +3540,23 @@ theorem equations_read_realizes (space : Space) (original expected : Atom)
         merged.applyFullCovered candidate.1 fuel = true) :
     Realizes space (.equations original expected incoming fuel candidates live)
       (candidates.flatMap (equationInputs incoming fuel)) := by
-  induction candidates with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatMap_nil] using
-        enter_request space
-          (.equations original expected incoming fuel [] live) stack emitted
-  | cons candidate candidates ih =>
-      intro stack emitted
-      let rest := Task.equations original expected incoming fuel candidates live
-      have checked := covered candidate List.mem_cons_self
-      have remainder := ih (fun next member => covered next (List.mem_cons_of_mem _ member))
-      have ready : FirstSuccessRecursiveStrategy.taskReady space GroundedDispatch.none
-          (.equations original expected incoming fuel (candidate :: candidates) live) = true := by
-        apply Bool.and_eq_true_iff.mpr
-        refine ⟨checked.1, List.all_eq_true.mpr ?_⟩
-        intro merged member
-        by_cases loop : merged.hasLoop = true
-        · simp [loop]
-        · have clean : merged.hasLoop = false := by cases found : merged.hasLoop <;> simp_all
-          simp [clean, checked.2 merged member clean]
-      have begin := enter_request space
-        (.equations original expected incoming fuel (candidate :: candidates) live) stack emitted ready
-      have finish := append_results space rest (equationInputs incoming fuel candidate)
-        (candidates.flatMap (equationInputs incoming fuel)) remainder stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          equationInputs, List.cons_append, List.nil_append, List.flatMap_cons, rest] using finish)
+  refine (appendFrames space).traverseMap
+    (fun rows => .equations original expected incoming fuel rows live)
+    (equationInputs incoming fuel) ?_ candidates ?_
+  · intro stack emitted
+    exact enter_request space (.equations original expected incoming fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ member rest stack emitted
+    obtain ⟨mergeReady, readReady⟩ := covered ⟨value, bindings⟩ member
+    have ready : FirstSuccessRecursiveStrategy.taskReady space GroundedDispatch.none
+        (.equations original expected incoming fuel (⟨value, bindings⟩ :: rest) live) = true := by
+      refine Bool.and_eq_true_iff.mpr ⟨mergeReady, List.all_eq_true.mpr ?_⟩
+      intro merged present
+      by_cases loop : merged.hasLoop = true
+      · simp [loop]
+      · have clean : merged.hasLoop = false := Bool.eq_false_of_not_eq_true loop
+        simp [clean, readReady merged present clean]
+    exact enter_request space
+      (.equations original expected incoming fuel (⟨value, bindings⟩ :: rest) live) stack emitted ready
 
 theorem produced_ordinary_realizes (space : Space) (value : Atom) (bindings : Bindings)
     (fuel : Nat) (live : List Atom) (caller : Option Atom)
@@ -3657,23 +3582,26 @@ theorem productions_ordinary_realizes (space : Space) (fuel : Nat)
     (live : List Atom) (caller : Option Atom) (results : ResultSet)
     (ordinary : ∀ result ∈ results, ¬Spec.Eval.Minimal.IsFunction result.1) :
     Realizes space (.productions (fuel + 1) results live caller) results := by
-  induction results with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, List.nil_append] using
-        enter_request space (.productions (fuel + 1) [] live caller) stack emitted
-  | cons result results ih =>
-      intro stack emitted
-      let rest := Task.productions (fuel + 1) results live caller
-      have begin := enter_request space
-        (.productions (fuel + 1) (result :: results) live caller) stack emitted
-      have body := produced_ordinary_realizes space result.1 result.2 fuel live caller
-        (ordinary result List.mem_cons_self) (.append rest :: stack) emitted
-      have finish := append_results space rest [result] results
-        (ih (fun r member => ordinary r (List.mem_cons_of_mem _ member))) stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.singleton_append, rest] using body.trans finish)
+  have children : List.Forall₂
+      (fun request output => Realizes space
+        (.produced request.1 request.2 (fuel + 1) live caller) output)
+      results (results.map fun row => [row]) := by
+    apply List.forall₂_map_right_iff.mpr
+    apply List.forall₂_same.mpr
+    intro row member
+    exact produced_ordinary_realizes space row.1 row.2 fuel live caller (ordinary row member)
+  have run := (appendFrames space).traverseTasks
+      (fun requests => Task.productions (fuel + 1) requests live caller)
+      (fun request => Task.produced request.1 request.2 (fuel + 1) live caller)
+      (fun stack emitted => enter_request space
+        (.productions (fuel + 1) [] live caller) stack emitted)
+      (by
+        rintro ⟨value, bindings⟩ rest stack emitted
+        exact enter_request space
+          (.productions (fuel + 1) (⟨value, bindings⟩ :: rest) live caller) stack emitted)
+      children
+  rw [← List.flatMap_def, List.flatMap_singleton'] at run
+  exact run
 
 theorem producer_ordinary_realizes (space : Space) (original expected : Atom)
     (incoming : Bindings) (fuel : Nat) (live : List Atom) (raw results : ResultSet)
@@ -3839,22 +3767,14 @@ theorem calls_realizes (space : Space) (expected : Atom) (fuel : Nat) (live : Li
     (children : List.Forall₂ (fun request output =>
       Realizes space (.call request.1 expected request.2 fuel live) output) requests outputs) :
     Realizes space (.calls expected fuel requests live) outputs.flatten := by
-  induction children with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatten_nil] using
-        enter_request space (.calls expected fuel [] live) stack emitted
-  | @cons request output requests outputs child children ih =>
-      intro stack emitted
-      let rest := Task.calls expected fuel requests live
-      have begin := enter_request space
-        (.calls expected fuel (request :: requests) live) stack emitted
-      have body := child (.append rest :: stack) emitted
-      have finish := append_results space rest output outputs.flatten ih stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.flatten_cons, rest] using body.trans finish)
+  refine (appendFrames space).traverseTasks
+    (fun requests => Task.calls expected fuel requests live)
+    (fun request => Task.call request.1 expected request.2 fuel live) ?_ ?_ children
+  · intro stack emitted
+    exact enter_request space (Task.calls expected fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stack emitted
+    exact enter_request space (Task.calls expected fuel (⟨value, bindings⟩ :: rest) live)
+      stack emitted
 
 
 theorem argument_heads_branches_realizes (space : Space) (original : Atom)
@@ -3865,42 +3785,23 @@ theorem argument_heads_branches_realizes (space : Space) (original : Atom)
       else ∃ tails, Realizes space (.args remaining types head.2 fuel (head.1 :: live)) tails ∧
         output = RecursiveTasks.argumentTail head.1 tails) heads outputs) :
     Realizes space (.argumentHeads original remaining types fuel heads live) outputs.flatten := by
-  induction branches with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.flatten_nil, List.nil_append] using enter_request space
-          (.argumentHeads original remaining types fuel [] live) stack emitted
-  | @cons head output heads outputs branch branches ih =>
-      intro stack emitted
-      let rest := Task.argumentHeads original remaining types fuel heads live
-      have begin := enter_request space
-        (.argumentHeads original remaining types fuel (head :: heads) live) stack emitted
-      cases guard : head.1 != original && isEmptyOrError head.1 with
-      | true =>
-          simp only [guard, if_true] at branch
-          subst output
-          have finish := append_results space rest [head] outputs.flatten ih stack emitted
-          exact begin.trans (by
-            simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, guard,
-              if_true, List.cons_append, List.nil_append, List.flatten_cons, rest] using finish)
-      | false =>
-          simp only [guard, Bool.false_eq_true, if_false] at branch
-          obtain ⟨tails, tailRun, rfl⟩ := branch
-          have child := tailRun (.argumentTail head.1 :: .append rest :: stack) emitted
-          have collect := consume_continuation space
-            (.argumentTail head.1) tails (.append rest :: stack) emitted
-          have finish := append_results space rest (RecursiveTasks.argumentTail head.1 tails)
-            outputs.flatten ih stack emitted
-          have collected : SilentPath
-              ⟨space, .returning tails, .argumentTail head.1 :: .append rest :: stack, emitted⟩
-              ⟨space, .returning (RecursiveTasks.argumentTail head.1 tails),
-                .append rest :: stack, emitted⟩ := by
-            simpa only [RecursiveMachine.resume, List.nil_append] using collect
-          exact begin.trans (by
-            simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, guard,
-              Bool.false_eq_true, if_false, List.cons_append, List.nil_append,
-              List.flatten_cons, rest] using child.trans (collected.trans finish))
+  let plan := argumentBranchPlan original remaining types fuel live
+  refine (appendFrames space).traverseBranches plan ?_ ?_ ?_ ?_ branches
+  · intro stack emitted
+    exact enter_request space (Task.argumentHeads original remaining types fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stopped stack emitted
+    simp only [plan, argumentBranchPlan] at stopped
+    simpa only [plan, argumentBranchPlan, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
+      stopped, if_true, List.cons_append, List.nil_append] using
+      enter_request space (Task.argumentHeads original remaining types fuel (⟨value, bindings⟩ :: rest) live) stack emitted
+  · rintro ⟨value, bindings⟩ rest running stack emitted
+    simp only [plan, argumentBranchPlan] at running
+    simpa only [plan, argumentBranchPlan, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
+      running, Bool.false_eq_true, if_false, List.cons_append, List.nil_append] using
+      enter_request space (Task.argumentHeads original remaining types fuel (⟨value, bindings⟩ :: rest) live) stack emitted
+  · intro row replies stack emitted
+    simpa only [plan, argumentBranchPlan, RecursiveMachine.resume, List.cons_append, List.nil_append] using
+      consume_continuation space (Frame.argumentTail row.1) replies stack emitted
 
 
 theorem argument_heads_realizes (space : Space) (original : Atom) (remaining types : List Atom)
@@ -3933,18 +3834,12 @@ theorem arguments_cons_with_branches_realizes (space : Space) (original expected
         output = RecursiveTasks.argumentTail head.1 tails) heads outputs) :
     Realizes space (.args (original :: remaining) (expected :: types) incoming (fuel + 1) live)
       outputs.flatten := by
-  intro stack emitted
-  have begin := enter_request space
-    (.args (original :: remaining) (expected :: types) incoming (fuel + 1) live) stack emitted
-  have head := headRun (.argumentHeads original remaining types fuel live :: stack) emitted
-  have transfer := consume_continuation space
-    (.argumentHeads original remaining types fuel live) heads stack emitted
-  have tails := argument_heads_realizes space original remaining types fuel live safe branches
-    stack emitted
-  exact begin.trans (by
-    simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-      RecursiveMachine.resume, List.cons_append, List.nil_append] using
-      head.trans (transfer.trans tails))
+  refine FramedPath.trans (third := []) (FramedPath.receive (first := []) (last := []) (receiver := Frame.argumentHeads original remaining types fuel live) ?_ headRun ?_)
+    (argument_heads_realizes space original remaining types fuel live safe branches)
+  · intro stack emitted
+    exact enter_request space (.args (original :: remaining) (expected :: types) incoming (fuel + 1) live) stack emitted
+  · intro stack emitted
+    exact consume_continuation space (Frame.argumentHeads original remaining types fuel live) heads stack emitted
 
 
 theorem function_head_retained (space : Space) (name : String) (domains : List Atom) (returned : Atom)
@@ -4240,39 +4135,25 @@ theorem body_results_realizes (space : Space) (fuel : Nat) (live : List Atom)
           request.2 fuel live caller) output
       else output = [(request.2.applyFull request.1 fuel, request.2)]) requests outputs) :
     Realizes space (.bodyResults fuel requests live caller) outputs.flatten := by
-  induction children with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatten_nil] using
-        enter_request space (.bodyResults fuel [] live caller) stack emitted
-  | @cons request output requests outputs child children ih =>
-      obtain ⟨covered, continuation⟩ := child
-      intro stack emitted
-      let rest := Task.bodyResults fuel requests live caller
-      have ready : FirstSuccessRecursiveStrategy.taskReady space GroundedDispatch.none
-          (.bodyResults fuel (request :: requests) live caller) = true := covered
-      have begin := enter_request space
-        (.bodyResults fuel (request :: requests) live caller) stack emitted ready
-      have finish := append_results space rest output outputs.flatten ih stack emitted
-      cases running : minimalInstruction (request.2.applyFull request.1 fuel) with
-      | false =>
-          have same : output = [(request.2.applyFull request.1 fuel, request.2)] := by
-            simpa only [running, Bool.false_eq_true, if_false] using continuation
-          apply begin.trans
-          simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-            running, Bool.false_eq_true, if_false, List.cons_append, List.nil_append,
-            List.flatten_cons, same, rest] using finish
-      | true =>
-          have child : Realizes space
-              (.functionBody (request.2.applyFull request.1 fuel) request.2 fuel live caller)
-              output := by
-            simpa only [running, if_true] using continuation
-          apply begin.trans
-          simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-            running, if_true, List.cons_append, List.nil_append,
-            List.flatten_cons, rest] using
-            (child (.append rest :: stack) emitted).trans finish
+  refine (appendFrames space).traverse
+    (fun requests => .bodyResults fuel requests live caller) ?_ (List.Forall₂.imp ?_ children)
+  · intro stack emitted
+    exact enter_request space (.bodyResults fuel [] live caller) stack emitted
+  · rintro ⟨value, bindings⟩ output ⟨covered, continuation⟩ rest stack emitted
+    have begin := enter_request space
+      (.bodyResults fuel (⟨value, bindings⟩ :: rest) live caller) stack emitted covered
+    cases running : minimalInstruction (bindings.applyFull value fuel) with
+    | false =>
+        simp only [running, Bool.false_eq_true, if_false] at continuation
+        subst output
+        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, running,
+          Bool.false_eq_true, if_false, List.cons_append, List.nil_append] using begin
+    | true =>
+        simp only [running, if_true] at continuation
+        apply begin.trans
+        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, running,
+          if_true, List.cons_append, List.nil_append] using
+          continuation (.append (.bodyResults fuel rest live caller) :: stack) emitted
 
 /-- Entering a function body retains its receiver while the actual minimal
 run produces rows; the body traversal consumes that exact ordered list. -/
@@ -4281,17 +4162,12 @@ theorem function_body_realizes (space : Space) (value : Atom) (bindings : Bindin
     (child : Realizes space (.minimal value bindings fuel live caller) raw)
     (continuation : Realizes space (.bodyResults fuel raw live caller) results) :
     Realizes space (.functionBody value bindings (fuel + 1) live caller) results := by
-  intro stack emitted
-  let receiver := Frame.bodyResults fuel live caller
-  have begin := enter_request space (.functionBody value bindings (fuel + 1) live caller)
-    stack emitted
-  have resume := consume_continuation space receiver raw stack emitted
-  apply begin.trans
-  simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-    List.cons_append, List.nil_append, receiver] using
-    (child (receiver :: stack) emitted).trans (resume.trans (by
-      simpa only [RecursiveMachine.resume, List.nil_append, receiver] using
-        continuation stack emitted))
+  refine FramedPath.trans (third := []) (FramedPath.receive (first := []) (last := []) (receiver := Frame.bodyResults fuel live caller) ?_ child ?_)
+    (continuation)
+  · intro stack emitted
+    exact enter_request space (.functionBody value bindings (fuel + 1) live caller) stack emitted
+  · intro stack emitted
+    exact consume_continuation space (Frame.bodyResults fuel live caller) raw stack emitted
 
 /-- The function return frame preserves every body's binding endpoint and
 uses the original saved caller for each non-return terminal. -/
@@ -4304,17 +4180,11 @@ theorem function_primitive_realizes (space : Space) (parts : List Atom)
     Realizes space (.primitive (.expression [.symbol "function", .expression parts])
       bindings (fuel + 1) live caller)
       (terminals.map fun result => (functionTerminal caller result.1, result.2)) := by
-  intro stack emitted
-  let receiver := Frame.functionTerminal caller
-  have begin := enter_request space
-    (.primitive (.expression [.symbol "function", .expression parts])
-      bindings (fuel + 1) live caller) stack emitted
-  have resume := consume_continuation space receiver terminals stack emitted
-  apply begin.trans
-  simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-    List.cons_append, List.nil_append, receiver] using
-    (child (receiver :: stack) emitted).trans (by
-      simpa only [RecursiveMachine.resume, List.nil_append, receiver] using resume)
+  refine FramedPath.receive (first := []) (last := []) (receiver := Frame.functionTerminal caller) ?_ child ?_
+  · intro stack emitted
+    exact enter_request space (.primitive (.expression [.symbol "function", .expression parts]) bindings (fuel + 1) live caller) stack emitted
+  · intro stack emitted
+    exact consume_continuation space (Frame.functionTerminal caller) terminals stack emitted
 
 /-- Emitted function syntax runs through the saved function receiver. This
 rule does not infer completed-producer provenance from the syntax. -/
@@ -4353,22 +4223,14 @@ theorem productions_realizes (space : Space) (fuel : Nat) (live : List Atom)
     (children : List.Forall₂ (fun request output => Realizes space
       (.produced request.1 request.2 fuel live caller provenance) output) requests outputs) :
     Realizes space (.productions fuel requests live caller provenance) outputs.flatten := by
-  induction children with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatten_nil] using
-        enter_request space (.productions fuel [] live caller provenance) stack emitted
-  | @cons request output requests outputs child children ih =>
-      intro stack emitted
-      let rest := Task.productions fuel requests live caller provenance
-      have begin := enter_request space
-        (.productions fuel (request :: requests) live caller provenance) stack emitted
-      have finish := append_results space rest output outputs.flatten ih stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.flatten_cons, rest] using
-          (child (.append rest :: stack) emitted).trans finish)
+  refine (appendFrames space).traverseTasks
+    (fun requests => Task.productions fuel requests live caller provenance)
+    (fun request => Task.produced request.1 request.2 fuel live caller provenance) ?_ ?_ children
+  · intro stack emitted
+    exact enter_request space (Task.productions fuel [] live caller provenance) stack emitted
+  · rintro ⟨value, bindings⟩ rest stack emitted
+    exact enter_request space (Task.productions fuel (⟨value, bindings⟩ :: rest) live caller provenance)
+      stack emitted
 
 end Covered
 
@@ -4572,22 +4434,14 @@ theorem minimals_realizes (space : Space) (fuel : Nat) (live : List Atom)
     (children : List.Forall₂ (fun request output =>
       Realizes space (.minimal request.1 request.2 fuel live caller) output) requests outputs) :
     Realizes space (.minimals fuel requests live caller) outputs.flatten := by
-  induction children with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        List.nil_append, List.flatten_nil] using
-        enter_request space (.minimals fuel [] live caller) stack emitted
-  | @cons request output requests outputs child children ih =>
-      intro stack emitted
-      let rest := Task.minimals fuel requests live caller
-      have begin := enter_request space
-        (.minimals fuel (request :: requests) live caller) stack emitted
-      have finish := append_results space rest output outputs.flatten ih stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.flatten_cons, rest] using
-          (child (.append rest :: stack) emitted).trans finish)
+  refine (appendFrames space).traverseTasks
+    (fun requests => Task.minimals fuel requests live caller)
+    (fun request => Task.minimal request.1 request.2 fuel live caller) ?_ ?_ children
+  · intro stack emitted
+    exact enter_request space (Task.minimals fuel [] live caller) stack emitted
+  · rintro ⟨value, bindings⟩ rest stack emitted
+    exact enter_request space (Task.minimals fuel (⟨value, bindings⟩ :: rest) live caller)
+      stack emitted
 
 theorem primitive_unify_realizes (space : Space) (target pattern yes no : Atom)
     (incoming : Bindings) (fuel : Nat) (live : List Atom) (caller : Option Atom)
@@ -4739,22 +4593,16 @@ theorem chain_rows_realizes (space : Space) (name : String) (template : Atom) (f
     (rows : ResultSet) (covered : ∀ result ∈ rows, result.2.applyFullCovered result.1 fuel = true) :
     Realizes space (.chainRows name template fuel rows)
       (rows.map fun result => (chainSubstitute name (result.2.applyFull result.1 fuel) template, result.2)) := by
-  induction rows with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, List.nil_append, List.map_nil]
-        using enter_request space (.chainRows name template fuel []) stack emitted
-  | cons row rows ih =>
-      intro stack emitted
-      let rest := Task.chainRows name template fuel rows
-      have begin := enter_request space (.chainRows name template fuel (row :: rows)) stack emitted
-        (covered row List.mem_cons_self)
-      have tail := ih (fun result present => covered result (List.mem_cons_of_mem _ present))
-      have finish := append_results space rest
-        [(chainSubstitute name (row.2.applyFull row.1 fuel) template, row.2)] _ tail stack emitted
-      exact begin.trans (by
-        simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-          List.cons_append, List.nil_append, List.singleton_append, List.map_cons, rest] using finish)
+  have run := (appendFrames space).traverseMap
+      (fun requests => Task.chainRows name template fuel requests)
+      (fun row => [(chainSubstitute name (row.2.applyFull row.1 fuel) template, row.2)])
+      (fun stack emitted => enter_request space (.chainRows name template fuel []) stack emitted)
+      rows (by
+        rintro ⟨value, bindings⟩ member rest stack emitted
+        exact enter_request space (.chainRows name template fuel (⟨value, bindings⟩ :: rest))
+          stack emitted (covered ⟨value, bindings⟩ member))
+  rw [← List.map_eq_flatMap] at run
+  exact run
 
 theorem primitive_chain_realizes (space : Space) (atom : Atom) (name : String) (template : Atom)
     (incoming : Bindings) (fuel : Nat) (live : List Atom) (caller : Option Atom) (raw : ResultSet)
@@ -4765,17 +4613,12 @@ theorem primitive_chain_realizes (space : Space) (atom : Atom) (name : String) (
     Realizes space (.primitive (.expression [.symbol "chain", atom, .var name, template])
       incoming (fuel + 1) live caller)
       (raw.map fun result => (chainSubstitute name (result.2.applyFull result.1 fuel) template, result.2)) := by
-  intro stack emitted
-  let receiver := Frame.chainResults name template fuel
-  have begin := enter_request space
-    (.primitive (.expression [.symbol "chain", atom, .var name, template]) incoming (fuel + 1) live caller)
-    stack emitted
-  have resumed := consume_continuation space receiver raw stack emitted
-  exact begin.trans (by
-    simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, List.cons_append,
-      List.nil_append, receiver] using (child (receiver :: stack) emitted).trans (resumed.trans (by
-        simpa only [RecursiveMachine.resume, List.nil_append, receiver] using
-          chain_rows_realizes space name template fuel raw covered stack emitted)))
+  refine FramedPath.trans (third := []) (FramedPath.receive (first := []) (last := []) (receiver := Frame.chainResults name template fuel) ?_ child ?_)
+    (chain_rows_realizes space name template fuel raw covered)
+  · intro stack emitted
+    exact enter_request space (.primitive (.expression [.symbol "chain", atom, .var name, template]) incoming (fuel + 1) live caller) stack emitted
+  · intro stack emitted
+    exact consume_continuation space (Frame.chainResults name template fuel) raw stack emitted
 
 theorem minimal_chain_realizes (space : Space) (atom : Atom) (name : String) (template : Atom)
     (incoming : Bindings) (fuel : Nat) (live : List Atom) (caller : Option Atom) (raw results : ResultSet)
@@ -4784,18 +4627,12 @@ theorem minimal_chain_realizes (space : Space) (atom : Atom) (name : String) (te
     (continuation : Realizes space (.minimals fuel raw live caller) results) :
     Realizes space (.minimal (.expression [.symbol "chain", atom, .var name, template])
       incoming (fuel + 1) live caller) results := by
-  intro stack emitted
-  let receiver := Frame.minimalResults fuel live caller
-  have begin := enter_request space
-    (.minimal (.expression [.symbol "chain", atom, .var name, template]) incoming (fuel + 1) live caller)
-    stack emitted
-  have resumed := consume_continuation space receiver raw stack emitted
-  have instruction : minimalInstruction (.expression [.symbol "chain", atom, .var name, template]) = true := rfl
-  exact begin.trans (by
-    simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, instruction,
-      if_true, List.cons_append, List.nil_append, receiver] using
-        (child (receiver :: stack) emitted).trans (resumed.trans (by
-          simpa only [RecursiveMachine.resume, List.nil_append, receiver] using continuation stack emitted)))
+  refine FramedPath.trans (third := []) (FramedPath.receive (first := []) (last := []) (receiver := Frame.minimalResults fuel live caller) ?_ child ?_)
+    (continuation)
+  · intro stack emitted
+    exact enter_request space (.minimal (.expression [.symbol "chain", atom, .var name, template]) incoming (fuel + 1) live caller) stack emitted
+  · intro stack emitted
+    exact consume_continuation space (Frame.minimalResults fuel live caller) raw stack emitted
 
 end Covered
 
@@ -5381,14 +5218,18 @@ theorem tuple_singleton_realizes (space : Space) (value : Atom) (incoming : Bind
     (child : Realizes space (.atom value Atom.undefinedType incoming fuel live) heads) :
     Realizes space (.tuple (.expression [value]) incoming (fuel + 1) live)
       (heads.map HE.tupleSingleton) := by
-  intro stack emitted
-  have begin := enter_request space HE.GroundedDispatch.none
-    (.tuple (.expression [value]) incoming (fuel + 1) live) stack emitted
-  have done := consume_continuation space HE.GroundedDispatch.none .tupleSingleton heads stack emitted
-  exact begin.trans (by
-    simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-      RecursiveMachine.resume, List.cons_append, List.nil_append] using
-      (child (.tupleSingleton :: stack) emitted).trans done)
+  refine FramedPath.receive (first := []) (last := []) (receiver := Frame.tupleSingleton) ?_ child ?_
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none (.tuple (.expression [value]) incoming (fuel + 1) live) stack emitted
+  · intro stack emitted
+    exact consume_continuation space HE.GroundedDispatch.none (Frame.tupleSingleton) heads stack emitted
+
+private def tupleBranchPlan (tail : Atom) (fuel : Nat) (live : List Atom) : BranchPlan where
+  batch rows := .tupleHeads tail fuel rows live
+  stopped row := isEmptyOrError row.1
+  child row := .tuple tail row.2 fuel (row.1 :: live)
+  receiver row := .tupleTail row.1
+  readout row := RecursiveTasks.tupleTail row.1
 
 /-- Each nonstopped physical head enters its own retained tuple tail. -/
 theorem tuple_heads_realizes (space : Space) (tail : Atom) (fuel : Nat) (live : List Atom)
@@ -5396,38 +5237,27 @@ theorem tuple_heads_realizes (space : Space) (tail : Atom) (fuel : Nat) (live : 
     (children : ∀ head ∈ heads, isEmptyOrError head.1 = false →
       Realizes space (.tuple tail head.2 fuel (head.1 :: live)) (tails head)) :
     Realizes space (.tupleHeads tail fuel heads live) (tupleOutputs heads tails) := by
-  induction heads with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        tupleOutputs, List.flatMap_nil, List.nil_append] using
-        enter_request space HE.GroundedDispatch.none (.tupleHeads tail fuel [] live) stack emitted
-  | cons head heads ih =>
-      have remaining := ih (fun selected member => children selected (List.mem_cons_of_mem _ member))
-      intro stack emitted
-      let rest := Task.tupleHeads tail fuel heads live
-      have begin := enter_request space HE.GroundedDispatch.none
-        (.tupleHeads tail fuel (head :: heads) live) stack emitted
-      cases stopped : isEmptyOrError head.1 with
-      | true =>
-          have done := append_results space rest [head] (tupleOutputs heads tails)
-            remaining stack emitted
-          exact begin.trans (by
-            simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, stopped,
-              if_true, List.cons_append, List.nil_append, tupleOutputs, List.flatMap_cons,
-              rest] using done)
-      | false =>
-          have child := children head (by simp) stopped
-            (.tupleTail head.1 :: .append rest :: stack) emitted
-          have resumed := consume_continuation space HE.GroundedDispatch.none
-            (.tupleTail head.1) (tails head) (.append rest :: stack) emitted
-          have done := append_results space rest (RecursiveTasks.tupleTail head.1 (tails head))
-            (tupleOutputs heads tails) remaining stack emitted
-          exact begin.trans (by
-            simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-              RecursiveMachine.resume, stopped, Bool.false_eq_true, if_false,
-              List.cons_append, List.nil_append, tupleOutputs, List.flatMap_cons, rest] using
-              child.trans (resumed.trans done))
+  let plan := tupleBranchPlan tail fuel live
+  have branches := plan.rowResults_map (step := (FirstSuccessRecursiveExecution.machine HE.GroundedDispatch.none).reading.silent)
+    (space := space) heads tails children
+  change Realizes space (.tupleHeads tail fuel heads live) (tupleOutputs heads tails)
+  rw [tupleOutputs, List.flatMap_def]
+  refine (appendFrames space).traverseBranches plan ?_ ?_ ?_ ?_ branches
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none (Task.tupleHeads tail fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stopped stack emitted
+    simp only [plan, tupleBranchPlan] at stopped
+    simpa only [plan, tupleBranchPlan, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
+      stopped, if_true, List.cons_append, List.nil_append] using
+      enter_request space HE.GroundedDispatch.none (Task.tupleHeads tail fuel (⟨value, bindings⟩ :: rest) live) stack emitted
+  · rintro ⟨value, bindings⟩ rest running stack emitted
+    simp only [plan, tupleBranchPlan] at running
+    simpa only [plan, tupleBranchPlan, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
+      running, Bool.false_eq_true, if_false, List.cons_append, List.nil_append] using
+      enter_request space HE.GroundedDispatch.none (Task.tupleHeads tail fuel (⟨value, bindings⟩ :: rest) live) stack emitted
+  · intro row replies stack emitted
+    simpa only [plan, tupleBranchPlan, RecursiveMachine.resume, List.cons_append, List.nil_append] using
+      consume_continuation space HE.GroundedDispatch.none (Frame.tupleTail row.1) replies stack emitted
 
 /-- Tuple head evaluation carries the whole pending tuple in its live scope. -/
 theorem tuple_cons_realizes (space : Space) (head second : Atom) (remaining : List Atom)
@@ -5440,17 +5270,12 @@ theorem tuple_cons_realizes (space : Space) (head second : Atom) (remaining : Li
         (selected.1 :: live)) (tails selected)) :
     Realizes space (.tuple (.expression (head :: second :: remaining)) incoming (fuel + 1) live)
       (tupleOutputs heads tails) := by
-  intro stack emitted
-  let receiver := Frame.tupleHeads (.expression (second :: remaining)) fuel live
-  have begin := enter_request space HE.GroundedDispatch.none
-    (.tuple (.expression (head :: second :: remaining)) incoming (fuel + 1) live) stack emitted
-  have resumed := consume_continuation space HE.GroundedDispatch.none receiver heads stack emitted
-  have done := tuple_heads_realizes space (.expression (second :: remaining)) fuel live
-    heads tails children stack emitted
-  exact begin.trans (by
-    simpa only [receiver, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-      RecursiveMachine.resume, List.cons_append, List.nil_append] using
-      (first (receiver :: stack) emitted).trans (resumed.trans done))
+  refine FramedPath.trans (third := []) (FramedPath.receive (first := []) (last := []) (receiver := Frame.tupleHeads (.expression (second :: remaining)) fuel live) ?_ first ?_)
+    (tuple_heads_realizes space (.expression (second :: remaining)) fuel live heads tails children)
+  · intro stack emitted
+    exact enter_request space HE.GroundedDispatch.none (.tuple (.expression (head :: second :: remaining)) incoming (fuel + 1) live) stack emitted
+  · intro stack emitted
+    exact consume_continuation space HE.GroundedDispatch.none (Frame.tupleHeads (.expression (second :: remaining)) fuel live) heads stack emitted
 
 /-- The actual Undefined operator lookup selects tuple interpretation before
 the existing ordinary call receiver and success-priority collection. -/
@@ -5526,14 +5351,11 @@ theorem tuple_singleton_realizes (space : Space) (value : Atom) (incoming : Bind
     (child : Realizes space (.atom value Atom.undefinedType incoming fuel live) heads) :
     Realizes space (.tuple (.expression [value]) incoming (fuel + 1) live)
       (heads.map HE.tupleSingleton) := by
-  intro stack emitted
-  have begin := enter_request space
-    (.tuple (.expression [value]) incoming (fuel + 1) live) stack emitted
-  have done := consume_continuation space .tupleSingleton heads stack emitted
-  exact begin.trans (by
-    simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-      RecursiveMachine.resume, List.cons_append, List.nil_append] using
-      (child (.tupleSingleton :: stack) emitted).trans done)
+  refine FramedPath.receive (first := []) (last := []) (receiver := Frame.tupleSingleton) ?_ child ?_
+  · intro stack emitted
+    exact enter_request space (.tuple (.expression [value]) incoming (fuel + 1) live) stack emitted
+  · intro stack emitted
+    exact consume_continuation space (Frame.tupleSingleton) heads stack emitted
 
 /-- Each nonstopped physical head enters its own retained tuple tail. -/
 theorem tuple_heads_realizes (space : Space) (tail : Atom) (fuel : Nat) (live : List Atom)
@@ -5541,38 +5363,27 @@ theorem tuple_heads_realizes (space : Space) (tail : Atom) (fuel : Nat) (live : 
     (children : ∀ head ∈ heads, isEmptyOrError head.1 = false →
       Realizes space (.tuple tail head.2 fuel (head.1 :: live)) (tails head)) :
     Realizes space (.tupleHeads tail fuel heads live) (tupleOutputs heads tails) := by
-  induction heads with
-  | nil =>
-      intro stack emitted
-      simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-        tupleOutputs, List.flatMap_nil, List.nil_append] using
-        enter_request space (.tupleHeads tail fuel [] live) stack emitted
-  | cons head heads ih =>
-      have remaining := ih (fun selected member => children selected (List.mem_cons_of_mem _ member))
-      intro stack emitted
-      let rest := Task.tupleHeads tail fuel heads live
-      have begin := enter_request space
-        (.tupleHeads tail fuel (head :: heads) live) stack emitted
-      cases stopped : isEmptyOrError head.1 with
-      | true =>
-          have done := append_results space rest [head] (tupleOutputs heads tails)
-            remaining stack emitted
-          exact begin.trans (by
-            simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter, stopped,
-              if_true, List.cons_append, List.nil_append, tupleOutputs, List.flatMap_cons,
-              rest] using done)
-      | false =>
-          have child := children head (by simp) stopped
-            (.tupleTail head.1 :: .append rest :: stack) emitted
-          have resumed := consume_continuation space
-            (.tupleTail head.1) (tails head) (.append rest :: stack) emitted
-          have done := append_results space rest (RecursiveTasks.tupleTail head.1 (tails head))
-            (tupleOutputs heads tails) remaining stack emitted
-          exact begin.trans (by
-            simpa only [FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-              RecursiveMachine.resume, stopped, Bool.false_eq_true, if_false,
-              List.cons_append, List.nil_append, tupleOutputs, List.flatMap_cons, rest] using
-              child.trans (resumed.trans done))
+  let plan := tupleBranchPlan tail fuel live
+  have branches := plan.rowResults_map (step := (Checked.machine HE.GroundedDispatch.none).reading.silent)
+    (space := space) heads tails children
+  change Realizes space (.tupleHeads tail fuel heads live) (tupleOutputs heads tails)
+  rw [tupleOutputs, List.flatMap_def]
+  refine (appendFrames space).traverseBranches plan ?_ ?_ ?_ ?_ branches
+  · intro stack emitted
+    exact enter_request space (Task.tupleHeads tail fuel [] live) stack emitted
+  · rintro ⟨value, bindings⟩ rest stopped stack emitted
+    simp only [plan, tupleBranchPlan] at stopped
+    simpa only [plan, tupleBranchPlan, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
+      stopped, if_true, List.cons_append, List.nil_append] using
+      enter_request space (Task.tupleHeads tail fuel (⟨value, bindings⟩ :: rest) live) stack emitted
+  · rintro ⟨value, bindings⟩ rest running stack emitted
+    simp only [plan, tupleBranchPlan] at running
+    simpa only [plan, tupleBranchPlan, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
+      running, Bool.false_eq_true, if_false, List.cons_append, List.nil_append] using
+      enter_request space (Task.tupleHeads tail fuel (⟨value, bindings⟩ :: rest) live) stack emitted
+  · intro row replies stack emitted
+    simpa only [plan, tupleBranchPlan, RecursiveMachine.resume, List.cons_append, List.nil_append] using
+      consume_continuation space (Frame.tupleTail row.1) replies stack emitted
 
 /-- Tuple head evaluation carries the whole pending tuple in its live scope. -/
 theorem tuple_cons_realizes (space : Space) (head second : Atom) (remaining : List Atom)
@@ -5585,17 +5396,12 @@ theorem tuple_cons_realizes (space : Space) (head second : Atom) (remaining : Li
         (selected.1 :: live)) (tails selected)) :
     Realizes space (.tuple (.expression (head :: second :: remaining)) incoming (fuel + 1) live)
       (tupleOutputs heads tails) := by
-  intro stack emitted
-  let receiver := Frame.tupleHeads (.expression (second :: remaining)) fuel live
-  have begin := enter_request space
-    (.tuple (.expression (head :: second :: remaining)) incoming (fuel + 1) live) stack emitted
-  have resumed := consume_continuation space receiver heads stack emitted
-  have done := tuple_heads_realizes space (.expression (second :: remaining)) fuel live
-    heads tails children stack emitted
-  exact begin.trans (by
-    simpa only [receiver, FirstSuccessRecursiveStrategy.enter, RecursiveMachine.enter,
-      RecursiveMachine.resume, List.cons_append, List.nil_append] using
-      (first (receiver :: stack) emitted).trans (resumed.trans done))
+  refine FramedPath.trans (third := []) (FramedPath.receive (first := []) (last := []) (receiver := Frame.tupleHeads (.expression (second :: remaining)) fuel live) ?_ first ?_)
+    (tuple_heads_realizes space (.expression (second :: remaining)) fuel live heads tails children)
+  · intro stack emitted
+    exact enter_request space (.tuple (.expression (head :: second :: remaining)) incoming (fuel + 1) live) stack emitted
+  · intro stack emitted
+    exact consume_continuation space (Frame.tupleHeads (.expression (second :: remaining)) fuel live) heads stack emitted
 
 /-- The actual Undefined operator lookup selects tuple interpretation before
 the existing ordinary call receiver and success-priority collection. -/
@@ -7623,20 +7429,7 @@ theorem drain_returning (space : Space) (results emitted : ResultSet) (later : N
     (Checked.machine HE.GroundedDispatch.none).run (results.length + 1 + later)
       ⟨space, .returning results, [], emitted⟩ =
       (results, .finished ⟨space, .returning [], [], emitted ++ results⟩) := by
-  induction results generalizing emitted with
-  | nil =>
-      have stepped : (Checked.machine HE.GroundedDispatch.none).step
-          ⟨space, .returning [], [], emitted⟩ = some (.finish ⟨space, .returning [], [], emitted⟩) := rfl
-      rw [show ([] : ResultSet).length + 1 + later = later + 1 by simp; omega]
-      simpa only [List.append_nil] using
-        (Checked.machine HE.GroundedDispatch.none).run_succ_finish (fuel := later) stepped
-  | cons result results ih =>
-      have stepped : (Checked.machine HE.GroundedDispatch.none).step
-          ⟨space, .returning (result :: results), [], emitted⟩ =
-            some (.publish [result] ⟨space, .returning results, [], emitted ++ [result]⟩) := rfl
-      rw [show (result :: results).length + 1 + later = (results.length + 1 + later) + 1 by simp; omega,
-        (Checked.machine HE.GroundedDispatch.none).run_succ_publish stepped, ih]
-      simp only [List.singleton_append, List.append_assoc]
+  exact (checkedOutput space HE.GroundedDispatch.none rawTypes).drain results emitted later
 
 /-- A constructed finite task path earns completion with all changed binding
 frames and occurrences intact. This law does not require an equation-free
@@ -7646,13 +7439,7 @@ theorem realizes_completed {space : Space} {task : Task} {results : ResultSet}
     ∃ budget, ∀ later, (Checked.machine HE.GroundedDispatch.none).run (budget + later)
       ⟨space, .work task, [], earned⟩ =
       (results, .finished ⟨space, .returning [], [], earned ++ results⟩) := by
-  obtain ⟨administrative, realized⟩ := (Checked.machine HE.GroundedDispatch.none).silent_run
-    (realized [] earned)
-  refine ⟨administrative + results.length + 1, fun later => ?_⟩
-  rw [show administrative + results.length + 1 + later =
-    administrative + (results.length + 1 + later) by omega,
-    realized (results.length + 1 + later)]
-  exact drain_returning space results earned later
+  exact (checkedOutput space HE.GroundedDispatch.none rawTypes).complete (realized [] earned)
 
 /-- A scheduler pause retains enough work to finish using the bound already
 constructed from the source proof. No completed suffix is assumed. -/
@@ -7666,13 +7453,8 @@ theorem completes_saved {space : Space} {task : Task} {results : ResultSet}
         (after, .finished ⟨space, .returning [], [], earned ++ results⟩) ∧
       before ++ after = results := by
   obtain ⟨budget, complete⟩ := realizes_completed realized earned
-  have resumed := Checked.resume_prefix HE.GroundedDispatch.none
-    ⟨space, .work task, [], earned⟩ saved first budget before paused
-  have whole := complete first
-  rw [Nat.add_comm budget first, resumed] at whole
-  refine ⟨budget, ((Checked.machine HE.GroundedDispatch.none).run budget saved).1, ?_, ?_⟩
-  · exact Prod.ext rfl (Prod.mk.inj whole).2
-  · exact (Prod.mk.inj whole).1
+  obtain ⟨after, resumed, events⟩ := Machine.finished_suffix paused complete
+  exact ⟨budget, after, resumed, events⟩
 
 end Covered
 
@@ -7999,20 +7781,7 @@ theorem drain_returning (space : Space) (results emitted : ResultSet) (later : N
     (machine HE.GroundedDispatch.none).run (results.length + 1 + later)
       ⟨space, .returning results, [], emitted⟩ =
       (results, .finished ⟨space, .returning [], [], emitted ++ results⟩) := by
-  induction results generalizing emitted with
-  | nil =>
-      have stepped : (machine HE.GroundedDispatch.none).step
-          ⟨space, .returning [], [], emitted⟩ = some (.finish ⟨space, .returning [], [], emitted⟩) := rfl
-      rw [show ([] : ResultSet).length + 1 + later = later + 1 by simp; omega]
-      simpa only [List.append_nil] using
-        (machine HE.GroundedDispatch.none).run_succ_finish (fuel := later) stepped
-  | cons result results ih =>
-      have stepped : (machine HE.GroundedDispatch.none).step
-          ⟨space, .returning (result :: results), [], emitted⟩ =
-            some (.publish [result] ⟨space, .returning results, [], emitted ++ [result]⟩) := rfl
-      rw [show (result :: results).length + 1 + later = (results.length + 1 + later) + 1 by simp; omega,
-        (machine HE.GroundedDispatch.none).run_succ_publish stepped, ih]
-      simp only [List.singleton_append, List.append_assoc]
+  exact (rawOutput space HE.GroundedDispatch.none rawTypes).drain results emitted later
 
 /-- A constructed finite task path earns completion with all changed binding
 frames and occurrences intact. This law does not require an equation-free
@@ -8022,13 +7791,7 @@ theorem realizes_completed {space : Space} {task : Task} {results : ResultSet}
     ∃ budget, ∀ later, (machine HE.GroundedDispatch.none).run (budget + later)
       ⟨space, .work task, [], earned⟩ =
       (results, .finished ⟨space, .returning [], [], earned ++ results⟩) := by
-  obtain ⟨administrative, realized⟩ := (machine HE.GroundedDispatch.none).silent_run
-    (realized [] earned)
-  refine ⟨administrative + results.length + 1, fun later => ?_⟩
-  rw [show administrative + results.length + 1 + later =
-    administrative + (results.length + 1 + later) by omega,
-    realized (results.length + 1 + later)]
-  exact drain_returning space results earned later
+  exact (rawOutput space HE.GroundedDispatch.none rawTypes).complete (realized [] earned)
 
 /-- Every admitted recursive source derivation completes with its actual
 binding-changing result occurrences and retained publication history. -/
@@ -8092,16 +7855,8 @@ theorem realizes_completed_unique {space : Space} {task : Task} {results : Resul
     (ran : (machine HE.GroundedDispatch.none).run budget
       ⟨space, .work task, [], earned⟩ = (actual, .finished finished)) :
     actual = results ∧ finished = ⟨space, .returning [], [], earned ++ results⟩ := by
-  obtain ⟨bound, complete⟩ := realizes_completed realized earned
-  have stable := (machine HE.GroundedDispatch.none).run_stable budget bound
-    ⟨space, .work task, [], earned⟩ (by
-      intro residual impossible
-      rw [ran] at impossible
-      cases impossible)
-  have same := complete budget
-  rw [Nat.add_comm bound budget, stable, ran] at same
-  have endpoints := Prod.mk.inj same
-  exact ⟨endpoints.1, Outcome.finished.inj endpoints.2⟩
+  obtain ⟨_, complete⟩ := realizes_completed realized earned
+  exact Machine.finished_unique ran complete
 
 /-- An actual finished run of the admitted source has exactly the derived
 occurrences; finishing does not authorize dropping retained bindings. -/
@@ -10086,6 +9841,55 @@ private theorem single_identity_application_derivation (live : List Atom) (argum
       omega) results call filtered
 
 
+private theorem singleton_prepared_rows {Input Output : Type}
+    {source : List Input} {prepare : Input → List Output} {chosen : Input} {result : Output}
+    (oneSource : source = [chosen]) (oneOutput : prepare chosen = [result])
+    {property : Input → Output → Prop} (holds : property chosen result) :
+    ∀ input ∈ source, ∀ output ∈ prepare input, property input output := by
+  intro input member output present
+  rw [oneSource] at member
+  obtain rfl := List.mem_singleton.mp member
+  rw [oneOutput] at present
+  obtain rfl := List.mem_singleton.mp present
+  exact holds
+
+private structure OrdinaryEquationPlan (comparison : SourceBindingComparison) (space : Space)
+    (live : List Atom) (invocation expected : Atom) (incoming : Bindings) (fuel : Nat)
+    (results : ResultSet) : Prop where
+  selected : rawQueryResults space invocation expected incoming fuel live ≠ []
+  evidence : ∀ candidate ∈ equationCandidates space live invocation expected incoming fuel,
+    ∀ request ∈ equationInputs incoming fuel candidate,
+      EquationBodyEvidence (comparison := comparison) space live invocation expected incoming candidate request
+  ordinary : ∀ candidate ∈ equationCandidates space live invocation expected incoming fuel,
+    ∀ request ∈ equationInputs incoming fuel candidate, ¬Spec.Eval.Minimal.IsFunction request.1
+  returns : ∀ candidate ∈ equationCandidates space live invocation expected incoming fuel,
+    ∀ request ∈ equationInputs incoming fuel candidate,
+      ReturnDerivation (comparison := comparison) space live invocation expected request.1 request.2 fuel results
+
+/-- The same source selections supply both the ordinary proof and its
+coverage proof. Each dependent premise is transported through the two
+actual singleton observations. -/
+private theorem singleEquationPlan {comparison : SourceBindingComparison} {space : Space}
+    {live : List Atom} {invocation expected : Atom} {incoming : Bindings} {fuel : Nat}
+    {candidate request : ResultPair} {results : ResultSet}
+    (query : equationCandidates space live invocation expected incoming fuel = [candidate])
+    (inputs : equationInputs incoming fuel candidate = [request])
+    (evidence : EquationBodyEvidence (comparison := comparison) space live invocation expected
+      incoming candidate request)
+    (nonfunction : ¬Spec.Eval.Minimal.IsFunction request.1)
+    (accepted : request.1 ≠ Atom.notReducible) (running : isEmptyOrError request.1 = false)
+    (body : AtomDerivation (comparison := comparison) space live request.1 expected request.2 fuel results) :
+    OrdinaryEquationPlan comparison space live invocation expected incoming fuel results := by
+  refine ⟨?_, singleton_prepared_rows query inputs evidence,
+    singleton_prepared_rows query inputs (property := fun _ row => ¬Spec.Eval.Minimal.IsFunction row.1)
+      nonfunction, singleton_prepared_rows query inputs ?_⟩
+  · change List.flatMap (equationInputs incoming fuel)
+      (equationCandidates space live invocation expected incoming fuel) ≠ []
+    rw [query]
+    simp [inputs]
+  · exact .evaluate live invocation expected request.1 request.2 fuel results accepted
+      (by simpa [Conformance.isEmptyOrErrorRel_iff_isEmptyOrError] using running) body
+
 private theorem single_equation_call_derivation {comparison : SourceBindingComparison} (space : Space) (name : String)
     (ordinary : name ≠ "unify" ∧ name ≠ "switch-minimal")
     (nonembedded : Spec.Eval.Minimal.embeddedInstruction (.expression [.symbol name]) = false)
@@ -10110,45 +9914,9 @@ private theorem single_equation_call_derivation {comparison : SourceBindingCompa
       decide) :
     CallDerivation (comparison := comparison) space live (.expression [.symbol name, argument])
       Atom.symbolType incoming (fuel + 1) results := by
-  have witnessed : ∀ selected ∈ equationCandidates space live
-      (.expression [.symbol name, argument]) Atom.symbolType incoming fuel,
-      ∀ prepared ∈ equationInputs incoming fuel selected,
-      EquationBodyEvidence (comparison := comparison) space live (.expression [.symbol name, argument])
-        Atom.symbolType incoming selected prepared := by
-    intro selected member prepared present
-    rw [query] at member
-    obtain rfl := List.mem_singleton.mp member
-    rw [inputs] at present
-    obtain rfl := List.mem_singleton.mp present
-    exact evidence
-  have ordinaryRequests : ∀ selected ∈ equationCandidates space live
-      (.expression [.symbol name, argument]) Atom.symbolType incoming fuel,
-      ∀ prepared ∈ equationInputs incoming fuel selected,
-      ¬Spec.Eval.Minimal.IsFunction prepared.1 := by
-    intro selected member prepared present
-    rw [query] at member
-    obtain rfl := List.mem_singleton.mp member
-    rw [inputs] at present
-    obtain rfl := List.mem_singleton.mp present
-    exact nonfunction
-  have children : ∀ selected ∈ equationCandidates space live
-      (.expression [.symbol name, argument]) Atom.symbolType incoming fuel,
-      ∀ prepared ∈ equationInputs incoming fuel selected,
-      ReturnDerivation (comparison := comparison) space live (.expression [.symbol name, argument]) Atom.symbolType
-        prepared.1 prepared.2 fuel results := by
-    intro selected member prepared present
-    rw [query] at member
-    obtain rfl := List.mem_singleton.mp member
-    rw [inputs] at present
-    obtain rfl := List.mem_singleton.mp present
-    exact .evaluate live (.expression [.symbol name, argument]) Atom.symbolType prepared.1 prepared.2
-      fuel results normal.1
-      (by simpa [Conformance.isEmptyOrErrorRel_iff_isEmptyOrError] using normal.2) body
+  have plan := singleEquationPlan query inputs evidence nonfunction normal.1 normal.2 body
   have constructed := CallDerivation.ordinaryEquations live name [argument] Atom.symbolType incoming fuel
-    (fun _ _ => results) ordinary nonembedded clean (by
-      change List.flatMap (equationInputs incoming fuel) (equationCandidates space live
-        (.expression [.symbol name, argument]) Atom.symbolType incoming fuel) ≠ []
-      rw [query]; simp [inputs]) witnessed ordinaryRequests children
+    (fun _ _ => results) ordinary nonembedded clean plan.selected plan.evidence plan.ordinary plan.returns
   simpa only [query, inputs, List.flatMap_cons, List.flatMap_nil, List.append_nil] using constructed
 
 private theorem single_raw_args_covered {comparison : SourceBindingComparison} (space : Space) (live : List Atom) (argument : Atom)
@@ -10248,51 +10016,13 @@ private theorem single_equation_call_covered {comparison : SourceBindingComparis
       decide) :
     (single_equation_call_derivation (comparison := comparison) space name ordinary nonembedded clean live argument incoming fuel
       candidate request results query inputs evidence body normal nonfunction).Covered := by
-  have witnessed : ∀ selected ∈ equationCandidates space live
-      (.expression [.symbol name, argument]) Atom.symbolType incoming fuel,
-      ∀ prepared ∈ equationInputs incoming fuel selected,
-      EquationBodyEvidence (comparison := comparison) space live (.expression [.symbol name, argument])
-        Atom.symbolType incoming selected prepared := by
-    intro selected member prepared present
-    rw [query] at member
-    obtain rfl := List.mem_singleton.mp member
-    rw [inputs] at present
-    obtain rfl := List.mem_singleton.mp present
-    exact evidence
-  have ordinaryRequests : ∀ selected ∈ equationCandidates space live
-      (.expression [.symbol name, argument]) Atom.symbolType incoming fuel,
-      ∀ prepared ∈ equationInputs incoming fuel selected,
-      ¬Spec.Eval.Minimal.IsFunction prepared.1 := by
-    intro selected member prepared present
-    rw [query] at member
-    obtain rfl := List.mem_singleton.mp member
-    rw [inputs] at present
-    obtain rfl := List.mem_singleton.mp present
-    exact nonfunction
-  have children : ∀ selected ∈ equationCandidates space live
-      (.expression [.symbol name, argument]) Atom.symbolType incoming fuel,
-      ∀ prepared ∈ equationInputs incoming fuel selected,
-      ReturnDerivation (comparison := comparison) space live (.expression [.symbol name, argument]) Atom.symbolType
-        prepared.1 prepared.2 fuel results := by
-    intro selected member prepared present
-    rw [query] at member
-    obtain rfl := List.mem_singleton.mp member
-    rw [inputs] at present
-    obtain rfl := List.mem_singleton.mp present
-    exact .evaluate live (.expression [.symbol name, argument]) Atom.symbolType prepared.1 prepared.2
-      fuel results normal.1
-      (by simpa [Conformance.isEmptyOrErrorRel_iff_isEmptyOrError] using normal.2) body
+  have plan := singleEquationPlan query inputs evidence nonfunction normal.1 normal.2 body
   have constructed := CallDerivation.ordinaryEquations live name [argument] Atom.symbolType incoming fuel
-    (fun _ _ => results) ordinary nonembedded clean (by
-      change List.flatMap (equationInputs incoming fuel) (equationCandidates space live
-        (.expression [.symbol name, argument]) Atom.symbolType incoming fuel) ≠ []
-      rw [query]; simp [inputs]) witnessed ordinaryRequests children
+    (fun _ _ => results) ordinary nonembedded clean plan.selected plan.evidence plan.ordinary plan.returns
   have covered : constructed.Covered := by
-    apply CallDerivation.Covered.ordinaryEquations (ordinary := ordinary) (nonembedded := nonembedded) (clean := clean)
-      (selected := by
-        change List.flatMap (equationInputs incoming fuel) (equationCandidates space live
-          (.expression [.symbol name, argument]) Atom.symbolType incoming fuel) ≠ []
-        rw [query]; simp [inputs]) (evidence := witnessed) (ordinaryBodies := ordinaryRequests) (bodies := children) queryCovered
+    apply CallDerivation.Covered.ordinaryEquations (ordinary := ordinary) (nonembedded := nonembedded)
+      (clean := clean) (selected := plan.selected) (evidence := plan.evidence)
+      (ordinaryBodies := plan.ordinary) (bodies := plan.returns) queryCovered
     · intro selected member
       rw [query] at member
       obtain rfl := List.mem_singleton.mp member

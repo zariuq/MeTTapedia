@@ -1,0 +1,4 @@
+provable sort wff;
+term unit: wff;
+term empty: wff;
+axiom proof_of_unit: $ unit $;

@@ -1,3 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveSinkObservation
+import Mettapedia.Languages.ProcessCalculi.MORK.PatternMatchTrace
 import Mettapedia.Languages.Metamath.MM2NormalAddressSegment
 
 /-!
@@ -26,57 +28,6 @@ open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveComputable
 open Mettapedia.Languages.ProcessCalculi.MORK.WQComputable
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
-
-private theorem stagedAdd_contains_of_row
-    (rows : List Subst) (substitution : Subst) (template candidate : Atom)
-    (rowMember : substitution ∈ rows)
-    (instantiates : instantiateTemplateAtom? substitution template =
-      some candidate) :
-    candidate ∈ rows.foldl
-      (stageReflectiveSupportSink (.add template)) [] := by
-  have stagePreserves : ∀ (remaining : List Subst) (staged : List Atom),
-      candidate ∈ staged →
-      candidate ∈ remaining.foldl
-        (stageReflectiveSupportSink (.add template)) staged := by
-    intro remaining
-    induction remaining with
-    | nil =>
-        intro staged member
-        exact member
-    | cons head tail induction =>
-        intro staged member
-        apply induction
-        simp only [stageReflectiveSupportSink, Sink.atom]
-        split
-        · exact member
-        · simp only [insertSupport]
-          split
-          · exact member
-          · exact List.mem_append_left _ member
-  suffices containsOfRow : ∀ (remaining : List Subst) (staged : List Atom),
-      substitution ∈ remaining →
-      candidate ∈ remaining.foldl
-        (stageReflectiveSupportSink (.add template)) staged by
-    exact containsOfRow rows [] rowMember
-  intro remaining
-  induction remaining with
-  | nil =>
-      intro staged member
-      simp at member
-  | cons head tail induction =>
-      intro staged member
-      simp only [List.mem_cons] at member
-      simp only [List.foldl_cons]
-      rcases member with rfl | member
-      · apply stagePreserves tail
-          (stageReflectiveSupportSink (.add template) staged substitution)
-        simp only [stageReflectiveSupportSink, Sink.atom]
-        rw [instantiates]
-        by_cases present : candidate ∈ staged
-        · simp [insertSupport, present]
-        · simp [insertSupport, present]
-      · exact induction
-          (stageReflectiveSupportSink (.add template) staged head) member
 
 def normalAssertionPopRowAt (scopeOwner proofOwner : Atom)
     (segment : NormalAddressSegment) (assertionLabel : String)
@@ -272,24 +223,10 @@ private theorem normalAssertionStartMatchRowAt_mem
     simp [normalAssertionStartPatternsAt, afterProof, finalRow,
       normalAssertionStartSubstitutionAt, header, assertionHeaderRow,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow, {control, proofRow, header}), ?_, rfl⟩
-  have inputExact : normalAssertionStartDirective.rule.input =
-      .compat (mkPattern normalAssertionStartPatternsAt) := by
-    rfl
-  rw [inputExact]
-  simp only [matchInputSpec, normalAssertionStartPatternsAt, mkPattern,
-    matchPattern, matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterControl, control),
-    matchOneInSpace_mem [] _ read control controlMem afterControl
-      matchControl, ?_⟩
-  refine ⟨(afterProof, proofRow),
-    matchOneInSpace_mem afterControl _ read proofRow proofRowMem afterProof
-      matchProof, ?_⟩
-  refine ⟨(finalRow, header),
-    matchOneInSpace_mem afterProof _ read header headerMem finalRow
-      matchHeader, ?_⟩
-  simp [finalRow, control, proofRow, header]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons controlMem matchControl
+    (.cons proofRowMem matchProof
+    (.cons headerMem matchHeader (.nil _))))
 
 theorem normalAssertionStartPhaseAt_inhabits_target_native_type
     (scopeOwner proofOwner : Atom) (segment : NormalAddressSegment)
@@ -308,38 +245,8 @@ theorem normalAssertionStartPhaseAt_inhabits_target_native_type
       (reflectiveEventOfSelected
         (normalAssertionStartPhaseAt_selects_directive scopeOwner proofOwner
           segment stackTop assertionPosition assertion))
-  · let source := normalAssertionStartPhaseSpaceAt scopeOwner proofOwner
-      segment stackTop assertionPosition assertion
-    let rows := (matchInputSpec []
-      (readCopyAtom source normalAssertionStartDirective.atom)
-      normalAssertionStartDirective.rule.input).map Prod.fst
-    let substitution := normalAssertionStartSubstitutionAt scopeOwner
-      proofOwner segment stackTop assertionPosition assertion
-    have rowMember : substitution ∈ rows := by
-      simpa [source, rows, substitution, normalAssertionStartDirective] using
-        normalAssertionStartMatchRowAt_mem scopeOwner proofOwner segment
-          stackTop assertionPosition assertion
-    have instantiates :
-        instantiateTemplateAtom? substitution
-            normalAssertionStartPopTemplateAt =
-          some (normalAssertionPopRowAt scopeOwner proofOwner segment
-            assertion.label assertion.hypotheses.length stackTop) := by
-      cases assertion
-      all_goals rfl
-    have staged := stagedAdd_contains_of_row rows substitution
-      normalAssertionStartPopTemplateAt
-      (normalAssertionPopRowAt scopeOwner proofOwner segment assertion.label
-        assertion.hypotheses.length stackTop) rowMember instantiates
-    have sinksExact : normalAssertionStartDirective.rule.tmpl.sinks =
-        [.remove
-          (.expression
-            [.symbol "mm-normal-control", .var "scope", .var "proof",
-              .var "pc", .var "top"]),
-         .add normalAssertionStartPopTemplateAt] := by
-      rfl
-    simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      sinksExact, reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr staged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl
+      (normalAssertionStartMatchRowAt_mem scopeOwner proofOwner segment stackTop assertionPosition assertion) (by cases assertion <;> rfl)
 
 /-! ## Backward stack-suffix walk -/
 
@@ -567,29 +474,11 @@ private theorem normalAssertionPopMatchRowAt_mem
       normalAssertionPopSubstitutionAt, stackSuccessor,
       normalAssertionStackSuccessorRowAt, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow,
-    {normalAssertionPopRule, current, hypothesisSuccessor, stackSuccessor}),
-    ?_, rfl⟩
-  have inputExact : normalAssertionPopDirective.rule.input =
-      .compat (mkPattern normalAssertionPopPatternsAt) := by
-    rfl
-  rw [inputExact]
-  simp only [matchInputSpec, normalAssertionPopPatternsAt, mkPattern,
-    matchPattern, matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterSelf, normalAssertionPopRule),
-    matchOneInSpace_mem [] _ read normalAssertionPopRule selfMem afterSelf
-      matchSelf, ?_⟩
-  refine ⟨(afterCurrent, current),
-    matchOneInSpace_mem afterSelf _ read current currentMem afterCurrent
-      matchCurrent, ?_⟩
-  refine ⟨(afterHypothesis, hypothesisSuccessor),
-    matchOneInSpace_mem afterCurrent _ read hypothesisSuccessor
-      hypothesisSuccessorMem afterHypothesis matchHypothesisSuccessor, ?_⟩
-  refine ⟨(finalRow, stackSuccessor),
-    matchOneInSpace_mem afterHypothesis _ read stackSuccessor
-      stackSuccessorMem finalRow matchStackSuccessor, ?_⟩
-  simp [finalRow, current, hypothesisSuccessor, stackSuccessor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons selfMem matchSelf
+    (.cons currentMem matchCurrent
+    (.cons hypothesisSuccessorMem matchHypothesisSuccessor
+    (.cons stackSuccessorMem matchStackSuccessor (.nil _)))))
 
 theorem normalAssertionPopPhaseAt_inhabits_target_native_type
     (scopeOwner proofOwner : Atom) (segment : NormalAddressSegment)
@@ -611,38 +500,9 @@ theorem normalAssertionPopPhaseAt_inhabits_target_native_type
         (normalAssertionPopPhaseAt_selects_directive scopeOwner proofOwner
           segment assertionLabel previousHypothesis hypothesisCursor
           previousStack stackCursor))
-  · let source := normalAssertionPopPhaseSpaceAt scopeOwner proofOwner
-      segment assertionLabel previousHypothesis hypothesisCursor previousStack
-      stackCursor
-    let rows := (matchInputSpec []
-      (readCopyAtom source normalAssertionPopDirective.atom)
-      normalAssertionPopDirective.rule.input).map Prod.fst
-    let substitution := normalAssertionPopSubstitutionAt scopeOwner proofOwner
-      segment assertionLabel previousHypothesis hypothesisCursor previousStack
-      stackCursor
-    have rowMember : substitution ∈ rows := by
-      simpa [source, rows, substitution, normalAssertionPopDirective] using
-        normalAssertionPopMatchRowAt_mem scopeOwner proofOwner segment
-          assertionLabel previousHypothesis hypothesisCursor previousStack
-          stackCursor
-    have instantiates :
-        instantiateTemplateAtom? substitution
-            normalAssertionPopPreviousTemplateAt =
-          some (normalAssertionPopRowAt scopeOwner proofOwner segment
-            assertionLabel previousHypothesis previousStack) := by
-      rfl
-    have staged := stagedAdd_contains_of_row rows substitution
-      normalAssertionPopPreviousTemplateAt
-      (normalAssertionPopRowAt scopeOwner proofOwner segment assertionLabel
-        previousHypothesis previousStack) rowMember instantiates
-    have sinksExact : normalAssertionPopDirective.rule.tmpl.sinks =
-        [.add normalAssertionPopSelfTemplateAt,
-         .remove normalAssertionPopCurrentTemplateAt,
-         .add normalAssertionPopPreviousTemplateAt] := by
-      rfl
-    simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      sinksExact, reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr staged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl
+      (normalAssertionPopMatchRowAt_mem scopeOwner proofOwner segment
+        assertionLabel previousHypothesis hypothesisCursor previousStack stackCursor) rfl
 
 /-! ## Bind-fold initialization -/
 
@@ -793,20 +653,9 @@ private theorem normalAssertionBeginMatchRowAt_mem
     simp [normalAssertionBeginPatternsAt, afterPop, finalRow,
       normalAssertionBeginSubstitutionAt, header, assertionHeaderRow,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow, {pop, header}), ?_, rfl⟩
-  have inputExact : normalAssertionBeginDirective.rule.input =
-      .compat (mkPattern normalAssertionBeginPatternsAt) := by
-    rfl
-  rw [inputExact]
-  simp only [matchInputSpec, normalAssertionBeginPatternsAt, mkPattern,
-    matchPattern, matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterPop, pop),
-    matchOneInSpace_mem [] _ read pop popMem afterPop matchPop, ?_⟩
-  refine ⟨(finalRow, header),
-    matchOneInSpace_mem afterPop _ read header headerMem finalRow matchHeader,
-    ?_⟩
-  simp [finalRow, pop, header]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons popMem matchPop
+    (.cons headerMem matchHeader (.nil _)))
 
 theorem normalAssertionBeginPhaseAt_inhabits_target_native_type
     (scopeOwner proofOwner : Atom) (segment : NormalAddressSegment)
@@ -825,41 +674,8 @@ theorem normalAssertionBeginPhaseAt_inhabits_target_native_type
       (reflectiveEventOfSelected
         (normalAssertionBeginPhaseAt_selects_directive scopeOwner proofOwner
           segment stackBase assertionPosition assertion))
-  · let source := normalAssertionBeginPhaseSpaceAt scopeOwner proofOwner
-      segment stackBase assertionPosition assertion
-    let rows := (matchInputSpec []
-      (readCopyAtom source normalAssertionBeginDirective.atom)
-      normalAssertionBeginDirective.rule.input).map Prod.fst
-    let substitution := normalAssertionBeginSubstitutionAt scopeOwner
-      proofOwner segment stackBase assertionPosition assertion
-    have rowMember : substitution ∈ rows := by
-      simpa [source, rows, substitution, normalAssertionBeginDirective] using
-        normalAssertionBeginMatchRowAt_mem scopeOwner proofOwner segment
-          stackBase assertionPosition assertion
-    have instantiates :
-        instantiateTemplateAtom? substitution
-            normalAssertionBeginBindTemplateAt =
-          some (normalAssertionBindRowAt scopeOwner proofOwner segment
-            assertion.label 0 assertion.hypotheses.length stackBase
-            stackBase) := by
-      cases assertion
-      all_goals rfl
-    have staged := stagedAdd_contains_of_row rows substitution
-      normalAssertionBeginBindTemplateAt
-      (normalAssertionBindRowAt scopeOwner proofOwner segment assertion.label
-        0 assertion.hypotheses.length stackBase stackBase)
-      rowMember instantiates
-    have sinksExact : normalAssertionBeginDirective.rule.tmpl.sinks =
-        [.remove
-          (.expression
-            [.symbol "mm-assertion-pop", .var "scope", .var "proof",
-              .var "pc", .var "next-pc", .var "label", natAtom 0,
-              .var "stack-base"]),
-         .add normalAssertionBeginBindTemplateAt] := by
-      rfl
-    simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      sinksExact, reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr staged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl
+      (normalAssertionBeginMatchRowAt_mem scopeOwner proofOwner segment stackBase assertionPosition assertion) (by cases assertion <;> rfl)
 
 /-! ## Exact finite entry trace -/
 

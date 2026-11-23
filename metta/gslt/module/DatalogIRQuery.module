@@ -1,0 +1,12 @@
+import "DatalogIR.module" as ir
+
+Module DatalogIRQuery {
+  Theory Inference(d: ir.ProgramData) {
+    d
+      Terms {
+        InferSnapshot . relations:Vec(DlRelation), literals:Vec(DlValue)
+          |- "infer-snapshot" relations literals : DlStatement;
+      }
+  }
+  theory Inference(ir.ProgramData(ir.Data()))
+}

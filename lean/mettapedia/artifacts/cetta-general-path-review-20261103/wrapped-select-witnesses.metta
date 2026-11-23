@@ -1,0 +1,5 @@
+(= (loop) (loop))
+(= (e) (loop))
+(= (e) x)
+(= (e) x)
+!(select 2 (if True (e) (empty)))

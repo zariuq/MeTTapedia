@@ -1,0 +1,130 @@
+-- Megalodon's own record of a checked document (`megalodon -sexprinfo`), as a GSLT presentation.
+--
+-- With -sexprinfo, Megalodon prints one S-expression line per declaration it admits and, for each
+-- theorem, the proof term its kernel double-checked (`check_propofpf` in syntax.ml) together with
+-- the definitions that check unfolded:
+--   (PRIM 1 "In" "73c9..." (AR (SET) (AR (SET) (PROP))) 38)
+--   (PARAM "ordsucc" "9db6..." 0 (AR (SET) (SET)) 44)
+--   (DEF "False" "5bf6..." 0 (PROP) (ALL (PROP) (DB 0)) 5)
+--   (AXIOM "f_eq_i" "d3c1..." 0 (ALL (AR (SET) (SET)) ...) 31)
+--   (THM "xboole_0_t7" "6247..." "1b52..." 0 (ALL (SET) (IMP ...)) 1)
+--   (USESKNOWN "1174...")
+--   (DELTA "058f...")
+--   (PROOF "xboole_0_t7" (TLAM (SET) (PLAM ... (PPFAP (HYP 0) ...))))
+--   (QED)
+-- A PRIM, PARAM, DEF or AXIOM line gives the name, its content identity (a 64-digit hexadecimal
+-- string), the number of type variables, the type or proposition, the definition's body, and the
+-- source line.  A THM line also gives the Proofgold identity of the proposition ("none" when there
+-- is none).  After a THM line come the knowns the check used, the definitions it unfolded, the proof
+-- and QED; or QEDWITHADMITS (the proof has an admitted part) or ADMITTED (no proof).
+-- Types are (TPVAR i), (PROP), (SET), (AR A B).  Terms are (DB i) (a de Bruijn index), (TMH "h") (a
+-- declared constant by its identity), (PRIM i), (TPAP M A), (AP M N), (LAM A M), (IMP M N),
+-- (ALL A M).  Proofs are (HYP i), (KNOWN "h"), (PTPAP D A), (PTMAP D M), (PPFAP D E), (PLAM P D),
+-- (TLAM A D).  Each row below is one case of Megalodon's printers (tp_to_sexpr, tm_to_sexpr,
+-- pf_to_sexpr in syntax.ml; the -sexprinfo lines of megalodon.ml).  A number is what OCaml's
+-- string_of_int prints for a natural number: 0, or a nonzero digit followed by digits.
+--
+-- The grammar is composed from pieces over one shared set of sorts:
+--   Sorts        token and phrase sorts, declared once;
+--   Numerals     natural numbers;
+--   SimpleTypes  types;
+--   MgTerms      terms;
+--   MgProofs     proof terms;
+--   Items        the declaration lines, and a theorem with what follows its THM line;
+--   Files        item sequences.
+-- `Grammar` joins them over one `let`-bound Sorts value.
+--
+-- `Tokens` is the lexical layer (TokenProfileV2): only space and newline separate tokens; `(` and
+-- `)` are tokens by themselves; `0` is a token sort of its own, and so is a nonzero digit followed by
+-- digits, so that 007 is no number; a string runs from a double quote to the next double quote,
+-- both included (Megalodon prints names and identities between double quotes, unescaped).  Every
+-- other spelling is a fixed spelling of a row.
+Module SexprInfoSyntax {
+  Theory Sorts() {
+    Types {
+      zero_tok; pos_tok; str_tok;
+      mg_nat; mg_type; mg_term; mg_proof;
+      thm_tail; delta_tail; item; sexpr_file;
+    }
+  }
+  Theory Numerals(s: Sorts) {
+    s Terms {
+      nat_zero . z:zero_tok |- z : mg_nat;
+      nat_pos . p:pos_tok |- p : mg_nat;
+    }
+  }
+  Theory SimpleTypes(s: Sorts) {
+    s Terms {
+      tp_var . i:mg_nat |- "(" "TPVAR" i ")" : mg_type;
+      tp_prop . |- "(" "PROP" ")" : mg_type;
+      tp_set . |- "(" "SET" ")" : mg_type;
+      tp_ar . a:mg_type, b:mg_type |- "(" "AR" a b ")" : mg_type;
+    }
+  }
+  Theory MgTerms(s: Sorts) {
+    s Terms {
+      tm_db . i:mg_nat |- "(" "DB" i ")" : mg_term;
+      tm_tmh . h:str_tok |- "(" "TMH" h ")" : mg_term;
+      tm_prim . i:mg_nat |- "(" "PRIM" i ")" : mg_term;
+      tm_tpap . m:mg_term, a:mg_type |- "(" "TPAP" m a ")" : mg_term;
+      tm_ap . m:mg_term, n:mg_term |- "(" "AP" m n ")" : mg_term;
+      tm_lam . a:mg_type, m:mg_term |- "(" "LAM" a m ")" : mg_term;
+      tm_imp . m:mg_term, n:mg_term |- "(" "IMP" m n ")" : mg_term;
+      tm_all . a:mg_type, m:mg_term |- "(" "ALL" a m ")" : mg_term;
+    }
+  }
+  Theory MgProofs(s: Sorts) {
+    s Terms {
+      pf_hyp . i:mg_nat |- "(" "HYP" i ")" : mg_proof;
+      pf_known . h:str_tok |- "(" "KNOWN" h ")" : mg_proof;
+      pf_tpap . d:mg_proof, a:mg_type |- "(" "PTPAP" d a ")" : mg_proof;
+      pf_tmap . d:mg_proof, m:mg_term |- "(" "PTMAP" d m ")" : mg_proof;
+      pf_pfap . d:mg_proof, e:mg_proof |- "(" "PPFAP" d e ")" : mg_proof;
+      pf_plam . p:mg_term, d:mg_proof |- "(" "PLAM" p d ")" : mg_proof;
+      pf_tlam . a:mg_type, d:mg_proof |- "(" "TLAM" a d ")" : mg_proof;
+    }
+  }
+  Theory Items(s: Sorts) {
+    s Terms {
+      item_prim . i:mg_nat, x:str_tok, h:str_tok, a:mg_type, ln:mg_nat |- "(" "PRIM" i x h a ln ")" : item;
+      item_param . x:str_tok, h:str_tok, k:mg_nat, a:mg_type, ln:mg_nat |- "(" "PARAM" x h k a ln ")" : item;
+      item_def . x:str_tok, h:str_tok, k:mg_nat, a:mg_type, m:mg_term, ln:mg_nat |- "(" "DEF" x h k a m ln ")" : item;
+      item_axiom . x:str_tok, h:str_tok, k:mg_nat, p:mg_term, ln:mg_nat |- "(" "AXIOM" x h k p ln ")" : item;
+      item_thm . x:str_tok, h:str_tok, g:str_tok, k:mg_nat, p:mg_term, ln:mg_nat, rest:thm_tail |- "(" "THM" x h g k p ln ")" rest : item;
+      tail_uses . h:str_tok, rest:thm_tail |- "(" "USESKNOWN" h ")" rest : thm_tail;
+      tail_delta . h:str_tok, rest:delta_tail |- "(" "DELTA" h ")" rest : thm_tail;
+      tail_proof . x:str_tok, d:mg_proof |- "(" "PROOF" x d ")" "(" "QED" ")" : thm_tail;
+      tail_admits . |- "(" "QEDWITHADMITS" ")" : thm_tail;
+      tail_admitted . |- "(" "ADMITTED" ")" : thm_tail;
+      delta_more . h:str_tok, rest:delta_tail |- "(" "DELTA" h ")" rest : delta_tail;
+      delta_proof . x:str_tok, d:mg_proof |- "(" "PROOF" x d ")" "(" "QED" ")" : delta_tail;
+    }
+  }
+  Theory Files(s: Sorts) {
+    s Terms {
+      file_empty . |- : sexpr_file;
+      file_more . first:item, rest:sexpr_file |- first rest : sexpr_file;
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts() in (Numerals(s) \/ SimpleTypes(s) \/ MgTerms(s) \/ MgProofs(s) \/ Items(s) \/ Files(s))
+  }
+  Theory Tokens() {
+    Types { TokenProfileData; }
+    Terms {
+      GetTokenProfile . |- "token-profile" : TokenProfileData;
+    }
+    Rewrites {
+      ReturnTokenProfile : (GetTokenProfile) ~>
+        "TokenProfileV2"(
+          "Start"("sexpr_file"),
+          "Admissible"("Range"("33", "126")),
+          "Separator"("Points"("32", "10")),
+          "Delimiters"("Points"("40", "41")),
+          "Class2"("zero_tok", "Points"("48"), "Minus"("Points"("48"), "Points"("48"))),
+          "Class2"("pos_tok", "Range"("49", "57"), "Range"("48", "57")),
+          "Quoted"("str_tok", "34", "34"));
+    }
+  }
+  theory Grammar()
+}

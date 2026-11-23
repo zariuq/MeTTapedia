@@ -1,0 +1,2 @@
+(sort wff provable strict)
+(term q ((p wff)) (wff ()))

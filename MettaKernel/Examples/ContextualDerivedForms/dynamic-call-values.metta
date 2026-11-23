@@ -1,0 +1,6 @@
+(= (pair $x $y) (pair-value $x $y))
+!(let $f (quote +) ($f 2 3))
+!(let $f (pair 10) ($f 20))
+!(let $f (pair (quote (println! forbidden))) ($f 8))
+!(let* (($f (pair $x)) ($x 7)) ($f 8))
+!(let $f (quote missing) ($f 7))

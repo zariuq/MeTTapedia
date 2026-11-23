@@ -1,0 +1,8 @@
+(public-row sentinel)
+(= (lambda_1 $x) (reserved $x))
+!(lambda_1 a)
+!((|-> ($x) $x) b)
+!(let $saved a (let $f (|-> ($x) (pair $saved $x)) ($f b)))
+!(let $saved (quote (println! 9)) (let $f (|-> ($x) (pair $saved $x)) ($f b)))
+!(let $f (|-> ($x) (pair $saved $x)) (let $saved a ($f b)))
+!(let $f (|-> ($x) $x) (collapse (match &self (= ($f $x) $body) leaked)))

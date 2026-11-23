@@ -91,6 +91,42 @@ set_option Elab.async false
 set_option maxHeartbeats 1000000
 set_option maxRecDepth 4096
 
+namespace Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans
+
+section
+set_option maxRecDepth 16000
+
+private theorem piece0 :
+    "{\n".toList.foldl step initial = completed [.punctuation ['{']] := by decide +kernel
+
+private theorem piece1 :
+    "        return false;\n".toList.foldl step initial = completed [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['f', 'a', 'l', 's', 'e'], .punctuation [';']] := by decide +kernel
+
+private theorem piece2 :
+    "            return false;\n".toList.foldl step initial = completed [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['f', 'a', 'l', 's', 'e'], .punctuation [';']] := by decide +kernel
+
+private theorem piece3 :
+    "    }\n".toList.foldl step initial = completed [.punctuation ['}']] := by decide +kernel
+
+private theorem piece4 :
+    "}".toList.foldl step initial = completed [.punctuation ['}']] := by decide +kernel
+
+private theorem piece5 :
+    "        return NULL;\n".toList.foldl step initial = completed [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['N', 'U', 'L', 'L'], .punctuation [';']] := by decide +kernel
+
+private theorem piece6 :
+    "    CettaFrameIdentityParts parts;\n".toList.foldl step initial = completed [.identifier ['C', 'e', 't', 't', 'a', 'F', 'r', 'a', 'm', 'e', 'I', 'd', 'e', 'n', 't', 'i', 't', 'y', 'P', 'a', 'r', 't', 's'], .identifier ['p', 'a', 'r', 't', 's'], .punctuation [';']] := by decide +kernel
+
+private theorem piece7 :
+    "    (void)cetta_frame_identity_parts(identity, &parts);\n".toList.foldl step initial = completed [.punctuation ['('], .identifier ['v', 'o', 'i', 'd'], .punctuation [')'], .identifier ['c', 'e', 't', 't', 'a', '_', 'f', 'r', 'a', 'm', 'e', '_', 'i', 'd', 'e', 'n', 't', 'i', 't', 'y', '_', 'p', 'a', 'r', 't', 's'], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation [','], .punctuation ['&'], .identifier ['p', 'a', 'r', 't', 's'], .punctuation [')'], .punctuation [';']] := by decide +kernel
+
+private theorem piece8 :
+    "    atom = atom_symbol_unforward(atom);\n".toList.foldl step initial = completed [.identifier "atom".toList, .punctuation "=".toList, .identifier "atom_symbol_unforward".toList, .punctuation "(".toList, .identifier "atom".toList, .punctuation ")".toList, .punctuation ";".toList] := by decide +kernel
+
+end
+
+end Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans
+
 namespace Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaFrameWriteback
 
 open Mettapedia.Languages.MeTTa.MetavariableFrameStore
@@ -4399,158 +4435,80 @@ def completeBody : List CStatement :=
 private def sourcePiece0 : String × List Token :=
   ("{\n", [.punctuation ['{']])
 
-private theorem sourcePiece0_lex : sourcePiece0.1.toList.foldl step initial = completed sourcePiece0.2 := by
-  decide +kernel
-
 private def sourcePiece1 : String × List Token :=
   ("    if (!frame || !slot_out || source_id == VAR_ID_NONE)\n", [.identifier ['i', 'f'], .punctuation ['('], .punctuation ['!'], .identifier ['f', 'r', 'a', 'm', 'e'], .punctuation ['|', '|'], .punctuation ['!'], .identifier ['s', 'l', 'o', 't', '_', 'o', 'u', 't'], .punctuation ['|', '|'], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'i', 'd'], .punctuation ['=', '='], .identifier ['V', 'A', 'R', '_', 'I', 'D', '_', 'N', 'O', 'N', 'E'], .punctuation [')']])
-
-private theorem sourcePiece1_lex : sourcePiece1.1.toList.foldl step initial = completed sourcePiece1.2 := by
-  decide +kernel
 
 private def sourcePiece2 : String × List Token :=
   ("        return false;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['f', 'a', 'l', 's', 'e'], .punctuation [';']])
 
-private theorem sourcePiece2_lex : sourcePiece2.1.toList.foldl step initial = completed sourcePiece2.2 := by
-  decide +kernel
-
 private def sourcePiece3 : String × List Token :=
   ("    if (frame->schema->source_ids_contiguous) {\n", [.identifier ['i', 'f'], .punctuation ['('], .identifier ['f', 'r', 'a', 'm', 'e'], .punctuation ['-', '>'], .identifier ['s', 'c', 'h', 'e', 'm', 'a'], .punctuation ['-', '>'], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'i', 'd', 's', '_', 'c', 'o', 'n', 't', 'i', 'g', 'u', 'o', 'u', 's'], .punctuation [')'], .punctuation ['{']])
-
-private theorem sourcePiece3_lex : sourcePiece3.1.toList.foldl step initial = completed sourcePiece3.2 := by
-  decide +kernel
 
 private def sourcePiece4 : String × List Token :=
   ("        if (source_id < frame->schema->source_first_id)\n", [.identifier ['i', 'f'], .punctuation ['('], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'i', 'd'], .punctuation ['<'], .identifier ['f', 'r', 'a', 'm', 'e'], .punctuation ['-', '>'], .identifier ['s', 'c', 'h', 'e', 'm', 'a'], .punctuation ['-', '>'], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'f', 'i', 'r', 's', 't', '_', 'i', 'd'], .punctuation [')']])
 
-private theorem sourcePiece4_lex : sourcePiece4.1.toList.foldl step initial = completed sourcePiece4.2 := by
-  decide +kernel
-
 private def sourcePiece5 : String × List Token :=
   ("            return false;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['f', 'a', 'l', 's', 'e'], .punctuation [';']])
-
-private theorem sourcePiece5_lex : sourcePiece5.1.toList.foldl step initial = completed sourcePiece5.2 := by
-  decide +kernel
 
 private def sourcePiece6 : String × List Token :=
   ("        uint64_t offset = source_id - frame->schema->source_first_id;\n", [.identifier ['u', 'i', 'n', 't', '6', '4', '_', 't'], .identifier ['o', 'f', 'f', 's', 'e', 't'], .punctuation ['='], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'i', 'd'], .punctuation ['-'], .identifier ['f', 'r', 'a', 'm', 'e'], .punctuation ['-', '>'], .identifier ['s', 'c', 'h', 'e', 'm', 'a'], .punctuation ['-', '>'], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'f', 'i', 'r', 's', 't', '_', 'i', 'd'], .punctuation [';']])
 
-private theorem sourcePiece6_lex : sourcePiece6.1.toList.foldl step initial = completed sourcePiece6.2 := by
-  decide +kernel
-
 private def sourcePiece7 : String × List Token :=
   ("        if (offset >= frame->slot_len)\n", [.identifier ['i', 'f'], .punctuation ['('], .identifier ['o', 'f', 'f', 's', 'e', 't'], .punctuation ['>', '='], .identifier ['f', 'r', 'a', 'm', 'e'], .punctuation ['-', '>'], .identifier ['s', 'l', 'o', 't', '_', 'l', 'e', 'n'], .punctuation [')']])
-
-private theorem sourcePiece7_lex : sourcePiece7.1.toList.foldl step initial = completed sourcePiece7.2 := by
-  decide +kernel
 
 private def sourcePiece8 : String × List Token :=
   ("            return false;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['f', 'a', 'l', 's', 'e'], .punctuation [';']])
 
-private theorem sourcePiece8_lex : sourcePiece8.1.toList.foldl step initial = completed sourcePiece8.2 := by
-  decide +kernel
-
 private def sourcePiece9 : String × List Token :=
   ("        *slot_out = (uint32_t)offset;\n", [.punctuation ['*'], .identifier ['s', 'l', 'o', 't', '_', 'o', 'u', 't'], .punctuation ['='], .punctuation ['('], .identifier ['u', 'i', 'n', 't', '3', '2', '_', 't'], .punctuation [')'], .identifier ['o', 'f', 'f', 's', 'e', 't'], .punctuation [';']])
-
-private theorem sourcePiece9_lex : sourcePiece9.1.toList.foldl step initial = completed sourcePiece9.2 := by
-  decide +kernel
 
 private def sourcePiece10 : String × List Token :=
   ("        return true;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['t', 'r', 'u', 'e'], .punctuation [';']])
 
-private theorem sourcePiece10_lex : sourcePiece10.1.toList.foldl step initial = completed sourcePiece10.2 := by
-  decide +kernel
-
 private def sourcePiece11 : String × List Token :=
   ("    }\n", [.punctuation ['}']])
-
-private theorem sourcePiece11_lex : sourcePiece11.1.toList.foldl step initial = completed sourcePiece11.2 := by
-  decide +kernel
 
 private def sourcePiece12 : String × List Token :=
   ("    uint32_t low = 0u;\n", [.identifier ['u', 'i', 'n', 't', '3', '2', '_', 't'], .identifier ['l', 'o', 'w'], .punctuation ['='], .number ['0', 'u'], .punctuation [';']])
 
-private theorem sourcePiece12_lex : sourcePiece12.1.toList.foldl step initial = completed sourcePiece12.2 := by
-  decide +kernel
-
 private def sourcePiece13 : String × List Token :=
   ("    uint32_t high = frame->schema->len;\n", [.identifier ['u', 'i', 'n', 't', '3', '2', '_', 't'], .identifier ['h', 'i', 'g', 'h'], .punctuation ['='], .identifier ['f', 'r', 'a', 'm', 'e'], .punctuation ['-', '>'], .identifier ['s', 'c', 'h', 'e', 'm', 'a'], .punctuation ['-', '>'], .identifier ['l', 'e', 'n'], .punctuation [';']])
-
-private theorem sourcePiece13_lex : sourcePiece13.1.toList.foldl step initial = completed sourcePiece13.2 := by
-  decide +kernel
 
 private def sourcePiece14 : String × List Token :=
   ("    while (low < high) {\n", [.identifier ['w', 'h', 'i', 'l', 'e'], .punctuation ['('], .identifier ['l', 'o', 'w'], .punctuation ['<'], .identifier ['h', 'i', 'g', 'h'], .punctuation [')'], .punctuation ['{']])
 
-private theorem sourcePiece14_lex : sourcePiece14.1.toList.foldl step initial = completed sourcePiece14.2 := by
-  decide +kernel
-
 private def sourcePiece15 : String × List Token :=
   ("        uint32_t middle = low + (high - low) / 2u;\n", [.identifier ['u', 'i', 'n', 't', '3', '2', '_', 't'], .identifier ['m', 'i', 'd', 'd', 'l', 'e'], .punctuation ['='], .identifier ['l', 'o', 'w'], .punctuation ['+'], .punctuation ['('], .identifier ['h', 'i', 'g', 'h'], .punctuation ['-'], .identifier ['l', 'o', 'w'], .punctuation [')'], .punctuation ['/'], .number ['2', 'u'], .punctuation [';']])
-
-private theorem sourcePiece15_lex : sourcePiece15.1.toList.foldl step initial = completed sourcePiece15.2 := by
-  decide +kernel
 
 private def sourcePiece16 : String × List Token :=
   ("        if (frame->schema->source_ids[middle] < source_id)\n", [.identifier ['i', 'f'], .punctuation ['('], .identifier ['f', 'r', 'a', 'm', 'e'], .punctuation ['-', '>'], .identifier ['s', 'c', 'h', 'e', 'm', 'a'], .punctuation ['-', '>'], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'i', 'd', 's'], .punctuation ['['], .identifier ['m', 'i', 'd', 'd', 'l', 'e'], .punctuation [']'], .punctuation ['<'], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'i', 'd'], .punctuation [')']])
 
-private theorem sourcePiece16_lex : sourcePiece16.1.toList.foldl step initial = completed sourcePiece16.2 := by
-  decide +kernel
-
 private def sourcePiece17 : String × List Token :=
   ("            low = middle + 1u;\n", [.identifier ['l', 'o', 'w'], .punctuation ['='], .identifier ['m', 'i', 'd', 'd', 'l', 'e'], .punctuation ['+'], .number ['1', 'u'], .punctuation [';']])
-
-private theorem sourcePiece17_lex : sourcePiece17.1.toList.foldl step initial = completed sourcePiece17.2 := by
-  decide +kernel
 
 private def sourcePiece18 : String × List Token :=
   ("        else\n", [.identifier ['e', 'l', 's', 'e']])
 
-private theorem sourcePiece18_lex : sourcePiece18.1.toList.foldl step initial = completed sourcePiece18.2 := by
-  decide +kernel
-
 private def sourcePiece19 : String × List Token :=
   ("            high = middle;\n", [.identifier ['h', 'i', 'g', 'h'], .punctuation ['='], .identifier ['m', 'i', 'd', 'd', 'l', 'e'], .punctuation [';']])
-
-private theorem sourcePiece19_lex : sourcePiece19.1.toList.foldl step initial = completed sourcePiece19.2 := by
-  decide +kernel
 
 private def sourcePiece20 : String × List Token :=
   ("    }\n", [.punctuation ['}']])
 
-private theorem sourcePiece20_lex : sourcePiece20.1.toList.foldl step initial = completed sourcePiece20.2 := by
-  decide +kernel
-
 private def sourcePiece21 : String × List Token :=
   ("    if (low >= frame->schema->len || frame->schema->source_ids[low] != source_id)\n", [.identifier ['i', 'f'], .punctuation ['('], .identifier ['l', 'o', 'w'], .punctuation ['>', '='], .identifier ['f', 'r', 'a', 'm', 'e'], .punctuation ['-', '>'], .identifier ['s', 'c', 'h', 'e', 'm', 'a'], .punctuation ['-', '>'], .identifier ['l', 'e', 'n'], .punctuation ['|', '|'], .identifier ['f', 'r', 'a', 'm', 'e'], .punctuation ['-', '>'], .identifier ['s', 'c', 'h', 'e', 'm', 'a'], .punctuation ['-', '>'], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'i', 'd', 's'], .punctuation ['['], .identifier ['l', 'o', 'w'], .punctuation [']'], .punctuation ['!', '='], .identifier ['s', 'o', 'u', 'r', 'c', 'e', '_', 'i', 'd'], .punctuation [')']])
-
-private theorem sourcePiece21_lex : sourcePiece21.1.toList.foldl step initial = completed sourcePiece21.2 := by
-  decide +kernel
 
 private def sourcePiece22 : String × List Token :=
   ("        return false;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['f', 'a', 'l', 's', 'e'], .punctuation [';']])
 
-private theorem sourcePiece22_lex : sourcePiece22.1.toList.foldl step initial = completed sourcePiece22.2 := by
-  decide +kernel
-
 private def sourcePiece23 : String × List Token :=
   ("    *slot_out = low;\n", [.punctuation ['*'], .identifier ['s', 'l', 'o', 't', '_', 'o', 'u', 't'], .punctuation ['='], .identifier ['l', 'o', 'w'], .punctuation [';']])
-
-private theorem sourcePiece23_lex : sourcePiece23.1.toList.foldl step initial = completed sourcePiece23.2 := by
-  decide +kernel
 
 private def sourcePiece24 : String × List Token :=
   ("    return true;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['t', 'r', 'u', 'e'], .punctuation [';']])
 
-private theorem sourcePiece24_lex : sourcePiece24.1.toList.foldl step initial = completed sourcePiece24.2 := by
-  decide +kernel
-
 private def sourcePiece25 : String × List Token :=
   ("}", [.punctuation ['}']])
-
-private theorem sourcePiece25_lex : sourcePiece25.1.toList.foldl step initial = completed sourcePiece25.2 := by
-  decide +kernel
 
 private def sourcePieces : List (String × List Token) :=
   [sourcePiece0, sourcePiece1, sourcePiece2, sourcePiece3, sourcePiece4, sourcePiece5, sourcePiece6, sourcePiece7, sourcePiece8, sourcePiece9, sourcePiece10, sourcePiece11, sourcePiece12, sourcePiece13, sourcePiece14, sourcePiece15, sourcePiece16, sourcePiece17, sourcePiece18, sourcePiece19, sourcePiece20, sourcePiece21, sourcePiece22, sourcePiece23, sourcePiece24, sourcePiece25]
@@ -4561,7 +4519,15 @@ def tokens : List Token := sourcePieces.flatMap Prod.snd
 theorem source_lex : lex source.toList = .ok tokens := by
   apply lex_completed_string_pieces
   simp only [sourcePieces, List.forall_cons]
-  exact ⟨sourcePiece0_lex, sourcePiece1_lex, sourcePiece2_lex, sourcePiece3_lex, sourcePiece4_lex, sourcePiece5_lex, sourcePiece6_lex, sourcePiece7_lex, sourcePiece8_lex, sourcePiece9_lex, sourcePiece10_lex, sourcePiece11_lex, sourcePiece12_lex, sourcePiece13_lex, sourcePiece14_lex, sourcePiece15_lex, sourcePiece16_lex, sourcePiece17_lex, sourcePiece18_lex, sourcePiece19_lex, sourcePiece20_lex, sourcePiece21_lex, sourcePiece22_lex, sourcePiece23_lex, sourcePiece24_lex, sourcePiece25_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece1, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece2, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece2, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece3, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece3, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece1, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 
 theorem source_parsed : blockText? ["uint32_t".toList, "uint64_t".toList] source.toList =
     some completeBody := block_text_of_parts _ _ tokens _ source_lex (by rfl)
@@ -6463,18 +6429,6 @@ private def piece9 : String × List Token := ("return ", [.identifier "return".t
 private def piece10 : String × List Token := ("atom;\n}",
   [.identifier "atom".toList, .punctuation [';'], .punctuation ['}']])
 
-private theorem piece0_lex : piece0.1.toList.foldl step initial = completed piece0.2 := by decide +kernel
-private theorem piece1_lex : piece1.1.toList.foldl step initial = completed piece1.2 := by decide +kernel
-private theorem piece2_lex : piece2.1.toList.foldl step initial = completed piece2.2 := by decide +kernel
-private theorem piece3_lex : piece3.1.toList.foldl step initial = completed piece3.2 := by decide +kernel
-private theorem piece4_lex : piece4.1.toList.foldl step initial = completed piece4.2 := by decide +kernel
-private theorem piece5_lex : piece5.1.toList.foldl step initial = completed piece5.2 := by decide +kernel
-private theorem piece6_lex : piece6.1.toList.foldl step initial = completed piece6.2 := by decide +kernel
-private theorem piece7_lex : piece7.1.toList.foldl step initial = completed piece7.2 := by decide +kernel
-private theorem piece8_lex : piece8.1.toList.foldl step initial = completed piece8.2 := by decide +kernel
-private theorem piece9_lex : piece9.1.toList.foldl step initial = completed piece9.2 := by decide +kernel
-private theorem piece10_lex : piece10.1.toList.foldl step initial = completed piece10.2 := by decide +kernel
-
 private def pieces : List (String × List Token) :=
   [piece0, piece1, piece2, piece3, piece4, piece5, piece6, piece7, piece8, piece9, piece10]
 def source : String := String.join (pieces.map Prod.fst)
@@ -6483,8 +6437,8 @@ def tokens : List Token := pieces.flatMap Prod.snd
 theorem actual_body_lexed : lex source.toList = .ok tokens := by
   apply lex_completed_string_pieces
   simp only [pieces, List.forall_cons]
-  exact ⟨piece0_lex, piece1_lex, piece2_lex, piece3_lex, piece4_lex, piece5_lex,
-    piece6_lex, piece7_lex, piece8_lex, piece9_lex, piece10_lex, trivial⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, trivial⟩
+  all_goals decide +kernel
 
 theorem actual_body_parsed : blockText? [] source.toList = some body := by
   exact block_text_of_parts [] _ tokens _ actual_body_lexed (by rfl)
@@ -7133,23 +7087,11 @@ namespace Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaFrameWriteback.NativeFram
 open Mettapedia.GSLT.LanguageDef.NativeOps.NativeC
 
 private def guardPiece0 : String × List Token := ("return atom && atom->", [.identifier "return".toList, .identifier "atom".toList, .punctuation "&&".toList, .identifier "atom".toList, .punctuation "->".toList])
-private theorem guardPiece0_lex : guardPiece0.1.toList.foldl step initial = completed guardPiece0.2 := by decide +kernel
-
 private def guardPiece1 : String × List Token := ("kind == ATOM_SYMBOL ", [.identifier "kind".toList, .punctuation "==".toList, .identifier "ATOM_SYMBOL".toList])
-private theorem guardPiece1_lex : guardPiece1.1.toList.foldl step initial = completed guardPiece1.2 := by decide +kernel
-
 private def guardPiece2 : String × List Token := ("&&\n           atom->", [.punctuation "&&".toList, .identifier "atom".toList, .punctuation "->".toList])
-private theorem guardPiece2_lex : guardPiece2.1.toList.foldl step initial = completed guardPiece2.2 := by decide +kernel
-
 private def guardPiece3 : String × List Token := ("symbol_number == SYMBOL_ID_NONE ", [.identifier "symbol_number".toList, .punctuation "==".toList, .identifier "SYMBOL_ID_NONE".toList])
-private theorem guardPiece3_lex : guardPiece3.1.toList.foldl step initial = completed guardPiece3.2 := by decide +kernel
-
 private def guardPiece4 : String × List Token := ("&& atom->spelling ", [.punctuation "&&".toList, .identifier "atom".toList, .punctuation "->".toList, .identifier "spelling".toList])
-private theorem guardPiece4_lex : guardPiece4.1.toList.foldl step initial = completed guardPiece4.2 := by decide +kernel
-
 private def guardPiece5 : String × List Token := ("!= NULL;", [.punctuation "!=".toList, .identifier "NULL".toList, .punctuation ";".toList])
-private theorem guardPiece5_lex : guardPiece5.1.toList.foldl step initial = completed guardPiece5.2 := by decide +kernel
-
 private def guardPieces : List (String × List Token) := [guardPiece0, guardPiece1, guardPiece2, guardPiece3, guardPiece4, guardPiece5]
 def guardSource : String := String.join (guardPieces.map Prod.fst)
 def guardTokens : List Token := guardPieces.flatMap Prod.snd
@@ -7157,7 +7099,8 @@ def guardTokens : List Token := guardPieces.flatMap Prod.snd
 theorem guard_source_lexed : lex guardSource.toList = .ok guardTokens := by
   apply lex_completed_string_pieces
   simp only [guardPieces, List.forall_cons]
-  exact ⟨guardPiece0_lex, guardPiece1_lex, guardPiece2_lex, guardPiece3_lex, guardPiece4_lex, guardPiece5_lex, trivial⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, trivial⟩
+  all_goals decide +kernel
 
 theorem guard_source_parsed : statement? 80 [] guardTokens = some (.return (some condition), []) := by rfl
 
@@ -7954,20 +7897,11 @@ def findRefBody : List CStatement :=
 private def homePiece0 : String × List Token :=
   ("{\n", [.punctuation ['{']])
 
-private theorem homePiece0_lex : homePiece0.1.toList.foldl step initial =
-    completed homePiece0.2 := by decide +kernel
-
 private def homePiece1 : String × List Token :=
   ("    return (handle * UINT32_C(0x9E3779B1)) >> index->handle_table_shift;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .punctuation ['('], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['*'], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '9', 'E', '3', '7', '7', '9', 'B', '1'], .punctuation [')'], .punctuation [')'], .punctuation ['>', '>'], .identifier ['i', 'n', 'd', 'e', 'x'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e', '_', 't', 'a', 'b', 'l', 'e', '_', 's', 'h', 'i', 'f', 't'], .punctuation [';']])
 
-private theorem homePiece1_lex : homePiece1.1.toList.foldl step initial =
-    completed homePiece1.2 := by decide +kernel
-
 private def homePiece2 : String × List Token :=
   ("}", [.punctuation ['}']])
-
-private theorem homePiece2_lex : homePiece2.1.toList.foldl step initial =
-    completed homePiece2.2 := by decide +kernel
 
 private def homePieces : List (String × List Token) :=
   [homePiece0, homePiece1, homePiece2]
@@ -7978,7 +7912,9 @@ def homeTokens : List Token := homePieces.flatMap Prod.snd
 theorem home_lex : lex homeSource.toList = .ok homeTokens := by
   apply lex_completed_string_pieces
   simp only [homePieces, List.forall_cons]
-  exact ⟨homePiece0_lex, homePiece1_lex, homePiece2_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 
 theorem home_parsed : blockText? types homeSource.toList = some homeBody :=
   block_text_of_parts _ _ homeTokens _ home_lex (by rfl)
@@ -7986,97 +7922,63 @@ theorem home_parsed : blockText? types homeSource.toList = some homeBody :=
 private def lookupPiece0 : String × List Token :=
   ("{\n", [.punctuation ['{']])
 
-private theorem lookupPiece0_lex : lookupPiece0.1.toList.foldl step initial =
-    completed lookupPiece0.2 := by decide +kernel
-
 private def lookupPiece1 : String × List Token :=
   ("    if (!index->handle_table)\n", [.identifier ['i', 'f'], .punctuation ['('], .punctuation ['!'], .identifier ['i', 'n', 'd', 'e', 'x'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e', '_', 't', 'a', 'b', 'l', 'e'], .punctuation [')']])
-
-private theorem lookupPiece1_lex : lookupPiece1.1.toList.foldl step initial =
-    completed lookupPiece1.2 := by decide +kernel
 
 private def lookupPiece2 : String × List Token :=
   ("        return NULL;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['N', 'U', 'L', 'L'], .punctuation [';']])
 
-private theorem lookupPiece2_lex : lookupPiece2.1.toList.foldl step initial =
-    completed lookupPiece2.2 := by decide +kernel
-
 private def lookupPiece3 : String × List Token :=
   ("    uint32_t mask = index->handle_table_mask;\n", [.identifier ['u', 'i', 'n', 't', '3', '2', '_', 't'], .identifier ['m', 'a', 's', 'k'], .punctuation ['='], .identifier ['i', 'n', 'd', 'e', 'x'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e', '_', 't', 'a', 'b', 'l', 'e', '_', 'm', 'a', 's', 'k'], .punctuation [';']])
-
-private theorem lookupPiece3_lex : lookupPiece3.1.toList.foldl step initial =
-    completed lookupPiece3.2 := by decide +kernel
 
 private def lookupPiece4 : String × List Token :=
   ("    uint32_t slot = bindings_frame_table_home(index, handle);\n", [.identifier ['u', 'i', 'n', 't', '3', '2', '_', 't'], .identifier ['s', 'l', 'o', 't'], .punctuation ['='], .identifier ['b', 'i', 'n', 'd', 'i', 'n', 'g', 's', '_', 'f', 'r', 'a', 'm', 'e', '_', 't', 'a', 'b', 'l', 'e', '_', 'h', 'o', 'm', 'e'], .punctuation ['('], .identifier ['i', 'n', 'd', 'e', 'x'], .punctuation [','], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation [')'], .punctuation [';']])
 
-private theorem lookupPiece4_lex : lookupPiece4.1.toList.foldl step initial =
-    completed lookupPiece4.2 := by decide +kernel
-
 private def lookupPiece5 : String × List Token :=
   ("    for (;;) {\n", [.identifier ['f', 'o', 'r'], .punctuation ['('], .punctuation [';'], .punctuation [';'], .punctuation [')'], .punctuation ['{']])
-
-private theorem lookupPiece5_lex : lookupPiece5.1.toList.foldl step initial =
-    completed lookupPiece5.2 := by decide +kernel
 
 private def lookupPiece6 : String × List Token :=
   ("        BindingsFrameIndexEntry *entry = index->handle_table[slot];\n", [.identifier ['B', 'i', 'n', 'd', 'i', 'n', 'g', 's', 'F', 'r', 'a', 'm', 'e', 'I', 'n', 'd', 'e', 'x', 'E', 'n', 't', 'r', 'y'], .punctuation ['*'], .identifier ['e', 'n', 't', 'r', 'y'], .punctuation ['='], .identifier ['i', 'n', 'd', 'e', 'x'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e', '_', 't', 'a', 'b', 'l', 'e'], .punctuation ['['], .identifier ['s', 'l', 'o', 't'], .punctuation [']'], .punctuation [';']])
 
-private theorem lookupPiece6_lex : lookupPiece6.1.toList.foldl step initial =
-    completed lookupPiece6.2 := by decide +kernel
-
 private def lookupPiece7 : String × List Token :=
   ("        if (!entry)\n", [.identifier ['i', 'f'], .punctuation ['('], .punctuation ['!'], .identifier ['e', 'n', 't', 'r', 'y'], .punctuation [')']])
-
-private theorem lookupPiece7_lex : lookupPiece7.1.toList.foldl step initial =
-    completed lookupPiece7.2 := by decide +kernel
 
 private def lookupPiece8 : String × List Token :=
   ("            return NULL;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['N', 'U', 'L', 'L'], .punctuation [';']])
 
-private theorem lookupPiece8_lex : lookupPiece8.1.toList.foldl step initial =
-    completed lookupPiece8.2 := by decide +kernel
-
 private def lookupPiece9 : String × List Token :=
   ("        if (cetta_frame_handle(entry->epoch) == handle)\n", [.identifier ['i', 'f'], .punctuation ['('], .identifier ['c', 'e', 't', 't', 'a', '_', 'f', 'r', 'a', 'm', 'e', '_', 'h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['('], .identifier ['e', 'n', 't', 'r', 'y'], .punctuation ['-', '>'], .identifier ['e', 'p', 'o', 'c', 'h'], .punctuation [')'], .punctuation ['=', '='], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation [')']])
-
-private theorem lookupPiece9_lex : lookupPiece9.1.toList.foldl step initial =
-    completed lookupPiece9.2 := by decide +kernel
 
 private def lookupPiece10 : String × List Token :=
   ("            return entry;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['e', 'n', 't', 'r', 'y'], .punctuation [';']])
 
-private theorem lookupPiece10_lex : lookupPiece10.1.toList.foldl step initial =
-    completed lookupPiece10.2 := by decide +kernel
-
 private def lookupPiece11 : String × List Token :=
   ("        slot = (slot + 1u) & mask;\n", [.identifier ['s', 'l', 'o', 't'], .punctuation ['='], .punctuation ['('], .identifier ['s', 'l', 'o', 't'], .punctuation ['+'], .number ['1', 'u'], .punctuation [')'], .punctuation ['&'], .identifier ['m', 'a', 's', 'k'], .punctuation [';']])
-
-private theorem lookupPiece11_lex : lookupPiece11.1.toList.foldl step initial =
-    completed lookupPiece11.2 := by decide +kernel
 
 private def lookupPiece12 : String × List Token :=
   ("    }\n", [.punctuation ['}']])
 
-private theorem lookupPiece12_lex : lookupPiece12.1.toList.foldl step initial =
-    completed lookupPiece12.2 := by decide +kernel
-
 private def lookupPiece13 : String × List Token :=
   ("}", [.punctuation ['}']])
 
-private theorem lookupPiece13_lex : lookupPiece13.1.toList.foldl step initial =
-    completed lookupPiece13.2 := by decide +kernel
-
 private def lookupPieces : List (String × List Token) :=
   [lookupPiece0, lookupPiece1, lookupPiece2, lookupPiece3, lookupPiece4, lookupPiece5, lookupPiece6, lookupPiece7, lookupPiece8, lookupPiece9, lookupPiece10, lookupPiece11, lookupPiece12, lookupPiece13]
+
+private theorem lookupPiecesScanned :
+    lookupPieces.Forall (fun piece =>
+      piece.1.toList.foldl step initial = completed piece.2) := by
+  simp only [lookupPieces, List.forall_cons]
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece5, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece3,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 
 def lookupSource : String := String.join (lookupPieces.map Prod.fst)
 def lookupTokens : List Token := lookupPieces.flatMap Prod.snd
 
 theorem lookup_lex : lex lookupSource.toList = .ok lookupTokens := by
-  apply lex_completed_string_pieces
-  simp only [lookupPieces, List.forall_cons]
-  exact ⟨lookupPiece0_lex, lookupPiece1_lex, lookupPiece2_lex, lookupPiece3_lex, lookupPiece4_lex, lookupPiece5_lex, lookupPiece6_lex, lookupPiece7_lex, lookupPiece8_lex, lookupPiece9_lex, lookupPiece10_lex, lookupPiece11_lex, lookupPiece12_lex, lookupPiece13_lex, trivial⟩
+  exact lex_completed_string_pieces lookupPieces lookupPiecesScanned
 
 theorem lookup_parsed : blockText? types lookupSource.toList = some lookupBody :=
   block_text_of_parts _ _ lookupTokens _ lookup_lex (by rfl)
@@ -8084,55 +7986,41 @@ theorem lookup_parsed : blockText? types lookupSource.toList = some lookupBody :
 private def findRefPiece0 : String × List Token :=
   ("{\n", [.punctuation ['{']])
 
-private theorem findRefPiece0_lex : findRefPiece0.1.toList.foldl step initial =
-    completed findRefPiece0.2 := by decide +kernel
-
 private def findRefPiece1 : String × List Token :=
   ("    if (!index || !bindings_frame_ref_is_valid(ref))\n", [.identifier ['i', 'f'], .punctuation ['('], .punctuation ['!'], .identifier ['i', 'n', 'd', 'e', 'x'], .punctuation ['|', '|'], .punctuation ['!'], .identifier ['b', 'i', 'n', 'd', 'i', 'n', 'g', 's', '_', 'f', 'r', 'a', 'm', 'e', '_', 'r', 'e', 'f', '_', 'i', 's', '_', 'v', 'a', 'l', 'i', 'd'], .punctuation ['('], .identifier ['r', 'e', 'f'], .punctuation [')'], .punctuation [')']])
-
-private theorem findRefPiece1_lex : findRefPiece1.1.toList.foldl step initial =
-    completed findRefPiece1.2 := by decide +kernel
 
 private def findRefPiece2 : String × List Token :=
   ("        return NULL;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['N', 'U', 'L', 'L'], .punctuation [';']])
 
-private theorem findRefPiece2_lex : findRefPiece2.1.toList.foldl step initial =
-    completed findRefPiece2.2 := by decide +kernel
-
 private def findRefPiece3 : String × List Token :=
   ("    BindingsFrameIndexEntry *entry = bindings_frame_table_lookup(\n", [.identifier ['B', 'i', 'n', 'd', 'i', 'n', 'g', 's', 'F', 'r', 'a', 'm', 'e', 'I', 'n', 'd', 'e', 'x', 'E', 'n', 't', 'r', 'y'], .punctuation ['*'], .identifier ['e', 'n', 't', 'r', 'y'], .punctuation ['='], .identifier ['b', 'i', 'n', 'd', 'i', 'n', 'g', 's', '_', 'f', 'r', 'a', 'm', 'e', '_', 't', 'a', 'b', 'l', 'e', '_', 'l', 'o', 'o', 'k', 'u', 'p'], .punctuation ['(']])
-
-private theorem findRefPiece3_lex : findRefPiece3.1.toList.foldl step initial =
-    completed findRefPiece3.2 := by decide +kernel
 
 private def findRefPiece4 : String × List Token :=
   ("        index, cetta_frame_handle(ref.identity));\n", [.identifier ['i', 'n', 'd', 'e', 'x'], .punctuation [','], .identifier ['c', 'e', 't', 't', 'a', '_', 'f', 'r', 'a', 'm', 'e', '_', 'h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['('], .identifier ['r', 'e', 'f'], .punctuation ['.'], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation [')'], .punctuation [')'], .punctuation [';']])
 
-private theorem findRefPiece4_lex : findRefPiece4.1.toList.foldl step initial =
-    completed findRefPiece4.2 := by decide +kernel
-
 private def findRefPiece5 : String × List Token :=
   ("    return entry && entry->epoch == ref.identity ? entry : NULL;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['e', 'n', 't', 'r', 'y'], .punctuation ['&', '&'], .identifier ['e', 'n', 't', 'r', 'y'], .punctuation ['-', '>'], .identifier ['e', 'p', 'o', 'c', 'h'], .punctuation ['=', '='], .identifier ['r', 'e', 'f'], .punctuation ['.'], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['?'], .identifier ['e', 'n', 't', 'r', 'y'], .punctuation [':'], .identifier ['N', 'U', 'L', 'L'], .punctuation [';']])
-
-private theorem findRefPiece5_lex : findRefPiece5.1.toList.foldl step initial =
-    completed findRefPiece5.2 := by decide +kernel
 
 private def findRefPiece6 : String × List Token :=
   ("}", [.punctuation ['}']])
 
-private theorem findRefPiece6_lex : findRefPiece6.1.toList.foldl step initial =
-    completed findRefPiece6.2 := by decide +kernel
-
 private def findRefPieces : List (String × List Token) :=
   [findRefPiece0, findRefPiece1, findRefPiece2, findRefPiece3, findRefPiece4, findRefPiece5, findRefPiece6]
+
+private theorem findRefPiecesScanned :
+    findRefPieces.Forall (fun piece =>
+      piece.1.toList.foldl step initial = completed piece.2) := by
+  simp only [findRefPieces, List.forall_cons]
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece5, ?_, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 
 def findRefSource : String := String.join (findRefPieces.map Prod.fst)
 def findRefTokens : List Token := findRefPieces.flatMap Prod.snd
 
 theorem findRef_lex : lex findRefSource.toList = .ok findRefTokens := by
-  apply lex_completed_string_pieces
-  simp only [findRefPieces, List.forall_cons]
-  exact ⟨findRefPiece0_lex, findRefPiece1_lex, findRefPiece2_lex, findRefPiece3_lex, findRefPiece4_lex, findRefPiece5_lex, findRefPiece6_lex, trivial⟩
+  exact lex_completed_string_pieces findRefPieces findRefPiecesScanned
 
 theorem findRef_parsed : blockText? types findRefSource.toList = some findRefBody :=
   block_text_of_parts _ _ findRefTokens _ findRef_lex (by rfl)
@@ -9065,158 +8953,80 @@ def generationBody : List CStatement := wrapperBody "generation"
 private def partsPiece0 : String × List Token :=
   ("{\n", [.punctuation ['{']])
 
-private theorem partsPiece0_lex : partsPiece0.1.toList.foldl step initial =
-    completed partsPiece0.2 := by decide +kernel
-
 private def partsPiece1 : String × List Token :=
   ("    if ((identity >> 31) == 0u) {\n", [.identifier ['i', 'f'], .punctuation ['('], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['>', '>'], .number ['3', '1'], .punctuation [')'], .punctuation ['=', '='], .number ['0', 'u'], .punctuation [')'], .punctuation ['{']])
-
-private theorem partsPiece1_lex : partsPiece1.1.toList.foldl step initial =
-    completed partsPiece1.2 := by decide +kernel
 
 private def partsPiece2 : String × List Token :=
   ("        out->handle = identity & CETTA_FRAME_HANDLE_MASK;\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['='], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['&'], .identifier ['C', 'E', 'T', 'T', 'A', '_', 'F', 'R', 'A', 'M', 'E', '_', 'H', 'A', 'N', 'D', 'L', 'E', '_', 'M', 'A', 'S', 'K'], .punctuation [';']])
 
-private theorem partsPiece2_lex : partsPiece2.1.toList.foldl step initial =
-    completed partsPiece2.2 := by decide +kernel
-
 private def partsPiece3 : String × List Token :=
   ("        out->generation = identity >> 20;\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n'], .punctuation ['='], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['>', '>'], .number ['2', '0'], .punctuation [';']])
-
-private theorem partsPiece3_lex : partsPiece3.1.toList.foldl step initial =
-    completed partsPiece3.2 := by decide +kernel
 
 private def partsPiece4 : String × List Token :=
   ("        out->generation_max = CETTA_FRAME_GENERATION_MAX;\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n', '_', 'm', 'a', 'x'], .punctuation ['='], .identifier ['C', 'E', 'T', 'T', 'A', '_', 'F', 'R', 'A', 'M', 'E', '_', 'G', 'E', 'N', 'E', 'R', 'A', 'T', 'I', 'O', 'N', '_', 'M', 'A', 'X'], .punctuation [';']])
 
-private theorem partsPiece4_lex : partsPiece4.1.toList.foldl step initial =
-    completed partsPiece4.2 := by decide +kernel
-
 private def partsPiece5 : String × List Token :=
   ("    } else if ((identity >> 30) == 2u) {\n", [.punctuation ['}'], .identifier ['e', 'l', 's', 'e'], .identifier ['i', 'f'], .punctuation ['('], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['>', '>'], .number ['3', '0'], .punctuation [')'], .punctuation ['=', '='], .number ['2', 'u'], .punctuation [')'], .punctuation ['{']])
-
-private theorem partsPiece5_lex : partsPiece5.1.toList.foldl step initial =
-    completed partsPiece5.2 := by decide +kernel
 
 private def partsPiece6 : String × List Token :=
   ("        out->handle = CETTA_FRAME_CLASS1_FIRST + (identity & UINT32_C(0x00ffffff));\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['='], .identifier ['C', 'E', 'T', 'T', 'A', '_', 'F', 'R', 'A', 'M', 'E', '_', 'C', 'L', 'A', 'S', 'S', '1', '_', 'F', 'I', 'R', 'S', 'T'], .punctuation ['+'], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['&'], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '0', '0', 'f', 'f', 'f', 'f', 'f', 'f'], .punctuation [')'], .punctuation [')'], .punctuation [';']])
 
-private theorem partsPiece6_lex : partsPiece6.1.toList.foldl step initial =
-    completed partsPiece6.2 := by decide +kernel
-
 private def partsPiece7 : String × List Token :=
   ("        out->generation = (identity >> 24) & UINT32_C(0x3f);\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n'], .punctuation ['='], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['>', '>'], .number ['2', '4'], .punctuation [')'], .punctuation ['&'], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '3', 'f'], .punctuation [')'], .punctuation [';']])
-
-private theorem partsPiece7_lex : partsPiece7.1.toList.foldl step initial =
-    completed partsPiece7.2 := by decide +kernel
 
 private def partsPiece8 : String × List Token :=
   ("        out->generation_max = UINT32_C(0x3e);\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n', '_', 'm', 'a', 'x'], .punctuation ['='], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '3', 'e'], .punctuation [')'], .punctuation [';']])
 
-private theorem partsPiece8_lex : partsPiece8.1.toList.foldl step initial =
-    completed partsPiece8.2 := by decide +kernel
-
 private def partsPiece9 : String × List Token :=
   ("    } else if ((identity >> 29) == 6u) {\n", [.punctuation ['}'], .identifier ['e', 'l', 's', 'e'], .identifier ['i', 'f'], .punctuation ['('], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['>', '>'], .number ['2', '9'], .punctuation [')'], .punctuation ['=', '='], .number ['6', 'u'], .punctuation [')'], .punctuation ['{']])
-
-private theorem partsPiece9_lex : partsPiece9.1.toList.foldl step initial =
-    completed partsPiece9.2 := by decide +kernel
 
 private def partsPiece10 : String × List Token :=
   ("        out->handle = CETTA_FRAME_CLASS2_FIRST + (identity & UINT32_C(0x03ffffff));\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['='], .identifier ['C', 'E', 'T', 'T', 'A', '_', 'F', 'R', 'A', 'M', 'E', '_', 'C', 'L', 'A', 'S', 'S', '2', '_', 'F', 'I', 'R', 'S', 'T'], .punctuation ['+'], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['&'], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '0', '3', 'f', 'f', 'f', 'f', 'f', 'f'], .punctuation [')'], .punctuation [')'], .punctuation [';']])
 
-private theorem partsPiece10_lex : partsPiece10.1.toList.foldl step initial =
-    completed partsPiece10.2 := by decide +kernel
-
 private def partsPiece11 : String × List Token :=
   ("        out->generation = (identity >> 26) & UINT32_C(0x7);\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n'], .punctuation ['='], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['>', '>'], .number ['2', '6'], .punctuation [')'], .punctuation ['&'], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '7'], .punctuation [')'], .punctuation [';']])
-
-private theorem partsPiece11_lex : partsPiece11.1.toList.foldl step initial =
-    completed partsPiece11.2 := by decide +kernel
 
 private def partsPiece12 : String × List Token :=
   ("        out->generation_max = UINT32_C(0x6);\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n', '_', 'm', 'a', 'x'], .punctuation ['='], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '6'], .punctuation [')'], .punctuation [';']])
 
-private theorem partsPiece12_lex : partsPiece12.1.toList.foldl step initial =
-    completed partsPiece12.2 := by decide +kernel
-
 private def partsPiece13 : String × List Token :=
   ("    } else if ((identity >> 28) == 14u) {\n", [.punctuation ['}'], .identifier ['e', 'l', 's', 'e'], .identifier ['i', 'f'], .punctuation ['('], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['>', '>'], .number ['2', '8'], .punctuation [')'], .punctuation ['=', '='], .number ['1', '4', 'u'], .punctuation [')'], .punctuation ['{']])
-
-private theorem partsPiece13_lex : partsPiece13.1.toList.foldl step initial =
-    completed partsPiece13.2 := by decide +kernel
 
 private def partsPiece14 : String × List Token :=
   ("        out->handle = CETTA_FRAME_CLASS3_FIRST + (identity & UINT32_C(0x03ffffff));\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['='], .identifier ['C', 'E', 'T', 'T', 'A', '_', 'F', 'R', 'A', 'M', 'E', '_', 'C', 'L', 'A', 'S', 'S', '3', '_', 'F', 'I', 'R', 'S', 'T'], .punctuation ['+'], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['&'], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '0', '3', 'f', 'f', 'f', 'f', 'f', 'f'], .punctuation [')'], .punctuation [')'], .punctuation [';']])
 
-private theorem partsPiece14_lex : partsPiece14.1.toList.foldl step initial =
-    completed partsPiece14.2 := by decide +kernel
-
 private def partsPiece15 : String × List Token :=
   ("        out->generation = (identity >> 26) & UINT32_C(0x3);\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n'], .punctuation ['='], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['>', '>'], .number ['2', '6'], .punctuation [')'], .punctuation ['&'], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '3'], .punctuation [')'], .punctuation [';']])
-
-private theorem partsPiece15_lex : partsPiece15.1.toList.foldl step initial =
-    completed partsPiece15.2 := by decide +kernel
 
 private def partsPiece16 : String × List Token :=
   ("        out->generation_max = UINT32_C(0x2);\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n', '_', 'm', 'a', 'x'], .punctuation ['='], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '2'], .punctuation [')'], .punctuation [';']])
 
-private theorem partsPiece16_lex : partsPiece16.1.toList.foldl step initial =
-    completed partsPiece16.2 := by decide +kernel
-
 private def partsPiece17 : String × List Token :=
   ("    } else {\n", [.punctuation ['}'], .identifier ['e', 'l', 's', 'e'], .punctuation ['{']])
-
-private theorem partsPiece17_lex : partsPiece17.1.toList.foldl step initial =
-    completed partsPiece17.2 := by decide +kernel
 
 private def partsPiece18 : String × List Token :=
   ("        out->handle = CETTA_FRAME_HANDLE_LIMIT + (identity & UINT32_C(0x0fffffff));\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['='], .identifier ['C', 'E', 'T', 'T', 'A', '_', 'F', 'R', 'A', 'M', 'E', '_', 'H', 'A', 'N', 'D', 'L', 'E', '_', 'L', 'I', 'M', 'I', 'T'], .punctuation ['+'], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation ['&'], .identifier ['U', 'I', 'N', 'T', '3', '2', '_', 'C'], .punctuation ['('], .number ['0', 'x', '0', 'f', 'f', 'f', 'f', 'f', 'f', 'f'], .punctuation [')'], .punctuation [')'], .punctuation [';']])
 
-private theorem partsPiece18_lex : partsPiece18.1.toList.foldl step initial =
-    completed partsPiece18.2 := by decide +kernel
-
 private def partsPiece19 : String × List Token :=
   ("        out->generation = 0u;\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n'], .punctuation ['='], .number ['0', 'u'], .punctuation [';']])
-
-private theorem partsPiece19_lex : partsPiece19.1.toList.foldl step initial =
-    completed partsPiece19.2 := by decide +kernel
 
 private def partsPiece20 : String × List Token :=
   ("        out->generation_max = 0u;\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n', '_', 'm', 'a', 'x'], .punctuation ['='], .number ['0', 'u'], .punctuation [';']])
 
-private theorem partsPiece20_lex : partsPiece20.1.toList.foldl step initial =
-    completed partsPiece20.2 := by decide +kernel
-
 private def partsPiece21 : String × List Token :=
   ("        return false;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['f', 'a', 'l', 's', 'e'], .punctuation [';']])
-
-private theorem partsPiece21_lex : partsPiece21.1.toList.foldl step initial =
-    completed partsPiece21.2 := by decide +kernel
 
 private def partsPiece22 : String × List Token :=
   ("    }\n", [.punctuation ['}']])
 
-private theorem partsPiece22_lex : partsPiece22.1.toList.foldl step initial =
-    completed partsPiece22.2 := by decide +kernel
-
 private def partsPiece23 : String × List Token :=
   ("    return out->handle != 0u && out->handle < CETTA_FRAME_HANDLE_LIMIT &&\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['!', '='], .number ['0', 'u'], .punctuation ['&', '&'], .identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation ['<'], .identifier ['C', 'E', 'T', 'T', 'A', '_', 'F', 'R', 'A', 'M', 'E', '_', 'H', 'A', 'N', 'D', 'L', 'E', '_', 'L', 'I', 'M', 'I', 'T'], .punctuation ['&', '&']])
-
-private theorem partsPiece23_lex : partsPiece23.1.toList.foldl step initial =
-    completed partsPiece23.2 := by decide +kernel
 
 private def partsPiece24 : String × List Token :=
   ("           out->generation != 0u && out->generation <= out->generation_max;\n", [.identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n'], .punctuation ['!', '='], .number ['0', 'u'], .punctuation ['&', '&'], .identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n'], .punctuation ['<', '='], .identifier ['o', 'u', 't'], .punctuation ['-', '>'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n', '_', 'm', 'a', 'x'], .punctuation [';']])
 
-private theorem partsPiece24_lex : partsPiece24.1.toList.foldl step initial =
-    completed partsPiece24.2 := by decide +kernel
-
 private def partsPiece25 : String × List Token :=
   ("}", [.punctuation ['}']])
-
-private theorem partsPiece25_lex : partsPiece25.1.toList.foldl step initial =
-    completed partsPiece25.2 := by decide +kernel
 
 private def partsPieces : List (String × List Token) :=
   [partsPiece0, partsPiece1, partsPiece2, partsPiece3, partsPiece4, partsPiece5, partsPiece6, partsPiece7, partsPiece8, partsPiece9, partsPiece10, partsPiece11, partsPiece12, partsPiece13, partsPiece14, partsPiece15, partsPiece16, partsPiece17, partsPiece18, partsPiece19, partsPiece20, partsPiece21, partsPiece22, partsPiece23, partsPiece24, partsPiece25]
@@ -9227,7 +9037,12 @@ def partsTokens : List Token := partsPieces.flatMap Prod.snd
 theorem parts_lex : lex partsSource.toList = .ok partsTokens := by
   apply lex_completed_string_pieces
   simp only [partsPieces, List.forall_cons]
-  exact ⟨partsPiece0_lex, partsPiece1_lex, partsPiece2_lex, partsPiece3_lex, partsPiece4_lex, partsPiece5_lex, partsPiece6_lex, partsPiece7_lex, partsPiece8_lex, partsPiece9_lex, partsPiece10_lex, partsPiece11_lex, partsPiece12_lex, partsPiece13_lex, partsPiece14_lex, partsPiece15_lex, partsPiece16_lex, partsPiece17_lex, partsPiece18_lex, partsPiece19_lex, partsPiece20_lex, partsPiece21_lex, partsPiece22_lex, partsPiece23_lex, partsPiece24_lex, partsPiece25_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece1,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece3, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 
 theorem parts_parsed : blockText? types partsSource.toList = some partsBody :=
   block_text_of_parts _ _ partsTokens _ parts_lex (by rfl)
@@ -9235,43 +9050,36 @@ theorem parts_parsed : blockText? types partsSource.toList = some partsBody :=
 private def handlePiece0 : String × List Token :=
   ("{\n", [.punctuation ['{']])
 
-private theorem handlePiece0_lex : handlePiece0.1.toList.foldl step initial =
-    completed handlePiece0.2 := by decide +kernel
-
 private def handlePiece1 : String × List Token :=
   ("    CettaFrameIdentityParts parts;\n", [.identifier ['C', 'e', 't', 't', 'a', 'F', 'r', 'a', 'm', 'e', 'I', 'd', 'e', 'n', 't', 'i', 't', 'y', 'P', 'a', 'r', 't', 's'], .identifier ['p', 'a', 'r', 't', 's'], .punctuation [';']])
-
-private theorem handlePiece1_lex : handlePiece1.1.toList.foldl step initial =
-    completed handlePiece1.2 := by decide +kernel
 
 private def handlePiece2 : String × List Token :=
   ("    (void)cetta_frame_identity_parts(identity, &parts);\n", [.punctuation ['('], .identifier ['v', 'o', 'i', 'd'], .punctuation [')'], .identifier ['c', 'e', 't', 't', 'a', '_', 'f', 'r', 'a', 'm', 'e', '_', 'i', 'd', 'e', 'n', 't', 'i', 't', 'y', '_', 'p', 'a', 'r', 't', 's'], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation [','], .punctuation ['&'], .identifier ['p', 'a', 'r', 't', 's'], .punctuation [')'], .punctuation [';']])
 
-private theorem handlePiece2_lex : handlePiece2.1.toList.foldl step initial =
-    completed handlePiece2.2 := by decide +kernel
-
 private def handlePiece3 : String × List Token :=
   ("    return parts.handle;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['p', 'a', 'r', 't', 's'], .punctuation ['.'], .identifier ['h', 'a', 'n', 'd', 'l', 'e'], .punctuation [';']])
-
-private theorem handlePiece3_lex : handlePiece3.1.toList.foldl step initial =
-    completed handlePiece3.2 := by decide +kernel
 
 private def handlePiece4 : String × List Token :=
   ("}", [.punctuation ['}']])
 
-private theorem handlePiece4_lex : handlePiece4.1.toList.foldl step initial =
-    completed handlePiece4.2 := by decide +kernel
-
 private def handlePieces : List (String × List Token) :=
   [handlePiece0, handlePiece1, handlePiece2, handlePiece3, handlePiece4]
+
+private theorem handlePiecesScanned :
+    handlePieces.Forall (fun piece =>
+      piece.1.toList.foldl step initial = completed piece.2) := by
+  simp only [handlePieces, List.forall_cons]
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece6,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece7, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 
 def handleSource : String := String.join (handlePieces.map Prod.fst)
 def handleTokens : List Token := handlePieces.flatMap Prod.snd
 
 theorem handle_lex : lex handleSource.toList = .ok handleTokens := by
-  apply lex_completed_string_pieces
-  simp only [handlePieces, List.forall_cons]
-  exact ⟨handlePiece0_lex, handlePiece1_lex, handlePiece2_lex, handlePiece3_lex, handlePiece4_lex, trivial⟩
+  exact lex_completed_string_pieces handlePieces handlePiecesScanned
 
 theorem handle_parsed : blockText? types handleSource.toList = some handleBody :=
   block_text_of_parts _ _ handleTokens _ handle_lex (by rfl)
@@ -9279,32 +9087,17 @@ theorem handle_parsed : blockText? types handleSource.toList = some handleBody :
 private def generationPiece0 : String × List Token :=
   ("{\n", [.punctuation ['{']])
 
-private theorem generationPiece0_lex : generationPiece0.1.toList.foldl step initial =
-    completed generationPiece0.2 := by decide +kernel
-
 private def generationPiece1 : String × List Token :=
   ("    CettaFrameIdentityParts parts;\n", [.identifier ['C', 'e', 't', 't', 'a', 'F', 'r', 'a', 'm', 'e', 'I', 'd', 'e', 'n', 't', 'i', 't', 'y', 'P', 'a', 'r', 't', 's'], .identifier ['p', 'a', 'r', 't', 's'], .punctuation [';']])
-
-private theorem generationPiece1_lex : generationPiece1.1.toList.foldl step initial =
-    completed generationPiece1.2 := by decide +kernel
 
 private def generationPiece2 : String × List Token :=
   ("    (void)cetta_frame_identity_parts(identity, &parts);\n", [.punctuation ['('], .identifier ['v', 'o', 'i', 'd'], .punctuation [')'], .identifier ['c', 'e', 't', 't', 'a', '_', 'f', 'r', 'a', 'm', 'e', '_', 'i', 'd', 'e', 'n', 't', 'i', 't', 'y', '_', 'p', 'a', 'r', 't', 's'], .punctuation ['('], .identifier ['i', 'd', 'e', 'n', 't', 'i', 't', 'y'], .punctuation [','], .punctuation ['&'], .identifier ['p', 'a', 'r', 't', 's'], .punctuation [')'], .punctuation [';']])
 
-private theorem generationPiece2_lex : generationPiece2.1.toList.foldl step initial =
-    completed generationPiece2.2 := by decide +kernel
-
 private def generationPiece3 : String × List Token :=
   ("    return parts.generation;\n", [.identifier ['r', 'e', 't', 'u', 'r', 'n'], .identifier ['p', 'a', 'r', 't', 's'], .punctuation ['.'], .identifier ['g', 'e', 'n', 'e', 'r', 'a', 't', 'i', 'o', 'n'], .punctuation [';']])
 
-private theorem generationPiece3_lex : generationPiece3.1.toList.foldl step initial =
-    completed generationPiece3.2 := by decide +kernel
-
 private def generationPiece4 : String × List Token :=
   ("}", [.punctuation ['}']])
-
-private theorem generationPiece4_lex : generationPiece4.1.toList.foldl step initial =
-    completed generationPiece4.2 := by decide +kernel
 
 private def generationPieces : List (String × List Token) :=
   [generationPiece0, generationPiece1, generationPiece2, generationPiece3, generationPiece4]
@@ -9315,7 +9108,11 @@ def generationTokens : List Token := generationPieces.flatMap Prod.snd
 theorem generation_lex : lex generationSource.toList = .ok generationTokens := by
   apply lex_completed_string_pieces
   simp only [generationPieces, List.forall_cons]
-  exact ⟨generationPiece0_lex, generationPiece1_lex, generationPiece2_lex, generationPiece3_lex, generationPiece4_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece6,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece7, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 
 theorem generation_parsed : blockText? types generationSource.toList = some generationBody :=
   block_text_of_parts _ _ generationTokens _ generation_lex (by rfl)
@@ -11307,20 +11104,10 @@ namespace Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaFrameWriteback.NativeFram
 open Mettapedia.GSLT.LanguageDef.NativeOps.NativeC
 
 private def sourcePiece0 : String × List Token := ("{\n    if (!atom) return SYMBOL_ID_NONE;\n    if (atom->", [.punctuation "{".toList, .identifier "if".toList, .punctuation "(".toList, .punctuation "!".toList, .identifier "atom".toList, .punctuation ")".toList, .identifier "return".toList, .identifier "SYMBOL_ID_NONE".toList, .punctuation ";".toList, .identifier "if".toList, .punctuation "(".toList, .identifier "atom".toList, .punctuation "->".toList])
-private theorem sourcePiece0_lex : sourcePiece0.1.toList.foldl step initial = completed sourcePiece0.2 := by decide +kernel
-
 private def sourcePiece1 : String × List Token := ("kind == ATOM_SYMBOL && atom->symbol_number == ", [.identifier "kind".toList, .punctuation "==".toList, .identifier "ATOM_SYMBOL".toList, .punctuation "&&".toList, .identifier "atom".toList, .punctuation "->".toList, .identifier "symbol_number".toList, .punctuation "==".toList])
-private theorem sourcePiece1_lex : sourcePiece1.1.toList.foldl step initial = completed sourcePiece1.2 := by decide +kernel
-
 private def sourcePiece2 : String × List Token := ("SYMBOL_ID_NONE &&\n        atom->spelling)\n        ", [.identifier "SYMBOL_ID_NONE".toList, .punctuation "&&".toList, .identifier "atom".toList, .punctuation "->".toList, .identifier "spelling".toList, .punctuation ")".toList])
-private theorem sourcePiece2_lex : sourcePiece2.1.toList.foldl step initial = completed sourcePiece2.2 := by decide +kernel
-
 private def sourcePiece3 : String × List Token := ("return atom_symbol_lookup_spelling_id(atom);\n    ", [.identifier "return".toList, .identifier "atom_symbol_lookup_spelling_id".toList, .punctuation "(".toList, .identifier "atom".toList, .punctuation ")".toList, .punctuation ";".toList])
-private theorem sourcePiece3_lex : sourcePiece3.1.toList.foldl step initial = completed sourcePiece3.2 := by decide +kernel
-
 private def sourcePiece4 : String × List Token := ("return atom->symbol_number;\n}", [.identifier "return".toList, .identifier "atom".toList, .punctuation "->".toList, .identifier "symbol_number".toList, .punctuation ";".toList, .punctuation "}".toList])
-private theorem sourcePiece4_lex : sourcePiece4.1.toList.foldl step initial = completed sourcePiece4.2 := by decide +kernel
-
 private def sourcePieces : List (String × List Token) := [sourcePiece0, sourcePiece1, sourcePiece2, sourcePiece3, sourcePiece4]
 def source : String := String.join (sourcePieces.map Prod.fst)
 def sourceTokens : List Token := sourcePieces.flatMap Prod.snd
@@ -11330,7 +11117,8 @@ checked separately. The kernel checks all tokens and the actual parsed body. -/
 theorem source_lexed : lex source.toList = .ok sourceTokens := by
   apply lex_completed_string_pieces
   simp only [sourcePieces, List.forall_cons]
-  exact ⟨sourcePiece0_lex, sourcePiece1_lex, sourcePiece2_lex, sourcePiece3_lex, sourcePiece4_lex, trivial⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, trivial⟩
+  all_goals decide +kernel
 
 theorem source_parsed : blockText? [] source.toList = some body := by
   exact block_text_of_parts [] _ sourceTokens _ source_lexed (by rfl)
@@ -11691,37 +11479,32 @@ namespace Mettapedia.Languages.MeTTa.Bridges.GSLT.CeTTaFrameWriteback.NativeFram
 open Mettapedia.GSLT.LanguageDef.NativeOps.NativeC
 
 private def chunkSourcePiece0 : String × List Token := ("{\n", [.punctuation "{".toList])
-private theorem chunkSourcePiece0_lex : chunkSourcePiece0.1.toList.foldl step initial = completed chunkSourcePiece0.2 := by decide +kernel
 private def chunkSourcePiece1 : String × List Token := ("    if (!st || !st->entry_chunks) return NULL;\n", [.identifier "if".toList, .punctuation "(".toList, .punctuation "!".toList, .identifier "st".toList, .punctuation "||".toList, .punctuation "!".toList, .identifier "st".toList, .punctuation "->".toList, .identifier "entry_chunks".toList, .punctuation ")".toList, .identifier "return".toList, .identifier "NULL".toList, .punctuation ";".toList])
-private theorem chunkSourcePiece1_lex : chunkSourcePiece1.1.toList.foldl step initial = completed chunkSourcePiece1.2 := by decide +kernel
 private def chunkSourcePiece2 : String × List Token := ("    return st->entry_chunks[id >> SYMBOL_ENTRY_CHUNK_BITS];\n", [.identifier "return".toList, .identifier "st".toList, .punctuation "->".toList, .identifier "entry_chunks".toList, .punctuation "[".toList, .identifier "id".toList, .punctuation ">>".toList, .identifier "SYMBOL_ENTRY_CHUNK_BITS".toList, .punctuation "]".toList, .punctuation ";".toList])
-private theorem chunkSourcePiece2_lex : chunkSourcePiece2.1.toList.foldl step initial = completed chunkSourcePiece2.2 := by decide +kernel
 private def chunkSourcePiece3 : String × List Token := ("}", [.punctuation "}".toList])
-private theorem chunkSourcePiece3_lex : chunkSourcePiece3.1.toList.foldl step initial = completed chunkSourcePiece3.2 := by decide +kernel
 private def chunkSourcePieces : List (String × List Token) := [chunkSourcePiece0, chunkSourcePiece1, chunkSourcePiece2, chunkSourcePiece3]
 def chunkSource : String := String.join (chunkSourcePieces.map Prod.fst)
 def chunkSourceTokens : List Token := chunkSourcePieces.flatMap Prod.snd
 theorem chunkSource_lexed : lex chunkSource.toList = .ok chunkSourceTokens := by
   apply lex_completed_string_pieces
   simp only [chunkSourcePieces, List.forall_cons]
-  exact ⟨chunkSourcePiece0_lex, chunkSourcePiece1_lex, chunkSourcePiece2_lex, chunkSourcePiece3_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 private def refSourcePiece0 : String × List Token := ("{\n", [.punctuation "{".toList])
-private theorem refSourcePiece0_lex : refSourcePiece0.1.toList.foldl step initial = completed refSourcePiece0.2 := by decide +kernel
 private def refSourcePiece1 : String × List Token := ("    const SymbolEntry *chunk = symbol_table_entry_chunk(st, id);\n", [.identifier "const".toList, .identifier "SymbolEntry".toList, .punctuation "*".toList, .identifier "chunk".toList, .punctuation "=".toList, .identifier "symbol_table_entry_chunk".toList, .punctuation "(".toList, .identifier "st".toList, .punctuation ",".toList, .identifier "id".toList, .punctuation ")".toList, .punctuation ";".toList])
-private theorem refSourcePiece1_lex : refSourcePiece1.1.toList.foldl step initial = completed refSourcePiece1.2 := by decide +kernel
 private def refSourcePiece2 : String × List Token := ("    if (!chunk) return NULL;\n", [.identifier "if".toList, .punctuation "(".toList, .punctuation "!".toList, .identifier "chunk".toList, .punctuation ")".toList, .identifier "return".toList, .identifier "NULL".toList, .punctuation ";".toList])
-private theorem refSourcePiece2_lex : refSourcePiece2.1.toList.foldl step initial = completed refSourcePiece2.2 := by decide +kernel
 private def refSourcePiece3 : String × List Token := ("    return &chunk[id & SYMBOL_ENTRY_CHUNK_MASK];\n", [.identifier "return".toList, .punctuation "&".toList, .identifier "chunk".toList, .punctuation "[".toList, .identifier "id".toList, .punctuation "&".toList, .identifier "SYMBOL_ENTRY_CHUNK_MASK".toList, .punctuation "]".toList, .punctuation ";".toList])
-private theorem refSourcePiece3_lex : refSourcePiece3.1.toList.foldl step initial = completed refSourcePiece3.2 := by decide +kernel
 private def refSourcePiece4 : String × List Token := ("}", [.punctuation "}".toList])
-private theorem refSourcePiece4_lex : refSourcePiece4.1.toList.foldl step initial = completed refSourcePiece4.2 := by decide +kernel
 private def refSourcePieces : List (String × List Token) := [refSourcePiece0, refSourcePiece1, refSourcePiece2, refSourcePiece3, refSourcePiece4]
 def refSource : String := String.join (refSourcePieces.map Prod.fst)
 def refSourceTokens : List Token := refSourcePieces.flatMap Prod.snd
 theorem refSource_lexed : lex refSource.toList = .ok refSourceTokens := by
   apply lex_completed_string_pieces
   simp only [refSourcePieces, List.forall_cons]
-  exact ⟨refSourcePiece0_lex, refSourcePiece1_lex, refSourcePiece2_lex, refSourcePiece3_lex, refSourcePiece4_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0, ?_, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 theorem actual_chunk_body_parsed : blockText? [] chunkSource.toList = some chunkBody := by
   exact block_text_of_parts [] _ chunkSourceTokens _ chunkSource_lexed (by rfl)
 
@@ -12225,15 +12008,6 @@ private def headerPiece3 : String × List Token :=
    [.identifier "BindingsFrameRef".toList, .identifier "ref".toList,
     .punctuation [')']])
 
-private theorem header0_lex : headerPiece0.1.toList.foldl step initial =
-    completed headerPiece0.2 := by decide +kernel
-private theorem header1_lex : headerPiece1.1.toList.foldl step initial =
-    completed headerPiece1.2 := by decide +kernel
-private theorem header2_lex : headerPiece2.1.toList.foldl step initial =
-    completed headerPiece2.2 := by decide +kernel
-private theorem header3_lex : headerPiece3.1.toList.foldl step initial =
-    completed headerPiece3.2 := by decide +kernel
-
 private def pieces : List (String × List Token) :=
   headerPiece0 :: headerPiece1 :: headerPiece2 :: headerPiece3 :: Source.findRefPieces
 def source : String := String.join (pieces.map Prod.fst)
@@ -12241,11 +12015,9 @@ def tokens : List Token := pieces.flatMap Prod.snd
 
 theorem lexed : lex source.toList = .ok tokens := by
   apply lex_completed_string_pieces
-  simp only [pieces, Source.findRefPieces, List.forall_cons]
-  exact ⟨header0_lex, header1_lex, header2_lex, header3_lex,
-    Source.findRefPiece0_lex, Source.findRefPiece1_lex,
-    Source.findRefPiece2_lex, Source.findRefPiece3_lex, Source.findRefPiece4_lex,
-    Source.findRefPiece5_lex, Source.findRefPiece6_lex, trivial⟩
+  simp only [pieces, List.forall_cons]
+  refine ⟨?_, ?_, ?_, ?_, Source.findRefPiecesScanned⟩
+  all_goals decide +kernel
 
 theorem parsed : ordinaryFunctionText? types source.toList = some function :=
   function_text_using_of_parts (parameter? types) types source.toList
@@ -12550,10 +12322,6 @@ private def header1 : String × List Token :=
   ("CettaFrameIdentity identity) ",
    [.identifier "CettaFrameIdentity".toList, .identifier "identity".toList,
     .punctuation [')']])
-private theorem header0_lex : header0.1.toList.foldl step initial =
-    completed header0.2 := by decide +kernel
-private theorem header1_lex : header1.1.toList.foldl step initial =
-    completed header1.2 := by decide +kernel
 private def pieces : List (String × List Token) := header0 :: header1 :: IdentitySource.handlePieces
 
 def functionSource : String := String.join (pieces.map Prod.fst)
@@ -12563,9 +12331,9 @@ def handleFunction : CFunction := ⟨⟨"uint32_t".toList, 0⟩,
 
 theorem function_lexed : lex functionSource.toList = .ok functionTokens := by
   apply lex_completed_string_pieces
-  simp only [pieces, IdentitySource.handlePieces, List.forall_cons]
-  exact ⟨header0_lex, header1_lex, IdentitySource.handlePiece0_lex, IdentitySource.handlePiece1_lex,
-    IdentitySource.handlePiece2_lex, IdentitySource.handlePiece3_lex, IdentitySource.handlePiece4_lex, trivial⟩
+  simp only [pieces, List.forall_cons]
+  refine ⟨?_, ?_, IdentitySource.handlePiecesScanned⟩
+  all_goals decide +kernel
 
 theorem function_parsed : ordinaryFunctionText? IdentitySource.types functionSource.toList =
     some handleFunction :=
@@ -13104,10 +12872,6 @@ private def header1 : String × List Token :=
    [.identifier "const".toList, .identifier "BindingsFrameIndex".toList,
     .punctuation ['*'], .identifier "index".toList, .punctuation [','],
     .identifier "uint32_t".toList, .identifier "handle".toList, .punctuation [')']])
-private theorem header0_lex : header0.1.toList.foldl step initial =
-    completed header0.2 := by decide +kernel
-private theorem header1_lex : header1.1.toList.foldl step initial =
-    completed header1.2 := by decide +kernel
 private def pieces : List (String × List Token) := header0 :: header1 :: Source.lookupPieces
 
 def source : String := String.join (pieces.map Prod.fst)
@@ -13121,8 +12885,9 @@ def function : CQualifiedFunction :=
 
 theorem lexed : lex source.toList = .ok tokens := by
   apply lex_completed_string_pieces
-  simp only [pieces, Source.lookupPieces, List.forall_cons]
-  exact ⟨header0_lex, header1_lex, Source.lookupPiece0_lex, Source.lookupPiece1_lex, Source.lookupPiece2_lex, Source.lookupPiece3_lex, Source.lookupPiece4_lex, Source.lookupPiece5_lex, Source.lookupPiece6_lex, Source.lookupPiece7_lex, Source.lookupPiece8_lex, Source.lookupPiece9_lex, Source.lookupPiece10_lex, Source.lookupPiece11_lex, Source.lookupPiece12_lex, Source.lookupPiece13_lex, trivial⟩
+  simp only [pieces, List.forall_cons]
+  refine ⟨?_, ?_, Source.lookupPiecesScanned⟩
+  all_goals decide +kernel
 
 theorem parsed : qualifiedFunctionText? types source.toList = some function :=
   function_text_using_of_parts (qualifiedParameter? types) types source.toList
@@ -14792,24 +14557,18 @@ theorem entry_compares_owned_key_wp (compare : Compare)
     simpa only [Prod.mk.injEq, differentBytes, and_false, decide_false] using after
 
 private def sourcePiece0 : String × List Token := ("{\n", [.punctuation "{".toList])
-private theorem sourcePiece0_lex : sourcePiece0.1.toList.foldl step initial = completed sourcePiece0.2 := by decide +kernel
-
 private def sourcePiece1 : String × List Token := ("    return entry && entry->bytes && entry->len == len && entry->hash == hash &&\n", [.identifier "return".toList, .identifier "entry".toList, .punctuation "&&".toList, .identifier "entry".toList, .punctuation "->".toList, .identifier "bytes".toList, .punctuation "&&".toList, .identifier "entry".toList, .punctuation "->".toList, .identifier "len".toList, .punctuation "==".toList, .identifier "len".toList, .punctuation "&&".toList, .identifier "entry".toList, .punctuation "->".toList, .identifier "hash".toList, .punctuation "==".toList, .identifier "hash".toList, .punctuation "&&".toList])
-private theorem sourcePiece1_lex : sourcePiece1.1.toList.foldl step initial = completed sourcePiece1.2 := by decide +kernel
-
 private def sourcePiece2 : String × List Token := ("           memcmp(entry->bytes, bytes, len) == 0;\n", [.identifier "memcmp".toList, .punctuation "(".toList, .identifier "entry".toList, .punctuation "->".toList, .identifier "bytes".toList, .punctuation ",".toList, .identifier "bytes".toList, .punctuation ",".toList, .identifier "len".toList, .punctuation ")".toList, .punctuation "==".toList, .number "0".toList, .punctuation ";".toList])
-private theorem sourcePiece2_lex : sourcePiece2.1.toList.foldl step initial = completed sourcePiece2.2 := by decide +kernel
-
 private def sourcePiece3 : String × List Token := ("}", [.punctuation "}".toList])
-private theorem sourcePiece3_lex : sourcePiece3.1.toList.foldl step initial = completed sourcePiece3.2 := by decide +kernel
-
 private def sourcePieces : List (String × List Token) := [sourcePiece0, sourcePiece1, sourcePiece2, sourcePiece3]
 def source : String := String.join (sourcePieces.map Prod.fst)
 def sourceTokens : List Token := sourcePieces.flatMap Prod.snd
 theorem actual_source_lexed : lex source.toList = .ok sourceTokens := by
   apply lex_completed_string_pieces
   simp only [sourcePieces, List.forall_cons]
-  exact ⟨sourcePiece0_lex, sourcePiece1_lex, sourcePiece2_lex, sourcePiece3_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 theorem actual_body_parsed : blockText? [] source.toList = some body := by
   exact block_text_of_parts [] _ sourceTokens _ actual_source_lexed (by rfl)
 
@@ -14854,72 +14613,36 @@ def body : List CStatement :=
 
 
 private def sourcePiece0 : String × List Token := ("{\n", [.punctuation "{".toList])
-private theorem sourcePiece0_lex : sourcePiece0.1.toList.foldl step initial = completed sourcePiece0.2 := by decide +kernel
-
 private def sourcePiece1 : String × List Token := ("    if (!st || !bytes || !len) return SYMBOL_ID_NONE;\n", [.identifier "if".toList, .punctuation "(".toList, .punctuation "!".toList, .identifier "st".toList, .punctuation "||".toList, .punctuation "!".toList, .identifier "bytes".toList, .punctuation "||".toList, .punctuation "!".toList, .identifier "len".toList, .punctuation ")".toList, .identifier "return".toList, .identifier "SYMBOL_ID_NONE".toList, .punctuation ";".toList])
-private theorem sourcePiece1_lex : sourcePiece1.1.toList.foldl step initial = completed sourcePiece1.2 := by decide +kernel
-
 private def sourcePiece2 : String × List Token := ("    SymbolId found = SYMBOL_ID_NONE;\n", [.identifier "SymbolId".toList, .identifier "found".toList, .punctuation "=".toList, .identifier "SYMBOL_ID_NONE".toList, .punctuation ";".toList])
-private theorem sourcePiece2_lex : sourcePiece2.1.toList.foldl step initial = completed sourcePiece2.2 := by decide +kernel
-
 private def sourcePiece3 : String × List Token := ("    pthread_mutex_lock(&st->write_mutex);\n", [.identifier "pthread_mutex_lock".toList, .punctuation "(".toList, .punctuation "&".toList, .identifier "st".toList, .punctuation "->".toList, .identifier "write_mutex".toList, .punctuation ")".toList, .punctuation ";".toList])
-private theorem sourcePiece3_lex : sourcePiece3.1.toList.foldl step initial = completed sourcePiece3.2 := by decide +kernel
-
 private def sourcePiece4 : String × List Token := ("    if (st->slot_cap) {\n", [.identifier "if".toList, .punctuation "(".toList, .identifier "st".toList, .punctuation "->".toList, .identifier "slot_cap".toList, .punctuation ")".toList, .punctuation "{".toList])
-private theorem sourcePiece4_lex : sourcePiece4.1.toList.foldl step initial = completed sourcePiece4.2 := by decide +kernel
-
 private def sourcePiece5 : String × List Token := ("        uint32_t slot = (uint32_t)(hash % st->slot_cap);\n", [.identifier "uint32_t".toList, .identifier "slot".toList, .punctuation "=".toList, .punctuation "(".toList, .identifier "uint32_t".toList, .punctuation ")".toList, .punctuation "(".toList, .identifier "hash".toList, .punctuation "%".toList, .identifier "st".toList, .punctuation "->".toList, .identifier "slot_cap".toList, .punctuation ")".toList, .punctuation ";".toList])
-private theorem sourcePiece5_lex : sourcePiece5.1.toList.foldl step initial = completed sourcePiece5.2 := by decide +kernel
-
 private def sourcePiece6 : String × List Token := ("        while (st->slots[slot].id != SYMBOL_ID_NONE) {\n", [.identifier "while".toList, .punctuation "(".toList, .identifier "st".toList, .punctuation "->".toList, .identifier "slots".toList, .punctuation "[".toList, .identifier "slot".toList, .punctuation "]".toList, .punctuation ".".toList, .identifier "id".toList, .punctuation "!=".toList, .identifier "SYMBOL_ID_NONE".toList, .punctuation ")".toList, .punctuation "{".toList])
-private theorem sourcePiece6_lex : sourcePiece6.1.toList.foldl step initial = completed sourcePiece6.2 := by decide +kernel
-
 private def sourcePiece7 : String × List Token := ("            const SymbolSlot *entry = &st->slots[slot];\n", [.identifier "const".toList, .identifier "SymbolSlot".toList, .punctuation "*".toList, .identifier "entry".toList, .punctuation "=".toList, .punctuation "&".toList, .identifier "st".toList, .punctuation "->".toList, .identifier "slots".toList, .punctuation "[".toList, .identifier "slot".toList, .punctuation "]".toList, .punctuation ";".toList])
-private theorem sourcePiece7_lex : sourcePiece7.1.toList.foldl step initial = completed sourcePiece7.2 := by decide +kernel
-
 private def sourcePiece8 : String × List Token := ("            if (entry->hash == hash &&\n", [.identifier "if".toList, .punctuation "(".toList, .identifier "entry".toList, .punctuation "->".toList, .identifier "hash".toList, .punctuation "==".toList, .identifier "hash".toList, .punctuation "&&".toList])
-private theorem sourcePiece8_lex : sourcePiece8.1.toList.foldl step initial = completed sourcePiece8.2 := by decide +kernel
-
 private def sourcePiece9 : String × List Token := ("                symbol_entry_matches(symbol_table_entry_ref(st, entry->id),\n", [.identifier "symbol_entry_matches".toList, .punctuation "(".toList, .identifier "symbol_table_entry_ref".toList, .punctuation "(".toList, .identifier "st".toList, .punctuation ",".toList, .identifier "entry".toList, .punctuation "->".toList, .identifier "id".toList, .punctuation ")".toList, .punctuation ",".toList])
-private theorem sourcePiece9_lex : sourcePiece9.1.toList.foldl step initial = completed sourcePiece9.2 := by decide +kernel
-
 private def sourcePiece10 : String × List Token := ("                                     bytes, len, hash)) {\n", [.identifier "bytes".toList, .punctuation ",".toList, .identifier "len".toList, .punctuation ",".toList, .identifier "hash".toList, .punctuation ")".toList, .punctuation ")".toList, .punctuation "{".toList])
-private theorem sourcePiece10_lex : sourcePiece10.1.toList.foldl step initial = completed sourcePiece10.2 := by decide +kernel
-
 private def sourcePiece11 : String × List Token := ("                found = entry->id;\n", [.identifier "found".toList, .punctuation "=".toList, .identifier "entry".toList, .punctuation "->".toList, .identifier "id".toList, .punctuation ";".toList])
-private theorem sourcePiece11_lex : sourcePiece11.1.toList.foldl step initial = completed sourcePiece11.2 := by decide +kernel
-
 private def sourcePiece12 : String × List Token := ("                break;\n", [.identifier "break".toList, .punctuation ";".toList])
-private theorem sourcePiece12_lex : sourcePiece12.1.toList.foldl step initial = completed sourcePiece12.2 := by decide +kernel
-
 private def sourcePiece13 : String × List Token := ("            }\n", [.punctuation "}".toList])
-private theorem sourcePiece13_lex : sourcePiece13.1.toList.foldl step initial = completed sourcePiece13.2 := by decide +kernel
-
 private def sourcePiece14 : String × List Token := ("            slot = (slot + 1) % st->slot_cap;\n", [.identifier "slot".toList, .punctuation "=".toList, .punctuation "(".toList, .identifier "slot".toList, .punctuation "+".toList, .number "1".toList, .punctuation ")".toList, .punctuation "%".toList, .identifier "st".toList, .punctuation "->".toList, .identifier "slot_cap".toList, .punctuation ";".toList])
-private theorem sourcePiece14_lex : sourcePiece14.1.toList.foldl step initial = completed sourcePiece14.2 := by decide +kernel
-
 private def sourcePiece15 : String × List Token := ("        }\n", [.punctuation "}".toList])
-private theorem sourcePiece15_lex : sourcePiece15.1.toList.foldl step initial = completed sourcePiece15.2 := by decide +kernel
-
 private def sourcePiece16 : String × List Token := ("    }\n", [.punctuation "}".toList])
-private theorem sourcePiece16_lex : sourcePiece16.1.toList.foldl step initial = completed sourcePiece16.2 := by decide +kernel
-
 private def sourcePiece17 : String × List Token := ("    pthread_mutex_unlock(&st->write_mutex);\n", [.identifier "pthread_mutex_unlock".toList, .punctuation "(".toList, .punctuation "&".toList, .identifier "st".toList, .punctuation "->".toList, .identifier "write_mutex".toList, .punctuation ")".toList, .punctuation ";".toList])
-private theorem sourcePiece17_lex : sourcePiece17.1.toList.foldl step initial = completed sourcePiece17.2 := by decide +kernel
-
 private def sourcePiece18 : String × List Token := ("    return found;\n", [.identifier "return".toList, .identifier "found".toList, .punctuation ";".toList])
-private theorem sourcePiece18_lex : sourcePiece18.1.toList.foldl step initial = completed sourcePiece18.2 := by decide +kernel
-
 private def sourcePiece19 : String × List Token := ("}", [.punctuation "}".toList])
-private theorem sourcePiece19_lex : sourcePiece19.1.toList.foldl step initial = completed sourcePiece19.2 := by decide +kernel
-
 private def sourcePieces : List (String × List Token) := [sourcePiece0, sourcePiece1, sourcePiece2, sourcePiece3, sourcePiece4, sourcePiece5, sourcePiece6, sourcePiece7, sourcePiece8, sourcePiece9, sourcePiece10, sourcePiece11, sourcePiece12, sourcePiece13, sourcePiece14, sourcePiece15, sourcePiece16, sourcePiece17, sourcePiece18, sourcePiece19]
 def source : String := String.join (sourcePieces.map Prod.fst)
 def sourceTokens : List Token := sourcePieces.flatMap Prod.snd
 theorem actual_source_lexed : lex source.toList = .ok sourceTokens := by
   apply lex_completed_string_pieces
   simp only [sourcePieces, List.forall_cons]
-  exact ⟨sourcePiece0_lex, sourcePiece1_lex, sourcePiece2_lex, sourcePiece3_lex, sourcePiece4_lex, sourcePiece5_lex, sourcePiece6_lex, sourcePiece7_lex, sourcePiece8_lex, sourcePiece9_lex, sourcePiece10_lex, sourcePiece11_lex, sourcePiece12_lex, sourcePiece13_lex, sourcePiece14_lex, sourcePiece15_lex, sourcePiece16_lex, sourcePiece17_lex, sourcePiece18_lex, sourcePiece19_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0, ?_, ?_, ?_, ?_, ?_,
+    ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece3, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 theorem actual_body_parsed : blockText? ["SymbolId".toList, "SymbolSlot".toList, "uint32_t".toList] source.toList = some body := by
   exact block_text_of_parts _ _ sourceTokens _ actual_source_lexed (by rfl)
 
@@ -16601,29 +16324,13 @@ def body : List CStatement :=
    .return (some invoke)]
 
 private def sourcePiece0 : String × List Token := ("{\n", [.punctuation "{".toList])
-private theorem sourcePiece0_lex : sourcePiece0.1.toList.foldl step initial = completed sourcePiece0.2 := by decide +kernel
-
 private def sourcePiece1 : String × List Token := ("    atom = atom_symbol_unforward(atom);\n", [.identifier "atom".toList, .punctuation "=".toList, .identifier "atom_symbol_unforward".toList, .punctuation "(".toList, .identifier "atom".toList, .punctuation ")".toList, .punctuation ";".toList])
-private theorem sourcePiece1_lex : sourcePiece1.1.toList.foldl step initial = completed sourcePiece1.2 := by decide +kernel
-
 private def sourcePiece2 : String × List Token := ("    if (!atom_symbol_is_spelled(atom))\n", [.identifier "if".toList, .punctuation "(".toList, .punctuation "!".toList, .identifier "atom_symbol_is_spelled".toList, .punctuation "(".toList, .identifier "atom".toList, .punctuation ")".toList, .punctuation ")".toList])
-private theorem sourcePiece2_lex : sourcePiece2.1.toList.foldl step initial = completed sourcePiece2.2 := by decide +kernel
-
 private def sourcePiece3 : String × List Token := ("        return atom ? atom->symbol_number : SYMBOL_ID_NONE;\n", [.identifier "return".toList, .identifier "atom".toList, .punctuation "?".toList, .identifier "atom".toList, .punctuation "->".toList, .identifier "symbol_number".toList, .punctuation ":".toList, .identifier "SYMBOL_ID_NONE".toList, .punctuation ";".toList])
-private theorem sourcePiece3_lex : sourcePiece3.1.toList.foldl step initial = completed sourcePiece3.2 := by decide +kernel
-
 private def sourcePiece4 : String × List Token := ("    return symbol_lookup_span_hashed(g_symbols,\n", [.identifier "return".toList, .identifier "symbol_lookup_span_hashed".toList, .punctuation "(".toList, .identifier "g_symbols".toList, .punctuation ",".toList])
-private theorem sourcePiece4_lex : sourcePiece4.1.toList.foldl step initial = completed sourcePiece4.2 := by decide +kernel
-
 private def sourcePiece5 : String × List Token := ("        (const uint8_t *)atom->spelling->bytes, atom->spelling->len,\n", [.punctuation "(".toList, .identifier "const".toList, .identifier "uint8_t".toList, .punctuation "*".toList, .punctuation ")".toList, .identifier "atom".toList, .punctuation "->".toList, .identifier "spelling".toList, .punctuation "->".toList, .identifier "bytes".toList, .punctuation ",".toList, .identifier "atom".toList, .punctuation "->".toList, .identifier "spelling".toList, .punctuation "->".toList, .identifier "len".toList, .punctuation ",".toList])
-private theorem sourcePiece5_lex : sourcePiece5.1.toList.foldl step initial = completed sourcePiece5.2 := by decide +kernel
-
 private def sourcePiece6 : String × List Token := ("        atom->spelling->hash);\n", [.identifier "atom".toList, .punctuation "->".toList, .identifier "spelling".toList, .punctuation "->".toList, .identifier "hash".toList, .punctuation ")".toList, .punctuation ";".toList])
-private theorem sourcePiece6_lex : sourcePiece6.1.toList.foldl step initial = completed sourcePiece6.2 := by decide +kernel
-
 private def sourcePiece7 : String × List Token := ("}", [.punctuation "}".toList])
-private theorem sourcePiece7_lex : sourcePiece7.1.toList.foldl step initial = completed sourcePiece7.2 := by decide +kernel
-
 private def sourcePieces : List (String × List Token) := [sourcePiece0, sourcePiece1, sourcePiece2, sourcePiece3, sourcePiece4, sourcePiece5, sourcePiece6, sourcePiece7]
 def source : String := String.join (sourcePieces.map Prod.fst)
 def sourceTokens : List Token := sourcePieces.flatMap Prod.snd
@@ -16631,7 +16338,10 @@ def sourceTokens : List Token := sourcePieces.flatMap Prod.snd
 theorem actual_source_lexed : lex source.toList = .ok sourceTokens := by
   apply lex_completed_string_pieces
   simp only [sourcePieces, List.forall_cons]
-  exact ⟨sourcePiece0_lex, sourcePiece1_lex, sourcePiece2_lex, sourcePiece3_lex, sourcePiece4_lex, sourcePiece5_lex, sourcePiece6_lex, sourcePiece7_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece8, ?_, ?_, ?_, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 
 theorem actual_body_parsed : blockText? ["uint8_t".toList] source.toList = some body :=
   block_text_of_parts _ _ sourceTokens _ actual_source_lexed (by rfl)
@@ -17206,35 +16916,24 @@ theorem actual_spelled_body (forward : Forward) (spelled : IsSpelled) (span : Sp
 
 private def spelledPiece0 : String × List Token :=
   ("{\n", [.punctuation "{".toList])
-private theorem spelledPiece0_lex :
-    spelledPiece0.1.toList.foldl step initial = completed spelledPiece0.2 := by decide +kernel
 private def spelledPiece1 : String × List Token :=
   ("    atom = atom_symbol_unforward(atom);\n",
    [.identifier "atom".toList, .punctuation "=".toList,
     .identifier "atom_symbol_unforward".toList, .punctuation "(".toList,
     .identifier "atom".toList, .punctuation ")".toList, .punctuation ";".toList])
-private theorem spelledPiece1_lex :
-    spelledPiece1.1.toList.foldl step initial = completed spelledPiece1.2 := by decide +kernel
 private def spelledPiece2 : String × List Token :=
   ("    return atom && atom->kind == ATOM_SYMBOL &&\n",
    [.identifier "return".toList, .identifier "atom".toList, .punctuation "&&".toList,
     .identifier "atom".toList, .punctuation "->".toList, .identifier "kind".toList,
     .punctuation "==".toList, .identifier "ATOM_SYMBOL".toList, .punctuation "&&".toList])
-private theorem spelledPiece2_lex :
-    spelledPiece2.1.toList.foldl step initial = completed spelledPiece2.2 := by decide +kernel
 private def spelledPiece3 : String × List Token :=
   ("           atom->symbol_number == SYMBOL_ID_NONE && atom->spelling != NULL;\n",
    [.identifier "atom".toList, .punctuation "->".toList, .identifier "symbol_number".toList,
     .punctuation "==".toList, .identifier "SYMBOL_ID_NONE".toList, .punctuation "&&".toList,
     .identifier "atom".toList, .punctuation "->".toList, .identifier "spelling".toList,
     .punctuation "!=".toList, .identifier "NULL".toList, .punctuation ";".toList])
-private theorem spelledPiece3_lex :
-    spelledPiece3.1.toList.foldl step initial = completed spelledPiece3.2 := by decide +kernel
 private def spelledPiece4 : String × List Token :=
   ("}", [.punctuation "}".toList])
-private theorem spelledPiece4_lex :
-    spelledPiece4.1.toList.foldl step initial = completed spelledPiece4.2 := by decide +kernel
-
 private def spelledPieces : List (String × List Token) :=
   [spelledPiece0, spelledPiece1, spelledPiece2, spelledPiece3, spelledPiece4]
 
@@ -17246,8 +16945,10 @@ def spelledTokens : List Token := spelledPieces.flatMap Prod.snd
 theorem spelled_source_lexed : lex spelledSource.toList = .ok spelledTokens := by
   apply lex_completed_string_pieces
   simp only [spelledPieces, List.forall_cons]
-  exact ⟨spelledPiece0_lex, spelledPiece1_lex, spelledPiece2_lex, spelledPiece3_lex,
-    spelledPiece4_lex, trivial⟩
+  refine ⟨Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece0,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece8, ?_, ?_,
+    Mettapedia.GSLT.LanguageDef.NativeOps.NativeC.FrameWritebackLexScans.piece4, trivial⟩
+  all_goals decide +kernel
 
 theorem spelled_source_parsed : blockText? [] spelledSource.toList = some spelledBody :=
   block_text_of_parts _ _ spelledTokens _ spelled_source_lexed (by rfl)

@@ -1,3 +1,5 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationNameTraversal
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.GSLT.LanguageDef.IRPass
 import Mettapedia.GSLT.LanguageDef.PatternPlanBindingDecisionCompilation
 import Mettapedia.GSLT.LanguageDef.TotalGSLT
@@ -370,33 +372,9 @@ private theorem labels_nodup : (language.terms.map (·.label)).Nodup := by
   decide
 
 private theorem rewrite_checks :
-    language.rewrites.all (RewriteValidationCertificate.check language) = true := by
-  simp +decide [
-    RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-    RewriteValidationCertificate.patternDeclaredCheck,
-    RewriteValidationCertificate.premisesDeclaredCheck,
-    RewriteValidationCertificate.allPatternsScopedCheck,
-    RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-    RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-    RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-    RewriteValidationCertificate.rightBoundCheck,
-    RewriteValidationCertificate.constructorSignatures,
-    RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-    checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite, joinMergeRewrite,
-    finishRewrite, runPattern, retPattern, donePattern, succeedPattern, capturePattern,
-    checkBoundPattern, checkConstructorPattern, joinPattern, nilBindingsPattern, bindPattern,
-    joinRightPattern, joinMergePattern, knilPattern, kconsPattern, metavariable, projectRelation,
-    boundRelation, constructorRelation, mergeRelation, pathType, indexType, nameType, subjectType,
-    decisionType, bindingsType, frameType, kontType, stateType, rootConstructor, childConstructor,
-    zeroConstructor, succConstructor, succeedConstructor, captureConstructor,
-    checkBoundConstructor, checkConstructorConstructor, joinConstructor, nilBindingsConstructor,
-    bindConstructor, joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-    runConstructor, retConstructor, doneConstructor, constructor, LanguageDef.typeNames,
-    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames, Pattern.constructorRefs,
-    Pattern.constructorRefsList, Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt, Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain,
-    LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
-    LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams]
+    language.rewrites.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private theorem rewrites_validate :
     ∀ rewrite ∈ language.rewrites, language.validateRewrite rewrite = [] :=
@@ -459,18 +437,8 @@ def relationEnv : RelationEnv where
 def ir : IRLanguage := ⟨validatedLanguage, relationEnv⟩
 
 private theorem rules_noncontextual :
-    ∀ rule, rule ∈ language.rewrites → NoncontextualPremises rule.premises := by
-  intro rule ruleMember
-  change rule ∈
-    [succeedRewrite, captureRewrite, checkBoundRewrite, checkConstructorRewrite, joinRewrite,
-      joinRightRewrite, joinMergeRewrite, finishRewrite] at ruleMember
-  simp only [List.mem_cons, List.mem_nil_iff, or_false] at ruleMember
-  rcases ruleMember with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  all_goals
-    first
-    | exact .nil
-    | exact .relationQuery .nil
-    | exact .relationQuery (.relationQuery .nil)
+    ∀ rule, rule ∈ language.rewrites → NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 theorem language_isEquationFree : language.isEquationFree = true := by decide
 

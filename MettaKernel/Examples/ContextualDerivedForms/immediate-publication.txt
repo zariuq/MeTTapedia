@@ -1,0 +1,42 @@
+Immediate publication: checked semantic scope
+=============================================
+
+ImmediateStorePublication defines append and ordered filtering independently
+of the existing prepared protocol. staged_fuses proves their public replies
+and reached worlds agree, deriving readiness from the operation's own checked
+admission. adaptive_fuses and adaptive_receipt_erasure lift this connection to
+all finite adaptive clients of that interface. The serial issuer state is
+private; unrecorded_serial_unchanged proves no ticket is issued in ordinary mode.
+
+Recording capacity and effect capacity are distinct. An unavailable requested
+record can make an observable failure, so the erasure theorem requires recording
+capacity when recording is enabled. A caller that actually observes the receipt
+is outside the erasing observer. Both distinctions have checked counterexamples.
+
+ImmediateStorePrefixes uses the existing cursor provider/client machinery.
+Its prefix and resume theorems retain pending control, reached state, completion
+status and reply history. The two-operation executable preserves its first
+append when its second append is refused, including across a pause. Equal
+declared request prices preserve the account; this does not measure or remove
+the implementation's internal administrative work.
+
+Step/ImmediatePublication realizes a successful immediate operation as an
+admitted existing tcalc store effect. No target execution or desired equivalence
+is supplied as a premise. Consistency of ambient knowledge remains an explicit
+calculus hypothesis. Source error/control events need their own interpretation.
+
+ContextualTransform/ImmediateRemoval connects first-occurrence deletion and
+completed scoped PeTTa selection to immediate contraction. The selected
+identities are not another shared unifier: every PeTTa row retains its own
+renaming and match result. Continued presence does not guarantee first-match
+order after an intervening insertion; the negative control shows that difference.
+
+Run the derived model from the Lean project root:
+
+  lake env lean --run ../../MettaKernel/Examples/ContextualDerivedForms/ImmediatePublicationModel.lean
+
+Compare stdout with ImmediatePublicationModel.expected. This consumer executes
+the Lean definitions; it is neither a separate MeTTa evaluator nor a proof that
+CeTTa's C follows them. C instruction counts and timing remain independent
+qualification obligations. Costs, full invocation contexts, lifetime refinement,
+and both authored surface presentations remain open in the larger goal.

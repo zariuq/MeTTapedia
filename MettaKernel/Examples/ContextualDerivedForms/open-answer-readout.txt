@@ -1,0 +1,44 @@
+Open answers: sharing observations and inverse transport
+
+FirstOccurrence proves supported relabeling laws for arbitrary finite lists.
+MORK/AtomRenaming and MORK/VariantReadout adapt those laws to the existing
+OSLFCore Atom used by MORK and the maintained unifying PeTTa source model.
+They do not change HE's separate source carrier or introduce another Atom.
+
+VariantReadout.normalize_equal_iff_variant preserves and reflects independently
+specified bidirectional variable renaming. The canonical labels are first
+occurrence positions; repeated variables share their first position. Constants,
+expression shape, order and multiplicity remain exact. Legal decimal variable
+names require no reserved namespace.
+
+joint observes a whole answer bundle with one variable basis. each observes
+every answer separately. Joint equality implies individual equality, but the
+converse loses sharing between answers. These are distinct observer policies;
+neither is selected as Prime's final public display policy.
+
+PeTTa/AnswerReadout connects the observation to actual source outcomes:
+- normalize_rename_apart hides an allocated scope without merging variables.
+- each_copies uses the actual collection copier and resolved branch values.
+- restore_read recovers completed outcomes, faults and suspended configurations.
+- packAnswers retains each branch's substitution, including constraints absent
+  from its visible value; restore_packAnswers recovers the original answers.
+- run_after_transport preserves any source continuation and every finite budget
+  after inverse transport. It does not erase the work of building the readout.
+
+Displayed labels alone are not executable references into a retained world.
+Inverse transport preserves an alias to a stored cell; replaying display labels
+loses it. Likewise two identical displayed values can retain different branch
+constraints and yield different outer answers. Erasing those constraints is
+observable. Packet construction and restoration are lossless transport, not
+an untrusted-wire authentication or packet-validation theorem.
+
+ReadoutModel.lean consumes eight positive/negative observations. The independent
+open-answer-aliases.metta fixture has six observations: internal aliasing,
+distinct variables, isolation between collected answers, sharing within one
+collected answer, repeated cell reads and legal decimal source names. Its
+expected answers are true, false, false, true, true, false.
+
+These results do not prove the whole source compiler, evaluator equivariance,
+textual print/read recovery or C correspondence. Recursive lambda translation,
+eta expansion, static computed-head staging and native partial arities remain
+separate source-admission obligations.

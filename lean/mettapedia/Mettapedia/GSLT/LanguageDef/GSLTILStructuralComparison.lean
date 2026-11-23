@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.GSLT.Core.OperationalPathFibration
 import Mettapedia.GSLT.LanguageDef.GSLTILSyntax
 import Mettapedia.GSLT.LanguageDef.GSLTILFibreExecution
@@ -185,16 +186,12 @@ def inclusion : StructuralMorphism idleObject activeObject where
     cases member
 
 private theorem active_nonrecursive :
-    ∀ rule ∈ active.rewrites, NoncontextualPremises rule.premises := by
-  intro rule member
-  simp only [active, List.mem_cons, List.not_mem_nil, or_false] at member
-  subst rule
-  exact .nil
+    ∀ rule ∈ active.rewrites, NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 private theorem idle_nonrecursive :
-    ∀ rule ∈ idle.rewrites, NoncontextualPremises rule.premises := by
-  intro rule member
-  simp [idle] at member
+    ∀ rule ∈ idle.rewrites, NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 private theorem idle_no_step (source target : Pattern) :
     ¬ (langGSLT idle).Step source target := by

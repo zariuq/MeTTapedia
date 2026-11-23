@@ -1,0 +1,7 @@
+source replies=["(done a)", "(done b)"]
+source pending=["(job c)"]
+target q=["(job c)"]
+target out=["(done a)", "(done b)"]
+updates=2; primitive events=4
+initial credits=2; remaining credits=0
+new credit replies=["(done c)"]; pending=[]

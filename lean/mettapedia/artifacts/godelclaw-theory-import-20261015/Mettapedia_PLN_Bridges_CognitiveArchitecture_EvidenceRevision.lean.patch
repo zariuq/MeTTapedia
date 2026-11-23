@@ -1,0 +1,75 @@
+--- pinned-namespace-adapted
++++ Mettapedia/PLN/Bridges/CognitiveArchitecture/EvidenceRevision.lean
+@@ -28,17 +28,22 @@
+ 
+ `Truth_Revision` (`lib_pln.metta`) converts confidence to evidence weight
+ `w = c / (1 - c)`, adds weights and converts back with `c = w / (w + 1)`.
+-On independent evidence this is exact (`revise_tv`): revising the truth values
+-of two disjoint bodies of evidence gives the truth value of their union. The
+-failures below all come from applying it to evidence that is not independent.
++`revise_tv` proves the algebraic identity between revision and pooling
++nonnegative evidence weights, with positive incoming total weight. It does not
++establish source disjointness or statistical independence. The ledger below
++models episode identity explicitly; the controls show how repeated support
++can overcount the same episode.
+ 
+ Results:
+ * `revise_tv`: revision of evidence-derived truth values is addition of
+   evidence. `revise_self_overcounts`: revising a truth value with itself
+   raises its confidence, so revision is not idempotent.
+-* `Ledger`: evidence as two finite sets of episodes. `support_idem`,
+-  `unlink_support_fresh` and `support_comm` make support idempotent, exactly
+-  retractable and order-independent. `tv_support_fresh` shows that the ledger
++* `Ledger`: evidence as two finite sets of episodes. The raw carrier does not
++  enforce disjoint polarities; `Ledger.ev` counts each polarized membership.
++  `support_idem`,
++  `unlink_support_fresh` and `support_comm` make support idempotent,
++  retractable for a previously unlinked episode, and order-independent.
++  `tv_support_fresh` shows that the ledger
+   reproduces the upstream arithmetic exactly when the episode is new.
+ * Counterexamples to the upstream state: `neoclaw_double_support` (the same
+   episode counted twice), `neoclaw_unlink_keeps_evidence` (unlinking leaves
+@@ -61,8 +66,10 @@
+ 
+ The truth value of a claim should therefore be a view computed from the
+ evidence atoms that support or contradict it, each naming its episode. Adding
+-an atom twice changes nothing, removing it restores the earlier view, and the
+-claim's origin episode belongs to its evidential base.
++an atom twice changes nothing. Unlinking a newly linked episode restores the
++earlier view under the freshness hypotheses of `unlink_support_fresh`; this
++does not undo a change from contradiction to support. The claim's origin
++episode belongs to its evidential base.
+ -/
+ 
+ set_option autoImplicit false
+@@ -127,8 +134,9 @@
+   simp [negative, tv, Ev.total, w2c]
+   norm_num
+ 
+-/-- Revision is exact on independent evidence: revising the truth values of two
+-bodies of evidence gives the truth value of the pooled evidence. -/
++/-- Revision of evidence-derived truth values equals pooling nonnegative
++weights, with positive incoming total weight. Source independence and
++disjointness are not established by this algebraic identity. -/
+ theorem revise_tv (a b : Ev) (ha : a.Valid) (hb : b.Valid) (hb0 : 0 < b.total) :
+     revise (tv a) (tv b) = tv (a.add b) := by
+   obtain ⟨hap, han⟩ := ha
+@@ -172,7 +180,7 @@
+ variable {E : Type*} [DecidableEq E]
+ 
+ /-- The evidence for one claim: the episodes that support it and the episodes
+-that contradict it. -/
++that contradict it. The raw carrier does not require these sets to be disjoint. -/
+ structure Ledger (E : Type*) where
+   sup : Finset E
+   con : Finset E
+@@ -187,7 +195,8 @@
+ /-- An episode is no longer evidence for or against the claim. -/
+ def Ledger.unlink (e : E) (L : Ledger E) : Ledger E := ⟨L.sup.erase e, L.con.erase e⟩
+ 
+-/-- One unit of evidence per episode. -/
++/-- One unit per polarized membership. An episode in both sets counts once
++in each coordinate; no disjointness invariant is imposed on this raw carrier. -/
+ def Ledger.ev (L : Ledger E) : Ev := ⟨L.sup.card, L.con.card⟩
+ 
+ /-- The truth value is a view of the ledger. -/

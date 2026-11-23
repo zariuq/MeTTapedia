@@ -1,0 +1,8 @@
+(sort wff provable)
+(sort nat)
+(term al ((x nat) (a wff (x))) (wff ()))
+(term eq ((a nat ()) (b nat ())) (wff ()))
+(def ex_refl ((a wff ())) (wff ()) ((d nat)) (al d a))
+(axiom ax_al ((x nat)) () (al x (eq x x)))
+(theorem bad ((x nat)) () (ex_refl (eq x x)) ()
+  (:conv (ex_refl (eq x x)) (:unfold ex_refl ((eq x x)) (x) (al x (eq x x))) (ax_al (x))))

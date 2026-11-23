@@ -1,0 +1,41 @@
+import "tcalc.module" as tc
+
+{- Receiver-credit and durability-gate abstraction. This is not the TCP state
+   machine: retransmission, packet loss, delayed advertisements, TLS, and NIC
+   completion are outside its scope. Arithmetic and permission queries are
+   interpreted by Machines.NetworkBackpressureModule in the Lean development.
+   The firing boundary is imported from tcalc rather than restated here. -}
+Module NetworkBackpressure {
+  Theory Counts() {
+    Types { NbCount; }
+    Terms {
+      NbZero . |- "zero" : NbCount;
+      NbSucc . n:NbCount |- "succ" n : NbCount;
+    }
+  }
+  Theory ReceiveStates(numbers: Counts) {
+    tc.States() \/ numbers
+    Terms {
+      NbState . backlog:NbCount, queued:NbCount, uncredited:NbCount,
+        window:NbCount, delivered:NbCount, committed:NbCount, timers:NbCount
+        |- "receiver" backlog queued uncredited window delivered committed timers : State;
+    }
+  }
+  Theory ServiceFirings(numbers: Counts) {
+    tc.Firings() \/ numbers
+    Terms {
+      NbAppend . |- "append-journal" : Firing;
+      NbCommit . |- "commit-journal" : Firing;
+      NbReceive . n:NbCount |- "receive-bytes" n : Firing;
+      NbRead . n:NbCount |- "read-bytes" n : Firing;
+      NbCredit . |- "return-window-credit" : Firing;
+      NbTimer . |- "service-timer" : Firing;
+    }
+  }
+  Theory Service() {
+    let numbers = Counts() in (
+      tc.Transitions(ReceiveStates(numbers), ServiceFirings(numbers))
+    )
+  }
+  theory Service()
+}

@@ -1,0 +1,170 @@
+{
+  "status": "pass",
+  "module_count": 18,
+  "unique_kernel_declarations": 1122,
+  "unique_theorems": 506,
+  "unique_runtime_implementations": 6,
+  "unique_compiler_only_declarations": 894,
+  "transitive_axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+  ],
+  "module_name_coverage": [
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOperationalOutput",
+      "kernel": 35,
+      "runtime": 1,
+      "compiler_only": 11,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeFormulaComparison",
+      "kernel": 9,
+      "runtime": 0,
+      "compiler_only": 3,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutput",
+      "kernel": 37,
+      "runtime": 0,
+      "compiler_only": 11,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputPossibility",
+      "kernel": 16,
+      "runtime": 0,
+      "compiler_only": 9,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputFamilies",
+      "kernel": 39,
+      "runtime": 0,
+      "compiler_only": 9,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputRoot",
+      "kernel": 14,
+      "runtime": 0,
+      "compiler_only": 5,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeStructuralOutput",
+      "kernel": 41,
+      "runtime": 0,
+      "compiler_only": 8,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeStructuralOutputPropositional",
+      "kernel": 73,
+      "runtime": 2,
+      "compiler_only": 10,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeGeneratedOutputs",
+      "kernel": 40,
+      "runtime": 0,
+      "compiler_only": 8,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputControls",
+      "kernel": 31,
+      "runtime": 0,
+      "compiler_only": 10,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputReadout",
+      "kernel": 10,
+      "runtime": 0,
+      "compiler_only": 7,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputRelyControls",
+      "kernel": 178,
+      "runtime": 0,
+      "compiler_only": 82,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputChecking",
+      "kernel": 106,
+      "runtime": 0,
+      "compiler_only": 21,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputDisplay",
+      "kernel": 270,
+      "runtime": 3,
+      "compiler_only": 545,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputControls",
+      "kernel": 13,
+      "runtime": 0,
+      "compiler_only": 11,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputDisplayExamples",
+      "kernel": 22,
+      "runtime": 0,
+      "compiler_only": 70,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeStructuralOutputControls",
+      "kernel": 188,
+      "runtime": 0,
+      "compiler_only": 74,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputs",
+      "kernel": 0,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    }
+  ],
+  "audit_summary": {
+    "compilerOnlyDeclarations": 894,
+    "containsAdmission": false,
+    "inventoryCount": 2022,
+    "kind": "summary",
+    "modules": 18,
+    "repeatedModuleEntries": 0,
+    "safeKernelDeclarations": 1122,
+    "separateRuntimeImplementations": 6,
+    "theorems": 506
+  }
+}

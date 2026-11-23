@@ -1,0 +1,6 @@
+(parent p1 p0)
+(parent p2 p1)
+(= (ancestors $c) (match &self (parent $p $c) $p))
+(= (ancestors $c) (match &self (parent $p $c) (ancestors $p)))
+!(let $h (work-new (ancestors p0))
+   (let $configured (work-budget $h 4) (work-take $h 10)))

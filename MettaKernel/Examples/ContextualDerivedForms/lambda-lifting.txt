@@ -1,0 +1,71 @@
+Private lambda code and source admission
+========================================
+
+Unifying.Configuration now retains privateCode separately from the public
+store. Written and runtime calls consult that inventory with their respective
+registry policies. Matching, body execution, effects and error scopes remain
+the existing source machinery. Ordinary execution never changes the private
+inventory; the staging/session owner retains it across requests. Public space
+inspection and removal do not expose or delete generated clauses.
+This separation is storage visibility, not an access-control guarantee for
+the generated function names.
+
+Data/FirstFreshName chooses the first available member of an injective ordinal
+name family. Finite support earns termination, minimality and a finite search
+bound. LambdaLifting uses the observable lambda_n family and includes current
+public, private and supplied foreign function names in its occupied support.
+Its independent capture rules retain first occurrence order and exclude the
+argument variables, following the source translator's term-variable policy.
+The returned private partial retains variable references for later resolution.
+
+This is ordinary, non-eta-expanded clause formation with a supplied compiled
+body. The source relation and executable formation preserve and reflect that
+boundary; they do not prove the supplied body was compiled faithfully. Recursive
+body translation, eta expansion, known computed-head staging, raw/error policy
+and complete authoring-to-runtime admission remain larger-goal obligations.
+
+PeTTaLambdaControls runs lifted clauses through actual Unifying transitions.
+Controls cover captured data, inert captured code, late binding, public-space
+privacy, public removal, closed private calls and capture order. A stale public
+negative cache entry does not classify newly installed code correctly; existing
+semantic transfer repairs the dependency. Source call/data admission now reads
+the combined registry where necessary. Existing positive public-call laws remain
+valid because installing private code cannot turn a known head into data.
+
+UnifyingComputation constructs closed-control proofs from individual step
+equations and run_succ_of_step. Its metaprogram is an untrusted proposer of
+ordinary reflexivity/composition terms checked by the kernel. It adds no native
+decision axiom and does not supply whole-evaluator or C correspondence.
+LambdaModel.lean is the executable consumer of these checked definitions.
+
+lambda-captures.metta has six independently expected observations, passing in
+SWI and retained native executable cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24.
+The native run is artifact-bound calibration, not a fresh performance result.
+
+The source-admission correction has a retained negative control:
+
+  !(let $x#0 a (let $f (|-> ($x) $x) ($f b)))
+
+SWI and that native executable answer b. The corresponding raw unifying entry
+returns no answer: renaming the clause variable x with suffix #0 aliases the
+caller's legal x#0 binding. literal_suffix_can_capture_caller_binding proves
+that negative fact; it is not a native-correctness theorem or the expected
+source-language behavior. LambdaLifting.enter now scopes the request before
+calling the actual machine. scoped_literal_suffix_preserves_the_source_answer
+proves b through that boundary, matching lambda-freshness-collision.metta.
+
+ScopedString proves that the existing decimal-suffix representation is
+injective on scope/name pairs even when source names already contain suffixes.
+ScopedSource carries the actual reached allocation counter between requests;
+source execution never decreases it. No reserved spelling or caller-provided
+freshness conclusion is required. Parsing, input and row enumeration copy
+variables at their own entry boundaries. Assignment copies into a cell;
+reading retains that cell's identities. scope-imports.metta and scope-input.metta
+distinguish these operations and pass in SWI and the same retained native image.
+
+UnifyingAllocation proves that the actual first-order term unifier preserves
+its input support, including variable names and substitution keys. The complete
+configuration/world scope invariant is now proved for all maintained source
+transitions and bounded/suspended prefixes. Source readout for open answers and
+full recursive authoring-to-runtime correspondence remain open. The corrected
+collision is not evidence that these larger obligations are finished.

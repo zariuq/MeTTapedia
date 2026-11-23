@@ -1,0 +1,12 @@
+mod GOLD-MUTEX is
+  sort Marking .
+  ops empty idle1 idle2 crit1 crit2 permit init : -> Marking [ctor] .
+  op __ : Marking Marking -> Marking [ctor assoc comm id: empty] .
+  var M : Marking .
+  eq init = idle1 idle2 permit .
+  rl [enter1] : idle1 permit => crit1 .
+  rl [leave1] : crit1 => idle1 permit .
+  rl [enter2] : idle2 permit => crit2 .
+  rl [leave2] : crit2 => idle2 permit .
+endm
+search init =>* crit1 crit2 M .

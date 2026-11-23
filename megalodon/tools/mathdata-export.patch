@@ -1,0 +1,97 @@
+--- a/src/megalodon.ml
++++ b/src/megalodon.ml
+@@ -750,6 +750,20 @@
+     Hashtbl.remove sigdelta_opaque xh;
+   with Not_found ->
+     Printf.printf "WARNING: %s was not opaque, so not made transparent.\n" x
++
++(* Mathdata admits polymorphic definitions that Proofgold cannot represent.
++   Its checked source stream can still be exported when no Proofgold or HTML
++   output was requested. Other failures, including proof failures, propagate. *)
++let optional_pfg_metadata compute =
++  try Some (compute ()) with
++  | Failure message as error ->
++      let unsupported =
++        String.starts_with ~prefix:"no polymorphism allowed in pfg:" message ||
++        String.starts_with ~prefix:"Could not find corresponding obj id for TmH(" message in
++      if !sexprinfo && not !pfgout && not !pfgsummary && !html = None && unsupported then
++        None
++      else
++        raise error
+ 
+ let evaluate_docitem_1 ditem =
+   begin
+@@ -1327,7 +1341,9 @@
+           if !verbosity > 5 then Printf.printf "(MGID \"%s\" \"%s\")\n" x xhv;
+           begin
+             if i = 0 then
+-              let (pure,pfghv) = pfg_objid bgtm bgtp in
++              match optional_pfg_metadata (fun () -> pfg_objid bgtm bgtp) with
++              | None -> ()
++              | Some (pure,pfghv) ->
+               (*              if !includingsigfile && not (Hashtbl.mem ownedobj pfghv) then Printf.printf "WARNING: The pfg id %s for the object %s is not owned.\n" (Hash.hashval_hexstring pfghv) x; *)
+               if !pfgsummary then Printf.printf "Def:%s:%s:%s\n" x (Hash.hashval_hexstring pure) (Hash.hashval_hexstring pfghv);
+               Hashtbl.add pfgtmroot x (Hash.hashval_hexstring pure);
+@@ -1436,7 +1452,9 @@
+           if !verbosity > 5 then Printf.printf "(MGID \"%s\" \"%s\")\n" x xhv;
+           begin
+             if i = 0 then
+-              let (pure,pfghv) = pfg_objid bgtm agtp in
++              match optional_pfg_metadata (fun () -> pfg_objid bgtm agtp) with
++              | None -> ()
++              | Some (pure,pfghv) ->
+               (*              if !includingsigfile && not (Hashtbl.mem ownedobj pfghv) then Printf.printf "WARNING: The pfg id %s for the object %s is not owned.\n" (Hash.hashval_hexstring pfghv) x; *)
+               if !pfgsummary then Printf.printf "Def:%s:%s:%s\n" x (Hash.hashval_hexstring pure) (Hash.hashval_hexstring pfghv);
+               Hashtbl.add pfgtmroot x (Hash.hashval_hexstring pure);
+@@ -1553,7 +1571,9 @@
+ 	pushpolypf ((x,i),agtm);
+       if i = 0 then
+         begin
+-          let (pfgpure,pfgahv) = pfg_propid2 agtm in
++          match optional_pfg_metadata (fun () -> pfg_propid2 agtm) with
++          | None -> ()
++          | Some (pfgpure,pfgahv) ->
+           Hashtbl.add pfgtmroot x (Hash.hashval_hexstring pfgpure);
+           Hashtbl.add pfgpropid x (Hash.hashval_hexstring pfgahv);
+           if !pfgsummary then
+@@ -1587,7 +1607,7 @@
+       let agtm = !tmallclos atm in
+       let ahv = ptm_all_id (i,agtm) sigtmof sigdelta in
+       if !verbosity > 5 then Printf.printf "(MGPROPID \"%s\" \"%s\")\n" x ahv;
+-      let pfgahv = if i = 0 then Some (pfg_propid agtm) else None in
++      let pfgahv = if i = 0 then optional_pfg_metadata (fun () -> pfg_propid agtm) else None in
+       (*      if !verbosity > 5 && (Hashtbl.mem indexknowns ahv || Hashtbl.mem ownedprop pfgahv) then (Printf.printf "Warning: The id %s for the proposition for theorem %s is already known.\n" ahv x; flush stdout); *)
+       Hashtbl.add sigknh x ahv;
+       begin
+--- a/src/megalodon.ml
++++ b/src/megalodon.ml
+@@ -1214,7 +1214,10 @@
+ 	  secstack := List.map (fun (y,f,atl,apl,st,sp) -> (y,f,atl,apl,(x,atl m)::st,sp)) !secstack
+ 	with Not_found ->
+ 	  begin
+-	    if (i > 0) then raise (Failure(x ^ " must be defined. The only polymorphic parameter allowed are built-in primitives."));
++	    let native_polymorphic_parameter =
++	      i > 0 && !sexprinfo && not !pfgout && not !pfgsummary && !html = None in
++	    if i > 0 && not native_polymorphic_parameter then
++	      raise (Failure(x ^ " must be defined outside native Mathdata export. The only polymorphic parameters in Proofgold output are built-in primitives."));
+ 	    if List.mem_assoc x !sigtm || List.mem_assoc x !sigpf || List.mem x !ctxtp || List.mem_assoc x !ctxtm || List.mem_assoc x !ctxpf then
+ 	      raise (Failure(x ^ " has already been used."))
+ 	    else
+@@ -1252,7 +1255,16 @@
+ 		      | None -> ()
+ 		    end
+ 		end;
+-		begin
++		if native_polymorphic_parameter then
++		  begin
++		    Hashtbl.add sigtmof xhv (i,agtp);
++		    pushpolytm ((x,i),agtp);
++		    let m = TmH xhv in
++		    sigtm := (x,!aptmloc m)::!sigtm;
++		    secstack := List.map
++		      (fun (y,f,atl,apl,st,sp) -> (y,f,atl,apl,(x,atl m)::st,sp)) !secstack
++		  end
++		else begin
+ 		  try
+ 		    if (x = "Subq") then
+ 		      begin

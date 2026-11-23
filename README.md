@@ -70,7 +70,7 @@ HOL4/CakeML) are not vendored here; install them separately:
 
 ## Provenance, attribution, licensing
 
--  This MIT license applies to MeTTapedia's own code. Third-party components under lean/externals/ retain their own licenses (see each subdirectory).
+- MeTTapedia's original code, including its Lean formalizations, uses the repository's MIT license. Third-party material retains the licenses in its accompanying notices.
 - `megalodon/theory/mizar/mml/` contains original Megalodon developments whose
   statements parallel MML articles — see the README there for MML attribution.
 - `megalodon/theory/logic/GoedelGod.mg` is Chad E. Brown's Megalodon port of

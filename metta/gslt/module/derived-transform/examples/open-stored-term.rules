@@ -1,0 +1,1 @@
+collect { read &q : (item a) => { emit matched } }

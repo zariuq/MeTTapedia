@@ -1,0 +1,872 @@
+Contextual execution and derived forms: working coverage
+========================================================
+
+This is the acceptance ledger for the contextual-derived-forms goal. It does
+not redefine completion around the first checked modules. Source models and
+runtime implementations remain separate evidence columns.
+
+Source observations
+-------------------
+PeTTa's UnifyingSpec gives independent per-rule transitions and a checked
+executable runner. A packet contains its value and branch substitution; a
+configuration additionally retains the store, frames, input, output and
+freshness counter. The source registry classifies written calls, while live
+equations determine their bodies. Its return-value conventions and supported
+control forms have versioned limits; native transform and once are not simply
+new constructors of that source relation.
+
+HE's Spec/Eval supplies independent entry, invocation, completion and minimal
+instruction judgments. Raw minimal chain execution extends its live scope and
+retains a caller origin and a binding frame. That read-only profile is distinct
+from the state-writing publication model. Holding Atom syntax, completing a
+function result, and requesting another evaluation are separate judgments.
+
+Current checked adapters
+------------------------
+Languages/MeTTa/ContextualTransform/PeTTaContexts:
+  An inductively closed evaluation-position context family using actual source
+  let-value, case-key, conditional, collapse and match-space forms. Shell entry,
+  retained-frame order, composition and arbitrary nested context entry are
+  proved. run_context proves the exact administrative-prefix cost in the
+  existing source runner. This is not the full context family of the goal.
+
+Languages/MeTTa/ContextualTransform/PeTTaActivation:
+  Admitted written calls reach function control rather than a data plan;
+  held syntax and held variable values retain their distinct source rules.
+  A checked counterexample shows that a let variable unused by its immediate
+  body may still be observed by an enclosing continuation.
+
+Languages/MeTTa/ContextualTransform/PeTTaBindingContexts:
+  An arbitrary completed initializer is lifted above the actual binding frame.
+  Body activation preserves its reached world and substitution; pattern clash
+  does not rewind effects, and unifier exhaustion is not an empty match.
+  A known operation in the body remains an evaluation request.
+
+ContextualTransform/PeTTaApplicationContexts and PeTTaApplicationControls:
+  Strict static first-argument contexts compose with all existing source shells.
+  Their actual compiler computes saved frames; source-run equality accounts for
+  one administrative step per old shell and two per call shell. Admissibility
+  retains written-call recognition and raw-argument policy. At any argument
+  position, completed operands schedule each answer with its own substitution
+  at the reached state. Held Atom arguments take three administrative steps
+  without evaluating their contents. Empty operands preserve earlier effects
+  and skip pending arguments. This does not add dynamic-head or closure rules
+  to the older unifying source machine.
+
+ContextualTransform/PeTTaContinuationContexts:
+  Completed source paths compose with actual case, condition and collection
+  continuations, retaining caller frames and effects. Case-body entry uses the
+  selected unifier; collection restores the outer binding and applies the
+  actual answer-copy and fresh-use convention. The final strict operand selects
+  authored bodies from the reached world's live equations. Exact return-step
+  inversion excludes different case/collection schedules. No producer
+  termination or equal finite fuel across wrappers is assumed.
+
+PeTTa/Unifying, UnifyingSpec, DynamicRecovery and UnifyingPrefixes:
+  The maintained executable and independent transition rules now include
+  runtime invocation, opaque partial values, dispatch continuations and callee
+  error scopes. Current runtime equations decide function lookup and arity.
+  Resolved captures are reused without evaluating their syntax again. Public
+  data spelled partial is not the private carrier; unknown heads remain data.
+  Callee faults recover completed root answers and the reached effects.
+  Scope entry does not catch an arity rejection before its invoked goal starts.
+
+  Independent Recovers rules characterize the stack algorithm in both
+  directions and characterize actual fault transitions. Branch substitution,
+  protected returns and retained-caller lifting remain checked. The existing
+  bounded deterministic runner realizes the full source configuration; its
+  endpoint observed at zero steps equals the actual source run. Every endpoint
+  is source-reachable and arbitrary suspended prefixes resume without replay.
+  A concrete pause after one marker write retains first; resuming leaves one
+  marker while restarting writes two. No termination assumption is introduced.
+
+ContextualTransform/PeTTaDynamicContexts and PeTTa/DynamicCallControls:
+  Private-vector completion is connected to actual source transitions and all
+  remaining outcomes. Computed runtime-head entry composes with arbitrarily
+  nested admitted source contexts, preserving the real dispatch/caller frames
+  and exact administrative cost. Recovery consumes the independent relation.
+  DynamicCallModel.lean executes normal, demand, error-prefix and resume controls.
+  The source tests refute switching a runtime call to a written raw-argument
+  call merely because the eventual callee is known.
+
+  This is the completed-operand runtime-dispatch profile. Full source admission
+  for statically known computed heads, staged lambda installation/private code,
+  all native partial arities, source freshness and streaming operand schedules
+  remain open. No whole raw-source/compiler correspondence is inferred.
+
+PeTTa/UnifyingAllocation, UnifyingScopeInvariant, UnifyingFrontierScopes,
+UnifyingContinuationScopes, UnifyingPrimitiveScopes and
+ContextualTransform/PeTTaRuntimeMatchControls:
+  Actual term, list-view pattern, quoted-binding and argument unifiers preserve
+  logical-variable support. Running-control, saved-frame, retained-cell and
+  output support have weakening and entry laws. Actual clause/row frontiers,
+  query replies, answer copying, lets, cases and nested-let construction preserve
+  support under their computed activation bounds. Primitive cell support is
+  derived from the table's actual update classification.
+
+  Runtime match now uses scoped two-way row unification and carries each row's
+  bindings back to the caller. It returns the already evaluated template value;
+  written match still evaluates its body after selection. Five checked controls
+  distinguish binding escape, held templates, written-body effects, open rows
+  and the insufficient ground-table adapter. An arbitrary well-scoped caller's
+  actual runtime query step retains its continuation, cells and output, with
+  answer support derived from the actual row-copy/unifier implementation.
+
+  RuntimeMatchModel executes four observations. The independent SWI fixture
+  and retained native executable agree on its five source observations.
+  Full allocation preservation through every primitive reply and source control
+  case is now proved in UnifyingTransitionPreservation. UnifyingPrefixScopes
+  lifts it to actual paths, bounded and suspended endpoints and next requests.
+  Entry disjointness against cells uses the actual unused supply; a post-entry
+  bound alone does not justify reusing a scope. Open-answer observation and
+  inverse transport are checked separately from this maintained-machine law.
+
+MORK/AtomRenaming, VariantReadout and PeTTa/AnswerReadout:
+  Canonical variable-sharing observations preserve and reflect independently
+  specified bidirectional finite renaming. Whole-bundle and individual-answer
+  observations differ when answers share variables. The actual collection
+  copier preserves each answer's sharing while isolating answer occurrences.
+  Complete outcomes retain world/input/output and fault/suspension distinctions.
+  Inverse transport recovers every branch's value and substitution before any
+  outer source continuation, preserving all finite runner budgets. Display
+  labels alone lose aliases into a retained cell; dropping constraints absent
+  from visible values can change later answers. Both have executable negative
+  controls. ReadoutModel runs eight controls; six independent source fixture
+  observations pass in SWI and the retained native snapshot.
+  This does not select a public display policy, prove evaluator equivariance,
+  erase observation cost or establish recursive source-compiler adequacy.
+
+PeTTa/PrivateCode, LambdaLifting and ContextualTransform/PeTTaLambdaControls:
+  The actual unifying configuration carries callable private clauses separately
+  from &self. Installation leaves its public store untouched; every execution
+  step and finite path retains the same inventory. Static and runtime lookup
+  preserve their different policies while consulting installed code.
+  Source activation, context/continuation laws and cache dependencies have been
+  extended to that inventory. A public-only negative cache entry can become
+  stale after installation; semantic registry transfer repairs that decision.
+
+  Data/FirstFreshName proves a computed first-free ordinal for every injective
+  name family and finite occupied support. The lambda_n instance excludes
+  registered public/private/foreign names. Independently specified capture
+  rules preserve first occurrence order and exclude argument variables.
+  Executable lifting and those formation rules preserve and reflect each
+  other. This is ordinary non-eta-expanded formation with a supplied compiled
+  body, not a proof of that body's translation or recursive source admission.
+
+  Actual source execution covers captured values and held code, late capture
+  binding, closed calls, public-space privacy/removal and capture order.
+  UnifyingComputation proposes individual step/reflexivity proofs composed
+  through the existing source runner theorem; all resulting terms are kernel
+  checked. LambdaModel.lean executes the checked definitions. The six ordinary
+  source fixture observations pass in SWI and the retained native snapshot.
+
+  lambda-freshness-collision.metta retains the raw-entry counterexample: that
+  entry aliases a legal caller x#0 with its renamed clause x and loses the
+  answer. LambdaLifting.enter now scopes the request; its positive source
+  theorem returns b, agreeing with the independent SWI/native expectation.
+  ScopedString proves global injectivity of activation/name representations.
+  ScopedSource retains the actual reached counter and private inventory across
+  requests; its bounded endpoint observes exactly the existing source run.
+  Parsing, input and stored-row enumeration copy variables at their boundary;
+  non-backtrackable assignment copies into a cell and subsequent reads retain
+  its identities. UnifyingAllocation proves support preservation by the actual
+  term unifier. ScopeModel executes four kernel-checked import controls, with
+  independent source fixtures and exact retained-native calibration.
+  The full configuration/world allocation invariant and its every-fuel prefix
+  consumers are now checked. Open-answer observation and inverse transport are
+  also checked; no general source-compiler freshness theorem follows from them.
+  Recursive translation, static computed-head raw/error policy, native partial
+  arities, eta expansion and source freshness remain open.
+
+PeTTa/LambdaStaging, LambdaStagingDepth and PeTTaStagingControls:
+  Recursive ordinary preparation reserves an outer name before visiting its
+  body, installs nested clauses first and retains the later allocation supply.
+  Independently specified reservation, argument and layer rules preserve and
+  reflect computed preparation. Every finite input has sufficient depth;
+  successful bounds agree and the total interface produces the same result.
+  Extension laws retain the old code prefix, cursor and occupied support.
+  The actual unifying machine consumes prepared nested clauses, original
+  captures and held payloads. StagingModel executes eight observations.
+  Four independent source observations agree with SWI and the retained native
+  snapshot. The cold (lambda_1) fixture now retains its earlier data decision
+  through ordinary quotation and returns the SWI answer. The argument-bearing
+  fixture now returns (lambda_1 a) through existing native-cons construction.
+  Passive let/let*/case patterns stay syntax while executable descendants are
+  prepared. RowsRel retains malformed rows for their source error boundary.
+  Preparation correspondence does not prove full compiler adequacy, eta,
+  overloaded typed alternatives, static computed heads or native partial arities.
+
+PeTTa/ConstructorDataHeads, ConstructorSpine and ConstructorEvaluation:
+  Nonempty constructor lowering introduces no fresh temporaries. Independent
+  completed schedules retain ordered alternatives, substitutions and effects.
+  Direct construction and expansion reach identical full return boundaries
+  above arbitrary callers. ConstructorContinuations relates every subsequent
+  allowance after their respective administrative prefixes. Arbitrary operand
+  prefixes and escaping faults retain their reached worlds; full unfinished-run
+  reflection is not inferred. ConstructorOperandsModel reads the actual fixture
+  and executes eight observations, including patterns, effects and answerlessness.
+  ConstructorFaultModel exercises six source observations. Its root-prefix
+  counterexample exposed and repaired the Lean recovery rule: nested root
+  collectors combine completed answers, while operand/continuation waiters
+  discard tentative values. This is not general recursive operand streaming.
+  constructor-streaming-frontier.metta distinguishes that remaining boundary:
+  SWI and the retained native snapshot interleave left,suffix,right,suffix,
+  while the completed-operand profile orders left,right,suffix,suffix. Its
+  expected source order remains unchanged and its profile calibration is open.
+
+PeTTa/Streaming, StreamingPhases/Returns/Spec/Prefixes/Demand:
+  One shared world and per-alternative continuations now provide a streaming
+  composition of the existing unifier, dispatch and primitive phases. Independent
+  controller, placement and delivery rules preserve and reflect executable steps.
+  Finite rule paths and bounded endpoints agree; paid residuals resume exactly.
+  Root packets, logical allocations and scope-marker supplies are monotone.
+  The actual provider connects to the existing first-answer client, preserving
+  interruption, raised faults, exhaustion and progress as distinct observations.
+  FirstSelection proves exact selected suffixes and one-marker updates without
+  copying older alternatives. Missing markers refuse rather than succeed empty.
+  The complete retained-frontier allocation and live-region invariant is open.
+
+ContextualTransform/PeTTaStreamingContexts and PeTTaStreamingControls:
+  The existing source-shell grammar plus first demand has a structural layout
+  interpretation for arbitrary nesting. It reaches the hole in one controller
+  step per shell and retains all later allowances, without a termination premise.
+  Once preserves answerless effects and prunes later producer jobs. Caller errors
+  remain outside the returned callee's handler. Marker-kind and association
+  controls distinguish missing, wrong-kind and other-scope records.
+  StreamingModel checks 30 observations through the actual reader and preparation
+  consumer. The source operand-interleaving fixture passes in this profile.
+  source-initializer-constraint.metta remains a distinguishing compiler boundary:
+  SWI and the retained native snapshot constrain the callee output before its
+  effects, while post-return binding performs a rejected initializer. Its source
+  expectation stays unchanged. Controller adequacy is not whole source adequacy.
+
+PeTTa/OutputPlan, OutputPlanCompiler/Names/Gate/Policy and
+ContextualTransform/PeTTaOutputPlanControls:
+  A static compiler separates result terms from producing goals and emits
+  ordinary controls and private procedures for the existing streaming machine.
+  The initializer-constraint fixture passes through this component; its old
+  direct-streaming profile remains unqualified. Actual literal gates preserve
+  reached worlds on refusal and retain interruption separately. Reserved names
+  avoid supplied support, are distinct and preserve source interface order.
+  Native argument roles avoid double quotation. The selected fixed-result ABI
+  checks its result after argument work and before publication; shared
+  result/payload variables are observed explicitly.
+
+  swiAliases records SWI's compile-time merging of variable branch outputs.
+  The inert-let fixture distinguishes that behavior from runtime equations.
+  runtimeConstraints has a general invariant: every successful term compilation
+  retains the incoming compiler alias relation, and compiled procedures keep
+  their original input patterns. Neither policy is Prime's default; the finite
+  inert control is not a general erasure law.
+
+  OutputPlanModel executes 49 observations from seven fixtures, including
+  recursion and early constraints. Four new SWI fixtures have 25 observations.
+  A captured corrected-stable native executable agrees on recursion and
+  differs on native-output and branch aliasing. The latter preserves useful
+  inert-wrapper behavior in these examples; it is not automatically a defect.
+  The native ABI needs contract review. No C or source-to-binary theorem is
+  inferred. Whole compiler adequacy, dynamic authority, local readout, complete
+  streaming scope/regions, all typed/native modes, lambdas and partial calls
+  remain open.
+
+PeTTa/OutputPlanBranchRules, OutputPlanFormation/Correct/Depth,
+OutputPlanProgramFormation and PeTTaOutputPlanFormationControls:
+  Explicit formation judgments cover branch policies, held arguments, binding
+  rows, case rows and every supported expression layer. The actual compiler
+  preserves and reflects these rules at every structural allowance. Ordered
+  program traversal retains every source equation/directive and the public
+  source; target interface order follows source lookup. The generic optional
+  traversal reflection is owned by Data/List/OptionMapMReflection.
+
+  Increasing allowance after success preserves the entire result, including
+  names and aliases. Any two successful bounds agree. Default-allowance
+  completeness and operational compiler adequacy remain separate. The actual
+  OutputPlanModel consumes compileWithFormation and retains its 49 expected
+  observations. Generic negative controls reject lost directives/clauses,
+  swapped distinct interfaces and changed source data. Quoted arbitrary
+  payloads retain positive formation. This is not yet a semantic simulation
+  of whole source programs or a C/performance theorem.
+
+PeTTa/UnifyingConstraintPresentation, UnifyingConstraintPreservation,
+UnifyingConstraintRefusal and OutputPlanConstraintAdmission:
+  The actual first-lookup substitution has a checked interpretation in the
+  independent destination source's equation models. Readback agrees on every
+  Atom. Every successful actual term unification preserves exactly the old
+  models plus the requested equation; every clash refutes all such models.
+  The occurs-check obstruction is obtained from the proved complete generic
+  first-order derivation theory in Logic/LP/UnificationOccurs.
+
+  Literal output gates now earn actual source admission/refusal steps and
+  retain the model relation after the update. Existing target gate lowering
+  retains reached worlds and waiting continuations. Interruption keeps work;
+  it is neither source refusal nor exhaustion. Idempotence is a construction
+  invariant, not a new runtime scan. This is the finite occurs-checked profile,
+  not an ambient rational/higher-order restriction.
+
+  ConstraintPresentationModel compares the actual runtime unifier and source
+  solver on ten observations, including shared variables, retained and shadowed
+  bindings, occurs/conflict refusal, zero-budget interruption and an earlier
+  write surviving rejection. Kernel controls also refute dropping idempotence.
+  Full control/producer simulation, list-view patterns and cross-branch
+  source readout/collection remain open. The subsequent packages below close
+  one-branch readout and complete streaming binding/support/region transfer.
+
+Logic/LP/MutualInstantiation, PeTTa/UnifyingConstraintReadout and
+StreamingAnswerTransport:
+  Mutual finite-term instances have actual variable renamings, extracted from
+  the substitutions rather than assumed. The runtime environment earns its
+  MGU property from the proved presentation; the source uses its existing
+  solver theorem. Uniform maps relate all readouts in one branch. Joint
+  observations agree for every finite bundle and preserve cross-value sharing.
+  This closes the canonical solver/runtime readout boundary for represented,
+  idempotent branch bindings, not whole evaluator equivariance.
+
+  Actual streaming re-entry reuses the existing branch packet, restoring raw
+  values and their own substitutions. Complete state recovery preserves every
+  subsequent finite prefix and outcome, including worlds and scope markers.
+  The optional transport is not a mandatory runtime pass or a free-cost claim.
+  ConstraintReadoutModel checks six observations: genuinely different solver
+  representatives, matching joint observations, correct callers, two corrupt
+  packet controls and an effectful caller retaining an earlier write.
+  Cross-branch collection/scoping and whole source/control simulation remain
+  separate obligations.
+
+PeTTa/StreamingBindingInvariant/Preservation/Reachability and
+StreamingScopeInvariant/Preservation/Reachability:
+  Every actual controller transition preserves branch idempotence/refinement
+  and allocated-variable support over the entire agenda, saved callers, banks
+  and completed answers. Support also covers retained cells and output.
+  Existing actual source-phase laws earn the changed payload/world; monotone
+  allocation weakens untouched work and actual copies earn their identities.
+  Generic suffix/update invariants belong to Data/List/FirstSelectionInvariant.
+
+  Actual entry, finite paths, bounded and suspended prefixes and next-request
+  hygiene are checked. A reached answer earns the idempotence needed by source
+  readout. The compiler consumer retains these proofs across its 49 observations
+  without a runtime scan. Negative controls expose hidden bad records and the
+  difference between an unused activation and a post-entry counter bound.
+  This closes streaming binding and logical-variable support preservation.
+
+PeTTa/StreamingRegions, StreamingRegionSelections,
+StreamingRegionPreservation and StreamingRegionReachability:
+  Strict marker order earns unique allocated keys across kinds. Every saved
+  caller links to its later markers; a collection requires the exact caller
+  stored in its marker. Returning outside an old callee handler remains legal.
+  Actual collection recording preserves key, original bindings, caller and
+  every other job. First/handler cuts reach their associated marker; searches
+  earn successful resolution from the link invariant.
+
+  Every actual transition, entry, finite path, bounded prefix and paid resume
+  preserves the complete frontier. Negative controls reject missing markers,
+  wrong kinds, duplicate keys and swapped callers. StreamingRegionsModel has
+  eight observations, including an outer bank retained after a first cut and
+  nested source collection. The 49-observation compiler consumer now carries
+  all three invariant families. No runtime validity scan was introduced.
+  Cross-branch canonical source collection/readout and whole source/compiler
+  operational correspondence remain open.
+
+MORK/AtomRenamingApart, MORK/SubstitutionSupport,
+PeTTa/CollectionCopyReadout, UnifyingCollectionCopies and StreamingCollectionReadout:
+  Actual source-copy contracts preserve one joint observation across isolated
+  answer occurrences. The actual counter-based copier satisfies those
+  contracts; previously allocated caller bindings cannot capture its result.
+  The source solver/MGU bridge earns correspondence between paired bank rows.
+  Actual collection closure earns binding validity and freshness from the
+  full-frontier invariants and retains the reached world and saved caller.
+  CollectionReadoutModel checks nine observations, including corrupt shared
+  copying that passes pointwise checks and a genuinely capturing future key.
+
+  The corresponding-bank copy/readout boundary is closed. Whole producers
+  must still earn the bank relation, and future-caller equivariance is open.
+  See collection-readout.txt for the exact boundary.
+
+PeTTa/OutputPlanDataHeads and the extended output-plan formation rules:
+  Statically normal list heads now use the source's plain-data-list case.
+  An independent structural judgment and its exact recognizer guard emission;
+  head and argument goals keep their source order. Calls needing re-evaluation
+  and variable heads remain explicit compiler regions, not source failure.
+  The eight-query sharing fixture passes under SWI, the retained native
+  snapshot and the compiled Lean consumer. OutputPlanModel now has 57
+  observations: its original 49 plus these eight. Full source/compiler
+  execution adequacy is still required.
+
+PeTTa/ConstructorDataHeads, UnifyingCompilerLocals and UnifyingLocalProjection:
+  Nullary data emission preserves its exact return boundary under any future
+  registry. The ordinary route takes eight logical source steps; quotation
+  takes one, so finite cutoffs change explicitly. Source control and I/O forms
+  remain operations. The actual fresh binder keeps the old substitution,
+  preserves resolution of original terms and permits exact local projection.
+  Projection commutes with bindings at other keys. Whole-context erasure and
+  full unifier projection remain separate obligations for introducing locals;
+  the constructor expansion does not need them.
+  ConstructorModel executes nine observations, including late registration,
+  known calls, cutoffs, I/O, empty results and the preserved source binding.
+
+ContextualTransform/HEArgumentContexts:
+  Actual completed stateful ArgumentsRel and FunctionRel preserve and reflect
+  the shared OrderedStateFlatMapRel with explicit stopped/continuing behavior.
+  Each branch retains its own frame, live scope and reached world. Atom demand
+  delivers syntax without child evaluation. A changed error stops an argument
+  branch, while unchanged error syntax remains argument data; function-head
+  errors have a separate stop rule. Exact branch concatenation retains order
+  and world sequencing. This is the independent stateful source judgment, not
+  the separate finite TypedApply helper or a streaming-prefix theorem.
+  SourceContextModel.lean checks seven actual source-run observations. The
+  application-demand-effects.metta fixture calibrates typed demand, branch
+  tails, empty operands and case continuation in CeTTa and SWI-PeTTa.
+
+Machines/OrderedPriorityTraversal and OrderedPriorityDemand,
+HE/StatefulPriorityTraversal and ContextualTransform/HEPriorityControls:
+  Ordered work advances the existing contextual HE worker through actual local
+  transitions. The reached world is shared; no service evaluates a whole child.
+  Independent CallsRel and InvocationsRel preserve and reflect completed
+  priority phases, consumed by the actual AtomRel tuple and typed-function
+  rules. A selected type frame owns preparation and subsequent calls before
+  the next frame starts. Each completed result retains its own readout frame.
+
+  Successful occurrences become available before later work. Errors remain
+  provisional until the phase closes without success. Every child transition
+  in a bounded computed visit is an actual worker step; visits also perform
+  traversal bookkeeping. No termination premise is needed to take a visit.
+  The existing first-answer cursor consumes the constructed progress
+  history and returns one occurrence, including from an all-error frontier.
+  A missing local service transition is interruption, not source exhaustion.
+  Exact scheduler splitting retains the world, active child and priority bank.
+
+  HEPriorityModel.lean executes twelve independently expected observations.
+  First demand retains answerless and error-producing earlier computation,
+  suppresses that error after success and skips a later write. Full drain
+  performs the later write. All-error completion retains duplicates; its first
+  consumer receives one error. Resumption retains one earlier write while
+  restarting duplicates it. Pause, exhaustion and unavailable-service
+  interruption have distinct outputs. Empty is non-error in this binary phase.
+
+  This opens publication between completed source children, not inside their
+  operand/control barriers. Available history is not repeated delivery to a
+  consumer, and a prefix is not identified with an old eager root-machine run.
+  Root Empty omission, consumer-induced interleaving, full recursive
+  streaming, source charging and native service/C correspondence remain open.
+  The new modules are included in declaration and subject/HE boundary audits.
+
+ContextualTransform/PeTTaTransformDemand:
+  The existing authored transform library's ordered Trace is converted to the
+  common cursor's retained answer stream, with checked inverse and observation
+  laws. An independently defined source quota selector agrees with the actual
+  bounded cursor, including answers, reached store and residual search for
+  every consumer-supplied next store. Separate poll budget and answer quota
+  preserve the selected prefix; actual cursor split/resume keeps the original
+  quota and account. Outer first demand agrees with source once even after
+  answerless firings. Resumption and full drain recover the original ordered
+  proposal/firing fold. Controls cover contention, empty instances, consumer
+  store changes, replay and budget-versus-exhaustion. TransformDemandModel.lean
+  runs these checked definitions. The transform-answerless-first.metta fixture
+  passes in CeTTa and in SWI with the full authored library explicitly loaded.
+  This consumes LibTransform's existing finite first-order, one-space source
+  profile. It does not equate one pull with one match/firing, implement internal
+  unifier suspension, or fill named-space/evaluated-conjunct/HE-error source gaps.
+
+Experimental/DerivedTransformForms/{Presentations,Code,Lowering,ContextualExpansion}:
+  Two independently authored module grammars provide expression and interaction
+  syntax. They use the existing structural compiler, lexical declarations,
+  packed forest and independent source-packet replay. The lowerer retains the
+  declared operation roles, reverses the interaction put/chain field orders,
+  and expands to ordinary PeTTa. Acceptance implies exact grammar/source
+  readback. An inductively closed candidate context family compiles actual
+  binding, case, collection and count continuations, with computed readiness
+  and exact source entry cost. The outcome law includes suspended prefixes.
+  It does not erase wrapper fuel, interpret held code, or prove whole-family
+  operational adequacy merely from successful expansion.
+
+  Fourteen paired programs cover joins/duplicates, claim/reply, absence,
+  independent removal, first demand, open stored terms, choice/count/fold,
+  cases, chain, held code, strings and update credits. All 28 authored SWI
+  observations pass. Complete forests and selected catalogues are independently
+  checked. Twelve controls reject missing/duplicated alternatives, pending
+  catalogue construction, foreign packets, changed input, trailing/malformed
+  syntax and invalid chain binders. A genuine two-production ambiguity retains
+  both readings instead of selecting the first.
+
+ConstraintMultisetRewriting/Step/ConsumableBudget and candidate BudgetCycle:
+  The existing natural-valued conserved charge bounds credit-spending events
+  in every actual admitted run prefix, including runs with uncharged routing
+  and reads between them. The occurrence instance counts selected credit
+  payloads; no new admission law or runtime counting pass is imposed.
+  In the canonical source and target cycle, three jobs and two credits produce
+  a,b and leave c. The independent library trace agrees with the q/out
+  observations of four actual primitive events: take, route, take, route.
+  Replenishment permits c; the unbudgeted ambient source also remains enabled.
+  UpdateBudgetModel.lean executes both constructions. These are update credits,
+  not evaluator fuel, a CPU-work bound or a global saturation criterion.
+
+Languages/MeTTa/ContextualTransform/PeTTaCallCache:
+  A cache of the concrete source callability decision has proved lookup,
+  warming and dependency-sensitive invalidation laws. New definitions refute
+  stale negative cache entries; changed bodies can keep callability while
+  changing answers. These are not laws for every type/body/result cache.
+
+Languages/MeTTa/ContextualTransform/AdaptiveCallCache:
+  The cache service and an independently implemented source classifier agree
+  for every finite adaptive sequence of head queries and registry replacements.
+  This consumes OperatorChoice.ObserverContracts using concrete lookup and
+  invalidation invariants, preserving all replies and the final registry.
+
+Languages/MeTTa/ContextualTransform/HEChainContexts:
+  Exact inversion and composition of the existing raw chain step/run, retaining
+  live scope, caller origin, materialization and the selected binding frame.
+  This remains the older read-only profile, separate from the stateful adapter.
+
+Languages/MeTTa/ContextualTransform/HEStatefulContexts:
+  Preservation and reflection between the actual completed HE boundary batch
+  and OrderedStateFlatMapRel. Arbitrarily nested source-position chain contexts
+  compile to saved continuations, preserving reached worlds, ordered answer
+  occurrences, frames, live scope and caller origin. Composition and exact
+  empty-answer behavior are proved. This is a completed-derivation connection;
+  it does not yet prove arbitrary source prefixes or lazy first demand.
+
+Languages/MeTTa/ContextualTransform/HEReturnAndSpaces:
+  Exact completed-native keep/cast and emitted-code return boundaries, actual
+  native execution inside compiled contexts, and evalc/metta space selection.
+  Identifying a particular named space requires injective host handles;
+  source semantics otherwise permits any label with the supplied payload.
+  Producer completion does not mean all operations named transform return data.
+
+Languages/MeTTa/ContextualTransform/HEInertBindings:
+  Binder-specific freshness preserves contextual values under substitution.
+  A minimal-data initializer and absent binder permit erasure of an HE chain
+  context while retaining the template's real evaluation and effects. Other
+  template variables remain allowed. This does not erase PeTTa's binding frame
+  or assert identical implementation fuel cutoffs.
+
+Languages/MeTTa/ContextualTransform/HEWorldControls:
+  An explicit model host with two named list stores supplies actual primitive
+  results to HE's independent stateful judgment. Positive/negative controls
+  establish take-before-error behavior, effects without answers, preservation
+  of the other store, and ambiguity from aliased handles. These are source
+  controls, not an implementation theorem for any CeTTa native.
+
+ConstraintMultisetRewriting/Step/OrderedStore:
+  An actual EffectCore/Step instance with arbitrary ambient frame knowledge,
+  unique occurrence identities, stable survivor order and ordered appends.
+  Its finite-set projection is the existing occurrence firing. Predicate
+  observations are admission obligations, independent of physical preparation.
+
+Languages/MeTTa/ContextualTransform/StoreOperations and StoreSelectionPolicies:
+  Source list append, routing, complete predicate removal and read observations
+  correspond to admitted target effects. First-selected occurrence removal
+  preserves survivor order. Absence admission, uniqueness and counts retain
+  complete-region dependencies; a matching addition defeats an earlier absence
+  query. These are store contracts, not whole built-in invocation theorems.
+
+Languages/MeTTa/ContextualTransform/PeTTaStoreSelection:
+  The actual scoped source unifier prepares selected occurrence identities.
+  Independent per-row source success/clash evidence agrees in both directions
+  with source survivor computation and admitted target contraction. Open stored
+  terms remain supported, and exhaustion cannot become a negative match.
+  The existing named-space removeRows write/return convention is connected
+  explicitly, including its differences from current CeTTa conventions.
+
+Languages/MeTTa/ContextualTransform/PeTTaQueryInterpretation:
+  Occurrence preparation retains separate branch substitutions. It preserves
+  and reflects queryBodies, constructs an admitted read-only effect, and feeds
+  the actual query_return source transition with evaluation tasks, caller
+  frames and the correct freshness-use increment. Template execution is not
+  erased merely because the store publication is identity.
+
+Languages/MeTTa/ContextualTransform/AdaptiveStorePrograms:
+  Independently defined list-store services and actual admitted target steps
+  agree for every finite adaptive append/remove/query client. Complete ordered
+  reply histories and final stores agree; every target interaction constructs
+  an Interface.Step.Run with a checked final state and event count. This theorem
+  has an explicit fresh-allocation contract, now instantiated by the concrete
+  current-live provider below. Richer source scheduling/budgets, historical
+  lifetimes and scoped-unifier service composition remain to be connected;
+  no whole-language adequacy is claimed.
+
+Data/List/FreshOccurrenceAllocation and ContextualTransform/ConcreteStorePrograms:
+  A computable current-live allocation provider discharges the adaptive
+  interpreter's allocation contract. The connected append/query/remove/query
+  example preserves duplicate values, its actual tcalc endpoint and nonempty
+  ambient knowledge. A negative control distinguishes current-live freshness
+  from never reusing an identity retained by a historical observer.
+
+Languages/MeTTa/ContextualTransform/StoreProgramPrefixes:
+  The actual source and target services instantiate the existing cursor
+  protocol with a proved provider map. Bounded advance and resume preserve
+  residual control, completion status, reached worlds and ordered histories.
+  Equal declared tariffs preserve accumulated accounts without replaying old
+  work. Protocol inspections, logical charges and native fuel are distinct.
+
+Machines/PreparedStoreProtocol and PreparedStoreProtocolControls:
+  A generic primitive publication model excludes duplicate physical selection,
+  unrecorded receipt slots, mutation of rejected pending preparations and
+  receipt-association swaps. Fifteen positive/negative controls exhibit the
+  four broken patterns and the corrected behavior. No-recording preparation
+  issues no ticket. The bridge in Step/PublicationProtocol proves actual
+  admission and ordered-state correspondence with the existing tcalc step.
+  C correspondence, pointer lifetimes and finite-counter exhaustion remain
+  outside these laws. PublicationModel.lean is a runnable derived consumer.
+
+Data/List/CountedErase and ContextualTransform/CountedStoreInterpretation:
+  Independent at-most and exact-quota source deletions correspond to actual
+  selected-occurrence target effects. Exact quota refuses shortage. Equal
+  payload copies remain distinct, and the bounded selector does not inspect
+  an unused tail once its quota is met. The predicate is completed and pure;
+  interrupted/effectful matching and whole transform take semantics remain
+  separate integration obligations. Neither policy is selected as a default.
+
+Machines/ImmediateStorePublication and ImmediateStorePrefixes:
+  Independent immediate append/filter operations agree with the existing
+  prepare/publish protocol on public replies and reached worlds. Readiness is
+  derived from the operation's actual admission branch. Under available
+  recording capacity, private receipts and issuer state erase for every finite
+  adaptive client and for paused/resumed cursor clients, retaining the actual
+  continuation and earlier effects. Recording failure and a receipt-observing
+  client are negative controls. Equal declared tariffs preserve cursor accounts;
+  administrative-cost reduction and native performance are not proved here.
+
+Step/ImmediatePublication:
+  Successful immediate source operations discharge actual ordered tcalc
+  admission. The admitted effect preserves the source result and arbitrary
+  consistent ambient knowledge. This realizes the store publication, not every
+  source control/failure event or a native implementation.
+
+Languages/MeTTa/ContextualTransform/ImmediateRemoval:
+  Bounded first-occurrence selection followed by immediate identity contraction
+  agrees with the independent ordered removeOne contract. Completed PeTTa
+  selection uses the actual scoped row unifier and publishes its selected
+  physical occurrences without unifying them again. An earlier inserted match
+  refutes reuse of a first-selection claim based only on continued presence.
+  Whole typed builtin invocation and intervening effects remain separate.
+  ImmediatePublicationModel.lean runs the new contracts and matches its
+  independently specified output.
+
+Data/List/PublicationSpecializationWork and ContextualTransform/SpecializedPublicationWork:
+  Explicit append and first-occurrence algorithms compute their work. First
+  deletion stops predicate inspection at its first match and retains the unused
+  tail. Its checked prepared counterpart agrees for distinct physical identities
+  and has no lower nonnegative weighted work. Equal payloads are not distinct
+  identities: a negative control exposes deletion of both aliased copies.
+  The measured outputs connect to existing source routing/removal and actual
+  admitted ordered tcalc effects. The append comparison models an unnecessary
+  empty-take list contraction, not CeTTa's generic-record initialization cost.
+
+Machines/SymbolTableHeadCache, SymbolHeadMemo and SymbolHeadService:
+  Compiled family IDs preserve spelling-based classification under their
+  table owner and incarnation. Insertion preserves complete compiled caches;
+  recreation invalidates old interpretations. The bounded memo checks complete
+  keys despite bank collisions. The combined service constructs and maintains
+  both invariants, resets both caches on recreation, and preserves adaptive
+  replies and paused/resumed cursor outcomes. Negative controls expose stale
+  IDs, stale memo entries and treating one wrong arity as an unknown name.
+  Retained references are scoped separately from raw current-table queries.
+  Actual spelling transfer into another table preserves the decoded head and
+  the destination's valid cache. The old table must remain readable for transfer.
+  Finite-counter wrap, pointer/graph ownership and concurrent publication remain
+  implementation obligations, not consequences of these pure table laws.
+
+ContextualTransform/TransformHeadRecognition:
+  The current seven runtime spellings instantiate the classification family.
+  Owned cached IDs decode to actual PeTTa source atoms. Live callability,
+  unknown-head behavior and quotation remain the independent source rules.
+  Re-interning a head preserves source execution at every inspection budget
+  in the same live registry and context. This does not transfer execution
+  authority between registries or recursively transport native argument graphs.
+  ScopedHeadModel.lean runs the work, ownership, collision and combined lifecycle
+  controls against independently specified output.
+
+Machines/Cursor/StatefulQueryRun:
+  The independent state-threaded query interpreter agrees with the actual
+  bounded cursor on answer, reached world, ordered requests/replies and invoice.
+  Actual request count plus one inspection suffices to observe the return;
+  additional inspections do no later work. The tariff does not bound a service
+  call's internal computation.
+
+Machines/EffectfulRowSelection:
+  An independently recursive ordered scan and an existing query-program client
+  with reversed accumulators agree, including early test errors and reached
+  worlds. At most one request per input position is made. Pausing retains the
+  actual pending computation, and resuming does not repeat earlier effects.
+  Negative controls expose restart replay and an effectful recheck changing the
+  selection. A partial scan does not publish removal or certify a negative match.
+  This is a generic effectful test protocol, not yet an interpretation of all
+  evaluated transform conjuncts in either dialect.
+
+ContextualTransform/PeTTaSelectionCursor:
+  The generic selector uses the actual scoped PeTTa unifier. Successful cursor
+  completion preserves and reflects the independent Removal judgment. Completed
+  selections construct an admitted ordered tcalc effect and the actual source
+  removal transition, retaining input, output, caller frames and fresh-use
+  accounting. A failed unifier scan makes source removal unavailable and leaves
+  the entire source configuration at exhaustion. Open stored terms, independent
+  row bindings and equal payloads at distinct occurrences have executable controls.
+  Front-to-back traversal agrees with the older pure tail-first survivors
+  function on completed values; internal work/fuel and effectful test order are
+  not equated. The adapter does not implement suspension inside the unifier.
+  PartialSelectionModel.lean exercises these definitions and source steps.
+
+Machines/PreparedStoreStability and Step/OrderedStoreStability:
+  Readiness after an intervening publication is derived from its actual taken
+  and made footprints. Unrelated writes can preserve complete ordered key
+  selection without requiring whole-store equality. The existing occurrence
+  exactness theorem lifts to the actual ordered tcalc admission, including
+  kept occurrences and captured predicate regions. Disjoint takes alone fail
+  for absence and lost-keep controls. Exact captured regions are a stronger
+  observation profile than counts alone: equal counts can hide changed IDs.
+  These laws preserve the stated execution order and frozen ambient knowledge;
+  they do not authorize arbitrary rescheduling or impose this profile on every
+  source count observer.
+
+Machines/PreparedReceiptOwnership:
+  Actual publication records supply the payload roots. The update removes
+  taken occurrence roots and inserts made roots, then exports requested receipt
+  roots before releasing temporary owners. The existing resource graph model
+  proves preservation of complete live store, receipt and outside-owner graphs.
+  Scalar updates reduce to insert/erase; the live-store root invariant is not a
+  required whole-store traversal. Separate occurrences may share a payload graph.
+  No receipt adds no receipt roots. A readable receipt does not reserve removed
+  occurrences. Ownership preserves liveness through collection, not immutability
+  under arbitrary payload writes or concurrent-writer safety.
+
+Data/List/RetainedOccurrenceAllocation and ContextualTransform/RetainedStorePrograms:
+  A concrete allocation profile avoids current and retained numeric IDs. Its
+  empty-retention branch is the original allocator, and releasing retention can
+  permit reuse. The existing tcalc store interpreter preserves value observations
+  and does not revive retired held IDs; it also preserves unique numeric IDs,
+  a stronger invariant than distinct ID/value pairs. Every client starting empty
+  constructs that stronger invariant. The finite retention inventory must cover
+  all live identity-sensitive observers; native discovery, pointer ownership and
+  finite-counter exhaustion remain separate. RetainedPublicationModel.lean runs
+  the preparation, resource-graph and retained-ID controls.
+
+Complete-goal obligations still open
+----------------------------------
+1. Finish staged admission of known computed heads, lambda authoring/private
+   code installation, native partial arity profiles, source freshness and
+   streaming application schedules. Actual runtime-head/private-partial
+   dispatch, callee error scopes and full source-run prefix resumption are now
+   connected. Static/case/condition/collection contexts and completed HE typed
+   argument traversal remain connected. Complete qualified unused-binding laws
+   without turning model limits into language restrictions or assuming a
+   finished-run equivalence as a cache invariant.
+   Private storage and ordinary single-clause lambda formation now have actual
+   consumers. Scoped source entry now corrects the x#0 collision while keeping
+   its raw-entry negative control. Open-answer observation and inverse transport
+   are checked. Recursive ordinary lambda preparation is also connected, with
+   totality and depth independence. Both future-head cases now retain data
+   decisions. Completed constructor schedules, arbitrary callers and escaping
+   fault transport are connected. Full unfinished-run reflection, recursive
+   operand streaming, eta expansion and the remaining source policies are open.
+   A streaming controller now has independent step rules, retained-prefix and
+   first-provider laws, and arbitrary context-entry correspondence. Full source
+   admission still needs early output constraints, complete streaming-frontier
+   scope/lifetime transfer and the remaining compiler policies.
+2. Extend the stateful HE chain/return/space connection to complete source-level
+   transform and let elaboration, collection/first-demand contexts, and native
+   routing services. The model-host controls do not close those interpretations.
+   Incremental call and typed-invocation phases and their first-answer cursor
+   are now connected; streaming inside recursive operand barriers and consumer
+   interleaving remain open. Retain differing error/evaluation policies rather
+   than forcing one convention.
+3. Complete the derived operation family beyond the checked ordered-store
+   effects, scoped PeTTa selection and finite adaptive store clients. Connect
+   whole transform take/routing semantics, richer producer/consumer/binding
+   control, historical allocation/lifetime policies, scoped-unifier service
+   composition and semantic cost cutoffs. Counted policies and the finite
+   service prefix laws now have concrete interpretations; these do not replace
+   each dialect's whole invocation or scheduling semantics. The authored
+   LibTransform profile now has an exact bounded-demand/cursor connection;
+   its one-space first-order scope is not the whole PeTTa evaluator.
+4. Complete the whole-family operational connection for the authored GSLT
+   surfaces and their canonical programs. Both syntaxes and all fourteen paired
+   runnable examples now exist; parser/expansion evidence and the checked
+   contextual/canonical-budget laws do not fill the remaining interpretation.
+   Include evaluator-fuel prefixes as well as consumable update-credit budgets.
+   No presentation has been selected as Prime.
+5. Complete the positive/negative runtime fixture matrix and its independent
+   source expectations; keep counterexamples visible. Relate costs at their
+   actual observation layer and finish the declaration/axiom/boundary audit.
+6. Carry the checked specialization, dependency and ownership laws through the
+   remaining whole-source interpretations in items 1-3. The generic effectful
+   test protocol still needs interpreted transform conjuncts; exact-region and
+   value-only observation profiles must not become unnecessary source restrictions.
+   The retention inventory must match the observers actually kept by each adapter.
+   Native root discovery, finite counters, pointer correspondence and C performance
+   are separate obligations; the abstract bounds do not discharge runtime gates.
+
+Concrete publication work and hybrid preflight
+---------------------------------------------
+Data/List/PublicationWork:
+  Independent immediate and prepared deletion algorithms compute both their
+  results and counts of predicate invocations, equality tests and list cells.
+  The exact work difference and its nonnegative weighted bound are proved.
+  Stable selected information licenses publication without another predicate
+  traversal; an independently nonmatching extension preserves that selection.
+  Predicates are pure, total Boolean functions; these are not CPU costs.
+
+Machines/ImmediateStoreCost:
+  The measured algorithms implement the same stateful service. Existing cursor
+  accounting lifts the derived inequality to every bounded client, preserving
+  its actual outcome and residual. An affordable prepared prefix remains
+  affordable with immediate work. Equal resource budgets can admit different
+  prefixes, unlike equal protocol-inspection budgets. The exact-key adapter
+  connects this realization to the earlier immediate/prepared public contract.
+
+Machines/HybridStorePublication and ContextualTransform/HybridImmediateRemoval:
+  The existing compact-set/ordinary-multiset carrier supplies multiplicity.
+  Ordinary staging capacity is checked before either component changes.
+  Refusal preserves the input store; an admitted update removes all selected
+  copies. With no ordinary copy of an exact value, zero staging and the existing
+  direct removal preserve both result and state. A dense-first negative control
+  loses a copy when reservation later refuses. Successful hybrid results agree
+  with the bag projection of an actual admitted ordered tcalc effect. This
+  projection does not establish native order, pointer lifetime or concurrency.
+
+PublicationCostModel.lean executes these definitions against independent
+expected output. The model does not supply native C performance evidence.
+
+Parallel operator-choice theory
+------------------------------
+The separately assigned Machines/OperatorChoice lane has checked
+observer-relative specialization, encoding-relative query lower bounds and
+distinct world policies. AdaptiveCallCache is one actual consumer. This work
+does not replace any of the five obligations above.
+FrameMap.LicensedAt is a factorization/solvability
+transport certificate, not a generic scheduling or runtime-cost guarantee.
+
+HE calibration boundary
+-----------------------
+The fixture family distinguishes raw invocation (eval/evalc) from full
+interpretation (metta). A raw invocation of (empty) does not necessarily emit
+zero answers. Held syntax must be observed before an outer caller can re-enter
+evaluation. The typed fixture therefore compares held syntax at its receiving
+continuation. Both boundaries were checked against the upstream Rust runner.
+The earlier cold PeTTa native-transform and HE full-evaluation empty-chain
+failures pass in the earlier sixteen-fixture snapshot. The enlarged twenty-case
+matrix passes 17/20 on immutable binary 6fca2ca7b58b216e87064d0322162ff7e14e82e2105f5771d07ffa91120621ed.
+Destination transform counts still disappear through once/let and through
+collection initializers, although the selected take and destination write occur.
+The bare destination let is a passing control. Paired surface calibration agrees
+on 24/28 ordered answer observations, with claim/reply and update-credit cycle
+failing in both spellings. Native qualification remains red; expectations are
+independently authored and unchanged. Earlier transient development executables
+also returned requested transform syntax as data; those observations must not
+be conflated with the immutable artifact's count-loss findings.
+The separate adversarial C API review found dense-batch receipt/duplicate-ID
+defects and lifecycle/receipt-association hazards; their repair qualification
+belongs to the C lane, not to these Lean source theorems.
+
+No C or machine-code correspondence is assigned here. Positive runtime tests
+do not supply it, and candidate notation does not automatically issue a fast-path
+licence. Check the current Lean source and build evidence before citing a row
+as proved; this ledger is not itself a proof receipt.
+
+Runtime-demand profile comparison
+---------------------------------
+The enlarged native contextual comparison passes 19/23 on immutable executable
+cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24.
+The three destination-count regressions remain. The fourth difference is the
+explicit SWI-versus-corrected-CeTTa argument-policy comparison: SWI evaluates an
+argument before runtime dispatch while the tested CeTTa holds the signature's
+Atom argument on both routes. Its demanded effect, not Boolean capitalization,
+distinguishes the outcomes. No transform attribution or universal Prime choice
+is made. All three new external SWI fixture expectations pass.

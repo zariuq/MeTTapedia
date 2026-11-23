@@ -1,0 +1,1659 @@
+--- before/Mettapedia/GSLT/Core/ProofRelevantTranslationCategory.lean
++++ after/Mettapedia/GSLT/Core/ProofRelevantTranslationCategory.lean
+@@ -1,4 +1,5 @@
+ import Mettapedia.GSLT.Core.ProofRelevantGSLT
++import Mathlib.CategoryTheory.Yoneda
+ 
+ /-!
+ # The category of proof-relevant GSLTs
+@@ -136,6 +137,92 @@
+     apply CoveredTranslation.ext
+     rfl
+ 
++/-! ## Complete probes and an occurrence-erasing boundary -/
++
++namespace OccurrenceControls
++
++/-- A genuine transition with two differently labeled occurrences. -/
++def parallelEvents : ProofRelevantGSLT where
++  theory := {
++    Term := Bool
++    equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
++    rewrites source target := source = false ∧ target = true
++    rewrites_resp_left := by
++      intro source source' target equal event
++      subst source'
++      exact ⟨target, event, rfl⟩
++    rewrites_resp_right := by
++      intro source target target' event equal
++      subst target'
++      exact event }
++  steps := {
++    Evidence := fun source target => {label : Bool // source = false ∧ target = true}
++    erases_iff := by
++      intro source target
++      exact ⟨fun ⟨event⟩ => event.property, fun step => ⟨⟨false, step⟩⟩⟩ }
++
++/-- Change occurrence labels without changing endpoints or the enabled graph. -/
++def exchange : parallelEvents ⟶ parallelEvents where
++  mapTerm := id
++  mapEquiv := fun equal => equal
++  mapEvidence event := ⟨!event.val, event.property⟩
++  liftEvidence := fun {_source target} event =>
++    ⟨target, ⟨!event.val, event.property⟩, ⟨⟨rfl⟩⟩⟩
++
++def firstEvent : parallelEvents.Event := ⟨false, true, ⟨false, rfl, rfl⟩⟩
++
++theorem exchange_changes_occurrence :
++    exchange.mapEvent firstEvent ≠ (𝟙 parallelEvents : parallelEvents ⟶ parallelEvents).mapEvent
++      firstEvent := by
++  intro same
++  have labels := congrArg (fun event : parallelEvents.Event => event.evidence.val) same
++  change true = false at labels
++  cases labels
++
++theorem exchange_ne_identity : exchange ≠ 𝟙 parallelEvents := by
++  intro same
++  exact exchange_changes_occurrence (congrArg (fun route => route.mapEvent firstEvent) same)
++
++theorem exchange_twice : exchange ≫ exchange = 𝟙 parallelEvents := by
++  apply Translation.ext_data
++  · rfl
++  · apply heq_of_eq
++    funext source target event
++    apply Subtype.ext
++    exact Bool.not_not event.val
++  · apply heq_of_eq
++    funext source target event
++    rcases event with ⟨label, valid⟩
++    cases label <;> rfl
++
++/-- The endpoint interface cannot detect this nontrivial notation change. -/
++theorem forget_exchange_eq_identity :
++    forgetEvidence.map exchange = forgetEvidence.map (𝟙 parallelEvents) := by
++  apply CoveredTranslation.ext
++  rfl
++
++/-- Erasing occurrence data is a lawful functor but is not a faithful one. -/
++theorem forgetEvidence_not_faithful : ¬ forgetEvidence.{0}.Faithful := by
++  intro faithful
++  exact exchange_ne_identity (faithful.map_injective forget_exchange_eq_identity)
++
++/-- Complete representable probes retain the lost distinction. In particular,
++the probe from this system to itself can supply its identity translation. -/
++theorem full_probes_separate_exchange :
++    yoneda.map exchange ≠ yoneda.map (𝟙 parallelEvents) := by
++  intro same
++  exact exchange_ne_identity (yoneda.map_injective same)
++
++/-- An isomorphism of the full representable interfaces reconstructs an
++isomorphism in this occurrence-sensitive category. This is relative to the
++declared objects and arrows; it says nothing about an omitted physical or
++phenomenal structure. -/
++noncomputable def reconstruct (first second : ProofRelevantGSLT.{u})
++    (comparison : yoneda.obj first ≅ yoneda.obj second) : first ≅ second :=
++  Yoneda.fullyFaithful.preimageIso comparison
++
++end OccurrenceControls
++
+ #print axioms Translation.ext_data
+ #print axioms Translation.identity_comp
+ #print axioms Translation.comp_identity
+--- before/Mettapedia/GSLT/Dynamics/ScriptedBackup.lean
++++ after/Mettapedia/GSLT/Dynamics/ScriptedBackup.lean
+@@ -0,0 +1,386 @@
++import Mettapedia.GSLT.Logic.PrivilegedView
++import Mettapedia.GSLT.Logic.HennessyMilnerTransport
++
++/-!
++# Recorded execution with a dormant backup
++
++A recording contains inputs and their previously computed successor states.
++The player reads that table without calling the transition function. A backup
++player follows the table while inputs agree and switches permanently to live
++computation at the first disagreement, or when the table is exhausted.
++
++Validity is proved against the independently supplied transition function.
++For every valid starting state, the backup preserves every input continuation,
++not just the recorded one. Nevertheless, its transition component is unused
++along the recorded run. An intervention on that component can therefore
++distinguish the backup from direct execution while ordinary inputs cannot.
++
++The construction is an abstract operational model of the dormant-machinery
++challenge in Tim Maudlin, *Computation and Consciousness* (1989),
++https://doi.org/10.2307/2026650 . It establishes neither physical realizability
++nor a consciousness assignment. Its activity labels are declared evaluator
++calls and table reads, not measurements of physical causal activity.
++-/
++
++set_option autoImplicit false
++
++namespace Mettapedia.GSLT.ScriptedBackup
++
++open Mettapedia.GSLT
++open Mettapedia.GSLT.HennessyMilner
++open Mettapedia.GSLT.PrivilegedView
++
++universe u v w
++
++variable {State : Type u} {Input : Type v}
++
++/-- A table of input symbols and previously computed successor states. -/
++abbrev Script (State : Type u) (Input : Type v) := List (Input × State)
++
++/-- Validate every table entry from its declared predecessor. -/
++def Valid (step : State → Input → State) : State → Script State Input → Prop
++  | _, [] => True
++  | source, (input, target) :: rest =>
++      target = step source input ∧ Valid step target rest
++
++/-- Construct a recording by executing the supplied transition function. -/
++def record (step : State → Input → State) : State → List Input → Script State Input
++  | _, [] => []
++  | source, input :: rest =>
++      let target := step source input
++      (input, target) :: record step target rest
++
++theorem record_valid (step : State → Input → State) (source : State) (inputs : List Input) :
++    Valid step source (record step source inputs) := by
++  induction inputs generalizing source with
++  | nil => trivial
++  | cons input rest ih => exact ⟨rfl, ih _⟩
++
++theorem record_inputs (step : State → Input → State) (source : State) (inputs : List Input) :
++    (record step source inputs).map Prod.fst = inputs := by
++  induction inputs generalizing source with
++  | nil => rfl
++  | cons input rest ih => simp [record, ih]
++
++/-- Independently evaluate each row, compare its printed result, and reject
++the first disagreement. The transition function belongs to the checker, not
++to the passive recording. Subsequent rows use the newly computed state. -/
++def verifyRun? [DecidableEq State] (step : State → Input → State) :
++    State → Script State Input → Option State
++  | source, [] => some source
++  | source, (input, printed) :: rest =>
++      let computed := step source input
++      if computed = printed then verifyRun? step computed rest else none
++
++theorem verifyRun?_isSome_iff [DecidableEq State] (step : State → Input → State)
++    (source : State) (script : Script State Input) :
++    (verifyRun? step source script).isSome = true ↔ Valid step source script := by
++  induction script generalizing source with
++  | nil => simp [verifyRun?, Valid]
++  | cons entry rest ih =>
++      rcases entry with ⟨input, printed⟩
++      by_cases equal : step source input = printed
++      · simp only [verifyRun?, equal, ↓reduceIte, ih, Valid]
++        simp
++      · simp [verifyRun?, equal, Valid, Ne.symm equal]
++
++/-- The checked protocol produces the independent executor's result for
++the script's input sequence. This is conditional on actually checking all
++rows; mere possession of a recording does not perform those transitions. -/
++theorem verifyRun?_valid_result [DecidableEq State] (step : State → Input → State)
++    {source : State} {script : Script State Input} (valid : Valid step source script) :
++    verifyRun? step source script = some ((script.map Prod.fst).foldl step source) := by
++  induction script generalizing source with
++  | nil => rfl
++  | cons entry rest ih =>
++      rcases entry with ⟨input, printed⟩
++      have equal : step source input = printed := valid.1.symm
++      simp only [verifyRun?, equal, ↓reduceIte, List.map_cons, List.foldl_cons]
++      exact ih valid.2
++
++/-- Table position and represented state are operational state, not an
++implicit external oracle. `live` records the permanent switch to evaluation. -/
++structure Player (State : Type u) (Input : Type v) where
++  current : State
++  remaining : Script State Input
++  live : Bool
++  deriving Repr, DecidableEq
++
++/-- Which component supplies one successor. -/
++inductive Activity where
++  | tableRead
++  | evaluate
++  deriving DecidableEq, Repr
++
++variable [DecidableEq Input]
++
++/-- The table branch does not evaluate `step`. -/
++def advance (step : State → Input → State) (player : Player State Input)
++    (input : Input) : Player State Input × Activity :=
++  if player.live then
++    (⟨step player.current input, [], true⟩, .evaluate)
++  else match player.remaining with
++    | [] => (⟨step player.current input, [], true⟩, .evaluate)
++    | (expected, target) :: rest =>
++        if input = expected then (⟨target, rest, false⟩, .tableRead)
++        else (⟨step player.current input, [], true⟩, .evaluate)
++
++def backupStep (step : State → Input → State) (player : Player State Input)
++    (input : Input) : Player State Input := (advance step player input).1
++
++/-- Only the unconsumed table requires validation; live execution ignores it. -/
++def Coherent (step : State → Input → State) (player : Player State Input) : Prop :=
++  player.live = false → Valid step player.current player.remaining
++
++theorem advance_current (step : State → Input → State)
++    {player : Player State Input} (valid : Coherent step player) (input : Input) :
++    (backupStep step player input).current = step player.current input := by
++  rcases player with ⟨source, script, live⟩
++  cases live
++  · have valid' := valid rfl
++    cases script with
++    | nil => rfl
++    | cons entry rest =>
++        rcases entry with ⟨expected, target⟩
++        by_cases same : input = expected
++        · subst input
++          simpa [backupStep, advance] using valid'.1
++        · simp [backupStep, advance, same]
++  · rfl
++
++theorem advance_coherent (step : State → Input → State)
++    {player : Player State Input} (valid : Coherent step player) (input : Input) :
++    Coherent step (backupStep step player input) := by
++  rcases player with ⟨source, script, live⟩
++  cases live
++  · have valid' := valid rfl
++    cases script with
++    | nil => simp [Coherent, backupStep, advance]
++    | cons entry rest =>
++        rcases entry with ⟨expected, target⟩
++        by_cases same : input = expected
++        · simp [Coherent, backupStep, advance, same]
++          exact valid'.2
++        · simp [Coherent, backupStep, advance, same]
++  · simp [Coherent, backupStep, advance]
++
++/-- Every admitted input word has the independently specified abstract result. -/
++theorem run_current (step : State → Input → State) (inputs : List Input)
++    {player : Player State Input} (valid : Coherent step player) :
++    (inputs.foldl (backupStep step) player).current =
++      inputs.foldl step player.current := by
++  induction inputs generalizing player with
++  | nil => rfl
++  | cons input rest ih =>
++      rw [List.foldl_cons, List.foldl_cons, ih (advance_coherent step valid input),
++        advance_current step valid input]
++
++theorem all_input_futures (step : State → Input → State) {Output : Type w}
++    (observe : State → Output) {player : Player State Input} (valid : Coherent step player) :
++    wordBehaviour (backupStep step) (fun player => observe player.current) player =
++      wordBehaviour step observe player.current := by
++  funext inputs
++  exact congrArg observe (run_current step inputs valid)
++
++/-- Retain the actual component use at every tick. -/
++def activities (step : State → Input → State) : Player State Input → List Input → List Activity
++  | _, [] => []
++  | player, input :: rest =>
++      (advance step player input).2 :: activities step (backupStep step player input) rest
++
++/-- On the recorded run the backup evaluator is dormant at every tick. -/
++theorem recorded_activities (step : State → Input → State) (source : State)
++    (inputs : List Input) :
++    activities step ⟨source, record step source inputs, false⟩ inputs =
++      List.replicate inputs.length .tableRead := by
++  induction inputs generalizing source with
++  | nil => rfl
++  | cons input rest ih =>
++      simp [record, activities, backupStep, advance, ih, List.replicate_succ]
++
++theorem recorded_run (step : State → Input → State) (source : State) (inputs : List Input) :
++    inputs.foldl (backupStep step) ⟨source, record step source inputs, false⟩ =
++      ⟨inputs.foldl step source, [], false⟩ := by
++  induction inputs generalizing source with
++  | nil => rfl
++  | cons input rest ih => simpa [record, backupStep, advance] using ih (step source input)
++
++/-- Replace the evaluator while keeping the already-written table fixed.
++Along its recorded inputs the backup still reads exactly the old run. -/
++theorem fixed_record_run (baseline alternative : State → Input → State)
++    (source : State) (inputs : List Input) :
++    inputs.foldl (backupStep alternative) ⟨source, record baseline source inputs, false⟩ =
++      ⟨inputs.foldl baseline source, [], false⟩ := by
++  induction inputs generalizing source with
++  | nil => rfl
++  | cons input rest ih =>
++      simpa [record, backupStep, advance] using ih (baseline source input)
++
++theorem fixed_record_activities (baseline alternative : State → Input → State)
++    (source : State) (inputs : List Input) :
++    activities alternative ⟨source, record baseline source inputs, false⟩ inputs =
++      List.replicate inputs.length Activity.tableRead := by
++  induction inputs generalizing source with
++  | nil => rfl
++  | cons input rest ih =>
++      simp [record, activities, backupStep, advance, ih, List.replicate_succ]
++
++/-- The next tick after exhaustion uses the evaluator rather than stuttering. -/
++theorem exhausted_evaluates (step : State → Input → State) (source : State) (input : Input) :
++    advance step ⟨source, [], false⟩ input =
++      (⟨step source input, [], true⟩, .evaluate) := rfl
++
++theorem deviation_evaluates (step : State → Input → State) (source target : State)
++    (expected input : Input) (rest : Script State Input) (different : input ≠ expected) :
++    advance step ⟨source, (expected, target) :: rest, false⟩ input =
++      (⟨step source input, [], true⟩, .evaluate) := by
++  simp [advance, different]
++
++/-- Intervening on the transition component alone leaves an agreed table
++read unchanged. The stored target is held fixed during this intervention. -/
++theorem table_read_ignores_evaluator (first second : State → Input → State)
++    (source target : State) (input : Input) (rest : Script State Input) :
++    advance first ⟨source, (input, target) :: rest, false⟩ input =
++      advance second ⟨source, (input, target) :: rest, false⟩ input := by
++  simp [advance]
++
++/-- The same component intervention changes direct execution whenever its
++replacement gives a different successor. -/
++theorem direct_execution_separates_evaluators (first second : State → Input → State)
++    (source : State) (input : Input) (different : first source input ≠ second source input) :
++    (advance first ⟨source, [], true⟩ input).1.current ≠
++      (advance second ⟨source, [], true⟩ input).1.current := different
++
++/-- A player without backup ignores the supplied input, and stutters after
++its recording is exhausted. -/
++def replayStep (player : Player State Input) (_input : Input) : Player State Input :=
++  match player.remaining with
++  | [] => player
++  | (_, target) :: rest => ⟨target, rest, false⟩
++
++omit [DecidableEq Input] in
++theorem replay_recorded_run (step : State → Input → State) (source : State)
++    (inputs : List Input) :
++    inputs.foldl replayStep ⟨source, record step source inputs, false⟩ =
++      ⟨inputs.foldl step source, [], false⟩ := by
++  induction inputs generalizing source with
++  | nil => rfl
++  | cons input rest ih => simpa [record, replayStep] using ih (step source input)
++
++/-! ## The existing modal comparison, at the declared input boundary -/
++
++section Modal
++
++variable {State Input : Type} [DecidableEq Input]
++
++/-- The endpoint GSLT of an input-driven machine. The separate modal labels
++retain which input caused a transition. -/
++def theory (step : State → Input → State) : GSLT where
++  Term := State
++  equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
++  rewrites source target := ∃ input, target = step source input
++  rewrites_resp_left := by
++    intro source source' target equal event
++    subst source'
++    exact ⟨target, event, rfl⟩
++  rewrites_resp_right := by
++    intro source target target' event equal
++    subst target'
++    exact event
++
++def observed {Output : Type} (step : State → Input → State) (observe : State → Output) :
++    System (theory step) where
++  Atom := Output
++  observes value state := observe state = value
++  observes_resp := by intro value left right equal; cases equal; exact Iff.rfl
++  Label := Input
++  act input source target := target = step source input
++  act_resp_left := by
++    intro input source source' target equal event
++    subst source'
++    exact ⟨target, event, rfl⟩
++  act_resp_right := by
++    intro input source target target' event equal
++    subst target'
++    exact event
++
++/-- Invalid recordings are excluded by an earned invariant, not by assuming
++the desired simulation law. -/
++abbrev CheckedPlayer (step : State → Input → State) :=
++  {player : Player State Input // Coherent step player}
++
++def checkedStep (step : State → Input → State) (player : CheckedPlayer step)
++    (input : Input) : CheckedPlayer step :=
++  ⟨backupStep step player.val input, advance_coherent step player.property input⟩
++
++/-- Every abstract input transition lifts to a checked player transition.
++Thus all formulas of the declared input/observation language are covered. -/
++def inputCover {Output : Type} (step : State → Input → State) (observe : State → Output) :
++    SystemCover (observed (checkedStep step) (fun player => observe player.val.current))
++      (observed step observe) where
++  mapTerm player := player.val.current
++  mapAtom := id
++  mapLabel := id
++  mapEquiv := by intro left right equal; cases equal; rfl
++  observes_iff _ _ := Iff.rfl
++  mapAct := by
++    intro input source target event
++    change target = checkedStep step source input at event
++    subst target
++    exact advance_current step source.property input
++  liftAct := by
++    intro input source target event
++    exact ⟨checkedStep step source input, rfl,
++      (advance_current step source.property input).trans event.symm⟩
++
++theorem modal_iff {Output : Type} (step : State → Input → State) (observe : State → Output)
++    (formula : Formula Output Input) (player : CheckedPlayer step) :
++    (observed (checkedStep step) (fun player => observe player.val.current)).sat formula player ↔
++      (observed step observe).sat formula player.val.current := by
++  simpa [inputCover, observed] using ((inputCover step observe).sat_map formula player).symm
++
++end Modal
++
++/-! ## Separating controls -/
++
++namespace Controls
++
++def write (_state input : Bool) : Bool := input
++
++def recordedFalse : Player Bool Bool := ⟨false, record write false [false], false⟩
++
++theorem replay_agrees_on_recorded_input :
++    (replayStep recordedFalse false).current = write false false := rfl
++
++theorem replay_fails_on_changed_input :
++    (replayStep recordedFalse true).current ≠ write false true := by decide
++
++theorem backup_handles_changed_input :
++    advance write recordedFalse true = (⟨true, [], true⟩, .evaluate) := by decide
++
++theorem backup_passes_every_input_future :
++    wordBehaviour (backupStep write) Player.current recordedFalse =
++      wordBehaviour write id false :=
++  all_input_futures write id (record_valid write false [false] |> fun h => fun _ => h)
++
++/-- A corrupt table is rejected, although replay would still read it. -/
++theorem corrupt_record_invalid : ¬ Valid write false [(false, true)] := by
++  simp [Valid, write]
++
++theorem checked_protocol_accepts_and_rejects :
++    verifyRun? write false (record write false [true, false, true]) = some true ∧
++      verifyRun? write false [(false, true)] = none := by decide
++
++/-- Boundary input agreement coexists with a separating internal intervention. -/
++theorem dormant_backup_distinction :
++    wordBehaviour (backupStep write) Player.current recordedFalse =
++      wordBehaviour write id false ∧
++    activities write recordedFalse [false] = [.tableRead] ∧
++    advance write recordedFalse false = advance (fun _ _ => true) recordedFalse false ∧
++    write false false ≠ (fun (_ _ : Bool) => true) false false := by
++  exact ⟨backup_passes_every_input_future, rfl,
++    table_read_ignores_evaluator write (fun _ _ => true) false false false [], by decide⟩
++
++end Controls
++
++end Mettapedia.GSLT.ScriptedBackup
+--- before/Mettapedia/GSLT/LanguageDef/BindingSignatureEquationPresentation.lean
++++ after/Mettapedia/GSLT/LanguageDef/BindingSignatureEquationPresentation.lean
+@@ -1,5 +1,6 @@
+ import Mettapedia.GSLT.LanguageDef.BindingSignatureOpenReification
+ import Mettapedia.OSLF.Syntax.BindingEquationQuotientModel
++import Mettapedia.OSLF.Syntax.BindingCloneContextComparison
+ 
+ /-!
+ # Authored first-order equations as contextual binding axioms
+@@ -92,6 +93,59 @@
+     BindingEquationInterpretation.Satisfies row.quotient [row.toAxiom] :=
+   BindingEquationQuotientModel.algebra_satisfies [row.toAxiom]
+ 
++/-! ## The actual categorical presentation of a compiled row -/
++
++open _root_.CategoryTheory
++open Mettapedia.GSLT.LanguageDef.MultiSortedClone
++
++/-- The source arrows are actual intrinsic terms over the declaration-derived
++signature. Identities and composition are the existing variable/substitution
++operations, including substitution below declared binders. -/
++abbrev rawClone (language : LanguageDef) :=
++  (BindingCloneAlgebra.terms (signatureOf language)).substitution.toClone
++
++def leftArrow (row : CompiledRow language equation sort) :
++    ContextObject.ofList (rawClone language) (contextSorts equation.typeContext) ⟶
++      ContextObject.ofList (rawClone language) [sort] :=
++  (rawClone language).operationAsSingletonMorphism row.left
++
++def rightArrow (row : CompiledRow language equation sort) :
++    ContextObject.ofList (rawClone language) (contextSorts equation.typeContext) ⟶
++      ContextObject.ofList (rawClone language) [sort] :=
++  (rawClone language).operationAsSingletonMorphism row.right
++
++/-- Compile to the existing finite-product quotient category. This connects
++the accepted authored row to a generated category, rather than supplying a
++category whose relation to the declarations is assumed. -/
++noncomputable def contextPresentation (row : CompiledRow language equation sort) :=
++  quotientContextFunctor [row.toAxiom]
++
++theorem contextPresentation_preservesFiniteProducts (row : CompiledRow language equation sort) :
++    _root_.CategoryTheory.Limits.PreservesFiniteProducts row.contextPresentation :=
++  quotientContextFunctor_preservesFiniteProducts [row.toAxiom]
++
++/-- The accepted equation identifies its two independently reified arrows. -/
++theorem equation_arrows_equal (row : CompiledRow language equation sort) :
++    row.contextPresentation.map row.leftArrow =
++      row.contextPresentation.map row.rightArrow := by
++  rw [contextPresentation, leftArrow, rightArrow,
++    quotientContextFunctor_operation, quotientContextFunctor_operation]
++  funext index
++  refine Fin.cases ?_ (fun impossible => Fin.elim0 impossible) index
++  apply Quotient.sound
++  change EqClosure [row.toAxiom] row.left row.right
++  simpa only [bind_id] using row.instance_eqClosure (fun _ position => .var position)
++
++/-- The identification survives every typed substitution arrow. This uses
++the functor's composition law, not a comparison of printed equation bodies. -/
++theorem equation_arrows_after_substitution (row : CompiledRow language equation sort)
++    (context : ContextObject (rawClone language))
++    (environment : context ⟶
++      ContextObject.ofList (rawClone language) (contextSorts equation.typeContext)) :
++    row.contextPresentation.map (environment ≫ row.leftArrow) =
++      row.contextPresentation.map (environment ≫ row.rightArrow) := by
++  rw [Functor.map_comp, Functor.map_comp, row.equation_arrows_equal]
++
+ end CompiledRow
+ 
+ end Mettapedia.GSLT.LanguageDef.BindingSyntax.EquationPresentation
+--- before/Mettapedia/GSLT/LanguageDef/BindingSignatureNotation.lean
++++ after/Mettapedia/GSLT/LanguageDef/BindingSignatureNotation.lean
+@@ -0,0 +1,288 @@
++import Mettapedia.GSLT.LanguageDef.BindingSignatureSameTerms
++import Mettapedia.GSLT.Parsing.GrammarPresentationTransport
++import Mettapedia.OSLF.Syntax.BindingCloneContextComparison
++
++/-!
++# Concrete notation changes preserve the generated binding syntax
++
++The grammar transport changes actual terminal declarations. Its derived
++operator map retains every parameter scope, including single and repeated
++binders. Intrinsic terms and their typed substitutions are transported to the
++new declaration-derived signature. No second constructor list is supplied.
++
++The corresponding context functor preserves finite products. This is syntax
++transport; preservation of an equation quotient or of operational firing must
++add the relevant equation or rule-transport laws.
++-/
++
++set_option autoImplicit false
++
++namespace Mettapedia.GSLT.LanguageDef.BindingSyntax.Notation
++
++open Mettapedia.OSLF.MeTTaIL.Syntax
++open Mettapedia.OSLF.Binding
++open Mettapedia.GSLT.Parsing.GrammarPresentationTransport
++open Mettapedia.GSLT.LanguageDef.MultiSortedClone
++open _root_.CategoryTheory
++
++def mapOperator (tokens : String ≃ String) {language : LanguageDef} :
++    {sort : TypeExpr} → Operator language sort → Operator (mapLanguage tokens language) sort
++  | _, .constructor rule member ordinary scopes =>
++      .constructor (mapRule tokens rule) (List.mem_map_of_mem member) ordinary scopes
++  | _, .collectionConstructor rule member name kind element shape count =>
++      .collectionConstructor (mapRule tokens rule) (List.mem_map_of_mem member)
++        name kind element shape count
++  | _, .lambda domain codomain => .lambda domain codomain
++  | _, .multiLambda domain codomain count => .multiLambda domain codomain count
++  | _, .subst domain codomain => .subst domain codomain
++  | _, .collection kind element count => .collection kind element count
++
++private theorem inverse_member (tokens : String ≃ String) {language : LanguageDef}
++    {rule : GrammarRule} (member : rule ∈ (mapLanguage tokens language).terms) :
++    mapRule tokens.symm rule ∈ language.terms := by
++  obtain ⟨original, belongs, same⟩ := List.mem_map.mp member
++  rw [← same, mapRule_inverse]
++  exact belongs
++
++/-- Pull a target declaration back through the terminal bijection. Membership
++is recovered from its actual source declaration, not an invented rule. -/
++def unmapOperator (tokens : String ≃ String) {language : LanguageDef} :
++    {sort : TypeExpr} → Operator (mapLanguage tokens language) sort → Operator language sort
++  | _, .constructor rule member ordinary scopes =>
++      .constructor (mapRule tokens.symm rule) (inverse_member tokens member) ordinary scopes
++  | _, .collectionConstructor rule member name kind element shape count =>
++      .collectionConstructor (mapRule tokens.symm rule) (inverse_member tokens member)
++        name kind element shape count
++  | _, .lambda domain codomain => .lambda domain codomain
++  | _, .multiLambda domain codomain count => .multiLambda domain codomain count
++  | _, .subst domain codomain => .subst domain codomain
++  | _, .collection kind element count => .collection kind element count
++
++theorem unmap_map_operator (tokens : String ≃ String) {language : LanguageDef}
++    {sort : TypeExpr} (operator : Operator language sort) :
++    unmapOperator tokens (mapOperator tokens operator) = operator := by
++  cases operator with
++  | constructor rule =>
++      cases rule
++      simp only [mapOperator, unmapOperator, mapRule]
++      congr 1 <;> first
++        | exact proof_irrel_heq _ _
++        | simp only [List.map_map, Function.comp_def, mapItem_inverse, List.map_id_fun', id_eq]
++  | collectionConstructor rule =>
++      cases rule
++      simp only [mapOperator, unmapOperator, mapRule]
++      congr 1 <;> first
++        | exact proof_irrel_heq _ _
++        | simp only [List.map_map, Function.comp_def, mapItem_inverse, List.map_id_fun', id_eq]
++  | lambda => rfl
++  | multiLambda => rfl
++  | subst => rfl
++  | collection => rfl
++
++theorem map_unmap_operator (tokens : String ≃ String) {language : LanguageDef}
++    {sort : TypeExpr} (operator : Operator (mapLanguage tokens language) sort) :
++    mapOperator tokens (unmapOperator tokens operator) = operator := by
++  have inverseItem (item : SyntaxItem) : mapItem tokens (mapItem tokens.symm item) = item := by
++    simpa using mapItem_inverse tokens.symm item
++  cases operator with
++  | constructor rule =>
++      cases rule
++      simp only [mapOperator, unmapOperator, mapRule]
++      congr 1 <;> first
++        | exact proof_irrel_heq _ _
++        | simp only [List.map_map, Function.comp_def, inverseItem, List.map_id_fun', id_eq]
++  | collectionConstructor rule =>
++      cases rule
++      simp only [mapOperator, unmapOperator, mapRule]
++      congr 1 <;> first
++        | exact proof_irrel_heq _ _
++        | simp only [List.map_map, Function.comp_def, inverseItem, List.map_id_fun', id_eq]
++  | lambda => rfl
++  | multiLambda => rfl
++  | subst => rfl
++  | collection => rfl
++
++def forward (tokens : String ≃ String) (language : LanguageDef) :
++    SigMor (signatureOf language) (signatureOf (mapLanguage tokens language)) where
++  sortMap := id
++  opMap := mapOperator tokens
++  carriesArity := by
++    intro sort operator
++    change (signatureOf (mapLanguage tokens language)).arity (mapOperator tokens operator) =
++      mapArities (fun sort => sort) ((signatureOf language).arity operator)
++    rw [mapArities_id]
++    cases operator <;> rfl
++
++def backward (tokens : String ≃ String) (language : LanguageDef) :
++    SigMor (signatureOf (mapLanguage tokens language)) (signatureOf language) where
++  sortMap := id
++  opMap := unmapOperator tokens
++  carriesArity := by
++    intro sort operator
++    change (signatureOf language).arity (unmapOperator tokens operator) =
++      mapArities (fun sort => sort) ((signatureOf (mapLanguage tokens language)).arity operator)
++    rw [mapArities_id]
++    cases operator <;> rfl
++
++theorem forward_backward (tokens : String ≃ String) (language : LanguageDef) :
++    (forward tokens language).comp (backward tokens language) =
++      SigMor.ident (signatureOf language) := by
++  unfold SigMor.comp forward backward SigMor.ident
++  congr 1
++  funext sort operator
++  exact unmap_map_operator tokens operator
++
++theorem backward_forward (tokens : String ≃ String) (language : LanguageDef) :
++    (backward tokens language).comp (forward tokens language) =
++      SigMor.ident (signatureOf (mapLanguage tokens language)) := by
++  unfold SigMor.comp forward backward SigMor.ident
++  congr 1
++  funext sort operator
++  exact map_unmap_operator tokens operator
++
++def transport (tokens : String ≃ String) {language : LanguageDef}
++    {context : List TypeExpr} {sort : TypeExpr}
++    (term : Term (signatureOf language) context sort) :
++    Term (signatureOf (mapLanguage tokens language)) context sort :=
++  mapTerm (forward tokens language) (fun _ position => position) term
++
++def untransport (tokens : String ≃ String) {language : LanguageDef}
++    {context : List TypeExpr} {sort : TypeExpr}
++    (term : Term (signatureOf (mapLanguage tokens language)) context sort) :
++    Term (signatureOf language) context sort :=
++  mapTerm (backward tokens language) (fun _ position => position) term
++
++theorem untransport_transport (tokens : String ≃ String) {language : LanguageDef}
++    {context : List TypeExpr} {sort : TypeExpr}
++    (term : Term (signatureOf language) context sort) :
++    untransport tokens (transport tokens term) = term := by
++  unfold transport untransport
++  have composed := mapTerm_comp (forward tokens language) (backward tokens language)
++    (fun _ position => position) (fun _ position => position) term
++  have asIdentity := mapTerm_heq_of_morphism_eq _ _ (forward_backward tokens language)
++    (fun _ position => position) (fun _ position => position) (by rfl) term
++  exact composed.trans (asIdentity.eq.trans
++    ((mapTerm_ident (fun _ position => position) term).trans (rename_id term)))
++
++theorem transport_untransport (tokens : String ≃ String) {language : LanguageDef}
++    {context : List TypeExpr} {sort : TypeExpr}
++    (term : Term (signatureOf (mapLanguage tokens language)) context sort) :
++    transport tokens (untransport tokens term) = term := by
++  unfold transport untransport
++  have composed := mapTerm_comp (backward tokens language) (forward tokens language)
++    (fun _ position => position) (fun _ position => position) term
++  have asIdentity := mapTerm_heq_of_morphism_eq _ _ (backward_forward tokens language)
++    (fun _ position => position) (fun _ position => position) (by rfl) term
++  exact composed.trans (asIdentity.eq.trans
++    ((mapTerm_ident (fun _ position => position) term).trans (rename_id term)))
++
++theorem transport_bind (tokens : String ≃ String) {language : LanguageDef}
++    {first second : List TypeExpr} {sort : TypeExpr}
++    (environment : Sub (signatureOf language) first second)
++    (term : Term (signatureOf language) first sort) :
++    transport tokens (bind environment term) =
++      bind (fun sort position => transport tokens (environment sort position))
++        (transport tokens term) := by
++  unfold transport
++  exact mapTerm_bind (forward tokens language) (fun _ position => position)
++    (fun _ position => position) environment
++    (fun sort position => mapTerm (forward tokens language)
++      (fun _ position => position) (environment sort position))
++    (by intro sort position; rfl) term
++
++theorem transport_substVar (tokens : String ≃ String) {language : LanguageDef} :
++    ∀ (context : List TypeExpr) {target : List TypeExpr}
++      (environment : (index : Fin context.length) →
++        Term (signatureOf language) target (context.get index))
++      {sort : TypeExpr} (position : Var context sort),
++      transport tokens (substVar environment sort position) =
++        substVar (fun index => transport tokens (environment index)) sort position
++  | _ :: _, _, _, _, .zero => rfl
++  | _ :: context, _, environment, _, .succ position =>
++      transport_substVar tokens context (fun index => environment index.succ) position
++
++private theorem positions_agree (tokens : String ≃ String) (language : LanguageDef)
++    (context : List TypeExpr) (index : Fin context.length) :
++    varOfIdx (S := signatureOf language) context index =
++      varOfIdx (S := signatureOf (mapLanguage tokens language)) context index := by
++  induction context with
++  | nil => exact Fin.elim0 index
++  | cons sort rest ih =>
++      cases index using Fin.cases with
++      | zero => rfl
++      | succ index => exact congrArg Var.succ (ih index)
++
++def cloneTranslation (tokens : String ≃ String) (language : LanguageDef) :
++    CloneTranslation (termClone (signatureOf language))
++      (termClone (signatureOf (mapLanguage tokens language))) where
++  map := transport tokens
++  map_project := by
++    intro context index
++    change Term.var (S := signatureOf (mapLanguage tokens language))
++        (varOfIdx (S := signatureOf language) context index) =
++      Term.var (S := signatureOf (mapLanguage tokens language))
++        (varOfIdx (S := signatureOf (mapLanguage tokens language)) context index)
++    exact congrArg (Term.var (S := signatureOf (mapLanguage tokens language)))
++      (positions_agree tokens language context index)
++  map_substitute := by
++    intro first second sort term environment
++    change Term (signatureOf language) first sort at term
++    change (index : Fin first.length) →
++      Term (signatureOf language) second (first.get index) at environment
++    change transport tokens (bind (substVar environment) term) =
++      bind (substVar (fun index => transport tokens (environment index))) (transport tokens term)
++    rw [transport_bind]
++    congr 1
++    funext sort position
++    exact transport_substVar tokens first environment position
++
++def contextFunctor (tokens : String ≃ String) (language : LanguageDef) :=
++  (cloneTranslation tokens language).contextFunctor
++
++theorem contextFunctor_preservesFiniteProducts (tokens : String ≃ String)
++    (language : LanguageDef) : Limits.PreservesFiniteProducts (contextFunctor tokens language) :=
++  (cloneTranslation tokens language).preservesFiniteProducts
++
++instance contextFunctor_faithful (tokens : String ≃ String) (language : LanguageDef) :
++    (contextFunctor tokens language).Faithful where
++  map_injective := by
++    intro first second left right same
++    change (index : Fin second.context.length) →
++      Term (signatureOf language) first.context (second.context.get index) at left right
++    funext index
++    have component := congrFun same index
++    change transport tokens (left index) = transport tokens (right index) at component
++    have reflected := congrArg (untransport tokens) component
++    exact (untransport_transport tokens (left index)).symm.trans
++      (reflected.trans (untransport_transport tokens (right index)))
++
++instance contextFunctor_full (tokens : String ≃ String) (language : LanguageDef) :
++    (contextFunctor tokens language).Full where
++  map_surjective := by
++    intro first second environment
++    refine ⟨fun index => untransport tokens (environment index), ?_⟩
++    funext index
++    exact transport_untransport tokens (environment index)
++
++theorem contextFunctor_obj_surjective (tokens : String ≃ String) (language : LanguageDef) :
++    Function.Surjective (contextFunctor tokens language).obj := by
++  intro target
++  cases target with
++  | mk context marker =>
++      refine ⟨ContextObject.ofList _ context, ?_⟩
++      cases marker
++      rfl
++
++instance contextFunctor_essSurj (tokens : String ≃ String) (language : LanguageDef) :
++    (contextFunctor tokens language).EssSurj :=
++  Functor.essSurj_of_surj (contextFunctor_obj_surjective tokens language)
++
++instance contextFunctor_isEquivalence (tokens : String ≃ String) (language : LanguageDef) :
++    (contextFunctor tokens language).IsEquivalence where
++
++/-- The equivalence is earned from the concrete bijective operator and term
++maps. Its inverse recovers typed substitution arrows as well as objects. -/
++noncomputable def contextEquivalence (tokens : String ≃ String) (language : LanguageDef) :=
++  (contextFunctor tokens language).asEquivalence
++
++end Mettapedia.GSLT.LanguageDef.BindingSyntax.Notation
+--- before/Mettapedia/GSLT/LanguageDef/BindingSignatureReificationControls.lean
++++ after/Mettapedia/GSLT/LanguageDef/BindingSignatureReificationControls.lean
+@@ -1,4 +1,6 @@
+ import Mettapedia.GSLT.LanguageDef.BindingSignatureReification
++import Mettapedia.GSLT.LanguageDef.BindingSignatureEquationPresentation
++import Mettapedia.GSLT.LanguageDef.BindingSignatureNotation
+ 
+ /-!
+ # Controls for closed first-order reification
+@@ -141,6 +143,84 @@
+         (.arrow (.base "Bool") (.base "Bool")) = none := by
+   exact ⟨.lambda (.bvar rfl), rfl, by simp [reify?]⟩
+ 
++/-! ## A compiled authored equation reaches its actual context category -/
++
++open Mettapedia.GSLT.LanguageDef.BindingSyntax.EquationPresentation
++open Mettapedia.GSLT.LanguageDef.BindingSyntax.OpenReification
++open Mettapedia.GSLT.LanguageDef.NamedFreeContext
++
++def boxEquation : Equation where
++  name := "BoxCount"
++  typeContext := [("x", .base "Nat")]
++  premises := []
++  left := .apply "Box" [.fvar "x"]
++  right := box
++
++/-- Reuse the declared constructors, with the equation authored in the
++language itself and no deliberately mistyped rewrite in this fixture. -/
++def equationLanguage : LanguageDef :=
++  { language with rewrites := [], equations := [boxEquation] }
++
++def compiledBox : CompiledRow equationLanguage boxEquation (.base "Result") :=
++  (compile? equationLanguage boxEquation (.base "Result")).get (by decide +kernel)
++
++theorem compiled_equation_is_authored : boxEquation ∈ equationLanguage.equations := by
++  simp [equationLanguage]
++
++theorem compiled_terms_distinct : compiledBox.left ≠ compiledBox.right := by
++  intro same
++  have named := congrArg
++    (namedFirstOrderErase? (names boxEquation.typeContext)) same
++  rw [compiledBox.left_named, compiledBox.right_named] at named
++  cases named
++
++theorem raw_arrows_distinct : compiledBox.leftArrow ≠ compiledBox.rightArrow := by
++  intro same
++  exact compiled_terms_distinct (congrFun same (0 : Fin 1))
++
++/-- A substantive equation identifies two distinct generated arrows. -/
++theorem actual_quotient_identifies_authored_equation :
++    compiledBox.leftArrow ≠ compiledBox.rightArrow ∧
++    compiledBox.contextPresentation.map compiledBox.leftArrow =
++      compiledBox.contextPresentation.map compiledBox.rightArrow :=
++  ⟨raw_arrows_distinct, compiledBox.equation_arrows_equal⟩
++
++theorem equation_wrong_sort_rejected :
++    compile? equationLanguage boxEquation (.base "Nat") = none := by decide +kernel
++
++theorem erased_schema_context_rejected :
++    (compile? equationLanguage {boxEquation with typeContext := []}
++      (.base "Result")).isSome = false := by decide +kernel
++
++theorem side_condition_not_silently_erased :
++    (compile? equationLanguage
++      {boxEquation with premises := [.congruence count count]}
++      (.base "Result")).isSome = false := by decide +kernel
++
++theorem binding_metadata_not_silently_erased :
++    (compile? equationLanguage
++      {boxEquation with bindings := some ⟨[("x", [.base "Nat"])], []⟩}
++      (.base "Result")).isSome = false := by decide +kernel
++
++def proseTokens : String ≃ String := Equiv.swap "count" "number"
++
++theorem concrete_notation_really_changes :
++    (Mettapedia.GSLT.Parsing.GrammarPresentationTransport.mapLanguage
++      proseTokens equationLanguage).terms ≠ equationLanguage.terms := by decide +kernel
++
++/-- This body came from the authored, sorted open equation. The enclosing
++lambda introduces its declared input, rather than erasing its binding. -/
++def boundBox : Term (signatureOf equationLanguage) []
++    (.arrow (.base "Nat") (.base "Result")) :=
++  .op (.lambda (.base "Nat") (.base "Result")) (.cons compiledBox.left .nil)
++
++theorem binding_and_free_schema_survive_notation :
++    Notation.untransport proseTokens (Notation.transport proseTokens boundBox) = boundBox ∧
++    Notation.untransport proseTokens (Notation.transport proseTokens compiledBox.left) =
++      compiledBox.left :=
++  ⟨Notation.untransport_transport proseTokens boundBox,
++    Notation.untransport_transport proseTokens compiledBox.left⟩
++
+ private def illShapedBinderRule : GrammarRule where
+   label := "IllShapedBinder"
+   category := "Bool"
+--- before/Mettapedia/CategoryTheory/LocalSections.lean
++++ after/Mettapedia/CategoryTheory/LocalSections.lean
+@@ -0,0 +1,289 @@
++import Mathlib.CategoryTheory.Category.Preorder
++import Mathlib.CategoryTheory.Types.Basic
++import Mathlib.CategoryTheory.Opposites
++import Mathlib.Data.Set.Lattice
++
++/-!
++# Local sections on sets of features
++
++Assignments on an observation context restrict contravariantly. Compatible
++assignments on two contexts have an explicitly constructed, unique extension
++to their union. Pairwise equality on the overlap is both necessary and
++sufficient; two arbitrary local assignments need not have a global section.
++
++This is the ordinary assignment presheaf, with binary-cover gluing proved
++directly. It can carry declared phenomenal descriptions as values, but it
++does not identify sections, their unions, or their carriers with subjects.
++Such an identification is additional structure.
++-/
++
++set_option autoImplicit false
++
++namespace Mettapedia.CategoryTheory.LocalSections
++
++open _root_.CategoryTheory Opposite
++
++universe u v
++
++variable {Feature : Type u} {Value : Type v}
++
++/-- An assignment of values to all features in a context. -/
++abbrev Section (context : Set Feature) (Value : Type v) := context → Value
++
++def restrict {small large : Set Feature} (included : small ⊆ large)
++    (values : Section large Value) : Section small Value :=
++  fun feature => values ⟨feature.val, included feature.property⟩
++
++theorem restrict_identity {context : Set Feature} (values : Section context Value) :
++    restrict (Set.Subset.refl context) values = values := rfl
++
++theorem restrict_comp {small middle large : Set Feature}
++    (first : small ⊆ middle) (second : middle ⊆ large) (values : Section large Value) :
++    restrict first (restrict second values) = restrict (first.trans second) values := rfl
++
++/-- This is an actual functor, including its substitution on values. -/
++def presheaf (Feature : Type u) (Value : Type v) :
++    (Set Feature)ᵒᵖ ⥤ Type (max u v) where
++  obj context := Section context.unop Value
++  map inclusion := TypeCat.ofHom (restrict inclusion.unop.le)
++  map_id _ := by
++    apply TypeCat.Hom.ext
++    rfl
++  map_comp _ _ := by
++    apply TypeCat.Hom.ext
++    rfl
++
++/-- Agreement refers to each actual feature in the overlap. -/
++def Compatible {left right : Set Feature}
++    (first : Section left Value) (second : Section right Value) : Prop :=
++  ∀ feature (inLeft : feature ∈ left) (inRight : feature ∈ right),
++    first ⟨feature, inLeft⟩ = second ⟨feature, inRight⟩
++
++open scoped Classical in
++/-- Construct the union assignment; compatibility earns agreement with the
++right-hand assignment on the overlap. -/
++noncomputable def glue {left right : Set Feature}
++    (first : Section left Value) (second : Section right Value) : Section (left ∪ right) Value :=
++  fun feature => if inLeft : feature.val ∈ left then first ⟨feature.val, inLeft⟩
++    else second ⟨feature.val, feature.property.resolve_left inLeft⟩
++
++theorem glue_left {left right : Set Feature}
++    (first : Section left Value) (second : Section right Value) :
++    restrict Set.subset_union_left (glue first second) = first := by
++  funext feature
++  simp [restrict, glue, feature.property]
++
++theorem glue_right {left right : Set Feature}
++    {first : Section left Value} {second : Section right Value}
++    (compatible : Compatible first second) :
++    restrict Set.subset_union_right (glue first second) = second := by
++  funext feature
++  by_cases inLeft : feature.val ∈ left
++  · simpa [restrict, glue, inLeft] using compatible feature.val inLeft feature.property
++  · simp [restrict, glue, inLeft]
++
++theorem restrictions_compatible {left right : Set Feature}
++    (whole : Section (left ∪ right) Value) :
++    Compatible (restrict Set.subset_union_left whole) (restrict Set.subset_union_right whole) :=
++  fun _ _ _ => rfl
++
++/-- Both restrictions determine the union assignment uniquely. -/
++theorem section_ext {left right : Set Feature}
++    {first second : Section (left ∪ right) Value}
++    (sameLeft : restrict Set.subset_union_left first = restrict Set.subset_union_left second)
++    (sameRight : restrict Set.subset_union_right first = restrict Set.subset_union_right second) :
++    first = second := by
++  funext feature
++  rcases feature.property with inLeft | inRight
++  · exact congrFun sameLeft ⟨feature.val, inLeft⟩
++  · exact congrFun sameRight ⟨feature.val, inRight⟩
++
++/-- Binary-cover gluing is an earned equivalence with compatible local data. -/
++theorem gluing_iff {left right : Set Feature}
++    (first : Section left Value) (second : Section right Value) :
++    Compatible first second ↔ ∃! whole : Section (left ∪ right) Value,
++      restrict Set.subset_union_left whole = first ∧
++        restrict Set.subset_union_right whole = second := by
++  constructor
++  · intro compatible
++    refine ⟨glue first second, ⟨glue_left first second, glue_right compatible⟩, ?_⟩
++    intro other agrees
++    exact section_ext (agrees.1.trans (glue_left first second).symm)
++      (agrees.2.trans (glue_right compatible).symm)
++  · rintro ⟨whole, ⟨leftAgree, rightAgree⟩, _⟩
++    rw [← leftAgree, ← rightAgree]
++    exact restrictions_compatible whole
++
++/-- Re-encoding values commutes with restriction. -/
++theorem map_restrict {Other : Type*} {small large : Set Feature}
++    (included : small ⊆ large) (change : Value → Other) (values : Section large Value) :
++    change ∘ restrict included values = restrict included (change ∘ values) := rfl
++
++/-- Re-encoding commutes with the actual gluing construction. -/
++theorem map_glue {Other : Type*} {left right : Set Feature}
++    (change : Value → Other) (first : Section left Value) (second : Section right Value) :
++    change ∘ glue first second = glue (change ∘ first) (change ∘ second) := by
++  funext feature
++  by_cases inLeft : feature.val ∈ left <;> simp [glue, inLeft]
++
++namespace Controls
++
++/-- The contexts overlap at feature `1` and each observes one extra feature. -/
++def left : Set Nat := {0, 1}
++def right : Set Nat := {1, 2}
++
++def first (feature : left) : Nat := feature.val + 10
++def second (feature : right) : Nat := feature.val + 10
++def conflicting (feature : right) : Nat := feature.val + 20
++
++theorem compatible_distinct_contexts : Compatible first second := fun _ _ _ => rfl
++
++theorem glued_retains_both_sides :
++    glue first second ⟨0, Or.inl (by simp [left])⟩ = 10 ∧
++      glue first second ⟨2, Or.inr (by simp [right])⟩ = 12 := by
++  simp [glue, first, second, left]
++
++theorem conflict_prevents_gluing :
++    ¬ ∃ whole : Section (left ∪ right) Nat,
++      restrict Set.subset_union_left whole = first ∧
++        restrict Set.subset_union_right whole = conflicting := by
++  rintro ⟨whole, agreesLeft, agreesRight⟩
++  have agree := restrictions_compatible whole 1 (by simp [left]) (by simp [right])
++  rw [agreesLeft, agreesRight] at agree
++  change 11 = 21 at agree
++  omega
++
++/-- Compatible descriptions need not determine how many identities their
++carrier contains. Two distinct tokens can carry the same global assignment. -/
++theorem copied_section_not_token_identity :
++    ∃ first second : Bool × Section (left ∪ right) Nat,
++      first.2 = second.2 ∧ first.1 ≠ second.1 :=
++  ⟨(false, glue Controls.first Controls.second), (true, glue Controls.first Controls.second),
++    rfl, by decide⟩
++
++end Controls
++
++/-! ## Arbitrary covers of observation contexts -/
++
++universe w
++
++variable {Index : Type w}
++
++def FamilyCompatible (contexts : Index → Set Feature)
++    (locals : (index : Index) → Section (contexts index) Value) : Prop :=
++  ∀ first second feature (inFirst : feature ∈ contexts first)
++    (inSecond : feature ∈ contexts second),
++    locals first ⟨feature, inFirst⟩ = locals second ⟨feature, inSecond⟩
++
++/-- Choose a covering context for each feature. Compatibility makes the
++result independent of which covering context was chosen. -/
++noncomputable def glueFamily (contexts : Index → Set Feature)
++    (locals : (index : Index) → Section (contexts index) Value) :
++    Section (⋃ index, contexts index) Value := fun feature =>
++  let cover : ∃ index, feature.val ∈ contexts index := Set.mem_iUnion.mp feature.property
++  locals (Classical.choose cover) ⟨feature.val, Classical.choose_spec cover⟩
++
++theorem glueFamily_restrict (contexts : Index → Set Feature)
++    {locals : (index : Index) → Section (contexts index) Value}
++    (compatible : FamilyCompatible contexts locals) (index : Index) :
++    restrict (Set.subset_iUnion contexts index) (glueFamily contexts locals) = locals index := by
++  funext feature
++  exact compatible _ index feature.val _ feature.property
++
++theorem family_section_ext (contexts : Index → Set Feature)
++    {first second : Section (⋃ index, contexts index) Value}
++    (agrees : ∀ index, restrict (Set.subset_iUnion contexts index) first =
++      restrict (Set.subset_iUnion contexts index) second) : first = second := by
++  funext feature
++  obtain ⟨index, belongs⟩ := Set.mem_iUnion.mp feature.property
++  exact congrFun (agrees index) ⟨feature.val, belongs⟩
++
++/-- The full assignment presheaf glues every compatible cover, not only
++binary covers. This does not prove gluing for an arbitrary constrained
++subpresheaf, as the restriction-stable negative control below demonstrates. -/
++theorem family_gluing_iff (contexts : Index → Set Feature)
++    (locals : (index : Index) → Section (contexts index) Value) :
++    FamilyCompatible contexts locals ↔
++      ∃! whole : Section (⋃ index, contexts index) Value,
++        ∀ index, restrict (Set.subset_iUnion contexts index) whole = locals index := by
++  constructor
++  · intro compatible
++    refine ⟨glueFamily contexts locals, glueFamily_restrict contexts compatible, ?_⟩
++    intro other agrees
++    exact family_section_ext contexts (fun index =>
++      (agrees index).trans (glueFamily_restrict contexts compatible index).symm)
++  · rintro ⟨whole, agrees, _⟩
++    intro first second feature inFirst inSecond
++    have left := congrFun (agrees first) ⟨feature, inFirst⟩
++    have right := congrFun (agrees second) ⟨feature, inSecond⟩
++    exact left.symm.trans right
++
++theorem map_glueFamily {Other : Type*} (contexts : Index → Set Feature)
++    (change : Value → Other) (locals : (index : Index) → Section (contexts index) Value) :
++    change ∘ glueFamily contexts locals =
++      glueFamily contexts (fun index => change ∘ locals index) := rfl
++
++/-! ## Restrictions of a description do not supply all global constraints -/
++
++/-- One possible coherence constraint on an assignment. It is deliberately
++separate from agreement of two assignments on their overlap. -/
++def Uniform {context : Set Feature} (values : Section context Value) : Prop :=
++  ∀ first second, values first = values second
++
++theorem uniform_restrict {small large : Set Feature} (included : small ⊆ large)
++    {values : Section large Value} (uniform : Uniform values) :
++    Uniform (restrict included values) :=
++  fun _ _ => uniform _ _
++
++/-- A shared feature propagates uniformity through a compatible overlap.
++The inhabited-overlap hypothesis is substantive, as the control below shows. -/
++theorem uniform_glue_of_overlap {left right : Set Feature}
++    {first : Section left Value} {second : Section right Value}
++    (compatible : Compatible first second) (firstUniform : Uniform first)
++    (secondUniform : Uniform second)
++    (overlap : ∃ feature, feature ∈ left ∧ feature ∈ right) :
++    Uniform (glue first second) := by
++  obtain ⟨anchor, inLeft, inRight⟩ := overlap
++  have anchored : ∀ feature : ↥(left ∪ right),
++      glue first second feature = first ⟨anchor, inLeft⟩ := by
++    intro feature
++    by_cases belongs : feature.val ∈ left
++    · simpa [glue, belongs] using firstUniform ⟨feature.val, belongs⟩ ⟨anchor, inLeft⟩
++    · simpa [glue, belongs] using
++        (secondUniform ⟨feature.val, feature.property.resolve_left belongs⟩
++          ⟨anchor, inRight⟩).trans (compatible anchor inLeft inRight).symm
++  exact fun firstFeature secondFeature =>
++    (anchored firstFeature).trans (anchored secondFeature).symm
++
++namespace DisconnectedControls
++
++def left : Set Bool := {false}
++def right : Set Bool := {true}
++def first (_ : left) : Bool := false
++def second (_ : right) : Bool := true
++
++theorem compatible_uniform_locals :
++    Compatible first second ∧ Uniform first ∧ Uniform second := by
++  refine ⟨?_, fun _ _ => rfl, fun _ _ => rfl⟩
++  intro feature inLeft inRight
++  simp only [left, right, Set.mem_singleton_iff] at inLeft inRight
++  exact False.elim (Bool.false_ne_true (inLeft.symm.trans inRight))
++
++/-- Even uniquely gluable local data need not satisfy a global constraint
++which survives every restriction. Gluing descriptions is not integration. -/
++theorem no_uniform_global_extension :
++    ¬ ∃ whole : Section (left ∪ right) Bool,
++      restrict Set.subset_union_left whole = first ∧
++      restrict Set.subset_union_right whole = second ∧ Uniform whole := by
++  rintro ⟨whole, firstAgree, secondAgree, uniform⟩
++  have atFalse := congrFun firstAgree ⟨false, by simp [left]⟩
++  have atTrue := congrFun secondAgree ⟨true, by simp [right]⟩
++  have same := uniform ⟨false, Or.inl (by simp [left])⟩
++    ⟨true, Or.inr (by simp [right])⟩
++  change whole ⟨false, _⟩ = false at atFalse
++  change whole ⟨true, _⟩ = true at atTrue
++  exact Bool.false_ne_true (atFalse.symm.trans (same.trans atTrue))
++
++end DisconnectedControls
++
++end Mettapedia.CategoryTheory.LocalSections
+--- before/Mettapedia/CognitiveArchitecture/Consciousness/TraceAndImplementation.lean
++++ after/Mettapedia/CognitiveArchitecture/Consciousness/TraceAndImplementation.lean
+@@ -2,6 +2,9 @@
+ import Mettapedia.GSLT.Core.ImplementationRecoding
+ import Mettapedia.GSLT.Causality.Hierarchy
+ import Mettapedia.CognitiveArchitecture.Consciousness.ArchitecturalIndicators
++import Mettapedia.GSLT.Core.RelationPresentation
++import Mettapedia.GSLT.Dynamics.ScriptedBackup
++import Mettapedia.CategoryTheory.LocalSections
+ 
+ /-!
+ # Observation sufficiency versus implemented organization
+@@ -293,6 +296,46 @@
+ namespace WorkspaceControl
+ 
+ open Mettapedia.CognitiveArchitecture.Consciousness.ArchitecturalIndicators
++open Mettapedia.CategoryTheory.LocalSections
++
++/-- Restrict the already specified agent's entire passive future to a set
++of ordinary interaction words. This is an actual local description, not an
++independently invented experience carrier. -/
++def localDescription (context : Set (List PassiveInput)) (state : State) :
++    Section context (Bool × Bool × Module) :=
++  fun word => passiveFuture state word.val
++
++theorem localDescription_restrict {small large : Set (List PassiveInput)}
++    (included : small ⊆ large) (state : State) :
++    restrict included (localDescription large state) = localDescription small state := rfl
++
++theorem localDescriptions_compatible (left right : Set (List PassiveInput)) (state : State) :
++    Compatible (localDescription left state) (localDescription right state) :=
++  fun _ _ _ => rfl
++
++theorem localDescriptions_glue (left right : Set (List PassiveInput)) (state : State) :
++    glue (localDescription left state) (localDescription right state) =
++      localDescription (left ∪ right) state := by
++  apply section_ext
++  · exact (glue_left _ _).trans (localDescription_restrict _ _).symm
++  · exact (glue_right (localDescriptions_compatible left right state)).trans
++      (localDescription_restrict _ _).symm
++
++/-- Every compatible collection of these passive descriptions agrees, even
++after gluing. The independently defined intervention test still separates
++the connected workspace from its shadow. -/
++theorem gluing_passive_descriptions_does_not_supply_causal_equivalence
++    (left right : Set (List PassiveInput)) :
++    glue (localDescription left (initial .connected))
++        (localDescription right (initial .connected)) =
++      glue (localDescription left (initial .shadow))
++        (localDescription right (initial .shadow)) ∧
++      ¬ modal.Bisimilar (initial .connected) (initial .shadow) := by
++  constructor
++  · rw [localDescriptions_glue, localDescriptions_glue]
++    unfold localDescription
++    rw [ordinary_interactions_cannot_separate_modes]
++  · exact intervention_modes_not_bisimilar
+ 
+ /-- The earlier conditional conflict now has a constructed agent-architecture
+ witness. Necessity and sufficiency are stipulated for this theorem, not
+@@ -334,6 +377,140 @@
+     (interventionRefinement.classMap_injective_iff_all_readouts_descend.mpr descends)
+ 
+ end WorkspaceControl
++
++namespace PremiseComparison
++
++open Mettapedia.GSLT.RelationPresentation
++
++universe uOrigin
++
++/-!
++The following are small logical reconstructions, not formalizations of entire
++metaphysical systems. Kastrup's course presents experiential reality and
++distinguishes phenomenal consciousness from meta-consciousness:
++https://www.essentiafoundation.org/analytic-idealism-course/ . Ra session 13
++discusses unity, individuation and the progression to self-awareness:
++https://www.lawofone.info/s/13 . Neither source supplies the functions or
++finite models used below. Those are explicit mathematical additions testing
++which further commitments a proposed inference requires.
++-/
++
++/-- Appearances may be interpreted from experiential configurations. The
++existing proof-relevant relation permits a many-to-many interpretation; no
++physical-to-experience function is imposed. -/
++def ExperientialOrigin {Experience Appearance : Type uOrigin}
++    (appears : RelationPresentation.Rel Experience Appearance) (appearance : Appearance) : Prop :=
++  ∃ experience, Nonempty (appears.evidence experience appearance)
++
++/-- Having an assigned individual subject is separate from having an
++experiential origin. The optional identity permits no assigned subject. -/
++def Individuated {Occurrence Subject : Type*}
++    (subjectOf : Occurrence → Option Subject) (occurrence : Occurrence) : Prop :=
++  ∃ subject, subjectOf occurrence = some subject
++
++/-- A property and a subject identity can descend independently. If subject
++identity descends, equal presented structure denotes the same subject under
++that hypothesis. This is not a theorem that subject identity must descend. -/
++theorem same_subject_of_individuation_descent
++    {Occurrence Structure Subject : Type*}
++    (presents : Occurrence → Structure) (subjectOf : Occurrence → Option Subject)
++    (descends : Factors presents subjectOf) {first second : Occurrence}
++    (same : presents first = presents second) : subjectOf first = subjectOf second :=
++  descends.constantOnFibers first second same
++
++namespace OriginControls
++
++/-- Two distinguishable experiential configurations produce two public
++appearances. The interpretation is invertible but is not the identity. -/
++def appears : RelationPresentation.Rel Bool Bool := RelationPresentation.Rel.graph Bool.not
++
++theorem every_appearance_has_experiential_origin (appearance : Bool) :
++    ExperientialOrigin appears appearance := by
++  refine ⟨!appearance, ⟨⟨⟨?_⟩⟩⟩⟩
++  exact Bool.not_not appearance
++
++/-- One appearance receives an individual identity; the other does not. -/
++def subjectOf (appearance : Bool) : Option Bool :=
++  if appearance then some false else none
++
++/-- The first bit supplies individuation; the second supplies a reflective
++report. This is a stipulated finite control, not a source criterion. -/
++def selfAware (appearance : Bool × Bool) : Prop :=
++  appearance.1 = true ∧ appearance.2 = true
++
++theorem reflective_requires_subject {appearance : Bool × Bool} (aware : selfAware appearance) :
++    Individuated (fun appearance : Bool × Bool => subjectOf appearance.1) appearance := by
++  refine ⟨false, ?_⟩
++  simp [subjectOf, aware.1]
++
++theorem experiential_origin_does_not_force_individuation :
++    (∀ appearance, ExperientialOrigin appears appearance) ∧
++      ¬ Individuated subjectOf false := by
++  refine ⟨every_appearance_has_experiential_origin, ?_⟩
++  simp [Individuated, subjectOf]
++
++/-- Even adding the premise that reflective awareness requires an individual
++subject leaves a model in which an individuated appearance lacks it. -/
++theorem individuation_does_not_force_reflective_awareness :
++    Individuated (fun appearance : Bool × Bool => subjectOf appearance.1) (true, false) ∧
++      ¬ selfAware (true, false) ∧ selfAware (true, true) := by
++  exact ⟨⟨false, rfl⟩, by simp [selfAware], rfl, rfl⟩
++
++end OriginControls
++
++namespace CopyControls
++
++/-- The first bit identifies an occurrence; the second is its copied content. -/
++abbrev Occurrence := Bool × Bool
++
++def presents : Occurrence → Bool := Prod.snd
++
++def property (occurrence : Occurrence) : Prop := occurrence.2 = true
++
++def separateSubjects (occurrence : Occurrence) : Option Bool := some occurrence.1
++
++def sharedSubject (occurrence : Occurrence) : Option Bool := some occurrence.2
++
++theorem property_descends : Factors presents property :=
++  ⟨fun content => content = true, fun _ => rfl⟩
++
++theorem shared_subject_descends : Factors presents sharedSubject :=
++  ⟨some, fun _ => rfl⟩
++
++/-- A structure-dependent property can hold at both copies while their
++proposed individual identities fail to be structure-dependent. -/
++theorem separate_subject_does_not_descend : ¬ Factors presents separateSubjects := by
++  intro descends
++  have same := descends.constantOnFibers (false, true) (true, true) rfl
++  cases same
++
++theorem copied_property_does_not_determine_subject_identity :
++    Factors presents property ∧
++      property (false, true) ∧ property (true, true) ∧
++      ¬ Factors presents separateSubjects ∧ Factors presents sharedSubject :=
++  ⟨property_descends, rfl, rfl, separate_subject_does_not_descend, shared_subject_descends⟩
++
++end CopyControls
++
++namespace DormantBackupControl
++
++open Mettapedia.GSLT.ScriptedBackup
++open Mettapedia.GSLT.PrivilegedView
++
++/-- The all-input criterion and the evaluator-call record disagree on this
++constructed backup. Neither is identified with physical causal realization. -/
++theorem all_inputs_do_not_determine_evaluator_activity :
++    wordBehaviour (backupStep Controls.write) Player.current Controls.recordedFalse =
++      wordBehaviour Controls.write id false ∧
++    activities Controls.write Controls.recordedFalse [false] = [.tableRead] ∧
++    advance Controls.write Controls.recordedFalse false =
++      advance (fun _ _ => true) Controls.recordedFalse false ∧
++    Controls.write false false ≠ (fun (_ _ : Bool) => true) false false :=
++  Controls.dormant_backup_distinction
++
++end DormantBackupControl
++
++end PremiseComparison
+ 
+ #print axioms all_intervention_invariants_passive_iff
+ #print axioms ConditionalArguments.necessity_sufficiency_supervenience_incompatible
+--- before/Mettapedia/CognitiveArchitecture/README.md
++++ after/Mettapedia/CognitiveArchitecture/README.md
+@@ -1,4 +1,4 @@
+-# Cognitive Architecture — MetaMo, OpenPsi, MicroPsi & GödelClaw (Lean 4)
++# Cognitive Architecture — Motivations, Agents & Consciousness Criteria (Lean 4)
+ 
+ A *cognitive architecture* is a computational theory of how an agent's
+ motivations, emotions, and decisions fit together into one working mind: what it
+@@ -113,6 +113,33 @@
+ by `Agent/Bridges/PLN/WorldStateEvidence.lean`. PLN-specific calculi and truth
+ readouts remain under `Mettapedia.PLN.WorldModel`.
+ 
++### Consciousness criteria and realization
++
++[`Consciousness/ArchitecturalIndicators.lean`](Consciousness/ArchitecturalIndicators.lean)
++compares connected and split workspace mechanisms using actual interventions.
++They can agree on every passive input history while differing when the workspace
++state is changed. [`GodelClaw/GlobalWorkspace.lean`](GodelClaw/GlobalWorkspace.lean)
++uses these results as shared architecture contracts.
++
++[`Consciousness/TraceAndImplementation.lean`](Consciousness/TraceAndImplementation.lean)
++connects execution, observation and causal criteria. Its workspace descriptions
++are local sections over input experiments. Compatible sections can be joined,
++while the resulting passive description still loses the intervention distinction.
++The general constructions live in
++[`GSLT/Dynamics/ScriptedBackup.lean`](../GSLT/Dynamics/ScriptedBackup.lean) and
++[`CategoryTheory/LocalSections.lean`](../CategoryTheory/LocalSections.lean):
++
++- A validated recording with dormant backup machinery matches direct execution
++  for every external input continuation. Its table reads and evaluator calls
++  remain different, including under changes to the dormant evaluator.
++- Compatible assignments over arbitrary covers have a constructed unique global
++  section. Additional constraints require their own gluing laws; locally uniform
++  descriptions on disconnected contexts can fail to have a uniform extension.
++- Explicit premise comparisons distinguish experiential origin, an individuated
++  subject and reflective awareness. Description invariance alone leaves subject
++  identity undetermined. These are small mathematical reconstructions with stated
++  premises; they supply no empirical consciousness assignment.
++
+ ### Values
+ 
+ Values is nine files extending beyond consequentialism.
+@@ -142,16 +169,10 @@
+ 
+ `GodelClaw/` (including `GodelClaw/Ethics/`) is a work-in-progress
+ ethical-agent kernel — a policy kernel, tool broker, gate chain, and "mindlock"
+-with a MetaMo bridge, over a meaning/agency ethics layer. It introduces one
+-named primitive as a postulate (currently a `Prop` `axiom` — more a placeholder
+-definition than a proved theorem, to be refined):
+-
+-```lean
+--- GodelClaw/Core.lean
+-/-- "Realize the known desires of all beings when possible, while avoiding
+-    preventable harm." — from Formal-Ethics-Ontology (SUO-KIF). -/
+-axiom UniversalLovingCare : Prop
+-```
++with a MetaMo bridge, over a meaning/agency ethics layer.
++[`GodelClaw/Core.lean`](GodelClaw/Core.lean) takes a concrete value proposition
++and evidence for it through `CoreValueDeclaration`. Its docstring records the
++replacement of the former opaque `UniversalLovingCare` postulate.
+ 
+ ## Key results
+ 
+@@ -162,29 +183,13 @@
+ 
+ ## Formalization status
+ 
+-All 77 `.lean` files in this directory are `sorry`- and `admit`-free.
+-
+-**Trusted base.** The MetaMo / OpenPsi / MicroPsi / Bridges / Values strands have
+-no source-level `axiom` declarations (a source grep, *not* a per-theorem `#print
+-axioms` audit — a theorem can still inherit a Mathlib axiom transitively).
+-`GodelClaw/` introduces **exactly one** named postulate: `axiom
+-UniversalLovingCare : Prop` in `GodelClaw/Core.lean` (see GödelClaw above). This
+-is an honest stand-in for an ethical primitive — more a placeholder than a proved
+-theorem — and the rest of `GodelClaw/` is otherwise `sorry`-free. There is **no
+-`native_decide`** anywhere in this directory, so nothing here compile-evaluates in
+-place of kernel-checking.
+-
+-Reproduce from this directory — the regexes below are raw scans (they would also
+-match the term in comments/strings):
+-
+-```bash
+-# real sorry/admit tactics (prints nothing):
+-rg -n --glob '*.lean' '^\s*(sorry|admit)\b' .
+-# axiom declarations (prints only the one GödelClaw postulate):
+-rg -n --glob '*.lean' '^\s*axiom\s' .
+-# native_decide occurrences (prints nothing):
+-rg -n --glob '*.lean' 'native_decide' .
+-```
++The 2026-10-09 realization and local-view batch builds with the existing
++architectural-indicator and GödelClaw workspace consumers. Its seven implementation
++modules pass warnings-as-errors and a kernel-dependency audit: 578 declarations,
++with dependencies limited to `propext`, `Quot.sound` and `Classical.choice`.
++Those counts include existing declarations in the edited modules. Qualification
++covers that batch and its stated consumers; the earlier directory-wide inventory
++was dated 2026-08-25.
+ 
+ ## References
+ 
+@@ -196,4 +201,4 @@
+ - Alan Gewirth, [*Reason and Morality*](https://press.uchicago.edu/ucp/books/book/chicago/R/bo25842059.html) (University of Chicago Press, 1978) — the Principle of Generic Consistency underlying the Gewirth/FOET ethics layer in `GodelClaw/Ethics/` and `Values/FOETBridge.lean`.
+ 
+ ---
+-*Status updated 2026-08-25: 77 .lean files, 0 with sorries.*
++*Realization and local-view qualification updated 2026-10-09.*
+--- before/Mettapedia/CategoryTheory/README.md
++++ after/Mettapedia/CategoryTheory/README.md
+@@ -36,7 +36,7 @@
+ 
+ ## Architecture
+ 
+-Three strands, 29 files in total:
++Three strands:
+ 
+ - **Lambda theory / native type theory** (7 files) — the OSLF/PLN categorical
+   logic core.
+@@ -139,6 +139,15 @@
+ 
+ - `TOGL.lean`
+   - TOGL.lean formalizes Greg Meredith's theory of graphs
++
++- [`LocalSections.lean`](LocalSections.lean)
++  - Constructs the assignment presheaf on sets of observation features, with
++    restriction and re-encoding laws. Pairwise compatible sections on an arbitrary
++    cover have an explicitly constructed unique extension to its union. Conflicting
++    overlap data prevents gluing. An additional uniformity constraint is preserved
++    across inhabited overlaps, but compatible uniform descriptions on disconnected
++    contexts can have no uniform extension. Carriers and their subject identities
++    remain separate from the assignment data.
+ 
+ - `Topos/InternalLanguage.lean`
+   - Topos/InternalLanguage.lean formalizes Kripke-Joyal semantics for OSLF
+@@ -158,26 +167,20 @@
+ 
+ ## Formalization status
+ 
+-Every `.lean` file in this directory (29 files) is `sorry`-free and `admit`-free.
+-There are **no source-level `axiom` declarations** here — a source grep, *not* a
+-per-theorem `#print axioms` audit, so a theorem can still inherit a Mathlib axiom
+-(e.g. `propext`, choice, `Quot.sound`) transitively.
+-
+-**Trusted base.** There is **no `native_decide` anywhere in this directory**, so
+-nothing here compile-evaluates in place of kernel checking; nothing in this lane
+-enlarges the trusted base beyond Mathlib's own.
+-
+-Reproduce from this directory — the `sorry`/`admit` regex below is a *raw* scan
+-that also matches prose in comments and docstrings (e.g. "exchangeable processes
+-admit a factorization", and the literal "(0 sorry)" note in `TOGL.lean`), so the
+-authoritative figures are the comment-stripped footer counts:
++`LocalSections.lean` passes warnings-as-errors and kernel-dependency checking
++in the 2026-10-09 realization and local-view batch. Its dependencies are limited
++to `propext`, `Quot.sound` and `Classical.choice`. This qualification covers the
++new construction; the directory-wide inventory is historical.
++
++These source searches also find occurrences in comments and strings; their
++results need interpretation separately from a kernel-dependency audit:
+ 
+ ```bash
+ # sorry/admit occurrences (raw — also matches comment/string mentions):
+ rg -n --glob '*.lean' '\b(sorry|admit)\b' .
+-# axiom declarations (prints nothing):
++# source-level axiom declarations:
+ rg -n --glob '*.lean' '^\s*(@\[[^]]*\]\s*)*(noncomputable\s+)?axiom\s' .
+-# native_decide occurrences (prints nothing):
++# native_decide occurrences:
+ rg -n --glob '*.lean' 'native_decide' .
+ ```
+ 
+@@ -214,4 +217,5 @@
+   (Springer, 2005).
+ 
+ ---
+-*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 29 .lean files, 0 with sorries.*
++*Historical inventory: 29 .lean files on 2026-06-22. `LocalSections.lean` was
++qualified with warnings-as-errors and kernel dependency checking on 2026-10-09.*
+--- before/Mettapedia/GSLT/README.md
++++ after/Mettapedia/GSLT/README.md
+@@ -93,6 +93,22 @@
+ proves that a declaration-preserving map between validated languages can fail
+ to preserve bisimilarity when the target adds behavior. Behavioral transport
+ therefore needs the coverage conditions used by the indexed operational theory.
++
++Concrete notation changes have a separate typed construction in
++[`LanguageDef/BindingSignatureNotation.lean`](LanguageDef/BindingSignatureNotation.lean).
++A bijection on actual grammar terminals induces inverse maps on the generated
++binding terms, commutes with substitution and yields an equivalence of their
++finite-product context categories. Single and repeated binders are retained.
++Equation quotients and rule firing require their own transport laws.
++
++[`LanguageDef/BindingSignatureEquationPresentation.lean`](LanguageDef/BindingSignatureEquationPresentation.lean)
++places successfully compiled, sorted first-order equation rows in the binding
++clone's quotient context category. The left and right arrows become equal there,
++including after typed substitution. The compiler's scope is premise-free,
++binder-free rows; the surrounding binding syntax remains richer.
++[`LanguageDef/BindingSignatureReificationControls.lean`](LanguageDef/BindingSignatureReificationControls.lean)
++checks actual authored rows, changed terminals, retained binding and rejected
++sort, scope or premise mismatches.
+ 
+ ## Checked inference kernels (the native inference kernel, NIK)
+ 
+@@ -146,6 +162,21 @@
+ Prime DTT and native execution consume it as instances; they do not define its
+ relations.
+ 
++[`Core/ProofRelevantTranslationCategory.lean`](Core/ProofRelevantTranslationCategory.lean)
++also compares full representable probes with evidence-erasing observations.
++Swapping two actual transition occurrences changes a proof-relevant translation
++while leaving its evidence-erased map unchanged; the full Yoneda interface
++separates them. Reconstruction retains the structure selected by that category.
++
++[`Dynamics/ScriptedBackup.lean`](Dynamics/ScriptedBackup.lean) constructs recordings,
++ordinary replay and replay with dormant backup computation. A validated backup
++matches direct execution for every input continuation and preserves its modal
++observations through an actual cover. Its activity along the recorded path is
++table reading; replacing its unused evaluator preserves that path. A separate
++checking protocol computes each successor independently before comparing it to
++the recording. These are abstract operational results with an explicit evaluator
++boundary.
++
+ ## OSLF interface (how the rest of Mettapedia uses GSLT)
+ 
+ GSLT supplies the *spec* that OSLF turns into an executable modal type theory. The

@@ -1,0 +1,15 @@
+fmod GOLD-MAX is
+  protecting BOOL .
+  sort Nat .
+  op 0 : -> Nat [ctor] .
+  op s : Nat -> Nat [ctor] .
+  op _<=_ : Nat Nat -> Bool .
+  op max : Nat Nat -> Nat .
+  vars N M : Nat .
+  eq 0 <= N = true .
+  eq s(N) <= 0 = false .
+  eq s(N) <= s(M) = N <= M .
+  ceq max(N, M) = N if M <= N = true .
+  ceq max(N, M) = M if N <= M = true .
+endfm
+red max(s(s(0)), s(0)) .

@@ -1,0 +1,52 @@
+; Canonical little-endian hexadecimal words shared by indexed runtime data.
+; Zero has an empty digit list. Decoding rejects unknown nibble constructors.
+(: gslt:word16:nibble (-> Number %Undefined%))
+(: gslt:word16:nibble-value (-> Atom %Undefined%))
+
+(= (gslt:word16:nibble 0) (PApp "R16Nibble0" LNil))
+(= (gslt:word16:nibble 1) (PApp "R16Nibble1" LNil))
+(= (gslt:word16:nibble 2) (PApp "R16Nibble2" LNil))
+(= (gslt:word16:nibble 3) (PApp "R16Nibble3" LNil))
+(= (gslt:word16:nibble 4) (PApp "R16Nibble4" LNil))
+(= (gslt:word16:nibble 5) (PApp "R16Nibble5" LNil))
+(= (gslt:word16:nibble 6) (PApp "R16Nibble6" LNil))
+(= (gslt:word16:nibble 7) (PApp "R16Nibble7" LNil))
+(= (gslt:word16:nibble 8) (PApp "R16Nibble8" LNil))
+(= (gslt:word16:nibble 9) (PApp "R16Nibble9" LNil))
+(= (gslt:word16:nibble 10) (PApp "R16Nibble10" LNil))
+(= (gslt:word16:nibble 11) (PApp "R16Nibble11" LNil))
+(= (gslt:word16:nibble 12) (PApp "R16Nibble12" LNil))
+(= (gslt:word16:nibble 13) (PApp "R16Nibble13" LNil))
+(= (gslt:word16:nibble 14) (PApp "R16Nibble14" LNil))
+(= (gslt:word16:nibble 15) (PApp "R16Nibble15" LNil))
+(= (gslt:word16:nibble-value $nibble) (case $nibble (((PApp "R16Nibble0" LNil) (Some 0)) ((PApp "R16Nibble1" LNil) (Some 1)) ((PApp "R16Nibble2" LNil) (Some 2)) ((PApp "R16Nibble3" LNil) (Some 3)) ((PApp "R16Nibble4" LNil) (Some 4)) ((PApp "R16Nibble5" LNil) (Some 5)) ((PApp "R16Nibble6" LNil) (Some 6)) ((PApp "R16Nibble7" LNil) (Some 7)) ((PApp "R16Nibble8" LNil) (Some 8)) ((PApp "R16Nibble9" LNil) (Some 9)) ((PApp "R16Nibble10" LNil) (Some 10)) ((PApp "R16Nibble11" LNil) (Some 11)) ((PApp "R16Nibble12" LNil) (Some 12)) ((PApp "R16Nibble13" LNil) (Some 13)) ((PApp "R16Nibble14" LNil) (Some 14)) ((PApp "R16Nibble15" LNil) (Some 15)) ($bad None))))
+
+(: gslt:word16:digits (-> Number %Undefined%))
+(= (gslt:word16:digits $number)
+   (if (< $number 0) (Word16Fault NegativeValue)
+     (if (== $number 0) LNil
+       (case (gslt:integer:divmod $number 16)
+         (((IntegerDivmod $quotient $remainder)
+           (let* (($digit (gslt:word16:nibble $remainder))
+                  ($tail (gslt:word16:digits $quotient)))
+             (LCons $digit $tail))))))))
+
+(: gslt:word16:value (-> Atom %Undefined%))
+(= (gslt:word16:value $digits)
+   (case $digits
+     ((LNil (Some 0))
+      ((LCons $digit $rest)
+       (case (gslt:word16:nibble-value $digit)
+         ((None None)
+          ((Some $head)
+           (case (gslt:word16:value $rest)
+             ((None None)
+              ((Some $tail) (let $number (+ $head (* 16 $tail)) (Some $number)))))))))
+      ($bad None))))
+
+(: gslt:word16:vector-value (-> Atom %Undefined%))
+(= (gslt:word16:vector-value $vector)
+   (case $vector
+     (((PCollection "Mettapedia.OSLF.MeTTaIL.Syntax.CollType.vec" $digits RNone)
+       (gslt:word16:value $digits))
+      ($bad None))))

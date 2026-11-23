@@ -1,0 +1,11 @@
+Module NatSignature {
+  Theory Data() {
+    Types { Nat; }
+    Terms {
+      Zero . |- "zero" : Nat;
+      Succ . value:Nat |- "succ" value : Nat;
+      Add . left:Nat, right:Nat |- left "+" right : Nat;
+    }
+  }
+  theory Data()
+}

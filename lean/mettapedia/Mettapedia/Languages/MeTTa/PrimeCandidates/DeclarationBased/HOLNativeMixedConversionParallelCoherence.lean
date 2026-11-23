@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.ParallelConversionViews
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.HOLNativeMixedConversionParallelSubstitution
 
 /-!
@@ -96,134 +97,69 @@ theorem authored_step_to_par {left right : Tower.Tm n}
 
 /-- Auxiliary paths retain their meaning in the original conversion theory. -/
 theorem ParStar.sound {left right : Tower.Tm n} (steps : ParStar left right) :
-    AuthoredConv left right := by
-  induction steps with
-  | refl => exact .refl _
-  | tail previous finalStep ih => exact .trans _ _ _ ih finalStep.sound
+    AuthoredConv left right :=
+  ParallelConversionViews.path_sound (R := FormationSensitiveHOLProofListIntegration.rules) Par.sound steps
 
-private theorem par_pi_decomp {A : Tower.Tm n} {B : Tower.Tm (n + 1)}
-    {target : Tower.Tm n} (parallel : Par (.pi A B) target) :
-    ∃ A' B', target = .pi A' B' ∧ Par A A' ∧ Par B B' := by
+private theorem par_pi_decomp : ParallelConversionViews.BinaryViews Par Tm.pi := by
+  intro n first second target parallel
   cases parallel with
-  | pi first second => exact ⟨_, _, rfl, first, second⟩
+  | pi firstStep secondStep => exact ⟨_, _, rfl, firstStep, secondStep⟩
 
 /-- Pi is structurally preserved along arbitrary finite completed paths;
 both component paths are retained. -/
 theorem parStar_pi_decomp {A : Tower.Tm n} {B : Tower.Tm (n + 1)}
     {target : Tower.Tm n} (steps : ParStar (.pi A B) target) :
-    ∃ A' B', target = .pi A' B' ∧ ParStar A A' ∧ ParStar B B' := by
-  induction steps with
-  | refl => exact ⟨_, _, rfl, .refl, .refl⟩
-  | tail previous finalStep ih =>
-      obtain ⟨A', B', rfl, first, second⟩ := ih
-      obtain ⟨A'', B'', rfl, lastFirst, lastSecond⟩ := par_pi_decomp finalStep
-      exact ⟨_, _, rfl, first.tail lastFirst, second.tail lastSecond⟩
+    ∃ A' B', target = .pi A' B' ∧ ParStar A A' ∧ ParStar B B' :=
+  Mettapedia.Logic.Relation.BinaryDecomposition.path (par_pi_decomp (n := n)) steps
 
-private theorem par_sigma_decomp {A : Tower.Tm n} {B : Tower.Tm (n + 1)}
-    {target : Tower.Tm n} (parallel : Par (.sigma A B) target) :
-    ∃ A' B', target = .sigma A' B' ∧ Par A A' ∧ Par B B' := by
+private theorem par_sigma_decomp : ParallelConversionViews.BinaryViews Par Tm.sigma := by
+  intro n first second target parallel
   cases parallel with
-  | sigma first second => exact ⟨_, _, rfl, first, second⟩
+  | sigma firstStep secondStep => exact ⟨_, _, rfl, firstStep, secondStep⟩
 
 /-- Sigma paths expose their exact component developments as well. -/
 theorem parStar_sigma_decomp {A : Tower.Tm n} {B : Tower.Tm (n + 1)}
     {target : Tower.Tm n} (steps : ParStar (.sigma A B) target) :
-    ∃ A' B', target = .sigma A' B' ∧ ParStar A A' ∧ ParStar B B' := by
-  induction steps with
-  | refl => exact ⟨_, _, rfl, .refl, .refl⟩
-  | tail previous finalStep ih =>
-      obtain ⟨A', B', rfl, first, second⟩ := ih
-      obtain ⟨A'', B'', rfl, lastFirst, lastSecond⟩ := par_sigma_decomp finalStep
-      exact ⟨_, _, rfl, first.tail lastFirst, second.tail lastSecond⟩
+    ∃ A' B', target = .sigma A' B' ∧ ParStar A A' ∧ ParStar B B' :=
+  Mettapedia.Logic.Relation.BinaryDecomposition.path (par_sigma_decomp (n := n)) steps
 
-private theorem par_head_shape {head : Tower.Head} {target : Tower.Tm n}
-    (parallel : Par (.head head) target) : ∃ head', target = .head head' := by
+private theorem par_head_shape : ParallelConversionViews.HeadViews Par := by
+  intro n value target parallel
   cases parallel with
   | head _ => exact ⟨_, rfl⟩
   | headRel _ => exact ⟨_, rfl⟩
 
 /-- Head equality may change the head value but never its outer constructor. -/
 theorem parStar_head_shape {head : Tower.Head} {target : Tower.Tm n}
-    (steps : ParStar (.head head) target) : ∃ head', target = .head head' := by
-  induction steps with
-  | refl => exact ⟨_, rfl⟩
-  | tail previous finalStep ih =>
-      obtain ⟨head', rfl⟩ := ih
-      exact par_head_shape finalStep
+    (steps : ParStar (.head head) target) : ∃ head', target = .head head' :=
+  ParallelConversionViews.head_path par_head_shape steps
 
 /-- A proved diamond lifts to confluence of finite auxiliary paths. -/
 theorem parStar_confluence (diamond : Diamond) {source left right : Tower.Tm n}
     (first : ParStar source left) (second : ParStar source right) :
-    ∃ common, ParStar left common ∧ ParStar right common := by
-  have localJoin : ∀ a b c : Tower.Tm n,
-      Par a b → Par a c → ∃ d, Relation.ReflGen Par b d ∧ ParStar c d := by
-    intro a b c leftStep rightStep
-    obtain ⟨common, firstJoin, secondJoin⟩ := diamond leftStep rightStep
-    exact ⟨common, .single firstJoin, .tail .refl secondJoin⟩
-  exact Relation.church_rosser localJoin first second
+    ∃ common, ParStar left common ∧ ParStar right common :=
+  Mettapedia.Logic.Relation.confluent_of_diamond (fun a b => diamond a b) _ _ _ first second
 
 /-- Every authored conversion has a common completed reduct once the actual
 parallel diamond has been established. This is not an authored-run theorem. -/
 theorem authored_conv_join (diamond : Diamond) {left right : Tower.Tm n}
     (conversion : AuthoredConv left right) :
-    ∃ common, ParStar left common ∧ ParStar right common := by
-  induction conversion with
-  | rel _ _ step => exact ⟨_, .tail .refl (authored_step_to_par step), .refl⟩
-  | refl _ => exact ⟨_, .refl, .refl⟩
-  | symm _ _ _ ih =>
-      obtain ⟨common, first, second⟩ := ih
-      exact ⟨common, second, first⟩
-  | trans _ _ _ _ _ firstHypothesis secondHypothesis =>
-      obtain ⟨firstCommon, leftSteps, middleFirstSteps⟩ := firstHypothesis
-      obtain ⟨secondCommon, middleSecondSteps, rightSteps⟩ := secondHypothesis
-      obtain ⟨common, firstJoin, secondJoin⟩ :=
-        parStar_confluence diamond middleFirstSteps middleSecondSteps
-      exact ⟨common, leftSteps.trans firstJoin, rightSteps.trans secondJoin⟩
+    ∃ common, ParStar left common ∧ ParStar right common :=
+  ParallelConversionViews.joins_of_diamond (R := FormationSensitiveHOLProofListIntegration.rules) (parallel := Par)
+    authored_step_to_par diamond conversion
 
 /-- Qualification of actual native Pi conversion from the independently
 proved diamond of its conservative completed parallel presentation. -/
 theorem piConversionBoundaryOfDiamond (diamond : Diamond) :
-    PiConversionBoundary FormationSensitiveHOLProofListIntegration.rules where
-  components := by
-    intro n A A' B B' conversion
-    obtain ⟨common, firstSteps, secondSteps⟩ := authored_conv_join diamond conversion
-    obtain ⟨firstA, firstB, firstShape, firstAPath, firstBPath⟩ := parStar_pi_decomp firstSteps
-    obtain ⟨secondA, secondB, secondShape, secondAPath, secondBPath⟩ := parStar_pi_decomp secondSteps
-    have equality := firstShape.symm.trans secondShape
-    injection equality with domains codomains
-    subst secondA
-    subst secondB
-    exact ⟨.trans _ _ _ firstAPath.sound (.symm _ _ secondAPath.sound),
-      .trans _ _ _ firstBPath.sound (.symm _ _ secondBPath.sound)⟩
-  headDisjoint := by
-    intro n A B head conversion
-    obtain ⟨common, piSteps, headSteps⟩ := authored_conv_join diamond conversion
-    obtain ⟨A', B', piShape, _, _⟩ := parStar_pi_decomp piSteps
-    obtain ⟨head', headShape⟩ := parStar_head_shape headSteps
-    rw [piShape] at headShape
-    cases headShape
+    PiConversionBoundary FormationSensitiveHOLProofListIntegration.rules :=
+  ParallelConversionViews.pi_boundary par_pi_decomp par_head_shape Par.sound
+    (fun conversion => authored_conv_join diamond conversion)
 
 /-- The same checked argument qualifies native Sigma conversion. -/
 theorem sigmaConversionBoundaryOfDiamond (diamond : Diamond) :
-    SigmaConversionBoundary FormationSensitiveHOLProofListIntegration.rules where
-  components := by
-    intro n A A' B B' conversion
-    obtain ⟨common, firstSteps, secondSteps⟩ := authored_conv_join diamond conversion
-    obtain ⟨firstA, firstB, firstShape, firstAPath, firstBPath⟩ := parStar_sigma_decomp firstSteps
-    obtain ⟨secondA, secondB, secondShape, secondAPath, secondBPath⟩ := parStar_sigma_decomp secondSteps
-    have equality := firstShape.symm.trans secondShape
-    injection equality with domains codomains
-    subst secondA
-    subst secondB
-    exact ⟨.trans _ _ _ firstAPath.sound (.symm _ _ secondAPath.sound),
-      .trans _ _ _ firstBPath.sound (.symm _ _ secondBPath.sound)⟩
-  headDisjoint := by
-    intro n A B head conversion
-    obtain ⟨common, sigmaSteps, headSteps⟩ := authored_conv_join diamond conversion
-    obtain ⟨A', B', sigmaShape, _, _⟩ := parStar_sigma_decomp sigmaSteps
-    obtain ⟨head', headShape⟩ := parStar_head_shape headSteps
-    rw [sigmaShape] at headShape
-    cases headShape
+    SigmaConversionBoundary FormationSensitiveHOLProofListIntegration.rules :=
+  ParallelConversionViews.sigma_boundary par_sigma_decomp par_head_shape Par.sound
+    (fun conversion => authored_conv_join diamond conversion)
 
 namespace CoherenceExamples
 
@@ -246,20 +182,14 @@ theorem native_step_under_sigma {left right : Tower.Tm n}
 /-- Even without assuming the diamond, a Pi and a head have no common
 completed reduct. The diamond connects this obstruction to authored Conv. -/
 theorem pi_head_no_common {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {head : Tower.Head} :
-    ¬ ∃ common, ParStar (.pi A B) common ∧ ParStar (.head head) common := by
-  rintro ⟨common, piSteps, headSteps⟩
-  obtain ⟨A', B', piShape, _, _⟩ := parStar_pi_decomp piSteps
-  obtain ⟨head', headShape⟩ := parStar_head_shape headSteps
-  rw [piShape] at headShape
-  cases headShape
+    ¬ ∃ common, ParStar (.pi A B) common ∧ ParStar (.head head) common :=
+  ParallelConversionViews.no_common_head (assemble := Tm.pi)
+    (fun _ _ _ same => by cases same) par_pi_decomp par_head_shape
 
 theorem sigma_head_no_common {A : Tower.Tm n} {B : Tower.Tm (n + 1)} {head : Tower.Head} :
-    ¬ ∃ common, ParStar (.sigma A B) common ∧ ParStar (.head head) common := by
-  rintro ⟨common, sigmaSteps, headSteps⟩
-  obtain ⟨A', B', sigmaShape, _, _⟩ := parStar_sigma_decomp sigmaSteps
-  obtain ⟨head', headShape⟩ := parStar_head_shape headSteps
-  rw [sigmaShape] at headShape
-  cases headShape
+    ¬ ∃ common, ParStar (.sigma A B) common ∧ ParStar (.head head) common :=
+  ParallelConversionViews.no_common_head (assemble := Tm.sigma)
+    (fun _ _ _ same => by cases same) par_sigma_decomp par_head_shape
 
 end CoherenceExamples
 

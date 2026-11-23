@@ -1,0 +1,12 @@
+(sort wff provable)
+
+(term b ((x wff ())) (wff ()))
+
+(axiom axb ((a wff ())) ()
+  (b a))
+
+(theorem th ((ba wff ()) (a wff ())) ()
+  (b a)
+()
+(axb (a)))
+

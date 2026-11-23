@@ -1,0 +1,38 @@
+import "ErlangMailbox.module" as er
+import "ErlangData.module" as data
+
+Module ErlangChannel {
+  Theory Channel(m: er.Mailbox) {
+    m
+      Types { ErChannelConfig; }
+      Terms {
+        ErChannelSend . sender:ErValue, receiver:ErValue, message:ErValue, queue:ErValues
+          |- "channel-send" sender receiver message queue : ErChannelConfig;
+        ErChannelAppend . sender:ErValue, receiver:ErValue, message:ErValue, reversed:ErValues, todo:ErValues
+          |- "channel-append" sender receiver message reversed todo : ErChannelConfig;
+        ErChannelRestore . sender:ErValue, receiver:ErValue, reversed:ErValues, queue:ErValues
+          |- "channel-restore" sender receiver reversed queue : ErChannelConfig;
+        ErChannelQueued . sender:ErValue, receiver:ErValue, queue:ErValues
+          |- "channel-queued" sender receiver queue : ErChannelConfig;
+        ErChannelDeliver . sender:ErValue, receiver:ErValue, queue:ErValues, mailbox:ErMailboxData
+          |- "channel-deliver" sender receiver queue mailbox : ErChannelConfig;
+        ErChannelArrived . sender:ErValue, receiver:ErValue, message:ErValue, queue:ErValues, mailbox:ErMailboxData
+          |- "channel-arrived" sender receiver message queue mailbox : ErChannelConfig;
+      }
+      Rewrites {
+        ChannelSend : (ErChannelSend sender receiver message queue)
+          ~> (ErChannelAppend sender receiver message (ErValuesNil) queue);
+        ChannelAppendMore : (ErChannelAppend sender receiver message reversed (ErValuesCons head tail))
+          ~> (ErChannelAppend sender receiver message (ErValuesCons head reversed) tail);
+        ChannelAppendDone : (ErChannelAppend sender receiver message reversed (ErValuesNil))
+          ~> (ErChannelRestore sender receiver reversed (ErValuesCons message (ErValuesNil)));
+        ChannelRestoreMore : (ErChannelRestore sender receiver (ErValuesCons head tail) queue)
+          ~> (ErChannelRestore sender receiver tail (ErValuesCons head queue));
+        ChannelRestoreDone : (ErChannelRestore sender receiver (ErValuesNil) queue)
+          ~> (ErChannelQueued sender receiver queue);
+        ChannelDeliver : (ErChannelDeliver sender receiver (ErValuesCons head tail) (ErMailbox saved front rear))
+          ~> (ErChannelArrived sender receiver head tail (ErMailbox saved front (ErValuesCons head rear)));
+      }
+  }
+  theory Channel(er.Mailbox(data.Data()))
+}

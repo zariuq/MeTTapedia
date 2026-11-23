@@ -1,0 +1,42 @@
+Module CCSRec {
+  Theory CCSRec() {
+    Types {
+      Proc;
+      Name;
+      Guard;
+      Const;
+      Args;
+    }
+    Terms {
+      "CNil" .  |- "0" : Proc;
+      "CPar" . ps:HashBag(Proc) |- "{" ps sep("|") "}" : Proc ![bare, flatten, unit "CNil"];
+      "CSum" . gs:HashBag(Guard) |- "[" gs sep("+") "]" : Proc ![wrapped];
+      "CNu" . ^body:[Name -> Proc] |- "ν" body : Proc;
+      "CAct" . a:Name, p:Proc |- a "." p : Guard;
+      "CCoAct" . a:Name, p:Proc |- "~" a "." p : Guard;
+      "CTau" . p:Proc |- "τ" "." p : Guard;
+      "CCall" . k:Const, args:Args |- k "(" args ")" : Proc;
+      "CZ" .  |- "κ" : Const;
+      "CS" . k:Const |- "S" k : Const;
+      "CArgNil" .  |- "·" : Args;
+      "CArgCons" . a:Name, rest:Args |- a "," rest : Args;
+    }
+    Equations {
+      "RestrictionNil" .  |- "CNu"(^."CNil") = "CNil";
+      "RestrictionExchange" . P:Proc |- "CNu"(^x0."CNu"(^x1.P)) = "CNu"(^x1."CNu"(^x0.P));
+      "ScopeExtrusion" . P:Proc, rest:HashBag(Proc) |- {"CNu"(^x0.P), ...rest} = "CNu"(^x0. {P, ...rest});
+      "EmptyUnit" .  |- "CSum"({}) = "CNu"(^y0."CNil");
+    }
+    Rewrites {
+      "React" . a:Name, p:Proc, q:Proc |- {"CSum"({"CAct"(a, p), ...m}), "CSum"({"CCoAct"(a, q), ...n}), ...rest} ~> {p, q, ...rest};
+      "Tau" . p:Proc |- "CSum"({"CTau"(p), ...m}) ~> p;
+      ParCong : if S ~> T then {S, ...rest} ~> {T, ...rest};
+      ResCong : if S ~> T then "CNu"(^.S) ~> "CNu"(^.T);
+      "CallTau" . K:Const, A:Args, p:Proc | "Body"(K, A, "CSum"({"CTau"(p), ...m})) |- "CCall"(K, A) ~> p;
+      "CallAct" . K:Const, A:Args, a:Name, p:Proc, q:Proc | "Body"(K, A, "CSum"({"CAct"(a, p), ...m})) |- {"CCall"(K, A), "CSum"({"CCoAct"(a, q), ...n}), ...rest} ~> {p, q, ...rest};
+      "CallCoAct" . K:Const, A:Args, a:Name, p:Proc, q:Proc | "Body"(K, A, "CSum"({"CCoAct"(a, q), ...n})) |- {"CSum"({"CAct"(a, p), ...m}), "CCall"(K, A), ...rest} ~> {p, q, ...rest};
+      "CallCall" . K:Const, A:Args, L:Const, B:Args, a:Name, p:Proc, q:Proc | "Body"(K, A, "CSum"({"CAct"(a, p), ...m})), "Body"(L, B, "CSum"({"CCoAct"(a, q), ...n})) |- {"CCall"(K, A), "CCall"(L, B), ...rest} ~> {p, q, ...rest};
+    }
+  }
+  theory CCSRec()
+}

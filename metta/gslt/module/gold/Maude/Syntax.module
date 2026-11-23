@@ -1,0 +1,132 @@
+import "../SourceLexical.module" as lex
+
+Module Syntax {
+  Theory Sorts(l: lex.Grammar) {
+    l Types { MdArgumentSorts; MdArguments; MdAtom; MdAttribute; MdAttributeList; MdAttributes; MdCommandModule; MdCondition; MdConditions; MdDeclaration; MdDeclarations; MdFile; MdItem; MdLabel; MdName; MdNames; MdSearchCondition; MdTerm; }
+  }
+  Theory Modules(s: Sorts) {
+    s Terms {
+      «maude-src:program» . a0:SrcTrivia, a1:MdFile |- a0 a1 : SourceProgram;
+      «maude-src:file-empty» .  |-  : MdFile;
+      «maude-src:file-more» . a0:MdItem, a1:SrcTrivia, a2:MdFile |- a0 a1 a2 : MdFile;
+      «maude-src:fmod» . a0:SrcSpacing, a1:MdName, a2:SrcSpacing, a3:SrcTrivia, a4:MdDeclarations |- "fmod" a0 a1 a2 "is" a3 a4 "endfm" : MdItem;
+      «maude-src:mod» . a0:SrcSpacing, a1:MdName, a2:SrcSpacing, a3:SrcTrivia, a4:MdDeclarations |- "mod" a0 a1 a2 "is" a3 a4 "endm" : MdItem;
+      «maude-src:declarations-empty» .  |-  : MdDeclarations;
+      «maude-src:declarations-more» . a0:MdDeclaration, a1:SrcTrivia, a2:MdDeclarations |- a0 a1 a2 : MdDeclarations;
+      «maude-src:sort» . a0:SrcSpacing, a1:MdNames, a2:SrcTrivia |- "sort" a0 a1 a2 "." : MdDeclaration;
+      «maude-src:sorts» . a0:SrcSpacing, a1:MdNames, a2:SrcTrivia |- "sorts" a0 a1 a2 "." : MdDeclaration;
+      «maude-src:var» . a0:SrcSpacing, a1:MdNames, a2:SrcTrivia, a3:SrcTrivia, a4:MdName, a5:SrcTrivia |- "var" a0 a1 a2 ":" a3 a4 a5 "." : MdDeclaration;
+      «maude-src:vars» . a0:SrcSpacing, a1:MdNames, a2:SrcTrivia, a3:SrcTrivia, a4:MdName, a5:SrcTrivia |- "vars" a0 a1 a2 ":" a3 a4 a5 "." : MdDeclaration;
+      «maude-src:op» . a0:SrcSpacing, a1:MdNames, a2:SrcTrivia, a3:SrcTrivia, a4:MdArgumentSorts, a5:SrcTrivia, a6:MdName, a7:SrcTrivia, a8:MdAttributes |- "op" a0 a1 a2 ":" a3 a4 "->" a5 a6 a7 a8 "." : MdDeclaration;
+      «maude-src:ops» . a0:SrcSpacing, a1:MdNames, a2:SrcTrivia, a3:SrcTrivia, a4:MdArgumentSorts, a5:SrcTrivia, a6:MdName, a7:SrcTrivia, a8:MdAttributes |- "ops" a0 a1 a2 ":" a3 a4 "->" a5 a6 a7 a8 "." : MdDeclaration;
+      «maude-src:protecting» . a0:SrcSpacing, a1:MdName, a2:SrcTrivia |- "protecting" a0 a1 a2 "." : MdDeclaration;
+      «maude-src:including» . a0:SrcSpacing, a1:MdName, a2:SrcTrivia |- "including" a0 a1 a2 "." : MdDeclaration;
+      «maude-src:extending» . a0:SrcSpacing, a1:MdName, a2:SrcTrivia |- "extending" a0 a1 a2 "." : MdDeclaration;
+      «maude-src:argument-sorts-empty» .  |-  : MdArgumentSorts;
+      «maude-src:argument-sorts-more» . a0:MdName, a1:SrcTrivia, a2:MdArgumentSorts |- a0 a1 a2 : MdArgumentSorts;
+      «maude-src:attributes-none» .  |-  : MdAttributes;
+      «maude-src:attributes-some» . a0:SrcTrivia, a1:MdAttributeList, a2:SrcTrivia |- "[" a0 a1 "]" a2 : MdAttributes;
+      «maude-src:attributes-empty» .  |-  : MdAttributeList;
+      «maude-src:attributes-more» . a0:MdAttribute, a1:SrcTrivia, a2:MdAttributeList |- a0 a1 a2 : MdAttributeList;
+      «maude-src:attribute-ctor» .  |- "ctor" : MdAttribute;
+      «maude-src:attribute-assoc» .  |- "assoc" : MdAttribute;
+      «maude-src:attribute-comm» .  |- "comm" : MdAttribute;
+      «maude-src:attribute-id» . a0:SrcTrivia, a1:MdTerm |- "id:" a0 a1 : MdAttribute;
+      «maude-src:attribute-prec» . a0:SrcSpacing, a1:SrcDigits |- "prec" a0 a1 : MdAttribute;
+      «maude-src:eq» . a0:SrcSpacing, a1:MdLabel, a2:MdTerm, a3:SrcTrivia, a4:SrcTrivia, a5:MdTerm, a6:SrcTrivia |- "eq" a0 a1 a2 a3 "=" a4 a5 a6 "." : MdDeclaration;
+      «maude-src:rl» . a0:SrcSpacing, a1:MdLabel, a2:MdTerm, a3:SrcTrivia, a4:SrcTrivia, a5:MdTerm, a6:SrcTrivia |- "rl" a0 a1 a2 a3 "=>" a4 a5 a6 "." : MdDeclaration;
+      «maude-src:ceq» . a0:SrcSpacing, a1:MdLabel, a2:MdTerm, a3:SrcTrivia, a4:SrcTrivia, a5:MdTerm, a6:SrcSpacing, a7:SrcSpacing, a8:MdConditions, a9:SrcTrivia |- "ceq" a0 a1 a2 a3 "=" a4 a5 a6 "if" a7 a8 a9 "." : MdDeclaration;
+      «maude-src:crl» . a0:SrcSpacing, a1:MdLabel, a2:MdTerm, a3:SrcTrivia, a4:SrcTrivia, a5:MdTerm, a6:SrcSpacing, a7:SrcSpacing, a8:MdConditions, a9:SrcTrivia |- "crl" a0 a1 a2 a3 "=>" a4 a5 a6 "if" a7 a8 a9 "." : MdDeclaration;
+      «maude-src:label-none» .  |-  : MdLabel;
+      «maude-src:label-some» . a0:SrcTrivia, a1:MdName, a2:SrcTrivia, a3:SrcTrivia, a4:SrcTrivia |- "[" a0 a1 a2 "]" a3 ":" a4 : MdLabel;
+    }
+  }
+  Theory TermGrammar(s: Sorts) {
+    s Terms {
+      «maude-src:name-one» . a0:SrcMaNameScalar |- a0 : MdName;
+      «maude-src:name-more» . a0:SrcMaNameScalar, a1:MdName |- a0 a1 : MdName;
+      «maude-src:name-escape» . a0:SrcEscapeScalar |- "`" a0 : MdName;
+      «maude-src:name-escape-more» . a0:SrcEscapeScalar, a1:MdName |- "`" a0 a1 : MdName;
+      «maude-src:names-one» . a0:MdName |- a0 : MdNames;
+      «maude-src:names-more» . a0:MdName, a1:SrcSpacing, a2:MdNames |- a0 a1 a2 : MdNames;
+      «maude-src:term-atom» . a0:MdAtom |- a0 : MdTerm;
+      «maude-src:term-juxtaposition» . a0:MdTerm, a1:SrcSpacing, a2:MdAtom |- a0 a1 a2 : MdTerm;
+      «maude-src:term-name» . a0:MdName |- a0 : MdAtom;
+      «maude-src:term-parenthesized» . a0:SrcTrivia, a1:MdTerm, a2:SrcTrivia |- "(" a0 a1 a2 ")" : MdAtom;
+      «maude-src:term-call» . a0:MdName, a1:SrcTrivia, a2:SrcTrivia, a3:MdArguments |- a0 a1 "(" a2 a3 ")" : MdAtom;
+      «maude-src:arguments-empty» .  |-  : MdArguments;
+      «maude-src:arguments-one» . a0:MdTerm, a1:SrcTrivia |- a0 a1 : MdArguments;
+      «maude-src:arguments-more» . a0:MdTerm, a1:SrcTrivia, a2:SrcTrivia, a3:MdArguments |- a0 a1 "," a2 a3 : MdArguments;
+      «maude-src:condition-term» . a0:MdTerm |- a0 : MdCondition;
+      «maude-src:condition-equal» . a0:MdTerm, a1:SrcTrivia, a2:SrcTrivia, a3:MdTerm |- a0 a1 "=" a2 a3 : MdCondition;
+      «maude-src:condition-rewrite» . a0:MdTerm, a1:SrcTrivia, a2:SrcTrivia, a3:MdTerm |- a0 a1 "=>" a2 a3 : MdCondition;
+      «maude-src:conditions-one» . a0:MdCondition |- a0 : MdConditions;
+      «maude-src:conditions-more» . a0:MdCondition, a1:SrcTrivia, a2:SrcTrivia, a3:MdConditions |- a0 a1 "/\\" a2 a3 : MdConditions;
+    }
+  }
+  Theory Commands(s: Sorts) {
+    s Terms {
+      «maude-src:red» . a0:SrcSpacing, a1:MdCommandModule, a2:MdTerm, a3:SrcTrivia |- "red" a0 a1 a2 a3 "." : MdItem;
+      «maude-src:reduce» . a0:SrcSpacing, a1:MdCommandModule, a2:MdTerm, a3:SrcTrivia |- "reduce" a0 a1 a2 a3 "." : MdItem;
+      «maude-src:rew» . a0:SrcSpacing, a1:MdCommandModule, a2:MdTerm, a3:SrcTrivia |- "rew" a0 a1 a2 a3 "." : MdItem;
+      «maude-src:rewrite» . a0:SrcSpacing, a1:MdCommandModule, a2:MdTerm, a3:SrcTrivia |- "rewrite" a0 a1 a2 a3 "." : MdItem;
+      «maude-src:command-module-none» .  |-  : MdCommandModule;
+      «maude-src:command-module-some» . a0:SrcSpacing, a1:MdName, a2:SrcTrivia, a3:SrcTrivia |- "in" a0 a1 a2 ":" a3 : MdCommandModule;
+      «maude-src:search=>*» . a0:SrcSpacing, a1:MdCommandModule, a2:MdTerm, a3:SrcTrivia, a4:SrcTrivia, a5:MdTerm, a6:SrcTrivia, a7:MdSearchCondition |- "search" a0 a1 a2 a3 "=>*" a4 a5 a6 a7 "." : MdItem;
+      «maude-src:search=>!» . a0:SrcSpacing, a1:MdCommandModule, a2:MdTerm, a3:SrcTrivia, a4:SrcTrivia, a5:MdTerm, a6:SrcTrivia, a7:MdSearchCondition |- "search" a0 a1 a2 a3 "=>!" a4 a5 a6 a7 "." : MdItem;
+      «maude-src:search=>+» . a0:SrcSpacing, a1:MdCommandModule, a2:MdTerm, a3:SrcTrivia, a4:SrcTrivia, a5:MdTerm, a6:SrcTrivia, a7:MdSearchCondition |- "search" a0 a1 a2 a3 "=>+" a4 a5 a6 a7 "." : MdItem;
+      «maude-src:search=>1» . a0:SrcSpacing, a1:MdCommandModule, a2:MdTerm, a3:SrcTrivia, a4:SrcTrivia, a5:MdTerm, a6:SrcTrivia, a7:MdSearchCondition |- "search" a0 a1 a2 a3 "=>1" a4 a5 a6 a7 "." : MdItem;
+      «maude-src:search-condition-none» .  |-  : MdSearchCondition;
+      «maude-src:search-condition-some» . a0:SrcSpacing, a1:SrcSpacing, a2:MdConditions, a3:SrcTrivia |- "such" a0 "that" a1 a2 a3 : MdSearchCondition;
+    }
+  }
+  Theory Comments(s: Sorts) {
+    s Terms {
+      «maude-src:comment---» . a0:SrcLineBody, a1:SrcTrivia |- "---" a0 "\n" a1 : SrcTrivia;
+      «maude-src:spacing---» . a0:SrcLineBody, a1:SrcTrivia |- "---" a0 "\n" a1 : SrcSpacing;
+      «maude-src:comment***» . a0:SrcLineBody, a1:SrcTrivia |- "***" a0 "\n" a1 : SrcTrivia;
+      «maude-src:spacing***» . a0:SrcLineBody, a1:SrcTrivia |- "***" a0 "\n" a1 : SrcSpacing;
+    }
+  }
+  Theory SourceSelection() {
+    Types { SrcSelectionData; }
+    Terms {
+      «***» .  |-  : SrcSelectionData;
+      «---» .  |-  : SrcSelectionData;
+      «10» .  |-  : SrcSelectionData;
+      «11» .  |-  : SrcSelectionData;
+      «12» .  |-  : SrcSelectionData;
+      «123» .  |-  : SrcSelectionData;
+      «125» .  |-  : SrcSelectionData;
+      «13» .  |-  : SrcSelectionData;
+      «32» .  |-  : SrcSelectionData;
+      «34» .  |-  : SrcSelectionData;
+      «40» .  |-  : SrcSelectionData;
+      «41» .  |-  : SrcSelectionData;
+      «44» .  |-  : SrcSelectionData;
+      «46» .  |-  : SrcSelectionData;
+      «58» .  |-  : SrcSelectionData;
+      «9» .  |-  : SrcSelectionData;
+      «91» .  |-  : SrcSelectionData;
+      «93» .  |-  : SrcSelectionData;
+      «96» .  |-  : SrcSelectionData;
+      «GetSourceSelection» .  |-  : SrcSelectionData;
+      «LCons» . a0:SrcSelectionData, a1:SrcSelectionData |- a0 a1 : SrcSelectionData;
+      «LNil» .  |-  : SrcSelectionData;
+      «MaximalExcept» . a0:SrcSelectionData, a1:SrcSelectionData, a2:SrcSelectionData |- a0 a1 a2 : SrcSelectionData;
+      «MaximalToken» . a0:SrcSelectionData, a1:SrcSelectionData, a2:SrcSelectionData |- a0 a1 a2 : SrcSelectionData;
+      «MdName» .  |-  : SrcSelectionData;
+      «SourceSelectionV1» . a0:SrcSelectionData |- a0 : SrcSelectionData;
+      «SrcSpacing» .  |-  : SrcSelectionData;
+      «SrcTrivia» .  |-  : SrcSelectionData;
+    }
+    Rewrites {
+      ReturnSourceSelection : (GetSourceSelection) ~> "SourceSelectionV1"("LCons"("MaximalExcept"("MdName", "LCons"("9", "LCons"("10", "LCons"("11", "LCons"("12", "LCons"("13", "LCons"("32", "LCons"("34", "LCons"("40", "LCons"("41", "LCons"("44", "LCons"("46", "LCons"("58", "LCons"("91", "LCons"("93", "LCons"("96", "LCons"("123", "LCons"("125", "LNil"))))))))))))))))), "LNil"), "LCons"("MaximalToken"("SrcTrivia", "LCons"("9", "LCons"("10", "LCons"("11", "LCons"("12", "LCons"("13", "LCons"("32", "LNil")))))), "LCons"("---", "LCons"("***", "LNil"))), "LCons"("MaximalToken"("SrcSpacing", "LCons"("9", "LCons"("10", "LCons"("11", "LCons"("12", "LCons"("13", "LCons"("32", "LNil")))))), "LCons"("---", "LCons"("***", "LNil"))), "LNil"))));
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts(lex.Grammar()) in (Modules(s) \/ TermGrammar(s) \/ Commands(s) \/ Comments(s))
+  }
+  Theory LexicalProfile() { lex.LexicalProfile() }
+  theory Grammar()
+}

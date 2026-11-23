@@ -1,0 +1,11 @@
+import "Syntax.module" as sx
+import "Core.module" as core
+
+Module Language {
+  Theory Components() {
+    let s = sx.Grammar() in (
+      let d = core.ProgramData(s) in (
+        d \/ core.GroundSemantics(d) \/ sx.LexicalProfile()))
+  }
+  theory Components()
+}

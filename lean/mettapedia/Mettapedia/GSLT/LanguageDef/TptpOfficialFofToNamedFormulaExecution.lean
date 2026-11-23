@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.ContextualRootDispatch
 import Mettapedia.GSLT.LanguageDef.TptpOfficialFofToNamedFormulaLanguageDef
 
 /-!
@@ -47,21 +48,8 @@ theorem applyRuleUsing_eq_nil_of_root_mismatch
     (recursiveStep : Pattern → List Pattern) (rule : RewriteRule)
     (label : String) (arguments : List Pattern)
     (mismatch : rootMatches label rule = false) :
-    applyRuleUsing base lang recursiveStep rule (.apply label arguments) = [] := by
-  have noMatch : matchPatternForRule lang rule (.apply label arguments) = [] := by
-    rw [matchPatternForRule_eq_syntactic]
-    cases ruleLeft : rule.left with
-    | apply ruleLabel ruleArguments =>
-        simp only [rootMatches, ruleLeft, beq_eq_false_iff_ne] at mismatch
-        simp [matchPattern, mismatch]
-    | bvar index => simp [matchPattern]
-    | fvar name => simp [rootMatches, ruleLeft] at mismatch
-    | lambda binderName body => simp [matchPattern]
-    | multiLambda arity binderNames body => simp [matchPattern]
-    | subst body replacement => simp [matchPattern]
-    | collection collectionType elements rest => simp [matchPattern]
-  rw [applyRuleUsing, noMatch]
-  rfl
+    applyRuleUsing base lang recursiveStep rule (.apply label arguments) = [] :=
+  Mettapedia.OSLF.MeTTaIL.ContextualStep.applyRuleUsing_eq_nil_of_root_mismatch base lang recursiveStep rule label arguments mismatch
 
 theorem flatMap_eq_root_filter
     (base : BasePremiseEvaluator) (lang : LanguageDef)
@@ -71,17 +59,8 @@ theorem flatMap_eq_root_filter
         applyRuleUsing base lang recursiveStep rule (.apply label arguments)) =
       (rules.filter (rootMatches label)).flatMap (fun rule =>
         applyRuleUsing base lang recursiveStep rule
-          (.apply label arguments)) := by
-  induction rules with
-  | nil => rfl
-  | cons rule rules inductionHypothesis =>
-      simp only [List.flatMap_cons, List.filter_cons]
-      cases hRoot : rootMatches label rule with
-      | false =>
-          rw [applyRuleUsing_eq_nil_of_root_mismatch base lang recursiveStep
-            rule label arguments hRoot]
-          simp [inductionHypothesis]
-      | true => simp [inductionHypothesis]
+          (.apply label arguments)) :=
+  Mettapedia.OSLF.MeTTaIL.ContextualStep.flatMap_eq_root_filter base lang recursiveStep label arguments rules
 
 /-- Root dispatch is exact: filtering structurally impossible rule roots
 preserves the complete ordered reduct list. -/
@@ -91,10 +70,8 @@ theorem rewriteAt_eq_root_filter
     rewriteAt base lang (fuel + 1) (.apply label arguments) =
       (lang.rewrites.filter (rootMatches label)).flatMap fun rule =>
         applyRuleUsing base lang (rewriteAt base lang fuel) rule
-          (.apply label arguments) := by
-  rw [rewriteAt]
-  exact flatMap_eq_root_filter base lang (rewriteAt base lang fuel)
-    label arguments lang.rewrites
+          (.apply label arguments) :=
+  Mettapedia.OSLF.MeTTaIL.ContextualStep.rewriteAt_eq_root_filter base lang fuel label arguments
 
 namespace Canary
 
@@ -116,8 +93,7 @@ theorem true_rewrite_exact (fuel : Nat) :
     sourceDefinedFunctor, sourceToken, targetNullary, mkRule, request,
     congruence, a, v, applyRuleUsing,
     matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
-    matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-    applyBindings]
+    matchPattern, matchArgs, mergeBindings, applyBindingsForRule]
   rfl
 
 theorem other_defined_nullary_has_no_reduct (fuel : Nat) :
@@ -130,8 +106,7 @@ theorem other_defined_nullary_has_no_reduct (fuel : Nat) :
     sourceDefinedFunctor, sourceToken, targetNullary, mkRule, request,
     congruence, a, v, applyRuleUsing,
     matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
-    matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-    applyBindings]
+    matchPattern, matchArgs, mergeBindings, applyBindingsForRule]
 
 end Canary
 

@@ -1,0 +1,195 @@
+import "ScalarRealization.module" as scalar
+
+Module ProgramProjection {
+  Theory Lowering(d: scalar.DefaultCore) {
+    d
+      Types { DlProjectedAttributes; DlProjectedBody; }
+      Terms {
+        ProjectedAttributes . values:Vec(DlAttributeData) |- "projected-attributes" values : DlProjectedAttributes ![wrapped];
+        ProjectedBody . values:Vec(DlPositiveLiteralData) |- "projected-body" values : DlProjectedBody ![wrapped];
+        ProjectProgram . source:DlProgram |- "ProjectProgram" source : DlProgramData;
+        ProjectItemsInto . source:DlItems, tail:DlProgramData |- "ProjectItemsInto" source tail : DlProgramData;
+        ProjectItemInto . source:DlItem, tail:DlProgramData |- "ProjectItemInto" source tail : DlProgramData;
+        ProjectRelationsInto . source:DlRelations, attributes:DlProjectedAttributes, tail:DlProgramData |- "ProjectRelationsInto" source attributes tail : DlProgramData;
+        ProjectAttributes . source:DlAttributes |- "ProjectAttributes" source : DlProjectedAttributes;
+        ProjectAttribute . source:DlAttribute |- "ProjectAttribute" source : DlAttributeData;
+        ProjectAttributeType . source:DlPrimitiveType |- "ProjectAttributeType" source : DlAttributeType;
+        ProjectFact . source:DlFact |- "ProjectFact" source : DlStatement;
+        ProjectRule . source:DlRule |- "ProjectRule" source : DlStatement;
+        ProjectBody . source:DlBody |- "ProjectBody" source : DlProjectedBody;
+        ProjectPositiveLiteral . source:DlPositiveLiteral |- "ProjectPositiveLiteral" source : DlPositiveLiteralData;
+        ProjectAtom . source:DlAtom |- "ProjectAtom" source : DlPositiveLiteralData;
+        ProjectGroundAtom . source:DlGroundAtom |- "ProjectGroundAtom" source : DlStatement;
+        ProjectTerms . source:DlTerms |- "ProjectTerms" source : DlTuple;
+        ProjectTerm . source:DlTerm |- "ProjectTerm" source : DlArgument;
+        ProjectConstants . source:DlConstants |- "ProjectConstants" source : DlGroundTuple;
+        ProjectConstant . source:DlConstant |- "ProjectConstant" source : DlValue;
+        ProjectComparison . source:DlComparison |- "ProjectComparison" source : DlComparisonData;
+        ProjectComparisonOperator . source:DlComparisonOperator, left:DlArgument, right:DlArgument |- "ProjectComparisonOperator" source left right : DlComparisonData;
+      }
+      Rewrites {
+      LowerProgram . leading:DlTrivia, items:DlItems, out:DlProgramData
+        | (ProjectItemsInto items (Program [])) ~> out
+        |- (ProjectProgram («dl-src:program» leading items))
+        ~> out;
+      LowerItemsEmpty . tail:DlProgramData
+        |- (ProjectItemsInto "dl-src:items-empty" tail)
+        ~> tail;
+      LowerItemsMore . head:DlItem, gap:DlTrivia, rest:DlItems, tail:DlProgramData, afterTail:DlProgramData, out:DlProgramData
+        | (ProjectItemsInto rest tail) ~> afterTail, (ProjectItemInto head afterTail) ~> out
+        |- (ProjectItemsInto («dl-src:items-more» head gap rest) tail)
+        ~> out;
+      LowerItemDeclaration . space:DlDirectiveSpace, relations:DlRelations, before:DlTrivia, start:DlTrivia, attributes:DlAttributes, tail:DlProgramData, attrs:DlProjectedAttributes, out:DlProgramData
+        | (ProjectAttributes attributes) ~> attrs, (ProjectRelationsInto relations attrs tail) ~> out
+        |- (ProjectItemInto («dl-src:item-declaration» («dl-src:declaration» space relations before start attributes)) tail)
+        ~> out;
+      LowerItemFact . source:DlFact, rest:Vec(DlStatement), result:DlStatement
+        | (ProjectFact source) ~> result
+        |- (ProjectItemInto («dl-src:item-fact» source) (Program [...rest]))
+        ~> (Program [result, ...rest]);
+      LowerItemRule . source:DlRule, rest:Vec(DlStatement), result:DlStatement
+        | (ProjectRule source) ~> result
+        |- (ProjectItemInto («dl-src:item-rule» source) (Program [...rest]))
+        ~> (Program [result, ...rest]);
+      LowerItemInput . space:DlDirectiveSpace, relation:DlQualifiedName, rest:Vec(DlStatement)
+        |- (ProjectItemInto («dl-src:item-input» («dl-src:input» space relation)) (Program [...rest]))
+        ~> (Program [(InputRelation (Relation relation)), ...rest]);
+      LowerItemOutput . space:DlDirectiveSpace, relation:DlQualifiedName, rest:Vec(DlStatement)
+        |- (ProjectItemInto («dl-src:item-output» («dl-src:output» space relation)) (Program [...rest]))
+        ~> (Program [(OutputRelation (Relation relation)), ...rest]);
+      LowerRelationOne . identifier:DlIdentifier, attrs:Vec(DlAttributeData), rest:Vec(DlStatement)
+        |- (ProjectRelationsInto («dl-src:relations-one» identifier) (ProjectedAttributes attrs) (Program [...rest]))
+        ~> (Program [(Declaration (RelationDeclaration (Relation («dl-src:qualified-name-one» identifier)) attrs)), ...rest]);
+      LowerRelationMore . identifier:DlIdentifier, before:DlTrivia, after:DlTrivia, relations:DlRelations, attrs:Vec(DlAttributeData), tail:DlProgramData, rest:Vec(DlStatement)
+        | (ProjectRelationsInto relations (ProjectedAttributes attrs) tail) ~> (Program rest)
+        |- (ProjectRelationsInto («dl-src:relations-more» identifier before after relations) (ProjectedAttributes attrs) tail)
+        ~> (Program [(Declaration (RelationDeclaration (Relation («dl-src:qualified-name-one» identifier)) attrs)), ...rest]);
+      LowerAttributesEmpty . 
+        |- (ProjectAttributes "dl-src:attributes-empty")
+        ~> (ProjectedAttributes []);
+      LowerAttributesOne . attr:DlAttribute, trailing:DlTrivia, result:DlAttributeData
+        | (ProjectAttribute attr) ~> result
+        |- (ProjectAttributes («dl-src:attributes-one» attr trailing))
+        ~> (ProjectedAttributes [result]);
+      LowerAttributesMore . attr:DlAttribute, before:DlTrivia, after:DlTrivia, attributes:DlAttributes, result:DlAttributeData, rest:Vec(DlAttributeData)
+        | (ProjectAttribute attr) ~> result, (ProjectAttributes attributes) ~> (ProjectedAttributes rest)
+        |- (ProjectAttributes («dl-src:attributes-more» attr before after attributes))
+        ~> (ProjectedAttributes [result, ...rest]);
+      LowerAttribute . identifier:DlIdentifier, before:DlTrivia, after:DlTrivia, sourceType:DlPrimitiveType, targetType:DlAttributeType
+        | (ProjectAttributeType sourceType) ~> targetType
+        |- (ProjectAttribute («dl-src:attr» identifier before after sourceType))
+        ~> (Attribute identifier targetType);
+      LowerTypeSymbolType . 
+        |- (ProjectAttributeType "dl-src:type-symbol")
+        ~> "SymbolType";
+      LowerTypeNumberType . 
+        |- (ProjectAttributeType "dl-src:type-number")
+        ~> "NumberType";
+      LowerTypeUnsignedType . 
+        |- (ProjectAttributeType "dl-src:type-unsigned")
+        ~> "UnsignedType";
+      LowerTypeFloatType . 
+        |- (ProjectAttributeType "dl-src:type-float")
+        ~> "FloatType";
+      LowerFact . source:DlGroundAtom, gap:DlTrivia, result:DlStatement
+        | (ProjectGroundAtom source) ~> result
+        |- (ProjectFact («dl-src:fact» source gap))
+        ~> result;
+      LowerRule . head:DlAtom, before:DlTrivia, after:DlTrivia, body:DlBody, relation:DlRelation, tuple:DlTuple, literals:Vec(DlPositiveLiteralData)
+        | (ProjectAtom head) ~> (PositiveAtom relation tuple), (ProjectBody body) ~> (ProjectedBody literals)
+        |- (ProjectRule («dl-src:rule» head before after body))
+        ~> (PositiveRule (Clause relation tuple literals));
+      LowerBodyOne . literal:DlPositiveLiteral, trailing:DlTrivia, result:DlPositiveLiteralData
+        | (ProjectPositiveLiteral literal) ~> result
+        |- (ProjectBody («dl-src:body-one» literal trailing))
+        ~> (ProjectedBody [result]);
+      LowerBodyMore . literal:DlPositiveLiteral, before:DlTrivia, after:DlTrivia, body:DlBody, result:DlPositiveLiteralData, rest:Vec(DlPositiveLiteralData)
+        | (ProjectPositiveLiteral literal) ~> result, (ProjectBody body) ~> (ProjectedBody rest)
+        |- (ProjectBody («dl-src:body-more» literal before after body))
+        ~> (ProjectedBody [result, ...rest]);
+      LowerPositiveAtom . atom:DlAtom, result:DlPositiveLiteralData
+        | (ProjectAtom atom) ~> result
+        |- (ProjectPositiveLiteral («dl-src:positive-atom» atom))
+        ~> result;
+      LowerPositiveComparison . comparison:DlComparison, result:DlComparisonData
+        | (ProjectComparison comparison) ~> result
+        |- (ProjectPositiveLiteral («dl-src:positive-comparison» comparison))
+        ~> (Comparison result);
+      LowerAtom . relation:DlQualifiedName, before:DlTrivia, after:DlTrivia, srcTerms:DlTerms, tuple:DlTuple
+        | (ProjectTerms srcTerms) ~> tuple
+        |- (ProjectAtom («dl-src:atom» relation before after srcTerms))
+        ~> (PositiveAtom (Relation relation) tuple);
+      LowerGroundAtom . relation:DlQualifiedName, before:DlTrivia, after:DlTrivia, constants:DlConstants, tuple:DlGroundTuple
+        | (ProjectConstants constants) ~> tuple
+        |- (ProjectGroundAtom («dl-src:ground-atom» relation before after constants))
+        ~> (GroundFact (Relation relation) tuple);
+      LowerTermsEmpty . 
+        |- (ProjectTerms "dl-src:terms-empty")
+        ~> (Tuple []);
+      LowerTermsOne . source:DlTerm, trailing:DlTrivia, value:DlArgument
+        | (ProjectTerm source) ~> value
+        |- (ProjectTerms («dl-src:terms-one» source trailing))
+        ~> (Tuple [value]);
+      LowerTermsMore . source:DlTerm, before:DlTrivia, after:DlTrivia, tail:DlTerms, value:DlArgument, rest:Vec(DlArgument)
+        | (ProjectTerm source) ~> value, (ProjectTerms tail) ~> (Tuple rest)
+        |- (ProjectTerms («dl-src:terms-more» source before after tail))
+        ~> (Tuple [value, ...rest]);
+      LowerConstantsEmpty . 
+        |- (ProjectConstants "dl-src:constants-empty")
+        ~> (GroundTuple []);
+      LowerConstantsOne . source:DlConstant, trailing:DlTrivia, value:DlValue
+        | (ProjectConstant source) ~> value
+        |- (ProjectConstants («dl-src:constants-one» source trailing))
+        ~> (GroundTuple [value]);
+      LowerConstantsMore . source:DlConstant, before:DlTrivia, after:DlTrivia, tail:DlConstants, value:DlValue, rest:Vec(DlValue)
+        | (ProjectConstant source) ~> value, (ProjectConstants tail) ~> (GroundTuple rest)
+        |- (ProjectConstants («dl-src:constants-more» source before after tail))
+        ~> (GroundTuple [value, ...rest]);
+      LowerTermVariable . identifier:DlIdentifier
+        |- (ProjectTerm («dl-src:term-variable» identifier))
+        ~> (VariableArgument (Variable identifier));
+      LowerTermAnonymous . 
+        |- (ProjectTerm "dl-src:term-anonymous")
+        ~> "AnonymousArgument";
+      LowerTermConstant . source:DlConstant, value:DlValue
+        | (ProjectConstant source) ~> value
+        |- (ProjectTerm («dl-src:term-constant» source))
+        ~> (ValueArgument value);
+      LowerConstantSymbolValue . source:DlSymbol
+        |- (ProjectConstant («dl-src:constant-symbol» source))
+        ~> (SymbolValue source);
+      LowerConstantIntegerValue . source:DlInteger
+        |- (ProjectConstant («dl-src:constant-integer» source))
+        ~> (IntegerValue source);
+      LowerConstantUnsignedValue . source:DlUnsigned
+        |- (ProjectConstant («dl-src:constant-unsigned» source))
+        ~> (UnsignedValue source);
+      LowerConstantFloatValue . source:DlFloat
+        |- (ProjectConstant («dl-src:constant-float» source))
+        ~> (FloatValue source);
+      LowerComparison . left:DlTerm, before:DlTrivia, operator:DlComparisonOperator, after:DlTrivia, right:DlTerm, first:DlArgument, second:DlArgument, result:DlComparisonData
+        | (ProjectTerm left) ~> first, (ProjectTerm right) ~> second, (ProjectComparisonOperator operator first second) ~> result
+        |- (ProjectComparison («dl-src:comparison» left before operator after right))
+        ~> result;
+      LowerComparisonEqual . left:DlArgument, right:DlArgument
+        |- (ProjectComparisonOperator "dl-src:comparison-equal" left right)
+        ~> (Equal left right);
+      LowerComparisonDifferent . left:DlArgument, right:DlArgument
+        |- (ProjectComparisonOperator "dl-src:comparison-different" left right)
+        ~> (Different left right);
+      LowerComparisonLess . left:DlArgument, right:DlArgument
+        |- (ProjectComparisonOperator "dl-src:comparison-less" left right)
+        ~> (Less left right);
+      LowerComparisonLessEqual . left:DlArgument, right:DlArgument
+        |- (ProjectComparisonOperator "dl-src:comparison-less-equal" left right)
+        ~> (LessEqual left right);
+      LowerComparisonGreater . left:DlArgument, right:DlArgument
+        |- (ProjectComparisonOperator "dl-src:comparison-greater" left right)
+        ~> (Greater left right);
+      LowerComparisonGreaterEqual . left:DlArgument, right:DlArgument
+        |- (ProjectComparisonOperator "dl-src:comparison-greater-equal" left right)
+        ~> (GreaterEqual left right);
+      }
+  }
+  theory Lowering(scalar.DefaultCore())
+}

@@ -1,0 +1,62 @@
+Output-plan formation and its operational boundary
+
+The output-plan compiler now preserves and reflects explicit formation
+judgments. These are rules for compiling actual source Atoms, not a whole
+evaluator oracle or a definition of source meaning by its compiled answer.
+
+OutputPlanBranchRules distinguishes pure values, runtime constraints,
+compile-time output aliases and non-variable output gates. It uses the actual
+term unifier, preserves branch order and characterizes the computed branch
+builder in both directions.
+
+OutputPlanFormation independently relates held/evaluated arguments, binding
+rows, case rows and each supported expression layer. It records left-to-right
+allocation and the source classification of native, authored and data heads.
+Native argument roles, literal result gates, private procedure calls and the
+chosen branch policy remain explicit. Unsupported component regions have no
+formation rule; that is not a declaration that the source program has no
+answers or should raise an unavailable-language error.
+
+The binding-list rule deliberately follows the local SWI translator's
+nonempty letstar_to_rec_let clauses. The separate Destination sequence
+profile admits an empty list as its body. These are different source policies;
+formation correspondence here does not select either as a universal rule.
+
+OutputPlanFormationCorrect proves preservation and reflection for every
+compiler depth, input supply and expression. Its child premises are actual
+formation derivations. They are not supplied assumptions that a target
+evaluator already agrees with the desired source behavior.
+
+OutputPlanProgramFormation connects the exact ordered equation/directive
+traversals using the generic optional-list traversal laws. Literal Atom return
+declarations retain the held-body case; ordinary bodies use the recursive
+rules. The compiler neither drops equations/directives nor changes the
+retained public source. The target interface order follows the actual source
+lookup table. compileWithFormation carries this derivation with its resulting
+program; OutputPlanModel now consumes that interface before executing the
+same streaming controller.
+
+OutputPlanFormationDepth proves that increasing structural allowance after
+success preserves the complete plan, used-name support and alias state. Any
+two successful allowances produce the same result. This is compilation depth,
+not runtime fuel: no equal evaluation cutoff, termination or CPU-work theorem
+is inferred. Completeness of the default computed allowance against every
+possible derivation is a separate obligation.
+
+Controls prove formation of every quoted payload independently of callability.
+They reject dropping a directive, deleting a clause, swapping distinct
+interfaces and replacing the retained public source. No source execution,
+primitive effect or answer table is postulated to obtain these results.
+
+The remaining operational connection is substantial: interpret the formation
+derivations into independently specified source execution while preserving
+answers, branch bindings, effects, errors, suspended prefixes, scope and the
+selected cost observation. Full source/compiler adequacy, complete streaming
+regions, compiler-local readout, typed/native/dynamic regions and rich
+transform authority remain open. Formation correctness does not discharge
+those obligations or any C/machine-code correspondence.
+
+The subsequent literal-gate operational connection is described in
+constraint-presentations.txt. It preserves and reflects the logical solution
+set after successful actual unification and proves source refusal for actual
+clashes. Full producer/control execution correspondence remains open.

@@ -9316,6 +9316,15 @@ def evaluator : DIndGArtifactEvaluator where
           (convQuery sig rawLeft rawRight)).1.map (·.1)).any
         (fun a => a == mBool true) = true
 
+/-- The declaration calculus observes only the translated endpoints of an
+accepted conversion for this signature. -/
+private abbrev declarationConversionSound (sig : DIndGArtifactSig) : Prop :=
+  ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
+    evaluator.conv sig rawLeft rawRight →
+    DIndGArtifactTermTranslates sig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates sig.nameTranslates 0 rawRight right →
+    ConvDecl (envOfSpecs sig.translatedSpecs) left right
+
 /-- Any runtime environment with LeaTTa's standard grounding table leaves `conv` calls to the
 equality-rule query path. -/
 theorem callGrounded_conv_of_stdGroundings
@@ -72620,112 +72629,85 @@ theorem convSoundWithPropToType0Witness_runtimeExtraction_of_resolved
   intro rawLeft rawRight left right hconv hLeft hRight
   exact Or.inl (hResolvedExtraction hconv hLeft hRight)
 
-def ConvSoundWithPropToType0WitnessNamedReadoutFuel : Prop :=
+/-! The named readout fixes the seed and initial state. Its raw result
+includes bindings, which callers may retain or project to values. -/
+
+private abbrev initialNamedConversionReadout (sig : DIndGArtifactSig)
+    (runFuel : Nat) (rawLeft rawRight : DIndGArtifactTerm) : List (Metta.Atom × Metta.Bindings) :=
+  let nxBinder := counterSuffix St.init.counter "nx"
+  let nyBinder := counterSuffix St.init.counter "ny"
+  let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
+  (mettaEval kernelDefControlEnv runFuel stNamed []
+    (convReadoutNamed nxBinder nyBinder sig rawLeft rawRight)).1
+
+private abbrev namedReadoutFuelLowerBound (sig : DIndGArtifactSig) (minimum : Nat) : Prop :=
+  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm} {outBnd : Metta.Bindings},
+    (mBool true, outBnd) ∈ initialNamedConversionReadout sig runFuel rawLeft rawRight →
+    minimum ≤ runFuel
+
+private abbrev namedReadoutRefusesBefore (sig : DIndGArtifactSig) (minimum : Nat) : Prop :=
+  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm} {outBnd : Metta.Bindings},
+    runFuel < minimum →
+    (mBool true, outBnd) ∈ initialNamedConversionReadout sig runFuel rawLeft rawRight → False
+
+private abbrev namedReadoutRefusesBetween
+    (sig : DIndGArtifactSig) (lower upper : Nat) : Prop :=
+  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm} {outBnd : Metta.Bindings},
+    lower ≤ runFuel → runFuel < upper →
+    (mBool true, outBnd) ∈ initialNamedConversionReadout sig runFuel rawLeft rawRight → False
+
+private abbrev namedReadoutHasFuel (sig : DIndGArtifactSig) (minimum : Nat) : Prop :=
   ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-    evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-      rawLeft rawRight →
-    DIndGArtifactTermTranslates
-      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-      rawLeft left →
-    DIndGArtifactTermTranslates
-      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-      rawRight right →
-    ∃ fuel,
-      let nxBinder := counterSuffix St.init.counter "nx"
-      let nyBinder := counterSuffix St.init.counter "ny"
-      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-      4 ≤ fuel ∧
-      mBool true ∈
-        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
-          (convReadoutNamed nxBinder nyBinder
-            cicStage3RawArtifactSigWithPropToType0Witness
-            rawLeft rawRight)).1.map (·.1)
+    evaluator.conv sig rawLeft rawRight →
+    DIndGArtifactTermTranslates sig.nameTranslates 0 rawLeft left →
+    DIndGArtifactTermTranslates sig.nameTranslates 0 rawRight right →
+    ∃ fuel, minimum ≤ fuel ∧
+      mBool true ∈ (initialNamedConversionReadout sig (fuel + 2 + 2 + 1) rawLeft rawRight).map (·.1)
+
+private theorem namedReadoutLowerBound_of_refusesBefore
+    (sig : DIndGArtifactSig) (minimum : Nat)
+    (refused : namedReadoutRefusesBefore sig minimum) :
+    namedReadoutFuelLowerBound sig minimum := by
+  intro runFuel rawLeft rawRight outBnd hRun
+  exact Nat.le_of_not_lt (fun tooEarly => refused tooEarly hRun)
+
+/-- The named readout budget accounts for two nested continuations and
+the initial step. Its value projection retains a witnessed true result. -/
+private theorem namedReadoutHasFuel_of_lowerBound
+    (sig : DIndGArtifactSig) (minimum : Nat)
+    (lowerBound : namedReadoutFuelLowerBound sig (minimum + 2 + 2 + 1)) :
+    namedReadoutHasFuel sig minimum := by
+  intro rawLeft rawRight left right hConv _ _
+  obtain ⟨runFuel, outBnd, hRun⟩ := evaluator_conv_true_named_readout_pair_exists hConv
+  have enough := lowerBound hRun
+  refine ⟨runFuel - 5, by omega, ?_⟩
+  have sameFuel : runFuel - 5 + 2 + 2 + 1 = runFuel := by omega
+  rw [sameFuel]
+  exact List.mem_map.mpr ⟨(mBool true, outBnd), hRun, rfl⟩
+
+def ConvSoundWithPropToType0WitnessNamedReadoutFuel : Prop :=
+  namedReadoutHasFuel cicStage3RawArtifactSigWithPropToType0Witness 4
 
 def ConvSoundWithPropToType0WitnessNamedReadoutFuelLowerBound : Prop :=
-  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-      {outBnd : Metta.Bindings},
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSigWithPropToType0Witness
-          rawLeft rawRight)).1 →
-    9 ≤ runFuel
+  namedReadoutFuelLowerBound cicStage3RawArtifactSigWithPropToType0Witness 9
 
 def ConvSoundWithPropToType0WitnessNamedReadoutFuelFourteenLowerBound : Prop :=
-  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-      {outBnd : Metta.Bindings},
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSigWithPropToType0Witness
-          rawLeft rawRight)).1 →
-    14 ≤ runFuel
+  namedReadoutFuelLowerBound cicStage3RawArtifactSigWithPropToType0Witness 14
 
 def ConvSoundWithPropToType0WitnessNamedReadoutFuelGeNine : Prop :=
-  ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-    evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-      rawLeft rawRight →
-    DIndGArtifactTermTranslates
-      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-      rawLeft left →
-    DIndGArtifactTermTranslates
-      cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-      rawRight right →
-    ∃ fuel,
-      let nxBinder := counterSuffix St.init.counter "nx"
-      let nyBinder := counterSuffix St.init.counter "ny"
-      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-      9 ≤ fuel ∧
-      mBool true ∈
-        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
-          (convReadoutNamed nxBinder nyBinder
-            cicStage3RawArtifactSigWithPropToType0Witness
-            rawLeft rawRight)).1.map (·.1)
+  namedReadoutHasFuel cicStage3RawArtifactSigWithPropToType0Witness 9
 
 def ConvSoundWithPropToType0WitnessNamedReadoutSmallFuelFalse : Prop :=
-  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-      {outBnd : Metta.Bindings},
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St :=
-      { counter := St.init.counter + 1, world := St.init.world }
-    runFuel < 9 →
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSigWithPropToType0Witness
-          rawLeft rawRight)).1 →
-    False
+  namedReadoutRefusesBefore cicStage3RawArtifactSigWithPropToType0Witness 9
 
 def ConvSoundWithPropToType0WitnessNamedReadoutFuelTwoThroughEightFalse : Prop :=
-  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-      {outBnd : Metta.Bindings},
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St :=
-      { counter := St.init.counter + 1, world := St.init.world }
-    2 ≤ runFuel →
-    runFuel < 9 →
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSigWithPropToType0Witness
-          rawLeft rawRight)).1 →
-    False
+  namedReadoutRefusesBetween cicStage3RawArtifactSigWithPropToType0Witness 2 9
 
 theorem convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
     (hMidFalse :
       ConvSoundWithPropToType0WitnessNamedReadoutFuelTwoThroughEightFalse) :
     ConvSoundWithPropToType0WitnessNamedReadoutSmallFuelFalse := by
-  intro runFuel rawLeft rawRight outBnd
-  dsimp
-  intro hLt9 hRun
+  intro runFuel rawLeft rawRight outBnd hLt9 hRun
   by_cases hLt2 : runFuel < 2
   · exact
       mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_fuel_lt_two_false
@@ -72741,55 +72723,20 @@ theorem convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_throug
 theorem convSoundWithPropToType0Witness_namedReadoutFuelLowerBound_of_small_false
     (hSmallFalse :
       ConvSoundWithPropToType0WitnessNamedReadoutSmallFuelFalse) :
-    ConvSoundWithPropToType0WitnessNamedReadoutFuelLowerBound := by
-  intro runFuel rawLeft rawRight outBnd
-  dsimp
-  intro hRun
-  by_contra hNotLe
-  exact
-    hSmallFalse
-      (runFuel := runFuel) (rawLeft := rawLeft) (rawRight := rawRight)
-      (outBnd := outBnd) (Nat.lt_of_not_ge hNotLe) hRun
+    ConvSoundWithPropToType0WitnessNamedReadoutFuelLowerBound :=
+  namedReadoutLowerBound_of_refusesBefore cicStage3RawArtifactSigWithPropToType0Witness 9 hSmallFalse
 
 theorem convSoundWithPropToType0Witness_namedReadoutFuel_of_lowerBound
     (hLowerBound :
       ConvSoundWithPropToType0WitnessNamedReadoutFuelLowerBound) :
-    ConvSoundWithPropToType0WitnessNamedReadoutFuel := by
-  intro rawLeft rawRight left right hconv _hLeft _hRight
-  rcases
-      evaluator_conv_true_named_readout_pair_exists
-        (sig := cicStage3RawArtifactSigWithPropToType0Witness)
-        (rawLeft := rawLeft) (rawRight := rawRight) hconv with
-    ⟨runFuel, outBnd, hRun⟩
-  have hRunLower : 9 ≤ runFuel := hLowerBound hRun
-  rcases Nat.exists_eq_add_of_le hRunLower with
-    ⟨fuelExtra, hRunFuelEq⟩
-  refine ⟨fuelExtra + 4, by omega, ?_⟩
-  dsimp at hRun ⊢
-  have hValue := mettaEval_value_mem_of_pair_mem hRun
-  have hRunFuelEq' : fuelExtra + 4 + 2 + 2 + 1 = runFuel := by
-    omega
-  simpa [hRunFuelEq'] using hValue
+    ConvSoundWithPropToType0WitnessNamedReadoutFuel :=
+  namedReadoutHasFuel_of_lowerBound cicStage3RawArtifactSigWithPropToType0Witness 4 hLowerBound
 
 theorem convSoundWithPropToType0Witness_namedReadoutFuelGeNine_of_fourteen_lowerBound
     (hLowerBound :
       ConvSoundWithPropToType0WitnessNamedReadoutFuelFourteenLowerBound) :
-    ConvSoundWithPropToType0WitnessNamedReadoutFuelGeNine := by
-  intro rawLeft rawRight left right hconv _hLeft _hRight
-  rcases
-      evaluator_conv_true_named_readout_pair_exists
-        (sig := cicStage3RawArtifactSigWithPropToType0Witness)
-        (rawLeft := rawLeft) (rawRight := rawRight) hconv with
-    ⟨runFuel, outBnd, hRun⟩
-  have hRunLower : 14 ≤ runFuel := hLowerBound hRun
-  rcases Nat.exists_eq_add_of_le hRunLower with
-    ⟨fuelExtra, hRunFuelEq⟩
-  refine ⟨fuelExtra + 9, by omega, ?_⟩
-  dsimp at hRun ⊢
-  have hValue := mettaEval_value_mem_of_pair_mem hRun
-  have hRunFuelEq' : fuelExtra + 9 + 2 + 2 + 1 = runFuel := by
-    omega
-  simpa [hRunFuelEq'] using hValue
+    ConvSoundWithPropToType0WitnessNamedReadoutFuelGeNine :=
+  namedReadoutHasFuel_of_lowerBound cicStage3RawArtifactSigWithPropToType0Witness 9 hLowerBound
 
 theorem convSoundWithPropToType0Witness_namedReadoutFuel_of_small_false
     (hSmallFalse :
@@ -74299,19 +74246,7 @@ theorem convSoundWithPropToType0Witness_tailValueRuntimeExtraction_of_components
 theorem conv_sound_withPropToType0Witness
     (hRuntimeExtraction :
       ConvSoundWithPropToType0WitnessRuntimeExtraction) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   intro rawLeft rawRight left right hconv hLeft hRight
   rcases hRuntimeExtraction hconv hLeft hRight with hResolved | hSame
   · exact
@@ -74323,19 +74258,7 @@ theorem conv_sound_withPropToType0Witness
 theorem conv_sound_withPropToType0Witness_of_tail_value_runtime_extraction
     (hRuntimeExtraction :
       ConvSoundWithPropToType0WitnessTailValueRuntimeExtraction) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   intro rawLeft rawRight left right hconv hLeft hRight
   rcases hRuntimeExtraction hconv hLeft hRight with hResolved | hSame
   · exact
@@ -74346,19 +74269,7 @@ theorem conv_sound_withPropToType0Witness_of_tail_value_runtime_extraction
 
 theorem evaluator_soundness_withPropToType0Witness_of_conv_sound
     (hconv :
-      ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-        evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-          rawLeft rawRight →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-          rawLeft left →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-          rawRight right →
-        ConvDecl
-          (envOfSpecs
-            cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-          left right) :
+      declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness) :
     DIndGArtifactEvaluatorSoundness evaluator
       cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
@@ -74395,19 +74306,7 @@ theorem conv_sound_withPropToType0Witness_of_named_components
       ConvSoundWithPropToType0WitnessNamedReadoutObligations)
     (hNamedExtraction :
       ConvSoundWithPropToType0WitnessNamedReadoutRuntimeExtraction) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness
       (convSoundWithPropToType0Witness_runtimeExtraction_of_components
@@ -74434,19 +74333,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_and_named_componen
       ConvSoundWithPropToType0WitnessNamedReadoutObligations)
     (hNamedExtraction :
       ConvSoundWithPropToType0WitnessNamedReadoutRuntimeExtraction) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_named_components
       (convSoundWithPropToType0Witness_namedReadoutFuel_of_small_false
@@ -74474,19 +74361,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_v
       ConvSoundWithPropToType0WitnessNamedReadoutObligations)
     (hTailSplit :
       ConvSoundWithPropToType0WitnessExtractedTailRuntimeSplitFromValues) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_and_named_components
       hSmallFalse hNamedObligations
@@ -74514,19 +74389,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_val
       ConvSoundWithPropToType0WitnessNamedReadoutObligations)
     (hTailSplit :
       ConvSoundWithPropToType0WitnessExtractedTailRuntimeSplitFromValues) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_values_split
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -74560,19 +74423,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_v
       NfValueRuntimeExtractionOnContinuations cicStage3RawArtifactSigWithPropToType0Witness
         (fun raw out => ∃ rawNf, out = termAtom rawNf ∧
           CicStage3ResolvedNfRuntimeOutput raw rawNf) 0) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_and_named_components
       hSmallFalse hNamedObligations
@@ -74612,19 +74463,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_val
       NfValueRuntimeExtractionOnContinuations cicStage3RawArtifactSigWithPropToType0Witness
         (fun raw out => ∃ rawNf, out = termAtom rawNf ∧
           CicStage3ResolvedNfRuntimeOutput raw rawNf) 0) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_values_with_keys_nf_value_extraction
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -74660,19 +74499,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_v
       ConvSoundWithPropToType0WitnessNamedReadoutTailValuesWithKeys)
     (hTailClass :
       ConvSoundWithPropToType0WitnessTailRuntimeClassification) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_and_named_components
       hSmallFalse hNamedObligations
@@ -74706,19 +74533,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_val
       ConvSoundWithPropToType0WitnessNamedReadoutTailValuesWithKeys)
     (hTailClass :
       ConvSoundWithPropToType0WitnessTailRuntimeClassification) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_values_with_keys_tail_classification
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -74755,19 +74570,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_val
         CicStage3CanonicalNfRuntimeReadout 0)
     (hFrontier :
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_values_with_keys_tail_classification
       hMidFalse hNamedObligations hTailValues
@@ -74809,19 +74612,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_v
         CicStage3CanonicalNfRuntimeReadout 3)
     (hFrontier :
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_values_with_keys_tail_classification
       hSmallFalse hNamedObligations hTailValues
@@ -74863,19 +74654,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_val
         CicStage3CanonicalNfRuntimeReadout 3)
     (hFrontier :
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_values_with_keys_canonical_frontier_geThree
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -74917,19 +74696,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_v
         CicStage3CanonicalNfRuntimeReadout 3)
     (hFrontier :
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreementWithKeys) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_and_named_components
       hSmallFalse hNamedObligations
@@ -74973,19 +74740,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_val
         CicStage3CanonicalNfRuntimeReadout 3)
     (hFrontier :
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreementWithKeys) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_values_with_keys_canonical_frontier_geThree_keyed
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -75022,19 +74777,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_v
       ConvSoundWithPropToType0WitnessNamedReadoutTailValuesWithKeys)
     (hTailSplit :
       ConvSoundWithPropToType0WitnessExtractedTailRuntimeConvDeclSplit) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   intro rawLeft rawRight left right hconv hLeft hRight
   rcases
       convSoundWithPropToType0Witness_namedReadoutFuel_of_small_false
@@ -75081,19 +74824,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_val
       ConvSoundWithPropToType0WitnessNamedReadoutTailValuesWithKeys)
     (hTailSplit :
       ConvSoundWithPropToType0WitnessExtractedTailRuntimeConvDeclSplit) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_values_with_keys_convDecl_split
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -75125,19 +74856,7 @@ theorem conv_sound_withPropToType0Witness_of_geNine_named_obligations_tail_value
       ConvSoundWithPropToType0WitnessNamedReadoutTailValuesWithKeys)
     (hTailSplit :
       ConvSoundWithPropToType0WitnessExtractedTailRuntimeConvDeclSplitGeNine) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   intro rawLeft rawRight left right hconv hLeft hRight
   rcases hNamedReadoutFuel hconv hLeft hRight with
     ⟨fuel, hFuel, hNamedTrue⟩
@@ -75187,19 +74906,7 @@ theorem conv_sound_withPropToType0Witness_of_fourteen_lower_bound_obligations_ta
         CicStage3CanonicalNfRuntimeReadout 11)
     (hFrontier :
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailConvDeclAgreementWithKeys) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_geNine_named_obligations_tail_values_with_keys_convDecl_split
       (convSoundWithPropToType0Witness_namedReadoutFuelGeNine_of_fourteen_lowerBound
@@ -75243,19 +74950,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_v
         CicStage3CanonicalNfRuntimeReadout 3)
     (hFrontier :
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailConvDeclAgreementWithKeys) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_values_with_keys_convDecl_split
       hSmallFalse hNamedObligations hTailValues
@@ -75297,19 +74992,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_val
         CicStage3CanonicalNfRuntimeReadout 3)
     (hFrontier :
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailConvDeclAgreementWithKeys) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_values_with_keys_canonical_frontier_convDecl_geThree
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -75344,19 +75027,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_closed
       ConvSoundWithPropToType0WitnessNamedReadoutObligations)
     (hClass :
       ConvSoundWithPropToType0WitnessTailRuntimeClosedRerunClassification) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_tail_value_runtime_extraction
       (convSoundWithPropToType0Witness_tailValueRuntimeExtraction_of_components
@@ -75387,19 +75058,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_closed_r
       ConvSoundWithPropToType0WitnessNamedReadoutObligations)
     (hClass :
       ConvSoundWithPropToType0WitnessTailRuntimeClosedRerunClassification) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_closed_rerun_classification
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -75429,19 +75088,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_c
       ConvSoundWithPropToType0WitnessTailRuntimeClassification)
     (hClosedRerun :
       ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_closed_rerun_classification
       hSmallFalse hNamedObligations
@@ -75473,19 +75120,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_tail_cla
       ConvSoundWithPropToType0WitnessTailRuntimeClassification)
     (hClosedRerun :
       ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_classification_closed_rerun
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -75521,19 +75156,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_nf_val
           CicStage3ResolvedNfRuntimeOutput raw rawNf) 0)
     (hClosedRerun :
       ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_classification_closed_rerun
       hSmallFalse hNamedObligations
@@ -75574,19 +75197,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_nf_value
           CicStage3ResolvedNfRuntimeOutput raw rawNf) 0)
     (hClosedRerun :
       ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_nf_value_extraction_closed_rerun
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -75627,19 +75238,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canoni
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
     (hClosedRerun :
       ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_classification_closed_rerun
       hSmallFalse hNamedObligations
@@ -75682,19 +75281,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_canonica
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
     (hClosedRerun :
       ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_closed_rerun
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -75736,19 +75323,7 @@ theorem conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canoni
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
     (hClosedRerun :
       ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_tail_classification_closed_rerun
       hSmallFalse hNamedObligations
@@ -75791,19 +75366,7 @@ theorem conv_sound_withPropToType0Witness_of_mid_fuel_false_obligations_canonica
       ConvSoundWithPropToType0WitnessCanonicalFrontierTailAgreement)
     (hClosedRerun :
       ConvSoundWithPropToType0WitnessResolvedTailClosedRerun) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSigWithPropToType0Witness
-        rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSigWithPropToType0Witness.nameTranslates 0
-        rawRight right →
-      ConvDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSigWithPropToType0Witness := by
   exact
     conv_sound_withPropToType0Witness_of_small_fuel_false_obligations_canonical_frontier_geThree_closed_rerun
       (convSoundWithPropToType0Witness_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -80601,14 +80164,7 @@ theorem cicStage3RawArtifactSig_indG_zero_runtime_iota_nonreflexive_witness_pair
 
 theorem cicStage3RawArtifactSig_conv_sound_indG_zero_runtime_iota_nonreflexive_witness_pair
     (conv_sound :
-      ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-        evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-        ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-          left right) :
+      declarationConversionSound cicStage3RawArtifactSig) :
     ∃ rawRedex rawContractum targetRedex targetContractum,
       rawRedex = cicStage3IndGZeroRaw ∧
         rawContractum = (.con `z) ∧
@@ -86037,102 +85593,30 @@ private theorem cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_dep
                         hRightBody hPayload.2)
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutFuel : Prop :=
-  ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-    evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-    DIndGArtifactTermTranslates
-      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-    DIndGArtifactTermTranslates
-      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-    ∃ fuel,
-      let nxBinder := counterSuffix St.init.counter "nx"
-      let nyBinder := counterSuffix St.init.counter "ny"
-      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-      4 ≤ fuel ∧
-      mBool true ∈
-        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
-          (convReadoutNamed nxBinder nyBinder
-            cicStage3RawArtifactSig rawLeft rawRight)).1.map (·.1)
+  namedReadoutHasFuel cicStage3RawArtifactSig 4
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelLowerBound : Prop :=
-  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-      {outBnd : Metta.Bindings},
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSig rawLeft rawRight)).1 →
-    9 ≤ runFuel
+  namedReadoutFuelLowerBound cicStage3RawArtifactSig 9
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFourteenLowerBound :
     Prop :=
-  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-      {outBnd : Metta.Bindings},
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSig rawLeft rawRight)).1 →
-    14 ≤ runFuel
+  namedReadoutFuelLowerBound cicStage3RawArtifactSig 14
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelGeNine : Prop :=
-  ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-    evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-    DIndGArtifactTermTranslates
-      cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-    DIndGArtifactTermTranslates
-      cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-    ∃ fuel,
-      let nxBinder := counterSuffix St.init.counter "nx"
-      let nyBinder := counterSuffix St.init.counter "ny"
-      let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-      9 ≤ fuel ∧
-      mBool true ∈
-        (mettaEval kernelDefControlEnv (((fuel + 2) + 2) + 1) stNamed []
-          (convReadoutNamed nxBinder nyBinder
-            cicStage3RawArtifactSig rawLeft rawRight)).1.map (·.1)
+  namedReadoutHasFuel cicStage3RawArtifactSig 9
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse : Prop :=
-  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-      {outBnd : Metta.Bindings},
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-    runFuel < 9 →
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSig rawLeft rawRight)).1 →
-    False
+  namedReadoutRefusesBefore cicStage3RawArtifactSig 9
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse :
     Prop :=
-  ∀ {runFuel : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-      {outBnd : Metta.Bindings},
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-    2 ≤ runFuel →
-    runFuel < 9 →
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSig rawLeft rawRight)).1 →
-    False
+  namedReadoutRefusesBetween cicStage3RawArtifactSig 2 9
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt
     (runFuel : Nat) : Prop :=
   ∀ {rawLeft rawRight : DIndGArtifactTerm} {outBnd : Metta.Bindings},
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSig rawLeft rawRight)).1 →
+        (mBool true, outBnd) ∈
+      initialNamedConversionReadout cicStage3RawArtifactSig runFuel rawLeft rawRight →
     False
 
 private theorem convReadoutNamed_left_branch_noerr_middle_not_error
@@ -86301,9 +85785,7 @@ private theorem nf_binary_readout_arg_find_none_nonterminal
 
 private theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelFalseAt_two :
     ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 2 := by
-  intro rawLeft rawRight outBnd
-  dsimp [ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt]
-  intro hRun
+  intro rawLeft rawRight outBnd hRun
   let nxBinder := counterSuffix St.init.counter "nx"
   let nyBinder := counterSuffix St.init.counter "ny"
   let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
@@ -86696,9 +86178,7 @@ private theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelFalseAt_three_o
           0 stNamed nxBinder nyBinder
           cicStage3RawArtifactSig rawLeft rawRight) :
     ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 3 := by
-  intro rawLeft rawRight outBnd
-  dsimp [ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt]
-  intro hRun
+  intro rawLeft rawRight outBnd hRun
   let nxBinder := counterSuffix St.init.counter "nx"
   let nyBinder := counterSuffix St.init.counter "ny"
   let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
@@ -86728,9 +86208,7 @@ theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelTwoThroughEightFalse_of
     (h7 : ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 7)
     (h8 : ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt 8) :
     ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse := by
-  intro runFuel rawLeft rawRight outBnd
-  dsimp [ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFalseAt]
-  intro hGe2 hLt9 hRun
+  intro runFuel rawLeft rawRight outBnd hGe2 hLt9 hRun
   have hCases :
       runFuel = 2 ∨ runFuel = 3 ∨ runFuel = 4 ∨ runFuel = 5 ∨
         runFuel = 6 ∨ runFuel = 7 ∨ runFuel = 8 := by
@@ -86749,9 +86227,7 @@ theorem convSoundCicStage3RawArtifactSig_namedReadoutSmallFuelFalse_of_two_throu
     (hMidFalse :
       ConvSoundCicStage3RawArtifactSigNamedReadoutFuelTwoThroughEightFalse) :
     ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse := by
-  intro runFuel rawLeft rawRight outBnd
-  dsimp
-  intro hLt9 hRun
+  intro runFuel rawLeft rawRight outBnd hLt9 hRun
   by_cases hLt2 : runFuel < 2
   · exact
       mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_fuel_lt_two_false
@@ -86767,55 +86243,20 @@ theorem convSoundCicStage3RawArtifactSig_namedReadoutSmallFuelFalse_of_two_throu
 theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelLowerBound_of_small_false
     (hSmallFalse :
       ConvSoundCicStage3RawArtifactSigNamedReadoutSmallFuelFalse) :
-    ConvSoundCicStage3RawArtifactSigNamedReadoutFuelLowerBound := by
-  intro runFuel rawLeft rawRight outBnd
-  dsimp
-  intro hRun
-  by_contra hNotLe
-  exact
-    hSmallFalse
-      (runFuel := runFuel) (rawLeft := rawLeft) (rawRight := rawRight)
-      (outBnd := outBnd) (Nat.lt_of_not_ge hNotLe) hRun
+    ConvSoundCicStage3RawArtifactSigNamedReadoutFuelLowerBound :=
+  namedReadoutLowerBound_of_refusesBefore cicStage3RawArtifactSig 9 hSmallFalse
 
 theorem convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_lowerBound
     (hLowerBound :
       ConvSoundCicStage3RawArtifactSigNamedReadoutFuelLowerBound) :
-    ConvSoundCicStage3RawArtifactSigNamedReadoutFuel := by
-  intro rawLeft rawRight left right hconv _hLeft _hRight
-  rcases
-      evaluator_conv_true_named_readout_pair_exists
-        (sig := cicStage3RawArtifactSig)
-        (rawLeft := rawLeft) (rawRight := rawRight) hconv with
-    ⟨runFuel, outBnd, hRun⟩
-  have hRunLower : 9 ≤ runFuel := hLowerBound hRun
-  rcases Nat.exists_eq_add_of_le hRunLower with
-    ⟨fuelExtra, hRunFuelEq⟩
-  refine ⟨fuelExtra + 4, by omega, ?_⟩
-  dsimp at hRun ⊢
-  have hValue := mettaEval_value_mem_of_pair_mem hRun
-  have hRunFuelEq' : fuelExtra + 4 + 2 + 2 + 1 = runFuel := by
-    omega
-  simpa [hRunFuelEq'] using hValue
+    ConvSoundCicStage3RawArtifactSigNamedReadoutFuel :=
+  namedReadoutHasFuel_of_lowerBound cicStage3RawArtifactSig 4 hLowerBound
 
 theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelGeNine_of_fourteen_lowerBound
     (hLowerBound :
       ConvSoundCicStage3RawArtifactSigNamedReadoutFuelFourteenLowerBound) :
-    ConvSoundCicStage3RawArtifactSigNamedReadoutFuelGeNine := by
-  intro rawLeft rawRight left right hconv _hLeft _hRight
-  rcases
-      evaluator_conv_true_named_readout_pair_exists
-        (sig := cicStage3RawArtifactSig)
-        (rawLeft := rawLeft) (rawRight := rawRight) hconv with
-    ⟨runFuel, outBnd, hRun⟩
-  have hRunLower : 14 ≤ runFuel := hLowerBound hRun
-  rcases Nat.exists_eq_add_of_le hRunLower with
-    ⟨fuelExtra, hRunFuelEq⟩
-  refine ⟨fuelExtra + 9, by omega, ?_⟩
-  dsimp at hRun ⊢
-  have hValue := mettaEval_value_mem_of_pair_mem hRun
-  have hRunFuelEq' : fuelExtra + 9 + 2 + 2 + 1 = runFuel := by
-    omega
-  simpa [hRunFuelEq'] using hValue
+    ConvSoundCicStage3RawArtifactSigNamedReadoutFuelGeNine :=
+  namedReadoutHasFuel_of_lowerBound cicStage3RawArtifactSig 9 hLowerBound
 
 theorem convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_small_false
     (hSmallFalse :
@@ -86834,14 +86275,9 @@ def ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteSmallFuelFalse : Prop :=
       cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
     DIndGArtifactTermTranslates
       cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-    runFuel < 9 →
+        runFuel < 9 →
     (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-      (convReadoutNamed nxBinder nyBinder
-        cicStage3RawArtifactSig rawLeft rawRight)).1 →
+      initialNamedConversionReadout cicStage3RawArtifactSig runFuel rawLeft rawRight →
     False
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt
@@ -86853,13 +86289,8 @@ def ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt
       cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
     DIndGArtifactTermTranslates
       cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-    let nxBinder := counterSuffix St.init.counter "nx"
-    let nyBinder := counterSuffix St.init.counter "ny"
-    let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
-    (mBool true, outBnd) ∈
-      (mettaEval kernelDefControlEnv runFuel stNamed []
-        (convReadoutNamed nxBinder nyBinder
-          cicStage3RawArtifactSig rawLeft rawRight)).1 →
+        (mBool true, outBnd) ∈
+      initialNamedConversionReadout cicStage3RawArtifactSig runFuel rawLeft rawRight →
     False
 
 private theorem convSoundCicStage3RawArtifactSig_namedReadoutUseSiteFuelFalseAt_three_of_static_obligations
@@ -86877,9 +86308,7 @@ private theorem convSoundCicStage3RawArtifactSig_namedReadoutUseSiteFuelFalseAt_
           0 stNamed nxBinder nyBinder
           cicStage3RawArtifactSig rawLeft rawRight) :
     ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 3 := by
-  intro rawLeft rawRight left right outBnd _hconv hLeft hRight
-  dsimp [ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt]
-  intro hRun
+  intro rawLeft rawRight left right outBnd _hconv hLeft hRight hRun
   let nxBinder := counterSuffix St.init.counter "nx"
   let nyBinder := counterSuffix St.init.counter "ny"
   let stNamed : St := { counter := St.init.counter + 1, world := St.init.world }
@@ -87750,14 +87179,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
     (hTailSplit :
       ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplit) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   intro rawLeft rawRight left right hconv hLeft hRight
   rcases
       convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_small_false
@@ -87788,14 +87210,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
     (hTailSplit :
       ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitNonError) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   intro rawLeft rawRight left right hconv hLeft hRight
   rcases
       convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_small_false
@@ -87826,14 +87241,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_namedReadoutFuel_obligations_tail_
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
     (hTailSplit :
       ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitNonError) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   intro rawLeft rawRight left right hconv hLeft hRight
   rcases hNamedReadoutFuel hconv hLeft hRight with
     ⟨fuel, hFuel, hNamedTrue⟩
@@ -87862,14 +87270,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligatio
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors)
     (hTailSplit :
       ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitNonError) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_namedReadoutFuel_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
       (convSoundCicStage3RawArtifactSig_namedReadoutFuel_of_useSite_small_false
@@ -87885,14 +87286,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
     (hTailClass :
       ConvSoundCicStage3RawArtifactSigTailRuntimeConvDeclClassification) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_convDecl_split
       hSmallFalse hNamedObligations hTailValues
@@ -87908,14 +87302,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_va
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
     (hTailClass :
       ConvSoundCicStage3RawArtifactSigTailRuntimeConvDeclClassification) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_tail_classification
       (convSoundCicStage3RawArtifactSig_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -87931,14 +87318,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_geNine_named_obligations_tail_valu
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeys)
     (hTailSplit :
       ConvSoundCicStage3RawArtifactSigExtractedTailRuntimeConvDeclSplitGeNine) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   intro rawLeft rawRight left right hconv hLeft hRight
   rcases hNamedReadoutFuel hconv hLeft hRight with
     ⟨fuel, hFuel, hNamedTrue⟩
@@ -87971,14 +87351,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_
       NfValueRuntimeExtractionOnContinuations cicStage3RawArtifactSig
         (fun raw out => (out == emptyA || out.isError) = false →
           CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out) 3) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
       hSmallFalse hNamedObligations hTailValues
@@ -87999,14 +87372,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_
       NfValueRuntimeExtractionOnContinuations cicStage3RawArtifactSig
         (fun raw out => (out == emptyA || out.isError) = false →
           CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out) 1) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
       hSmallFalse hNamedObligations hTailValues
@@ -88027,14 +87393,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligatio
       NfValueRuntimeExtractionOnContinuations cicStage3RawArtifactSig
         (fun raw out => (out == emptyA || out.isError) = false →
           CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out) 1) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_convDecl_split_nonError
       hUseSiteSmallFalse hNamedObligations hTailValues
@@ -88055,14 +87414,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_va
       NfValueRuntimeExtractionOnContinuations cicStage3RawArtifactSig
         (fun raw out => (out == emptyA || out.isError) = false →
           CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out) 3) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geThree_nonError
       (convSoundCicStage3RawArtifactSig_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -88082,14 +87434,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_va
       NfValueRuntimeExtractionOnContinuations cicStage3RawArtifactSig
         (fun raw out => (out == emptyA || out.isError) = false →
           CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out) 1) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
       (convSoundCicStage3RawArtifactSig_namedReadoutSmallFuelFalse_of_two_through_eight
@@ -89350,14 +88695,7 @@ theorem infer_sound
 
 theorem evaluator_soundness_cicStage3RawArtifactSig_of_conv_sound
     (hconv :
-      ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-        evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-        ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-          left right) :
+      declarationConversionSound cicStage3RawArtifactSig) :
     DIndGArtifactEvaluatorSoundness evaluator cicStage3RawArtifactSig := by
   exact
     { infer_sound := by
@@ -97310,9 +96648,7 @@ theorem convSoundCicStage3RawArtifactSig_useSiteSmallFuelFalse_of_three_four_eig
     (h4 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 4)
     (h8 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 8) :
     ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteSmallFuelFalse := by
-  intro runFuel rawLeft rawRight left right outBnd hconv hLeft hRight
-  dsimp
-  intro hLt9 hRun
+  intro runFuel rawLeft rawRight left right outBnd hconv hLeft hRight hLt9 hRun
   by_cases hLt2 : runFuel < 2
   · exact
       mettaEval_kernelDefControlEnv_convReadoutNamed_true_pair_fuel_lt_two_false
@@ -97354,14 +96690,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_
           CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out) 1)
     (hTailValues :
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
       hSmallFalse hNamedObligations hTailValues
@@ -97379,14 +96708,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligatio
           CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out) 1)
     (hTailValues :
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
       hUseSiteSmallFalse hNamedObligations hTailValues
@@ -97405,14 +96727,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_three_four_eight_obligations_tail_
     (h3 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 3)
     (h4 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 4)
     (h8 : ConvSoundCicStage3RawArtifactSigNamedReadoutUseSiteFuelFalseAt 8) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_useSite_small_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne
       (convSoundCicStage3RawArtifactSig_useSiteSmallFuelFalse_of_three_four_eight
@@ -97430,14 +96745,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_va
           CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out) 1)
     (hTailValues :
       ConvSoundCicStage3RawArtifactSigNamedReadoutTailValuesWithKeysAndNoErrors) :
-    ∀ {rawLeft rawRight : DIndGArtifactTerm} {left right : ScopedTerm 0},
-      evaluator.conv cicStage3RawArtifactSig rawLeft rawRight →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawLeft left →
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates 0 rawRight right →
-      ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-        left right := by
+    declarationConversionSound cicStage3RawArtifactSig := by
   exact
     conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_values_with_keys_and_no_errors_canonical_frontier_convDecl_geOne_nonError
       hMidFalse hNamedObligations hTailValues

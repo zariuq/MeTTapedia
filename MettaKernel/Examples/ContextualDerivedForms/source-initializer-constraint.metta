@@ -1,0 +1,6 @@
+(= (pick-constraint) (let $ignored1 (add-atom &self (event accepted)) a))
+(= (pick-constraint) (let $ignored2 (add-atom &self (event rejected)) b))
+!(collapse (let a (pick-constraint) chosen))
+!(collapse (match &self (event $x) $x))
+!(collapse (let $value (pick-constraint) (selected $value)))
+!(collapse (match &self (event $x) $x))

@@ -1,3 +1,5 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationNameTraversal
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.GSLT.LanguageDef.BindingDecisionLanguage
 import Mettapedia.GSLT.LanguageDef.OrderedDecisionRuleFusion
 import Mettapedia.GSLT.LanguageDef.MeTTaILPatternMatrixCompilation
@@ -1242,56 +1244,9 @@ private theorem labels_nodup : (language.terms.map (·.label)).Nodup := by
   decide
 
 private theorem rewrite_checks :
-    language.rewrites.all (RewriteValidationCertificate.check language) = true := by
-  simp +decide [
-    RewriteValidationCertificate.check, RewriteValidationCertificate.contextTypesCheck,
-    RewriteValidationCertificate.patternDeclaredCheck,
-    RewriteValidationCertificate.premisesDeclaredCheck,
-    RewriteValidationCertificate.allPatternsScopedCheck,
-    RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-    RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-    RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-    RewriteValidationCertificate.rightBoundCheck,
-    RewriteValidationCertificate.constructorSignatures,
-    RewriteValidationCertificate.constructorLabels, language, succeedRewrite, captureRewrite,
-    checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite, joinMergeRewrite,
-    finishRewrite, dropRewrite, tryLeafRewrite, tryNextRewrite, switchDispatchRewrite,
-    switchDefaultRewrite, dispatchHitRewrite, dispatchMissRewrite, prefilterDoneRewrite,
-    prefilterWildRewrite, prefilterNodeRewrite, afterMatchRewrite, premiseRewrite,
-    premisesDoneRewrite, instVarRewrite, instBvarRewrite, instAppRewrite, instargsDoneRewrite,
-    instargsNextRewrite, iretArgRewrite, iretDoneRewrite, runPattern, retPattern, donePattern,
-    succeedPattern, capturePattern, checkBoundPattern, checkConstructorPattern, joinPattern,
-    nilBindingsPattern, bindPattern, joinRightPattern, joinMergePattern, knilPattern, kconsPattern,
-    metavariable, mmRunPattern, dispatchPattern, prefilterPattern, premisesPattern, instPattern,
-    instargsPattern, iretPattern, mmDonePattern, dropPattern, tryPattern, switchPattern,
-    bconsPattern, cconsPattern, cnilPattern, pnilPattern, pconsPattern, wildPattern, nodePattern,
-    planPattern, afterPattern, qnilPattern, qconsPattern, queryPattern, tvarPattern, tbvarPattern,
-    tappPattern, tnilPattern, tconsPattern, inilPattern, iconsPattern, argPattern, projectRelation,
-    boundRelation, constructorRelation, mergeRelation, keyIsRelation, keyNotRelation,
-    unfoldRelation, appendRelation, sourceQueryRelation, lookupRelation, bvarRelation,
-    buildRelation, pathType, indexType, nameType, subjectType, decisionType, bindingsType,
-    frameType, kontType, stateType, headType, kindType, keyType, matrixPatternType, patternsType,
-    cursorType, templateType, templatesType, namesType, queryType, queriesType, planType,
-    programType, branchesType, instantiateFrameType, instantiateKontType, rootConstructor,
-    childConstructor, zeroConstructor, succConstructor, succeedConstructor, captureConstructor,
-    checkBoundConstructor, checkConstructorConstructor, joinConstructor, nilBindingsConstructor,
-    bindConstructor, joinRightConstructor, joinMergeConstructor, knilConstructor, kconsConstructor,
-    runConstructor, retConstructor, doneConstructor, vecConstructor, bagConstructor,
-    setConstructor, headFvarConstructor, headBvarConstructor, headAppConstructor,
-    headLambdaConstructor, headMultiConstructor, headSubstConstructor, headCollConstructor,
-    keyConstructor, wildConstructor, nodeConstructor, pnilConstructor, pconsConstructor,
-    cnilConstructor, cconsConstructor, tvarConstructor, tbvarConstructor, tappConstructor,
-    tnilConstructor, tconsConstructor, nnilConstructor, nconsConstructor, queryConstructor,
-    qnilConstructor, qconsConstructor, planConstructor, failureConstructor, dropConstructor,
-    tryConstructor, switchConstructor, bnilConstructor, bconsConstructor, afterConstructor,
-    argConstructor, inilConstructor, iconsConstructor, mmRunConstructor, dispatchConstructor,
-    prefilterConstructor, premisesConstructor, instConstructor, instargsConstructor,
-    iretConstructor, mmDoneConstructor, constructor, LanguageDef.typeNames,
-    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames, Pattern.constructorRefs,
-    Pattern.constructorRefsList, Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt, Pattern.freeFvarNames, TypeExpr.baseNames, TypeDecl.plain,
-    LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
-    LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams]
+    language.rewrites.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private theorem rewrites_validate :
     ∀ rewrite ∈ language.rewrites, language.validateRewrite rewrite = [] :=
@@ -1312,18 +1267,8 @@ def ir (relations : RelationEnv) (source : LanguageDef) : IRLanguage :=
   ⟨validatedLanguage, relationEnv relations source⟩
 
 private theorem rules_noncontextual :
-    ∀ rule, rule ∈ language.rewrites → NoncontextualPremises rule.premises := by
-  intro rule ruleMember
-  change rule ∈
-    [succeedRewrite, captureRewrite, checkBoundRewrite, checkConstructorRewrite, joinRewrite, joinRightRewrite, joinMergeRewrite, finishRewrite, dropRewrite, tryLeafRewrite, tryNextRewrite, switchDispatchRewrite, switchDefaultRewrite, dispatchHitRewrite, dispatchMissRewrite, prefilterDoneRewrite, prefilterWildRewrite, prefilterNodeRewrite, afterMatchRewrite, premiseRewrite, premisesDoneRewrite, instVarRewrite, instBvarRewrite, instAppRewrite, instargsDoneRewrite, instargsNextRewrite, iretArgRewrite, iretDoneRewrite] at ruleMember
-  simp only [List.mem_cons, List.mem_nil_iff, or_false] at ruleMember
-  rcases ruleMember with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  all_goals
-    first
-    | exact .nil
-    | exact .relationQuery .nil
-    | exact .relationQuery (.relationQuery .nil)
-    | exact .relationQuery (.relationQuery (.relationQuery .nil))
+    ∀ rule, rule ∈ language.rewrites → NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 theorem language_isEquationFree : language.isEquationFree = true := by decide
 

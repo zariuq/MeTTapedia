@@ -1,0 +1,4 @@
+provable sort wff;
+term b (x: wff): wff;
+axiom axb (a: wff): $ b a $;
+pub theorem th (ba a: wff): $ b a $ = 'axb;

@@ -1,0 +1,20 @@
+Module Counting {
+  Theory Counting() {
+    Types {
+      Nat;
+      State;
+    }
+    Terms {
+      "Zero" .  |- "zero" : Nat;
+      "Succ" . n:Nat |- "succ" n : Nat;
+      "Counter" . n:Nat |- "counter" n : State;
+      "Halted" .  |- "halted" : State;
+    }
+    Equations {
+    }
+    Rewrites {
+      "Advance" . n:Nat |- "Counter"(n) ~> "Counter"("Succ"(n));
+    }
+  }
+  theory Counting()
+}

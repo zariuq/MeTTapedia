@@ -1,0 +1,22 @@
+(sort wff provable)
+
+(sort a)
+
+(sort b)
+
+(sort c)
+
+(sort d)
+
+(term ab ((_ a ())) (b ()))
+
+(term cd ((_ c ())) (d ()))
+
+(term bc ((_ b ())) (c ()))
+
+(term fd ((_ d ())) (wff ()))
+
+(term x0 () (a ()))
+
+
+(axiom ax () () (fd (cd (bc (ab (x0))))))

@@ -1,0 +1,206 @@
+=== Rho-signature COMM companion: literal channels, authored parallel contexts ===
+Language: RhoCalc
+Carriers: Proc, Name
+Logic: top, bottom, and, or, implies, not, structural, modal; empty-context possibility=true
+Operational rules: #0 Comm; equation directions=0
+Operational contexts: root=true; constructor arguments=[]; under lambda=false; under multi-lambda=false; collections=[Bag]
+Source positions: 8; typed modal schemas: 16
+Cube: 30 modal slots + 25 operation slots; 2^55 vertices
+Selected vertex (uniform partial code-formation interpretation): equations=admitted; directed laws=unresolved; joint center=unresolved
+Structural formers:
+  S0 PZero() : Proc
+  S1 PDrop(n: Name) : Proc
+  S2 NQuote(p: Proc) : Name
+  S3 PPar(ps: Bag(Proc)) : Proc
+  S4 POutput(n: Name, q: Proc) : Proc
+  S5 PInput(n: Name, p: (Name -> Proc)) : Proc
+Modal schemas (full rely-family contracts; former admission requires the equation gate):
+  M0 @ root [decl 0 Comm; plan ordinal 0] Proc -> Proc; focus=Bag[PInput($n, lambda _. $p), POutput($n, $q) | $rest]; focus-bound=[]
+    rely={}; matched={n, p, n, q, rest}; hidden={n, p, q, rest}; slots=() -> *
+  M1 @ 0 [decl 0 Comm; plan ordinal 0] Proc -> Proc; focus=PInput($n, lambda _. $p); focus-bound=[]
+    rely={rest: Bag(Proc) @ *, q: Proc @ *}; matched={n, p}; hidden={p}; slots=(*, *) -> *
+  M2 @ 0/0 [decl 0 Comm; plan ordinal 0] Name -> Proc; focus=$n; focus-bound=[]
+    rely={rest: Bag(Proc) @ *, q: Proc @ *, p: Proc @ *}; matched={n}; hidden={}; slots=(*, *, *) -> *
+  M3 @ 0/1 [decl 0 Comm; plan ordinal 0] (Name -> Proc) -> Proc; focus=lambda _. $p; focus-bound=[]
+    rely={rest: Bag(Proc) @ *, n: Name @ *, q: Proc @ *}; matched={p}; hidden={p}; slots=(*, *, *) -> *
+  M4 @ 0/1/0 [decl 0 Comm; plan ordinal 0] Proc -> Proc; focus=$p; focus-bound=[Name]
+    rely={rest: Bag(Proc) @ *, n: Name @ *, q: Proc @ *}; matched={p}; hidden={p}; slots=(*, *, *) -> *
+  M5 @ 1 [decl 0 Comm; plan ordinal 0] Proc -> Proc; focus=POutput($n, $q); focus-bound=[]
+    rely={rest: Bag(Proc) @ *, p: Proc @ *}; matched={n, q}; hidden={q}; slots=(*, *) -> *
+  M6 @ 1/0 [decl 0 Comm; plan ordinal 0] Name -> Proc; focus=$n; focus-bound=[]
+    rely={rest: Bag(Proc) @ *, p: Proc @ *, q: Proc @ *}; matched={n}; hidden={}; slots=(*, *, *) -> *
+  M7 @ 1/1 [decl 0 Comm; plan ordinal 0] Proc -> Proc; focus=$q; focus-bound=[]
+    rely={rest: Bag(Proc) @ *, n: Name @ *, p: Proc @ *}; matched={q}; hidden={q}; slots=(*, *, *) -> *
+  M8 @ root [decl 0 Comm; plan ordinal 0] Bag(Proc) -> Bag(Proc); focus=Bag[PInput($n, lambda _. $p), POutput($n, $q) | $rest]; focus-bound=[]
+    rely={}; matched={n, p, n, q, rest}; hidden={n, p, q, rest}; slots=() -> *
+  M9 @ 0 [decl 0 Comm; plan ordinal 0] Proc -> Bag(Proc); focus=PInput($n, lambda _. $p); focus-bound=[]
+    rely={rest: Bag(Proc) @ *, q: Proc @ *}; matched={n, p}; hidden={p}; slots=(*, *) -> *
+  M10 @ 0/0 [decl 0 Comm; plan ordinal 0] Name -> Bag(Proc); focus=$n; focus-bound=[]
+    rely={rest: Bag(Proc) @ *, q: Proc @ *, p: Proc @ *}; matched={n}; hidden={}; slots=(*, *, *) -> *
+  M11 @ 0/1 [decl 0 Comm; plan ordinal 0] (Name -> Proc) -> Bag(Proc); focus=lambda _. $p; focus-bound=[]
+    rely={rest: Bag(Proc) @ *, n: Name @ *, q: Proc @ *}; matched={p}; hidden={p}; slots=(*, *, *) -> *
+  M12 @ 0/1/0 [decl 0 Comm; plan ordinal 0] Proc -> Bag(Proc); focus=$p; focus-bound=[Name]
+    rely={rest: Bag(Proc) @ *, n: Name @ *, q: Proc @ *}; matched={p}; hidden={p}; slots=(*, *, *) -> *
+  M13 @ 1 [decl 0 Comm; plan ordinal 0] Proc -> Bag(Proc); focus=POutput($n, $q); focus-bound=[]
+    rely={rest: Bag(Proc) @ *, p: Proc @ *}; matched={n, q}; hidden={q}; slots=(*, *) -> *
+  M14 @ 1/0 [decl 0 Comm; plan ordinal 0] Name -> Bag(Proc); focus=$n; focus-bound=[]
+    rely={rest: Bag(Proc) @ *, p: Proc @ *, q: Proc @ *}; matched={n}; hidden={}; slots=(*, *, *) -> *
+  M15 @ 1/1 [decl 0 Comm; plan ordinal 0] Proc -> Bag(Proc); focus=$q; focus-bound=[]
+    rely={rest: Bag(Proc) @ *, n: Name @ *, p: Proc @ *}; matched={q}; hidden={q}; slots=(*, *, *) -> *
+Operation profiles: PZero/0: () -> *; PDrop/1: (*) -> *; NQuote/1: (*) -> *; PPar/1: (*) -> *; POutput/2: (*, *) -> *; PInput/2: (*, *) -> *; Bag[2; rest]: (*, *, *) -> *; binder(_): (*) -> *; Bag[1; rest]: (*, *) -> *; substitution: (*, *) -> *
+Program-source classification: #0 classified [Proc]
+Concrete-source classification: #0 unclassified source carrier family
+Equation diagnostics: 
+Directed-law diagnostics: R #0: scoped dependency metadata n: [], p: [Name], q: [], rest: []
+Operational obligations: []
+Companion COMM has an outgoing successor [native outgoing possibility]
+  source: Bag[PInput(NQuote(PZero), lambda _. PDrop(#0)), POutput(NQuote(PZero), PZero)]
+  result: proved; budget=40; work=29; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  retained native answers/responses: 1
+  decl #0 Comm @ root bound=[] -> Bag[PZero]
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[{ path := [0], selected := 0 }, { path := [1], selected := 0 }]
+    authored RHS=Bag[subst($p, NQuote($q)) | $rest]; scoped assignment={rest[dependencies=[]; ambient=0]=Bag[]; q[dependencies=[]; ambient=0]=PZero; p[dependencies=[Name]; ambient=0]=PDrop(#0); n[dependencies=[]; ambient=0]=NQuote(PZero)}
+Authored parallel context permits COMM [native outgoing possibility]
+  source: Bag[PZero, Bag[PInput(NQuote(PZero), lambda _. PDrop(#0)), POutput(NQuote(PZero), PZero)]]
+  result: proved; budget=60; work=45; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  retained native answers/responses: 1
+  decl #0 Comm @ 1 bound=[] -> Bag[PZero, Bag[PZero]]
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[{ path := [0], selected := 0 }, { path := [1], selected := 0 }]
+    authored RHS=Bag[subst($p, NQuote($q)) | $rest]; scoped assignment={rest[dependencies=[]; ambient=0]=Bag[]; q[dependencies=[]; ambient=0]=PZero; p[dependencies=[Name]; ambient=0]=PDrop(#0); n[dependencies=[]; ambient=0]=NQuote(PZero)}
+Input-guard query with unfinished coverage [native outgoing possibility]
+  source: PInput(NQuote(PZero), lambda _. Bag[PInput(NQuote(PZero), lambda _. PDrop(#0)), POutput(NQuote(PZero), PZero)])
+  result: unknown; budget=3; work=3; source-admitted=true; exhaustive-coverage=false
+  reason: unfinished work: rule matcher/premises, scan incoming equation edges, derive finite universe; exhaustive occurrence coverage is not certified
+  receipt count: 0
+  retained native answers/responses: 0
+
+Every companion COMM successor satisfies false [native outgoing universal (not the incoming OSLF box)]
+  source: Bag[PInput(NQuote(PZero), lambda _. PDrop(#0)), POutput(NQuote(PZero), PZero)]
+  result: refuted; budget=40; work=29; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  retained native answers/responses: 0
+  decl #0 Comm @ root bound=[] -> Bag[PZero]
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[{ path := [0], selected := 0 }, { path := [1], selected := 0 }]
+    authored RHS=Bag[subst($p, NQuote($q)) | $rest]; scoped assignment={rest[dependencies=[]; ambient=0]=Bag[]; q[dependencies=[]; ambient=0]=PZero; p[dependencies=[Name]; ambient=0]=PDrop(#0); n[dependencies=[]; ambient=0]=NQuote(PZero)}
+COMM before any execution work [native outgoing possibility]
+  source: Bag[PInput(NQuote(PZero), lambda _. PDrop(#0)), POutput(NQuote(PZero), PZero)]
+  result: unknown; budget=0; work=0; source-admitted=true; exhaustive-coverage=false
+  reason: unfinished work: visit representative, derive finite universe; exhaustive occurrence coverage is not certified
+  receipt count: 0
+  retained native answers/responses: 0
+
+Equal endpoints retain two native COMM origins [native outgoing possibility]
+  source: Bag[PInput(NQuote(PZero), lambda _. PDrop(#0)), PInput(NQuote(PZero), lambda _. PDrop(#0)), POutput(NQuote(PZero), PZero)]
+  result: proved; budget=75; work=75; source-admitted=true; exhaustive-coverage=false
+  receipt count: 2
+  retained native answers/responses: 2
+  decl #0 Comm @ root bound=[] -> Bag[PZero, PInput(NQuote(PZero), lambda _. PDrop(#0))]
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[{ path := [0], selected := 0 }, { path := [1], selected := 1 }]
+    authored RHS=Bag[subst($p, NQuote($q)) | $rest]; scoped assignment={rest[dependencies=[]; ambient=0]=Bag[PInput(NQuote(PZero), lambda _. PDrop(#0))]; q[dependencies=[]; ambient=0]=PZero; p[dependencies=[Name]; ambient=0]=PDrop(#0); n[dependencies=[]; ambient=0]=NQuote(PZero)}
+  decl #0 Comm @ root bound=[] -> Bag[PZero, PInput(NQuote(PZero), lambda _. PDrop(#0))]
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[{ path := [0], selected := 1 }, { path := [1], selected := 1 }]
+    authored RHS=Bag[subst($p, NQuote($q)) | $rest]; scoped assignment={rest[dependencies=[]; ambient=0]=Bag[PInput(NQuote(PZero), lambda _. PDrop(#0))]; q[dependencies=[]; ambient=0]=PZero; p[dependencies=[Name]; ambient=0]=PDrop(#0); n[dependencies=[]; ambient=0]=NQuote(PZero)}
+
+=== Annotated beta: generated dependent modal instance ===
+Language: LambdaScoped
+Carriers: Term
+Logic: top, and, structural, modal; empty-context possibility=true
+Operational rules: #0 Beta; equation directions=0
+Operational contexts: root=true; constructor arguments=all; under lambda=true; under multi-lambda=true; collections=[Vec, Bag, Set]
+Source positions: 5; typed modal schemas: 5
+Cube: 9 modal slots + 10 operation slots; 2^19 vertices
+Selected vertex (uniform partial code-formation interpretation): equations=admitted; directed laws=unresolved; joint center=unresolved
+Structural formers:
+  S0 App(f: Term, a: Term) : Term
+  S1 Lam(body: (Term -> Term) binds x) : Term
+Modal schemas (full rely-family contracts; former admission requires the equation gate):
+  M0 @ root [decl 0 Beta; plan ordinal 0] Term -> Term; focus=App(Lam(lambda _. $B), $A); focus-bound=[]
+    rely={}; matched={B, A}; hidden={B, A}; slots=() -> *
+  M1 @ 0 [decl 0 Beta; plan ordinal 0] Term -> Term; focus=Lam(lambda _. $B); focus-bound=[]
+    rely={A: Term @ *}; matched={B}; hidden={B}; slots=(*) -> *
+  M2 @ 0/0 [decl 0 Beta; plan ordinal 0] (Term -> Term) -> Term; focus=lambda _. $B; focus-bound=[]
+    rely={A: Term @ *}; matched={B}; hidden={B}; slots=(*) -> *
+  M3 @ 0/0/0 [decl 0 Beta; plan ordinal 0] Term -> Term; focus=$B; focus-bound=[Term]
+    rely={A: Term @ *}; matched={B}; hidden={B}; slots=(*) -> *
+  M4 @ 1 [decl 0 Beta; plan ordinal 0] Term -> Term; focus=$A; focus-bound=[]
+    rely={B: Term @ *}; matched={A}; hidden={A}; slots=(*) -> *
+Operation profiles: App/2: (*, *) -> *; Lam/1: (*) -> *; binder(_): (*) -> *; substitution: (*, *) -> *
+Program-source classification: #0 classified [Term]
+Concrete-source classification: #0 classified [Term]
+Equation diagnostics: 
+Directed-law diagnostics: R #0: scoped dependency metadata B: [Term], A: []
+Operational obligations: []
+Beta reaches its specified substituted RHS [specified modal instance (not full rely-family membership)]
+  source: App(Lam(lambda _. Lam(lambda _. #1)), Lam(lambda _. #0))
+  result: proved; budget=40; work=40; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  retained native answers/responses: 1
+  decl #0 Beta @ root bound=[] -> Lam(lambda _. Lam(lambda _. #0))
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[]
+    authored RHS=subst($B, $A); scoped assignment={A[dependencies=[]; ambient=0]=Lam(lambda _. #0); B[dependencies=[Term]; ambient=0]=Lam(lambda _. #1)}
+Beta with an exhausted source budget [specified modal instance (not full rely-family membership)]
+  source: App(Lam(lambda _. Lam(lambda _. #1)), Lam(lambda _. #0))
+  result: unknown; budget=0; work=0; source-admitted=true; exhaustive-coverage=false
+  reason: unfinished work: visit representative, derive finite universe, visit representative, derive finite universe; exhaustive occurrence coverage is not certified
+  receipt count: 0
+  retained native answers/responses: 0
+
+Beta with missing actual assignments [specified modal instance]
+  result: refused; reason: the scoped assignment cannot instantiate the authored RHS
+Negation outside the selected finite-limit vocabulary [structural/propositional formula]
+  source: App(Lam(lambda _. Lam(lambda _. #1)), Lam(lambda _. #0))
+  result: refused: connective not; budget=40; work=40; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  decl #0 Beta @ root bound=[] -> Lam(lambda _. Lam(lambda _. #0))
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[]
+    authored RHS=subst($B, $A); scoped assignment={A[dependencies=[]; ambient=0]=Lam(lambda _. #0); B[dependencies=[Term]; ambient=0]=Lam(lambda _. #1)}
+
+=== Authored F/G theory: proper generated center ===
+Language: ProperEquationalCenter
+Carriers: Term
+Logic: top, bottom, and, or, implies, not, structural, modal; empty-context possibility=true
+Operational rules: #0 F-to-G; equation directions=2
+Operational contexts: root=true; constructor arguments=all; under lambda=true; under multi-lambda=true; collections=[Vec, Bag, Set]
+Source positions: 2; typed modal schemas: 2
+Cube: 2 modal slots + 4 operation slots; 2^6 vertices
+Selected vertex (uniform partial code-formation interpretation): equations=admitted; directed laws=admitted; joint center=admitted
+Structural formers:
+  S0 F(x: Term) : Term
+  S1 G(x: Term) : Term
+Modal schemas (full rely-family contracts; former admission requires the equation gate):
+  M0 @ root [decl 0 F-to-G; plan ordinal 0] Term -> Term; focus=F($x); focus-bound=[]
+    rely={}; matched={x}; hidden={x}; slots=() -> *
+  M1 @ 0 [decl 0 F-to-G; plan ordinal 0] Term -> Term; focus=$x; focus-bound=[]
+    rely={}; matched={x}; hidden={x}; slots=() -> *
+Operation profiles: F/1: (*) -> *; G/1: (*) -> *
+Program-source classification: #0 classified [Term]
+Concrete-source classification: #0 classified [Term]
+Equation diagnostics: 
+Directed-law diagnostics: 
+Operational obligations: []
+F/G execution at an admitted vertex [native outgoing possibility]
+  source: F(#0)
+  result: proved; budget=80; work=13; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  retained native answers/responses: 1
+  decl #0 F-to-G @ root bound=[Term] -> G(#0)
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[]
+    authored RHS=G($x); scoped assignment={x[dependencies=[]; ambient=1]=#0}
+F/G query at a rejected vertex [native outgoing possibility]
+  source: F(#0)
+  result: refused: selected equational vertex is rejected; budget=80; work=80; source-admitted=true; exhaustive-coverage=false
+  receipt count: 1
+  decl #0 F-to-G @ root bound=[Term] -> G(#0)
+    primitive-events=1; equation-administration=0; ordered premises=0; matcher choices=[]
+    authored RHS=G($x); scoped assignment={x[dependencies=[]; ambient=1]=#0}
+F/G guarded source retains unresolved admission [native outgoing possibility]
+  source: F(#0)
+  result: unknown; budget=80; work=7; source-admitted=false; exhaustive-coverage=false
+  reason: selected equation-law admission is unresolved; the source/operational profile is not admitted; unresolved execution obligations: [GeneralOccurrenceFrontier.Obligation.admission    (GeneralExecutionAdmission.Obligation.equationPremises      0      (ScopedEquationExecution.Orientation.forward)),  GeneralOccurrenceFrontier.Obligation.admission    (GeneralExecutionAdmission.Obligation.equationPremises      0      (ScopedEquationExecution.Orientation.reverse))]; exhaustive occurrence coverage is not certified
+  receipt count: 0
+
+Rejected vertex joint status: rejected
+Guarded vertex joint status: unresolved
+Guarded source diagnostics: E #0: 1 ordered guard premises require a guarded interpretation

@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationNameTraversal
 import Mettapedia.GSLT.LanguageDef.TptpOfficialFofToNamedLanguageDef
 
 /-!
@@ -588,374 +589,52 @@ private theorem constructorLabels_nodup :
     LanguageDef.constructorLabels_nodup_of_validate_eq_nil syntaxLanguage
       syntaxLanguage_validate
 
-private def constructorLabelNamespaced (label : String) : Bool :=
-  label.startsWith "tptp92-ast:" ||
-    label.startsWith "tptp-fof-named:" ||
-      label.startsWith "tptp-fof-symbol:" ||
-        label.startsWith "tptp-fof-elab:" ||
-        label = "$true" || label = "$false"
-
-private theorem constructorLabels_namespaced :
-    (RewriteValidationCertificate.constructorLabels language).all
-      constructorLabelNamespaced = true := by
-  decide +kernel
-
-private theorem plainName_not_constructor (name : String)
-    (plain : constructorLabelNamespaced name = false) :
-    name ∉ RewriteValidationCertificate.constructorLabels language := by
-  intro membership
-  have namespaced := (List.all_eq_true.mp constructorLabels_namespaced)
-    name membership
-  simp [plain] at namespaced
-
-local macro "certify_formula_row" : tactic =>
-  `(tactic|
-    (simp [RewriteValidationCertificate.check,
-      RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.premiseTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      delegateRule, nonassocRule, assocRule, unaryNotRule, quantifiedRule,
-      bindOneRule, bindMoreRule, plainAtomicNullaryRule,
-      plainAtomicAppliedRule, definedTruthRule, definedPredicateRule,
-      systemAtomicNullaryRule, systemAtomicAppliedRule, equalityRule,
-      inequalityRule, sequentRule, tupleEmptyRule,
-      tupleNonemptyRule, commaNilRule, commaConsRule,
-      request, requestWithBody, targetNullary, targetUnary, targetBinary,
-      targetPredicateHead, targetPredicate, targetEqual, targetBinder,
-      sourceVariable,
-      sourceFunctor, mkRule, typed, congruence, translateTerm,
-      translateArguments, targetName, targetTermsNil,
-      sourceDefinedFunctor, sourceSystemFunctor, sourceToken,
-      sourceAtomicWord, a, v,
-      RewriteValidationCertificate.constructorSignatures,
-      Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt,
-      Pattern.isWellScopedListAt, Pattern.freeFvarNames,
-      LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
-      LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames,
-      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
-      plainName_not_constructor, constructorLabelNamespaced] <;>
-      decide +kernel))
-
-private theorem delegationFormulaRules_checked :
-    delegationFormulaRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [delegationFormulaRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem delegationLogicRules_checked :
-    delegationLogicRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [delegationLogicRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem delegationBinaryRouteRules_checked :
-    delegationBinaryRouteRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [delegationBinaryRouteRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem delegationAssocRouteRules_checked :
-    delegationAssocRouteRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [delegationAssocRouteRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem delegationUnitRouteRules_checked :
-    delegationUnitRouteRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [delegationUnitRouteRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem delegationUnitaryRouteRules_checked :
-    delegationUnitaryRouteRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [delegationUnitaryRouteRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem delegationAtomicRouteRules_checked :
-    delegationAtomicRouteRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [delegationAtomicRouteRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem delegationTailRules_checked :
-    delegationTailRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [delegationTailRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
 private theorem delegationRules_checked :
-    delegationRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [delegationRules, List.all_append,
-    delegationFormulaRules_checked, delegationLogicRules_checked,
-    delegationBinaryRouteRules_checked, delegationAssocRouteRules_checked,
-    delegationUnitRouteRules_checked, delegationUnitaryRouteRules_checked,
-    delegationAtomicRouteRules_checked, delegationTailRules_checked,
-    Bool.and_self]
-
-private theorem nonassocIffRules_checked :
-    nonassocIffRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [nonassocIffRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem nonassocImplicationRules_checked :
-    nonassocImplicationRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [nonassocImplicationRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem nonassocXorRules_checked :
-    nonassocXorRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [nonassocXorRules, List.all_cons, List.all_nil, Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem nonassocNorNandRules_checked :
-    nonassocNorNandRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [nonassocNorNandRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
+    delegationRules.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private theorem nonassocRules_checked :
-    nonassocRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [nonassocRules, List.all_append,
-    nonassocIffRules_checked, nonassocImplicationRules_checked,
-    nonassocXorRules_checked, nonassocNorNandRules_checked, Bool.and_self]
-
-private theorem assocOrRules_checked :
-    assocOrRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [assocOrRules, List.all_cons, List.all_nil, Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem assocAndRules_checked :
-    assocAndRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [assocAndRules, List.all_cons, List.all_nil, Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
+    nonassocRules.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private theorem assocRules_checked :
-    assocRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [assocRules, List.all_append, assocOrRules_checked,
-    assocAndRules_checked, Bool.and_self]
+    assocRules.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private theorem unaryNotRule_checked :
-    RewriteValidationCertificate.check language unaryNotRule = true := by
-  certify_formula_row
-
-private theorem quantifierHeadRules_checked :
-    quantifierHeadRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [quantifierHeadRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem bindAllRules_checked :
-    bindAllRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [bindAllRules, List.all_cons, List.all_nil, Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem bindExRules_checked :
-    bindExRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [bindExRules, List.all_cons, List.all_nil, Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
+    [unaryNotRule].all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private theorem quantifierRules_checked :
-    quantifierRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [quantifierRules, List.all_append, quantifierHeadRules_checked,
-    bindAllRules_checked, bindExRules_checked, Bool.and_self]
-
-private theorem plainAtomicLowerNullaryRules_checked :
-    plainAtomicLowerNullaryRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [plainAtomicLowerNullaryRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem plainAtomicQuotedNullaryRules_checked :
-    plainAtomicQuotedNullaryRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [plainAtomicQuotedNullaryRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem plainAtomicLowerAppliedRules_checked :
-    plainAtomicLowerAppliedRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [plainAtomicLowerAppliedRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem plainAtomicQuotedAppliedRule_checked :
-    RewriteValidationCertificate.check language
-      (plainAtomicAppliedRule "tptp-fof-elab:plain-quoted-applied"
-        "tptp92-ast:atomic-word:alt-2"
-        "tptp92-ast:token:single-quoted") = true := by
-  certify_formula_row
-
-private theorem plainAtomicBackquotedAppliedRule_checked :
-    RewriteValidationCertificate.check language
-      (plainAtomicAppliedRule "tptp-fof-elab:plain-backquoted-applied"
-        "tptp92-ast:atomic-word:alt-3"
-        "tptp92-ast:token:back-quoted") = true := by
-  certify_formula_row
-
-private theorem plainAtomicQuotedAppliedRules_checked :
-    plainAtomicQuotedAppliedRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp [plainAtomicQuotedAppliedRules,
-    plainAtomicQuotedAppliedRule_checked,
-    plainAtomicBackquotedAppliedRule_checked]
-
-private theorem definedTruthRules_checked :
-    definedTruthRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [definedTruthRules, List.all_cons, List.all_nil, Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem definedPredicateRules_checked :
-    definedPredicateRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [definedPredicateRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem systemAtomicRules_checked :
-    systemAtomicRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [systemAtomicRules, List.all_cons, List.all_nil, Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem equalityRules_checked :
-    equalityRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [equalityRules, List.all_cons, List.all_nil, Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
+    quantifierRules.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private theorem atomicRules_checked :
-    atomicRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [atomicRules, List.all_append,
-    plainAtomicLowerNullaryRules_checked,
-    plainAtomicQuotedNullaryRules_checked,
-    plainAtomicLowerAppliedRules_checked,
-    plainAtomicQuotedAppliedRules_checked, definedTruthRules_checked,
-    definedPredicateRules_checked, systemAtomicRules_checked,
-    equalityRules_checked, Bool.and_self]
-
-private theorem sequentMainRules_checked :
-    sequentMainRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [sequentMainRules, List.all_cons, List.all_nil, Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem conjunctionHeadRules_checked :
-    conjunctionHeadRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [conjunctionHeadRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem conjunctionTailRules_checked :
-    conjunctionTailRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [conjunctionTailRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem disjunctionHeadRules_checked :
-    disjunctionHeadRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [disjunctionHeadRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
-
-private theorem disjunctionTailRules_checked :
-    disjunctionTailRules.all
-      (RewriteValidationCertificate.check language) = true := by
-  simp only [disjunctionTailRules, List.all_cons, List.all_nil,
-    Bool.and_eq_true]
-  repeat' apply And.intro
-  all_goals certify_formula_row
+    atomicRules.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private theorem sequentRules_checked :
-    sequentRules.all (RewriteValidationCertificate.check language) = true := by
-  simp only [sequentRules, List.all_append, sequentMainRules_checked,
-    conjunctionHeadRules_checked, conjunctionTailRules_checked,
-    disjunctionHeadRules_checked, disjunctionTailRules_checked, Bool.and_self]
+    sequentRules.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
-private theorem checkedRow_validate {rows : List RewriteRule}
-    (checks : rows.all (RewriteValidationCertificate.check language) = true)
-    {rewrite : RewriteRule} (membership : rewrite ∈ rows) :
-    language.validateRewrite rewrite = [] := by
-  apply RewriteValidationCertificate.validateRewrite_eq_nil_of_check
-    constructorLabels_nodup
-  exact (List.all_eq_true.mp checks) rewrite membership
+private theorem formulaRewrites_checked :
+    formulaRewrites.all (RewriteValidationCertificate.check language) = true := by
+  simp only [formulaRewrites, List.all_append, delegationRules_checked, nonassocRules_checked,
+    assocRules_checked, unaryNotRule_checked, quantifierRules_checked, atomicRules_checked,
+    sequentRules_checked, Bool.and_self]
 
 theorem formulaRewrite_validate (rewrite : RewriteRule)
     (membership : rewrite ∈ formulaRewrites) :
-    language.validateRewrite rewrite = [] := by
-  simp only [formulaRewrites, List.mem_append, List.mem_singleton] at membership
-  rcases membership with beforeSequent | sequent
-  · rcases beforeSequent with beforeAtomic | atomic
-    · rcases beforeAtomic with beforeQuantifier | quantifier
-      · rcases beforeQuantifier with beforeUnary | unary
-        · rcases beforeUnary with beforeAssoc | assoc
-          · rcases beforeAssoc with routing | nonassoc
-            · exact checkedRow_validate delegationRules_checked routing
-            · exact checkedRow_validate nonassocRules_checked nonassoc
-          · exact checkedRow_validate assocRules_checked assoc
-        · subst rewrite
-          exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check
-            constructorLabels_nodup unaryNotRule_checked
-      · exact checkedRow_validate quantifierRules_checked quantifier
-    · exact checkedRow_validate atomicRules_checked atomic
-  · exact checkedRow_validate sequentRules_checked sequent
+    language.validateRewrite rewrite = [] :=
+  RewriteValidationCertificate.validateRewrite_eq_nil_of_all
+    constructorLabels_nodup formulaRewrites_checked rewrite membership
 
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_rows

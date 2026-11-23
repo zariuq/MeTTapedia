@@ -1,0 +1,1 @@
+bind $n <- { first { fire &q [ (, (take (job $j)) (take (receiver $r))) ] => (done $j $r) -> &out } } ; { collect { read &out : (done $j $r) => { emit (done $j $r) } } }

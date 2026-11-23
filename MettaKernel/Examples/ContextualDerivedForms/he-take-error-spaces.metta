@@ -1,0 +1,10 @@
+; Calibration fixture: a routing error retains the take and leaves another space alone.
+!(import! &self (library lib_transform))
+!(bind! &q (new-space))
+!(bind! &other (new-space))
+!(add-atom &q (job a))
+!(add-atom &other guard)
+!(case (transform &q (take (job $j)) done 42)
+    (((Error $site $reason) caught) ($_ normal)))
+!(collapse (match &q (job $j) $j))
+!(collapse (match &other $x $x))

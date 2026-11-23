@@ -1,0 +1,10 @@
+mod GOLD-VENDING is
+  sort Marking .
+  ops empty $ q a c : -> Marking [ctor] .
+  op __ : Marking Marking -> Marking [ctor assoc comm id: empty] .
+  var M : Marking .
+  rl [coffee] : $ => c .
+  rl [apple] : $ => a q .
+  rl [change] : q q q q => $ .
+endm
+search $ $ q q q =>* a c M .

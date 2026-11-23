@@ -57,6 +57,11 @@ def run : Except String Reading := do
 
 def refused (state : Reading) (record : Json) : Bool := !((receiveEvent record).run state).isOk
 
+def refusedWith (state : Reading) (record : Json) (expected : String) : Bool :=
+  match (receiveEvent record).run state with
+  | .ok _ => false
+  | .error actual => actual == expected
+
 def malformedRow : Reading := {initial with input := {initial.input with
   terms := terms.set! 0 (arr [toJson "var",toJson "x",toJson (0:Nat),toJson "extra"])}}
 
@@ -64,6 +69,9 @@ def controls : List (String × Bool) :=
   let positive := run.isOk
   let state := run.toOption.getD initial
   let beforeDefinition := ((receiveEvent reflexivity).run initial).toOption.map (·.2) |>.getD initial
+  let incompleteTransitivity (payload : List Json) : Json := Json.mkObj
+    [("event",toJson (3 : Nat)),("rule",toJson "TRANS"),("payload",arr payload),
+     ("parents",toJson ([0,999] : List Nat))]
   [("real-source-commands",positive),
    ("three-theorem-occurrences",state.registered.registered.cache.size == 3),
    ("extra-definition-parent",refused beforeDefinition (event 1 "DEFINITION" [toJson (8:Nat)] [0] 1 11)),
@@ -72,6 +80,9 @@ def controls : List (String × Bool) :=
    ("extra-transitivity-payload",refused state (event 3 "TRANS" [toJson (0:Nat)] [0,0] 3 3)),
    ("reused-source-identity",refused state (event 3 "REFL" [toJson (0:Nat)] [] 0 3)),
    ("future-parent",refused state (event 3 "TRANS" [] [0,999] 3 3)),
+   ("arity-before-parent",refusedWith state (incompleteTransitivity [toJson (0 : Nat)])
+      "wrong source payload or premise arity: TRANS"),
+   ("parent-before-outputs",refusedWith state (incompleteTransitivity []) "missing parent 999"),
    ("malformed-term-row",refused malformedRow reflexivity),
    ("malformed-substitution-row",refused state (event 3 "INST" [arr [toJson (0:Nat)]] [0] 3 3)),
    ("extra-substitution-component",refused state (event 3 "INST"

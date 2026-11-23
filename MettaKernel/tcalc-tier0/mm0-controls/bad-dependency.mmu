@@ -1,0 +1,4 @@
+(sort wff provable)
+(sort nat)
+(term eq ((a nat ()) (b nat ())) (wff ()))
+(def bad ((x nat)) (wff ()) () (eq x x))

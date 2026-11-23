@@ -1,0 +1,4 @@
+(sort wff provable)
+(sort s strict)
+(term tru () (wff ()))
+(def bad () (wff ()) ((d s)) (tru))

@@ -1,0 +1,37 @@
+Module LambdaPiModulo {
+  Theory LambdaPiModulo() {
+    Types {
+      LFSort;
+      LFTerm;
+      LFName;
+      LFIndex;
+    }
+    Terms {
+      "SortType" .  |- "Type" : LFSort;
+      "SortKind" .  |- "Kind" : LFSort;
+      "Srt" . s:LFSort |- "Srt" "(" s ")" : LFTerm;
+      "Con" . n:LFName |- "Con" "(" n ")" : LFTerm;
+      "Var" . i:LFIndex |- "Var" "(" i ")" : LFTerm;
+      "Pi" . a:LFTerm, ^x.body:[LFTerm] |- "Pi" "(" a "," x "." body ")" : LFTerm;
+      "Lam" . a:LFTerm, ^x.body:[LFTerm] |- "Lam" "(" a "," x "." body ")" : LFTerm;
+      "App" . f:LFTerm, a:LFTerm |- "App" "(" f "," a ")" : LFTerm;
+      "c:zero" .  |-  : LFName;
+      "c:succ" .  |-  : LFName;
+      "c:plus" .  |-  : LFName;
+    }
+    Equations {
+    }
+    Rewrites {
+      Beta : "App"("Lam"(A, ^.B), X) ~> [X/#0]B;
+      AppFunction : if F ~> G then "App"(F, X) ~> "App"(G, X);
+      AppArgument : if X ~> Y then "App"(F, X) ~> "App"(F, Y);
+      PiDomain : if A ~> C then "Pi"(A, ^.B) ~> "Pi"(C, ^.B);
+      PiBody : if B ~> D then "Pi"(A, ^.B) ~> "Pi"(A, ^.D);
+      LamDomain : if A ~> C then "Lam"(A, ^.B) ~> "Lam"(C, ^.B);
+      LamBody : if B ~> D then "Lam"(A, ^.B) ~> "Lam"(A, ^.D);
+      Rule0 : "App"("App"("Con"("c:plus"), x), "Con"("c:zero")) ~> x;
+      Rule1 : "App"("App"("Con"("c:plus"), x), "App"("Con"("c:succ"), xx)) ~> "App"("Con"("c:succ"), "App"("App"("Con"("c:plus"), x), xx));
+    }
+  }
+  theory LambdaPiModulo()
+}

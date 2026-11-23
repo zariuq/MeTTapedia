@@ -1,0 +1,1096 @@
+core.ml — Definition tc_enabled
+|- forall taken read made present.
+       tc_enabled present taken read made <=>
+       (forall occ. taken occ ==> present occ) /\
+       (forall occ. read occ ==> present occ) /\
+       (forall occ. ~(taken occ /\ read occ)) /\
+       (forall occ. made occ ==> ~present occ)
+
+core.ml — Definition tc_fire
+|- forall present taken made occ.
+       tc_fire present taken made occ <=>
+       present occ /\ ~taken occ \/ made occ
+
+core.ml — Definition tc_models
+|- forall hom a store eq b act sigma.
+       tc_models hom eq act a b sigma store <=>
+       hom a b sigma /\
+       (forall x y. store x y ==> eq b (act sigma x) (act sigma y))
+
+core.ml — Definition tc_solvable
+|- forall hom eq act a store.
+       tc_solvable hom eq act a store <=>
+       (exists b sigma. tc_models hom eq act a b sigma store)
+
+core.ml — Definition tc_entails
+|- forall hom eq act a store holds.
+       tc_entails hom eq act a store holds <=>
+       (forall b sigma.
+            tc_models hom eq act a b sigma store ==> holds b sigma)
+
+core.ml — Definition tc_map_store
+|- forall store u v act e.
+       tc_map_store act e store u v <=>
+       (exists x y. store x y /\ u = act e x /\ v = act e y)
+
+core.ml — Definition tc_separates
+|- forall apart eq b act sigma.
+       tc_separates eq act b sigma apart <=>
+       (forall x y. apart x y ==> ~eq b (act sigma x) (act sigma y))
+
+core.ml — Definition tc_solution
+|- forall hom a store eq act b sigma apart.
+       tc_solution hom eq act a store apart b sigma <=>
+       tc_models hom eq act a b sigma store /\
+       tc_separates eq act b sigma apart
+
+core.ml — Definition tc_preparable
+|- forall ready solution.
+       tc_preparable ready solution <=> ready /\ (exists s. solution s)
+
+core.ml — Definition tc_admits
+|- forall ready solution holds.
+       tc_admits ready solution holds <=>
+       tc_preparable ready solution /\ (forall s. solution s ==> holds s)
+
+core.ml — Definition tc_faithful
+|- forall terms c act j eq b.
+       tc_faithful terms eq act b c j <=>
+       (forall x y.
+            terms b x /\ terms b y /\ eq c (act j x) (act j y) ==> eq b x y)
+
+core.ml — Definition tc_covers
+|- forall store hom r settled terms a eq act e.
+       tc_covers terms hom eq act a r e store settled <=>
+       (forall b sigma.
+            tc_models hom eq act a b sigma store
+            ==> (exists c j tau.
+                     hom b c j /\
+                     tc_faithful terms eq act b c j /\
+                     tc_models hom eq act r c tau settled /\
+                     (forall t.
+                          terms a t
+                          ==> eq c (act j (act sigma t)) (act tau (act e t)))))
+
+core.ml — Definition tc_same_target_covers
+|- forall store hom r settled terms a eq act e.
+       tc_same_target_covers terms hom eq act a r e store settled <=>
+       (forall b sigma.
+            tc_models hom eq act a b sigma store
+            ==> (exists tau.
+                     tc_models hom eq act r b tau settled /\
+                     (forall t.
+                          terms a t
+                          ==> eq b (act sigma t) (act tau (act e t)))))
+
+core.ml — Definition tc_covering_family
+|- forall source branch recovery.
+       tc_covering_family source branch recovery <=>
+       (forall i r. branch i r ==> (exists s. recovery s i r)) /\
+       (forall i r s. branch i r /\ recovery s i r ==> source s) /\
+       (forall s. source s ==> (exists i r. branch i r /\ recovery s i r))
+
+core.ml — Definition tc_prepares
+|- forall ready solution preparation.
+       tc_prepares ready solution preparation <=>
+       (forall f.
+            tc_preparable (ready f) (solution f)
+            ==> (exists p. preparation f p))
+
+core.ml — Definition tc_move
+|- forall ready solution holds preparation w result f.
+       tc_move ready solution holds preparation result f w <=>
+       tc_admits (ready f) (solution f) (holds f) /\
+       (exists p. preparation f p /\ w = result f p)
+
+core.ml — Definition tc_sound
+|- forall after before back.
+       tc_sound before after back <=> (forall r. after r ==> before (back r))
+
+frames.ml — Definition tc_frames
+|- forall objects identity comp hom terms eq act.
+       tc_frames objects terms hom eq act identity comp <=>
+       (forall a t. terms a t ==> objects a) /\
+       (forall a b f. hom a b f ==> objects a /\ objects b) /\
+       (forall a. objects a ==> hom a a (identity a)) /\
+       (forall a b c f g. hom a b f /\ hom b c g ==> hom a c (comp g f)) /\
+       (forall a b f t. hom a b f /\ terms a t ==> terms b (act f t)) /\
+       (forall a t. terms a t ==> act (identity a) t = t) /\
+       (forall a b c f g t.
+            hom a b f /\ hom b c g /\ terms a t
+            ==> act (comp g f) t = act g (act f t)) /\
+       (forall a t. terms a t ==> eq a t t) /\
+       (forall a x y. terms a x /\ terms a y /\ eq a x y ==> eq a y x) /\
+       (forall a x y z.
+            terms a x /\ terms a y /\ terms a z /\ eq a x y /\ eq a y z
+            ==> eq a x z) /\
+       (forall a b f x y.
+            hom a b f /\ terms a x /\ terms a y /\ eq a x y
+            ==> eq b (act f x) (act f y))
+
+frames.ml — Definition tc_store
+|- forall store terms a.
+       tc_store terms a store <=>
+       (forall x y. store x y ==> terms a x /\ terms a y)
+
+prepared.ml — Definition tc_prepared_effect
+|- forall read terms a hom m b old extension next act settle information after present taken made.
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after <=>
+       tc_store terms a old /\
+       tc_store terms m information /\
+       hom a m extension /\
+       hom m b settle /\
+       (forall x y.
+            old x y ==> information (act extension x) (act extension y)) /\
+       (forall x y. next x y <=> tc_map_store act settle information x y) /\
+       (forall occ. after occ <=> tc_fire present taken made occ)
+
+prepared.ml — Definition tc_admitted_effect
+|- forall terms a b extension settle old next after shapes present taken read made hom eq act m information holds.
+       tc_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds <=>
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after /\
+       shapes /\
+       tc_enabled present taken read made /\
+       tc_solvable hom eq act m information /\
+       tc_entails hom eq act m information holds
+
+runs.ml — Definition tc_path
+|- (tc_path step [] s t <=> s = t) /\
+   (tc_path step (CONS event events) s t <=>
+    (exists u. step s event u /\ tc_path step events u t))
+
+runs.ml — Definition tc_pullback
+|- tc_pullback back [] value = value /\
+   tc_pullback back (CONS event events) value =
+   back event (tc_pullback back events value)
+
+runs.ml — Definition tc_observes
+|- forall step events s answer observe.
+       tc_observes step observe events s answer <=>
+       (exists t. tc_path step events s t /\ answer = observe t)
+
+runs.ml — Definition tc_simulates
+|- forall step target label encode.
+       tc_simulates step target encode label <=>
+       (forall s event t.
+            step s event t ==> target (encode s) (label event) (encode t))
+
+runs.ml — Definition tc_bisimulation
+|- forall target step relation.
+       tc_bisimulation step target relation <=>
+       (forall s u event t.
+            relation s u /\ step s event t
+            ==> (exists v. target u event v /\ relation t v)) /\
+       (forall s u event v.
+            relation s u /\ target u event v
+            ==> (exists t. step s event t /\ relation t v))
+
+runs.ml — Definition tc_absent
+|- forall present region.
+       tc_absent present region <=>
+       (forall occ. ~(present occ /\ region occ))
+
+constraints.ml — Definition tc_constraint_context
+|- forall objects terms eq act identity a apart.
+       tc_constraint_context objects terms eq act identity a apart <=>
+       objects a /\
+       tc_store terms a apart /\
+       tc_separates eq act a (identity a) apart
+
+constraints.ml — Theorem TC_SEPARATES_UNION
+|- forall eq act b sigma one two.
+       tc_separates eq act b sigma (\x y. one x y \/ two x y) <=>
+       tc_separates eq act b sigma one /\ tc_separates eq act b sigma two
+
+constraints.ml — Theorem TC_SEPARATES_WEAKEN
+|- forall eq act b sigma small big.
+       (forall x y. small x y ==> big x y) /\ tc_separates eq act b sigma big
+       ==> tc_separates eq act b sigma small
+
+constraints.ml — Theorem TC_SEPARATES_EMPTY
+|- forall eq act b sigma. tc_separates eq act b sigma (\x y. false)
+
+constraints.ml — Theorem TC_SEPARATES_ACTION_AGREEMENT
+|- forall terms eq act a b f g apart.
+       tc_store terms a apart /\ (forall t. terms a t ==> act f t = act g t)
+       ==> (tc_separates eq act b f apart <=> tc_separates eq act b g apart)
+
+constraints.ml — Theorem TC_SEPARATES_ASSOC
+|- forall objects terms hom eq act identity comp a b c d f g h apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       hom a b f /\
+       hom b c g /\
+       hom c d h
+       ==> (tc_separates eq act d (comp h (comp g f)) apart <=>
+            tc_separates eq act d (comp (comp h g) f) apart)
+
+constraints.ml — Theorem TC_SEPARATES_COMP_ID
+|- forall objects terms hom eq act identity comp a b f apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       objects a /\
+       hom a b f
+       ==> (tc_separates eq act b (comp f (identity a)) apart <=>
+            tc_separates eq act b f apart)
+
+constraints.ml — Theorem TC_ACT_LEFT_UNIT
+|- forall objects terms hom eq act identity comp a b f t.
+       tc_frames objects terms hom eq act identity comp /\
+       hom a b f /\
+       terms a t
+       ==> act (comp (identity b) f) t = act f t
+
+constraints.ml — Theorem TC_SEPARATES_ID_COMP
+|- forall objects terms hom eq act identity comp a b f apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       hom a b f
+       ==> (tc_separates eq act b (comp (identity b) f) apart <=>
+            tc_separates eq act b f apart)
+
+constraints.ml — Theorem TC_SEPARATES_MAP_TYPED
+|- forall objects terms hom eq act identity comp a b c f g apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       hom a b f /\
+       hom b c g
+       ==> (tc_separates eq act c g (tc_map_store act f apart) <=>
+            tc_separates eq act c (comp g f) apart)
+
+constraints.ml — Theorem TC_SEPARATES_IDENTITY
+|- forall objects terms hom eq act identity comp a apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart
+       ==> (tc_separates eq act a (identity a) apart <=>
+            (forall x y. apart x y ==> ~eq a x y))
+
+constraints.ml — Theorem TC_LOCAL_PRESERVATION_EXACT
+|- forall objects terms hom eq act identity comp a b f apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       hom a b f
+       ==> (tc_constraint_context objects terms eq act identity b
+            (tc_map_store act f apart) <=>
+            tc_separates eq act b f apart)
+
+constraints.ml — Theorem TC_LOCAL_PRESERVATION_SOURCE_VALID
+|- forall objects terms hom eq act identity comp a b f apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       hom a b f /\
+       tc_separates eq act b f apart
+       ==> tc_constraint_context objects terms eq act identity a apart
+
+constraints.ml — Theorem TC_GLOBAL_REFLECTION_SUFFICES
+|- forall objects terms hom eq act identity comp a b f apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_constraint_context objects terms eq act identity a apart /\
+       tc_faithful terms eq act a b f
+       ==> tc_separates eq act b f apart
+
+constraints.ml — Theorem TC_REFLECTION_IFF_ALL_CONTEXTS
+|- forall objects terms hom eq act identity comp a b f.
+       tc_frames objects terms hom eq act identity comp /\ hom a b f
+       ==> (tc_faithful terms eq act a b f <=>
+            (forall apart.
+                 tc_constraint_context objects terms eq act identity a apart
+                 ==> tc_separates eq act b f apart))
+
+constraints.ml — Theorem TC_LOCAL_PRESERVATION_COMPOSE
+|- forall objects terms hom eq act identity comp a b c f g apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       hom a b f /\
+       hom b c g /\
+       tc_separates eq act c g (tc_map_store act f apart)
+       ==> tc_separates eq act c (comp g f) apart
+
+constraints.ml — Definition tc_constraint_arrow
+|- forall a hom b later eq act comp f apart.
+       tc_constraint_arrow hom eq act comp a apart b later f <=>
+       hom a b f /\
+       (forall c g.
+            hom b c g /\ tc_separates eq act c g later
+            ==> tc_separates eq act c (comp g f) apart)
+
+constraints.ml — Theorem TC_CONSTRAINT_ARROW_MAP
+|- forall objects terms hom eq act identity comp a b f apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       hom a b f
+       ==> tc_constraint_arrow hom eq act comp a apart b
+           (tc_map_store act f apart)
+           f
+
+constraints.ml — Theorem TC_CONSTRAINT_ARROW_STRENGTHEN
+|- forall objects terms hom eq act identity comp a b f apart later.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       hom a b f /\
+       (forall x y. apart x y ==> later (act f x) (act f y))
+       ==> tc_constraint_arrow hom eq act comp a apart b later f
+
+constraints.ml — Theorem TC_CONSTRAINT_ARROW_ID
+|- forall objects terms hom eq act identity comp a apart.
+       tc_frames objects terms hom eq act identity comp /\
+       objects a /\
+       tc_store terms a apart
+       ==> tc_constraint_arrow hom eq act comp a apart a apart (identity a)
+
+constraints.ml — Theorem TC_CONSTRAINT_ARROW_COMPOSE
+|- forall objects terms hom eq act identity comp a b c f g one two three.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a one /\
+       tc_constraint_arrow hom eq act comp a one b two f /\
+       tc_constraint_arrow hom eq act comp b two c three g
+       ==> tc_constraint_arrow hom eq act comp a one c three (comp g f)
+
+constraints.ml — Theorem TC_CONSTRAINT_ARROW_SEPARATES
+|- forall objects terms hom eq act identity comp a b f apart later.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       tc_constraint_context objects terms eq act identity b later /\
+       tc_constraint_arrow hom eq act comp a apart b later f
+       ==> tc_separates eq act b f apart
+
+constraints.ml — Definition tc_local_admitted_effect
+|- forall a extension old next after terms b settle shapes present taken read made hom eq act m information apart holds.
+       tc_local_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       apart
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds <=>
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after /\
+       tc_store terms m apart /\
+       tc_separates eq act b settle apart /\
+       shapes /\
+       tc_enabled present taken read made /\
+       (exists c sigma. tc_solution hom eq act m information apart c sigma) /\
+       (forall c sigma.
+            tc_solution hom eq act m information apart c sigma
+            ==> holds c sigma)
+
+constraints.ml — Theorem TC_LOCAL_RESULT_CONTEXT
+|- forall objects terms hom eq act identity comp a m b extension settle old information next apart present taken read made after shapes holds.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_local_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       apart
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds
+       ==> tc_constraint_context objects terms eq act identity b
+           (tc_map_store act settle apart)
+
+constraints.ml — Theorem TC_LOCAL_CURRENT_CONTEXT
+|- forall objects terms hom eq act identity comp a m b extension settle old information next apart present taken read made after shapes holds.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_local_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       apart
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds
+       ==> tc_constraint_context objects terms eq act identity m apart
+
+constraints.ml — Theorem TC_LOCAL_NO_CONSTRAINTS
+|- forall terms hom eq act a m b extension settle old information next present taken read made after shapes holds.
+       tc_local_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       (\x y. false)
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds <=>
+       tc_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds
+
+constraints.ml — Theorem TC_LOCAL_COLLAPSE_REFUSED
+|- forall terms hom eq act a m b extension settle old information next apart present taken read made after shapes holds x y.
+       apart x y /\ eq b (act settle x) (act settle y)
+       ==> ~tc_local_admitted_effect terms hom eq act a m b extension settle
+            old
+            information
+            next
+            apart
+            present
+            taken
+            read
+            made
+            after
+            shapes
+            holds
+
+constraints.ml — Theorem TC_LOCAL_SOLUTION_BACK
+|- forall objects terms hom eq act identity comp a m b extension settle old information next apart present taken read made after shapes holds c tau.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_local_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       apart
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds /\
+       tc_solution hom eq act b next (tc_map_store act settle apart) c tau
+       ==> tc_solution hom eq act m information apart c (comp tau settle)
+
+constraint_frames.ml — Theorem TC_FRAME_EQ_REFL
+|- forall objects terms hom eq act identity comp a x.
+       tc_frames objects terms hom eq act identity comp /\ terms a x
+       ==> eq a x x
+
+constraint_frames.ml — Theorem TC_FRAME_EQ_SYM
+|- forall objects terms hom eq act identity comp a x y.
+       tc_frames objects terms hom eq act identity comp /\
+       terms a x /\
+       terms a y /\
+       eq a x y
+       ==> eq a y x
+
+constraint_frames.ml — Theorem TC_FRAME_EQ_TRANS
+|- forall objects terms hom eq act identity comp a x y z.
+       tc_frames objects terms hom eq act identity comp /\
+       terms a x /\
+       terms a y /\
+       terms a z /\
+       eq a x y /\
+       eq a y z
+       ==> eq a x z
+
+constraint_frames.ml — Definition tc_context_terms
+|- forall objects eq act identity terms point t.
+       tc_context_terms objects terms eq act identity point t <=>
+       tc_constraint_context objects terms eq act identity (FST point)
+       (SND point) /\
+       terms (FST point) t
+
+constraint_frames.ml — Definition tc_context_hom
+|- forall objects terms identity hom eq act comp source target f.
+       tc_context_hom objects terms hom eq act identity comp source target f <=>
+       tc_constraint_context objects terms eq act identity (FST source)
+       (SND source) /\
+       tc_constraint_context objects terms eq act identity (FST target)
+       (SND target) /\
+       tc_constraint_arrow hom eq act comp (FST source) (SND source)
+       (FST target)
+       (SND target)
+       f
+
+constraint_frames.ml — Theorem TC_CONSTRAINT_FRAME_LIFT
+|- forall objects terms hom eq act identity comp.
+       tc_frames objects terms hom eq act identity comp
+       ==> tc_frames
+           (\point.
+                tc_constraint_context objects terms eq act identity
+                (FST point)
+                (SND point))
+           (tc_context_terms objects terms eq act identity)
+           (tc_context_hom objects terms hom eq act identity comp)
+           (\point x y. eq (FST point) x y)
+           act
+           (\point. identity (FST point))
+           comp
+
+constraint_frames.ml — Theorem TC_LOCAL_CONTEXT_HOM_EXACT
+|- forall objects terms hom eq act identity comp a b f apart.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a apart /\
+       hom a b f
+       ==> (tc_context_hom objects terms hom eq act identity comp (a,apart)
+            (b,tc_map_store act f apart)
+            f <=>
+            tc_separates eq act b f apart)
+
+constraint_frames.ml — Theorem TC_CONTEXT_MODEL_CANONICAL
+|- forall objects terms hom eq act identity comp a apart b f store.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_constraint_context objects terms eq act identity a apart
+       ==> (tc_models (tc_context_hom objects terms hom eq act identity comp)
+            (\point x y. eq (FST point) x y)
+            act
+            (a,apart)
+            (b,tc_map_store act f apart)
+            f
+            store <=>
+            tc_solution hom eq act a store apart b f)
+
+constraint_frames.ml — Theorem TC_CONTEXT_MODEL_BASE
+|- forall objects terms hom eq act identity comp a apart b later f store.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_models (tc_context_hom objects terms hom eq act identity comp)
+       (\point x y. eq (FST point) x y)
+       act
+       (a,apart)
+       (b,later)
+       f
+       store
+       ==> tc_solution hom eq act a store apart b f
+
+constraint_frames.ml — Theorem TC_CONSTRAINT_SOLVABLE_EXACT
+|- forall objects terms hom eq act identity comp a apart store.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_constraint_context objects terms eq act identity a apart
+       ==> (tc_solvable
+            (tc_context_hom objects terms hom eq act identity comp)
+            (\point x y. eq (FST point) x y)
+            act
+            (a,apart)
+            store <=>
+            (exists b f. tc_solution hom eq act a store apart b f))
+
+constraint_frames.ml — Theorem TC_CONSTRAINT_ENTAILS_EXACT
+|- forall objects terms hom eq act identity comp a apart store holds.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_constraint_context objects terms eq act identity a apart
+       ==> (tc_entails
+            (tc_context_hom objects terms hom eq act identity comp)
+            (\point x y. eq (FST point) x y)
+            act
+            (a,apart)
+            store
+            (\point f. holds (FST point) f) <=>
+            (forall b f.
+                 tc_solution hom eq act a store apart b f ==> holds b f))
+
+constraint_frames.ml — Theorem TC_CONTEXT_STORE_TYPED
+|- forall objects terms eq act identity a apart store.
+       tc_constraint_context objects terms eq act identity a apart /\
+       tc_store terms a store
+       ==> tc_store (tc_context_terms objects terms eq act identity)
+           (a,apart)
+           store
+
+constraint_frames.ml — Theorem TC_CARRIED_CONTEXT_HOM
+|- forall objects terms hom eq act identity comp a apart b later f.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_constraint_context objects terms eq act identity a apart /\
+       tc_constraint_context objects terms eq act identity b later /\
+       hom a b f /\
+       (forall x y. apart x y ==> later (act f x) (act f y))
+       ==> tc_context_hom objects terms hom eq act identity comp (a,apart)
+           (b,later)
+           f
+
+constraint_frames.ml — Theorem TC_LOCAL_PREPARED_EFFECT_LIFT
+|- forall objects terms hom eq act identity comp a m b extension settle old information next beforeApart currentApart present taken read made after.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after /\
+       tc_constraint_context objects terms eq act identity a beforeApart /\
+       tc_store terms m currentApart /\
+       (forall x y.
+            beforeApart x y
+            ==> currentApart (act extension x) (act extension y)) /\
+       tc_separates eq act b settle currentApart
+       ==> tc_prepared_effect
+           (tc_context_terms objects terms eq act identity)
+           (tc_context_hom objects terms hom eq act identity comp)
+           act
+           (a,beforeApart)
+           (m,currentApart)
+           (b,tc_map_store act settle currentApart)
+           extension
+           settle
+           old
+           information
+           next
+           present
+           taken
+           read
+           made
+           after
+
+constraint_frames.ml — Theorem TC_LOCAL_ADMISSION_LIFT
+|- forall objects terms hom eq act identity comp a m b extension settle old information next beforeApart currentApart present taken read made after shapes holds.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_constraint_context objects terms eq act identity a beforeApart /\
+       (forall x y.
+            beforeApart x y
+            ==> currentApart (act extension x) (act extension y)) /\
+       tc_local_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       currentApart
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds
+       ==> tc_admitted_effect
+           (tc_context_terms objects terms eq act identity)
+           (tc_context_hom objects terms hom eq act identity comp)
+           (\point x y. eq (FST point) x y)
+           act
+           (a,beforeApart)
+           (m,currentApart)
+           (b,tc_map_store act settle currentApart)
+           extension
+           settle
+           old
+           information
+           next
+           present
+           taken
+           read
+           made
+           after
+           shapes
+           (\point f. holds (FST point) f)
+
+constraint_frames.ml — Theorem TC_CONTEXT_PREPARED_BASE
+|- forall objects terms hom eq act identity comp a m b extension settle old information next beforeApart currentApart afterApart present taken read made after.
+       tc_prepared_effect (tc_context_terms objects terms eq act identity)
+       (tc_context_hom objects terms hom eq act identity comp)
+       act
+       (a,beforeApart)
+       (m,currentApart)
+       (b,afterApart)
+       extension
+       settle
+       old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       ==> tc_prepared_effect terms hom act a m b extension settle old
+           information
+           next
+           present
+           taken
+           read
+           made
+           after /\
+           tc_constraint_context objects terms eq act identity m currentApart /\
+           tc_constraint_context objects terms eq act identity b afterApart
+
+constraint_frames.ml — Theorem TC_LOCAL_ADMISSION_REFLECT
+|- forall objects terms hom eq act identity comp a m b extension settle old information next beforeApart currentApart present taken read made after shapes holds.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_admitted_effect (tc_context_terms objects terms eq act identity)
+       (tc_context_hom objects terms hom eq act identity comp)
+       (\point x y. eq (FST point) x y)
+       act
+       (a,beforeApart)
+       (m,currentApart)
+       (b,tc_map_store act settle currentApart)
+       extension
+       settle
+       old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       (\point f. holds (FST point) f)
+       ==> tc_local_admitted_effect terms hom eq act a m b extension settle
+           old
+           information
+           next
+           currentApart
+           present
+           taken
+           read
+           made
+           after
+           shapes
+           holds
+
+constraint_frames.ml — Theorem TC_LOCAL_ADMISSION_EXACT
+|- forall objects terms hom eq act identity comp a m b extension settle old information next beforeApart currentApart present taken read made after shapes holds.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_constraint_context objects terms eq act identity a beforeApart /\
+       (forall x y.
+            beforeApart x y
+            ==> currentApart (act extension x) (act extension y))
+       ==> (tc_local_admitted_effect terms hom eq act a m b extension settle
+            old
+            information
+            next
+            currentApart
+            present
+            taken
+            read
+            made
+            after
+            shapes
+            holds <=>
+            tc_admitted_effect
+            (tc_context_terms objects terms eq act identity)
+            (tc_context_hom objects terms hom eq act identity comp)
+            (\point x y. eq (FST point) x y)
+            act
+            (a,beforeApart)
+            (m,currentApart)
+            (b,tc_map_store act settle currentApart)
+            extension
+            settle
+            old
+            information
+            next
+            present
+            taken
+            read
+            made
+            after
+            shapes
+            (\point f. holds (FST point) f))
+
+constraint_controls.ml — Definition tc_world_eq
+|- forall a p q. tc_world_eq a p q <=> p = q
+
+constraint_controls.ml — Definition tc_world_act
+|- forall p h world. tc_world_act h p world <=> p (h world)
+
+constraint_controls.ml — Definition tc_world_id
+|- forall a world. tc_world_id a world = world
+
+constraint_controls.ml — Definition tc_world_comp
+|- forall f g world. tc_world_comp g f world = f (g world)
+
+constraint_controls.ml — Definition tc_reset_first
+|- forall world. tc_reset_first world = false,SND world
+
+constraint_controls.ml — Definition tc_reset_second
+|- forall world. tc_reset_second world = FST world,false
+
+constraint_controls.ml — Definition tc_y_apart_true
+|- forall p q. tc_y_apart_true p q <=> p = SND /\ q = (\world. true)
+
+constraint_controls.ml — Definition tc_x_apart_false
+|- forall p q. tc_x_apart_false p q <=> p = FST /\ q = (\world. false)
+
+constraint_controls.ml — Definition tc_xy_apart
+|- forall p q. tc_xy_apart p q <=> p = FST /\ q = SND
+
+constraint_controls.ml — Theorem TC_WORLD_FRAME
+|- tc_frames (\a. true) (\a p. true) (\a b h. true) tc_world_eq tc_world_act
+   tc_world_id
+   tc_world_comp
+
+constraint_controls.ml — Theorem TC_WORLD_Y_CONTEXT
+|- tc_constraint_context (\a. true) (\a p. true) tc_world_eq tc_world_act
+   tc_world_id
+   false
+   tc_y_apart_true
+
+constraint_controls.ml — Theorem TC_WORLD_X_CONTEXT
+|- tc_constraint_context (\a. true) (\a p. true) tc_world_eq tc_world_act
+   tc_world_id
+   false
+   tc_x_apart_false
+
+constraint_controls.ml — Theorem TC_RESET_NOT_GLOBALLY_REFLECTING
+|- ~tc_faithful (\a p. true) tc_world_eq tc_world_act false false
+    tc_reset_first
+
+constraint_controls.ml — Theorem TC_RESET_PRESERVES_Y
+|- tc_separates tc_world_eq tc_world_act false tc_reset_first tc_y_apart_true
+
+constraint_controls.ml — Theorem TC_RESET_COLLAPSES_X
+|- ~tc_separates tc_world_eq tc_world_act false tc_reset_first
+    tc_x_apart_false
+
+constraint_controls.ml — Theorem TC_WORLD_Y_SOLVABLE
+|- exists b f.
+       tc_solution (\a b h. true) tc_world_eq tc_world_act false
+       (\p q. false)
+       tc_y_apart_true
+       b
+       f
+
+constraint_controls.ml — Theorem TC_WORLD_X_SOLVABLE
+|- exists b f.
+       tc_solution (\a b h. true) tc_world_eq tc_world_act false
+       (\p q. false)
+       tc_x_apart_false
+       b
+       f
+
+constraint_controls.ml — Theorem TC_LOCAL_COMMIT_Y_ADMITTED
+|- tc_local_admitted_effect (\a p. true) (\a b h. true) tc_world_eq
+   tc_world_act
+   false
+   false
+   false
+   (tc_world_id false)
+   tc_reset_first
+   (\p q. false)
+   (\p q. false)
+   (\p q. false)
+   tc_y_apart_true
+   (\occ. ~occ)
+   (\occ. ~occ)
+   (\occ. false)
+   (\occ. occ)
+   (\occ. occ)
+   true
+   (\b h. true)
+
+constraint_controls.ml — Theorem TC_LOCAL_COMMIT_X_REFUSED
+|- ~tc_local_admitted_effect (\a p. true) (\a b h. true) tc_world_eq
+    tc_world_act
+    false
+    false
+    false
+    (tc_world_id false)
+    tc_reset_first
+    (\p q. false)
+    (\p q. false)
+    (\p q. false)
+    tc_x_apart_false
+    (\occ. ~occ)
+    (\occ. ~occ)
+    (\occ. false)
+    (\occ. occ)
+    (\occ. occ)
+    true
+    (\b h. true)
+
+constraint_controls.ml — Theorem TC_LOCAL_RESTRICTED_GUARD_ADMITTED
+|- tc_local_admitted_effect (\a p. true) (\a b h. true) tc_world_eq
+   tc_world_act
+   false
+   false
+   false
+   (tc_world_id false)
+   (tc_world_id false)
+   (\p q. false)
+   (\p q. false)
+   (\p q. false)
+   tc_x_apart_false
+   (\occ. ~occ)
+   (\occ. ~occ)
+   (\occ. false)
+   (\occ. occ)
+   (\occ. occ)
+   true
+   (\b h. tc_separates tc_world_eq tc_world_act b h tc_x_apart_false)
+
+constraint_controls.ml — Theorem TC_UNRESTRICTED_GUARD_REFUSED
+|- ~tc_admitted_effect (\a p. true) (\a b h. true) tc_world_eq tc_world_act
+    false
+    false
+    false
+    (tc_world_id false)
+    (tc_world_id false)
+    (\p q. false)
+    (\p q. false)
+    (\p q. false)
+    (\occ. ~occ)
+    (\occ. ~occ)
+    (\occ. false)
+    (\occ. occ)
+    (\occ. occ)
+    true
+    (\b h. tc_separates tc_world_eq tc_world_act b h tc_x_apart_false)
+
+constraint_controls.ml — Theorem TC_LOCAL_STRICTLY_GENERALIZES_REFLECTION
+|- tc_separates tc_world_eq tc_world_act false tc_reset_first tc_y_apart_true /\
+   ~tc_faithful (\a p. true) tc_world_eq tc_world_act false false
+    tc_reset_first /\
+   ~tc_separates tc_world_eq tc_world_act false tc_reset_first
+    tc_x_apart_false
+
+constraint_controls.ml — Theorem TC_RESETS_SEPARATELY_COMPATIBLE
+|- tc_separates tc_world_eq tc_world_act false tc_reset_first tc_xy_apart /\
+   tc_separates tc_world_eq tc_world_act false tc_reset_second tc_xy_apart
+
+constraint_controls.ml — Theorem TC_RESETS_JOINTLY_CONFLICT
+|- ~tc_separates tc_world_eq tc_world_act false
+    (tc_world_comp tc_reset_second tc_reset_first)
+    tc_xy_apart
+
+witnesses.ml — Definition tc_witness_step
+|- forall ready solution holds preparation t result s event.
+       tc_witness_step ready solution holds preparation result s event t <=>
+       tc_admits (ready s (FST event)) (solution s (FST event))
+       (holds s (FST event)) /\
+       preparation s (FST event) (SND event) /\
+       t = result s (FST event) (SND event)
+
+witnesses.ml — Theorem TC_WITNESS_MOVE_EXACT
+|- forall ready solution holds preparation result s f t.
+       tc_move (ready s) (solution s) (holds s) (preparation s) (result s) f
+       t <=>
+       (exists p.
+            tc_witness_step ready solution holds preparation result s (f,p) t)
+
+witnesses.ml — Theorem TC_WITNESS_FIXED_EVENT_DETERMINISTIC
+|- forall ready solution holds preparation result s event t u.
+       tc_witness_step ready solution holds preparation result s event t /\
+       tc_witness_step ready solution holds preparation result s event u
+       ==> t = u
+
+witnesses.ml — Theorem TC_WITNESS_LABEL_SIMULATION
+|- forall ready solution holds preparation result.
+       tc_simulates (tc_witness_step ready solution holds preparation result)
+       (\s f t.
+            tc_move (ready s) (solution s) (holds s) (preparation s)
+            (result s)
+            f
+            t)
+       (\s. s)
+       FST
+
+witnesses.ml — Theorem TC_WITNESS_PATH_ERASURE
+|- forall ready solution holds preparation result events s t.
+       tc_path (tc_witness_step ready solution holds preparation result)
+       events
+       s
+       t
+       ==> tc_path
+           (\s f t.
+                tc_move (ready s) (solution s) (holds s) (preparation s)
+                (result s)
+                f
+                t)
+           (MAP FST events)
+           s
+           t
+
+witnesses.ml — Theorem TC_PATH_LABEL_REFINEMENT
+|- forall coarse fine label.
+       (forall s event t.
+            coarse s event t <=>
+            (exists witness. label witness = event /\ fine s witness t))
+       ==> (forall events s t.
+                tc_path coarse events s t
+                ==> (exists witnesses.
+                         MAP label witnesses = events /\
+                         tc_path fine witnesses s t))
+
+witnesses.ml — Theorem TC_WITNESS_PATH_REFINEMENT
+|- forall ready solution holds preparation result events s t.
+       tc_path
+       (\s f t.
+            tc_move (ready s) (solution s) (holds s) (preparation s)
+            (result s)
+            f
+            t)
+       events
+       s
+       t
+       ==> (exists witnesses.
+                MAP FST witnesses = events /\
+                tc_path
+                (tc_witness_step ready solution holds preparation result)
+                witnesses
+                s
+                t)
+
+witnesses.ml — Theorem TC_WITNESS_PUBLIC_BISIMULATION
+|- forall ready solution holds preparation result.
+       tc_bisimulation
+       (\s f t.
+            tc_move (ready s) (solution s) (holds s) (preparation s)
+            (result s)
+            f
+            t)
+       (\s f t.
+            exists p.
+                tc_witness_step ready solution holds preparation result s
+                (f,p)
+                t)
+       (\s t. s = t)
+
+witnesses.ml — Theorem TC_WITNESS_OBSERVER_DESCENT
+|- forall valid observe.
+       (exists erased. forall f p. valid f p ==> observe (f,p) = erased f) <=>
+       (forall f p q.
+            valid f p /\ valid f q ==> observe (f,p) = observe (f,q))
+
+witnesses.ml — Theorem TC_TWO_PREPARATIONS_SAME_RESULT
+|- tc_witness_step (\s f. true) (\s f v. true) (\s f v. true) (\s f p. true)
+   (\s f p. false)
+   false
+   (false,false)
+   false /\
+   tc_witness_step (\s f. true) (\s f v. true) (\s f v. true) (\s f p. true)
+   (\s f p. false)
+   false
+   (false,true)
+   false /\
+   ~(false,false = false,true)
+
+witnesses.ml — Theorem TC_WITNESS_OBSERVER_CANNOT_FORGET
+|- ~(exists erased. forall f p. SND (f,p) <=> erased f)
+
+witnesses.ml — Theorem TC_ANSWER_OBSERVER_CAN_FORGET
+|- exists erased. forall f p. (\event. false) (f,p) <=> erased f

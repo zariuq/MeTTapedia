@@ -1,0 +1,10 @@
+!(bind! &jobs (new-space))
+!(add-atom &jobs (edge a b))
+!(add-atom &jobs (edge b c))
+!(add-atom &jobs (exec (0 overlap) (, (edge $x $y)) (O (+ $x) (- $y))))
+!(let $paused (select 100 (search-policy (control FIFO (resources MM2) (budget 10))) &jobs)
+  (let (Observation $v (satisfied $s) (closed $c) (residual $r) (work $w) (status $t) (agenda $a)) $paused
+    (let $live (collapse (get-atoms &jobs))
+      (PauseOwnership (live $live) (paused $paused)
+        (resumed (select 100 (search-policy (control FIFO (resources MM2) (budget 10000))) $r))))))
+!(collapse (get-atoms &jobs))

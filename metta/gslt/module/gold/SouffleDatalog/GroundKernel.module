@@ -1,0 +1,35 @@
+Module GroundKernel {
+  Theory Inference() {
+    Types {
+      DlGroundAtomData; DlGroundBody; DlGroundRule; DlGroundKey;
+      DlGrounding; DlClauseOrdinal; DlFactStore; DlInference;
+    }
+    Terms {
+      GroundBody . facts:Vec(DlGroundAtomData) |- "premises" facts : DlGroundBody ![wrapped];
+      GroundRule . identifier:DlClauseOrdinal, grounding:DlGrounding,
+        conclusion:DlGroundAtomData, premises:DlGroundBody
+        |- "instance" identifier grounding conclusion premises : DlGroundRule;
+      GroundKey . identifier:DlClauseOrdinal, grounding:DlGrounding, premises:DlGroundBody
+        |- "derivation-key" identifier grounding premises : DlGroundKey;
+      FactStore . facts:HashSet(DlGroundAtomData) |- "facts" facts : DlFactStore ![wrapped];
+      HasFact . store:DlFactStore, fact:DlGroundAtomData |- "has-fact" store fact : DlInference;
+      FactPresent . |- "present" : DlInference;
+      ApplyGround . instanceData:DlGroundRule, store:DlFactStore
+        |- "apply-instance" instanceData store : DlInference;
+      GroundApplied . key:DlGroundKey, store:DlFactStore |- "applied" key store : DlInference;
+    }
+    Rewrites {
+      Membership . fact:DlGroundAtomData, rest:HashSet(DlGroundAtomData)
+        |- (HasFact (FactStore #{fact, ...rest}) fact) ~> (FactPresent);
+      ApplyInstance . identifier:DlClauseOrdinal, grounding:DlGrounding,
+        conclusion:DlGroundAtomData, B:Vec(DlGroundAtomData), known:HashSet(DlGroundAtomData),
+        element:DlGroundAtomData
+        | forAll(B, element, (HasFact (FactStore known) element) ~> (FactPresent))
+        |- (ApplyGround (GroundRule identifier grounding conclusion (GroundBody B))
+          (FactStore known))
+        ~> (GroundApplied (GroundKey identifier grounding (GroundBody B))
+          (FactStore #{conclusion, ...known}));
+    }
+  }
+  theory Inference()
+}

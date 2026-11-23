@@ -23484,13 +23484,8 @@ theorem not_atomOccurs_of_varNonVar_equation
     (hnonvar : DeclMatchSpec.Atom.isVarB value = false)
     (hequation : MettaEquationSatisfied valuation
       (encodeModelAtom (.var key), encodeModelAtom value)) :
-    ¬ AtomOccurs value key := by
-  apply not_atomOccurs_of_satisfied_nonvariable_equation
-  · intro target hvar
-    subst value
-    simp [DeclMatchSpec.Atom.isVarB] at hnonvar
-  · simpa [MettaEquationSatisfied, encodeModelAtom, applyClassSolution] using
-      hequation
+    ¬ AtomOccurs value key :=
+  MatchSizeTheory.not_atomOccurs_of_varNonVar_equation hnonvar hequation
 
 theorem not_atomOccurs_of_nonVarVar_equation
     {valuation : String → Metta.Atom} {key : String} {value : Atom}
@@ -23498,7 +23493,7 @@ theorem not_atomOccurs_of_nonVarVar_equation
     (hequation : MettaEquationSatisfied valuation
       (encodeModelAtom value, encodeModelAtom (.var key))) :
     ¬ AtomOccurs value key :=
-  not_atomOccurs_of_varNonVar_equation hnonvar hequation.symm
+  MatchSizeTheory.not_atomOccurs_of_nonVarVar_equation hnonvar hequation
 
 /-- Close a projected variable/non-variable head through the operational
 fresh-assignment branch, then attach the residual solution certificate. -/
@@ -26143,78 +26138,23 @@ theorem HEProjectedTailHeadResidualSolutionPackage.exists_coreLiveHead_of_cases
         nextLeft p.nextRight seed p.nextSubst) := by
   intro outerFuel front outerSubst fuel work subst result left right seed s
     nextLeft leftRest p
-  have hequation := (p.headSatisfied_of_trace valuation htrace).2
-  cases nextLeft with
-  | symbol leftName =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          rw [hright] at hequation
-          have hname : leftName = rightName := by
-            simpa [MettaEquationSatisfied, encodeModelAtom,
-              applyClassSolution] using hequation
-          subst rightName
-          simpa only [hright] using p.exists_coreLiveSymbol hright
-      | var rightName =>
-          simpa only [hright] using hnonvar p hright rfl
-            (not_atomOccurs_of_nonVarVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-  | var leftName =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simpa only [hright] using hassignment p hright rfl
-            (not_atomOccurs_of_varNonVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | var rightName =>
-          simpa only [hright] using
-            hequality p hright (hvarVarAllowed p hright)
-      | grounded rightGround =>
-          simpa only [hright] using hassignment p hright rfl
-            (not_atomOccurs_of_varNonVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | expression rightAtoms =>
-          simpa only [hright] using hassignment p hright rfl
-            (not_atomOccurs_of_varNonVar_equation rfl
-              (by simpa only [hright] using hequation))
-  | grounded leftGround =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | var rightName =>
-          simpa only [hright] using hnonvar p hright rfl
-            (not_atomOccurs_of_nonVarVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | grounded rightGround =>
-          rw [hright] at hequation
-          have hground : leftGround = rightGround :=
-            encodeModelGround_injective (by
-              simpa [MettaEquationSatisfied, encodeModelAtom,
-                applyClassSolution] using hequation)
-          subst rightGround
-          simpa only [hright] using p.exists_coreLiveGrounded hright
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-  | expression leftAtoms =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | var rightName =>
-          simpa only [hright] using hnonvar p hright rfl
-            (not_atomOccurs_of_nonVarVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | expression rightAtoms =>
-          simpa only [hright] using hexpression p hright
+  cases modelHeadCase_of_equation (p.headSatisfied_of_trace valuation htrace).2 with
+  | symbols name source target =>
+      subst nextLeft
+      exact p.exists_coreLiveSymbol target
+  | grounds value source target =>
+      subst nextLeft
+      exact p.exists_coreLiveGrounded target
+  | assignLeft key source nonvar occursFree =>
+      subst nextLeft
+      exact hassignment p rfl nonvar occursFree
+  | assignRight key target nonvar occursFree => exact hnonvar p target nonvar occursFree
+  | twoVariables first second source target =>
+      subst nextLeft
+      exact hequality p target (hvarVarAllowed p target)
+  | expressions first second source target =>
+      subst nextLeft
+      exact hexpression p target
 
 /-- Exhaustive original-head dispatcher at the exact residual boundary.
 Unlike the solution-only dispatcher, every successful branch returns the
@@ -26247,78 +26187,23 @@ theorem HEProjectedTailHeadResidualSolutionPackage.exists_coreResidualHead_of_ca
         nextLeft p.nextRight seed p.nextSubst) := by
   intro outerFuel front outerSubst fuel work subst result left right seed s
     nextLeft leftRest p
-  have hequation := (p.headSatisfied_of_trace valuation htrace).2
-  cases nextLeft with
-  | symbol leftName =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          rw [hright] at hequation
-          have hname : leftName = rightName := by
-            simpa [MettaEquationSatisfied, encodeModelAtom,
-              applyClassSolution] using hequation
-          subst rightName
-          simpa only [hright] using p.exists_coreResidualSymbol hright
-      | var rightName =>
-          simpa only [hright] using hnonvar p hright rfl
-            (not_atomOccurs_of_nonVarVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-  | var leftName =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simpa only [hright] using hassignment p hright rfl
-            (not_atomOccurs_of_varNonVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | var rightName =>
-          simpa only [hright] using
-            hequality p hright (hvarVarAllowed p hright)
-      | grounded rightGround =>
-          simpa only [hright] using hassignment p hright rfl
-            (not_atomOccurs_of_varNonVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | expression rightAtoms =>
-          simpa only [hright] using hassignment p hright rfl
-            (not_atomOccurs_of_varNonVar_equation rfl
-              (by simpa only [hright] using hequation))
-  | grounded leftGround =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | var rightName =>
-          simpa only [hright] using hnonvar p hright rfl
-            (not_atomOccurs_of_nonVarVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | grounded rightGround =>
-          rw [hright] at hequation
-          have hground : leftGround = rightGround :=
-            encodeModelGround_injective (by
-              simpa [MettaEquationSatisfied, encodeModelAtom,
-                applyClassSolution] using hequation)
-          subst rightGround
-          simpa only [hright] using p.exists_coreResidualGrounded hright
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-  | expression leftAtoms =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | var rightName =>
-          simpa only [hright] using hnonvar p hright rfl
-            (not_atomOccurs_of_nonVarVar_equation rfl
-              (by simpa only [hright] using hequation))
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | expression rightAtoms =>
-          simpa only [hright] using hexpression p hright
+  cases modelHeadCase_of_equation (p.headSatisfied_of_trace valuation htrace).2 with
+  | symbols name source target =>
+      subst nextLeft
+      exact p.exists_coreResidualSymbol target
+  | grounds value source target =>
+      subst nextLeft
+      exact p.exists_coreResidualGrounded target
+  | assignLeft key source nonvar occursFree =>
+      subst nextLeft
+      exact hassignment p rfl nonvar occursFree
+  | assignRight key target nonvar occursFree => exact hnonvar p target nonvar occursFree
+  | twoVariables first second source target =>
+      subst nextLeft
+      exact hequality p target (hvarVarAllowed p target)
+  | expressions first second source target =>
+      subst nextLeft
+      exact hexpression p target
 
 /-- The exact residual head kernel factored into its irreducible operational
 inputs.  Direct branches, all wrapper merges, solution attachment, and final
@@ -26961,135 +26846,33 @@ theorem HEProjectedTailHeadResidualSolutionPackage.exists_coreResidualHead_of_co
       covered.state nextLeft leftRest) :
     Nonempty (HELiveMatchMergeCoreResidualCertified trace allowed
       nextLeft p.nextRight seed p.nextSubst) := by
-  have hequation := (p.headSatisfied_of_trace valuation htrace).2
-  cases nextLeft with
-  | symbol leftName =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          rw [hright] at hequation
-          have hname : leftName = rightName := by
-            simpa [MettaEquationSatisfied, encodeModelAtom,
-              applyClassSolution] using hequation
-          subst rightName
-          simpa only [hright] using p.exists_coreResidualSymbol hright
-      | var rightName =>
-          simpa only [hright] using
-            p.exists_coreResidualNonVarVar_of_coveredLiveConflicts
-              covered hright rfl
-              (not_atomOccurs_of_nonVarVar_equation rfl
-                (by simpa only [hright] using hequation))
-              (fun {first rest} hclass hconsistent hdifferent =>
-                kernel.nonVarVarConflict covered p hright rfl
-                  hclass hconsistent hdifferent)
-              (fun {first rest} hclass hinconsistent =>
-                kernel.nonVarVarReconcile covered p hright rfl
-                  hclass hinconsistent)
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-  | var leftName =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simpa only [hright] using
-            p.exists_coreResidualVarNonVar_of_coveredLiveConflicts
-              covered hright rfl
-              (not_atomOccurs_of_varNonVar_equation rfl
-                (by simpa only [hright] using hequation))
-              (fun {first rest} hclass hconsistent hdifferent =>
-                kernel.assignmentConflict covered p hright rfl
-                  hclass hconsistent hdifferent)
-              (fun {first rest} hclass hinconsistent =>
-                kernel.assignmentReconcile covered p hright rfl
-                  hclass hinconsistent)
-      | var rightName =>
-          have hallowed := p.varVarAllowed_of_originalCoverage
-            covered.originalCoverage haliases hright
-          simpa only [hright] using
-            p.exists_coreResidualVarVar_of_coveredLiveConflicts
-              covered hright hallowed
-              (fun {first second} hvalues hinconsistent =>
-                kernel.equalityPair covered p hright hallowed
-                  hvalues hinconsistent)
-              (fun {first second third rest} hvalues hinconsistent =>
-                kernel.equalityClass covered p hright hallowed
-                  hvalues hinconsistent)
-      | grounded rightGround =>
-          simpa only [hright] using
-            p.exists_coreResidualVarNonVar_of_coveredLiveConflicts
-              covered hright rfl
-              (not_atomOccurs_of_varNonVar_equation rfl
-                (by simpa only [hright] using hequation))
-              (fun {first rest} hclass hconsistent hdifferent =>
-                kernel.assignmentConflict covered p hright rfl
-                  hclass hconsistent hdifferent)
-              (fun {first rest} hclass hinconsistent =>
-                kernel.assignmentReconcile covered p hright rfl
-                  hclass hinconsistent)
-      | expression rightAtoms =>
-          simpa only [hright] using
-            p.exists_coreResidualVarNonVar_of_coveredLiveConflicts
-              covered hright rfl
-              (not_atomOccurs_of_varNonVar_equation rfl
-                (by simpa only [hright] using hequation))
-              (fun {first rest} hclass hconsistent hdifferent =>
-                kernel.assignmentConflict covered p hright rfl
-                  hclass hconsistent hdifferent)
-              (fun {first rest} hclass hinconsistent =>
-                kernel.assignmentReconcile covered p hright rfl
-                  hclass hinconsistent)
-  | grounded leftGround =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | var rightName =>
-          simpa only [hright] using
-            p.exists_coreResidualNonVarVar_of_coveredLiveConflicts
-              covered hright rfl
-              (not_atomOccurs_of_nonVarVar_equation rfl
-                (by simpa only [hright] using hequation))
-              (fun {first rest} hclass hconsistent hdifferent =>
-                kernel.nonVarVarConflict covered p hright rfl
-                  hclass hconsistent hdifferent)
-              (fun {first rest} hclass hinconsistent =>
-                kernel.nonVarVarReconcile covered p hright rfl
-                  hclass hinconsistent)
-      | grounded rightGround =>
-          rw [hright] at hequation
-          have hground : leftGround = rightGround :=
-            encodeModelGround_injective (by
-              simpa [MettaEquationSatisfied, encodeModelAtom,
-                applyClassSolution] using hequation)
-          subst rightGround
-          simpa only [hright] using p.exists_coreResidualGrounded hright
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-  | expression leftAtoms =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | var rightName =>
-          simpa only [hright] using
-            p.exists_coreResidualNonVarVar_of_coveredLiveConflicts
-              covered hright rfl
-              (not_atomOccurs_of_nonVarVar_equation rfl
-                (by simpa only [hright] using hequation))
-              (fun {first rest} hclass hconsistent hdifferent =>
-                kernel.nonVarVarConflict covered p hright rfl
-                  hclass hconsistent hdifferent)
-              (fun {first rest} hclass hinconsistent =>
-                kernel.nonVarVarReconcile covered p hright rfl
-                  hclass hinconsistent)
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | expression rightAtoms =>
-          simpa only [hright] using kernel.expression covered p hright
+  cases modelHeadCase_of_equation (p.headSatisfied_of_trace valuation htrace).2 with
+  | symbols name source target =>
+      subst nextLeft
+      exact p.exists_coreResidualSymbol target
+  | grounds value source target =>
+      subst nextLeft
+      exact p.exists_coreResidualGrounded target
+  | assignLeft key source nonvar occursFree =>
+      subst nextLeft
+      exact p.exists_coreResidualVarNonVar_of_coveredLiveConflicts covered rfl nonvar occursFree
+        (fun hclass consistent different => kernel.assignmentConflict covered p rfl nonvar
+          hclass consistent different)
+        (fun hclass inconsistent => kernel.assignmentReconcile covered p rfl nonvar hclass inconsistent)
+  | assignRight key target nonvar occursFree =>
+      exact p.exists_coreResidualNonVarVar_of_coveredLiveConflicts covered target nonvar occursFree
+        (fun hclass consistent different => kernel.nonVarVarConflict covered p target nonvar
+          hclass consistent different)
+        (fun hclass inconsistent => kernel.nonVarVarReconcile covered p target nonvar hclass inconsistent)
+  | twoVariables first second source target =>
+      subst nextLeft
+      have allowedHead := p.varVarAllowed_of_originalCoverage covered.originalCoverage haliases target
+      exact p.exists_coreResidualVarVar_of_coveredLiveConflicts covered target allowedHead
+        (fun values inconsistent => kernel.equalityPair covered p target allowedHead values inconsistent)
+        (fun values inconsistent => kernel.equalityClass covered p target allowedHead values inconsistent)
+  | expressions first second source target =>
+      subst nextLeft
+      exact kernel.expression covered p target
 
 /-- Exhaustive covered-head dispatcher.  Raw fresh assignments and original
 aliases are discharged from the state-local structural carrier; all leaf
@@ -27127,93 +26910,28 @@ theorem HEProjectedTailHeadResidualSolutionPackage.exists_coreResidualHead_of_co
       covered.state nextLeft leftRest) :
     Nonempty (HELiveMatchMergeCoreResidualCertified trace allowed
       nextLeft p.nextRight seed p.nextSubst) := by
-  have hequation := (p.headSatisfied_of_trace valuation htrace).2
-  cases nextLeft with
-  | symbol leftName =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          rw [hright] at hequation
-          have hname : leftName = rightName := by
-            simpa [MettaEquationSatisfied, encodeModelAtom,
-              applyClassSolution] using hequation
-          subst rightName
-          simpa only [hright] using p.exists_coreResidualSymbol hright
-      | var rightName =>
-          simpa only [hright] using
-            p.exists_coreResidualNonVarVar_of_coveredConflicts
-              covered hright rfl
-              (not_atomOccurs_of_nonVarVar_equation rfl
-                (by simpa only [hright] using hequation)) hnonvarConflict hnonvarReconcile
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-  | var leftName =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simpa only [hright] using
-            p.exists_coreResidualVarNonVar_of_coveredConflicts
-              covered hright rfl
-              (not_atomOccurs_of_varNonVar_equation rfl
-                (by simpa only [hright] using hequation)) hassignmentConflict hassignmentReconcile
-      | var rightName =>
-          have hallowed := p.varVarAllowed_of_originalCoverage
-            covered.originalCoverage haliases hright
-          simpa only [hright] using
-            (HEProjectedEqualityHeadCoreResidualComplete.of_operationalConflicts
-              hequalityPair hequalityClass) p hright hallowed
-      | grounded rightGround =>
-          simpa only [hright] using
-            p.exists_coreResidualVarNonVar_of_coveredConflicts
-              covered hright rfl
-              (not_atomOccurs_of_varNonVar_equation rfl
-                (by simpa only [hright] using hequation)) hassignmentConflict hassignmentReconcile
-      | expression rightAtoms =>
-          simpa only [hright] using
-            p.exists_coreResidualVarNonVar_of_coveredConflicts
-              covered hright rfl
-              (not_atomOccurs_of_varNonVar_equation rfl
-                (by simpa only [hright] using hequation)) hassignmentConflict hassignmentReconcile
-  | grounded leftGround =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | var rightName =>
-          simpa only [hright] using
-            p.exists_coreResidualNonVarVar_of_coveredConflicts
-              covered hright rfl
-              (not_atomOccurs_of_nonVarVar_equation rfl
-                (by simpa only [hright] using hequation)) hnonvarConflict hnonvarReconcile
-      | grounded rightGround =>
-          rw [hright] at hequation
-          have hground : leftGround = rightGround :=
-            encodeModelGround_injective (by
-              simpa [MettaEquationSatisfied, encodeModelAtom,
-                applyClassSolution] using hequation)
-          subst rightGround
-          simpa only [hright] using p.exists_coreResidualGrounded hright
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-  | expression leftAtoms =>
-      cases hright : p.nextRight with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | var rightName =>
-          simpa only [hright] using
-            p.exists_coreResidualNonVarVar_of_coveredConflicts
-              covered hright rfl
-              (not_atomOccurs_of_nonVarVar_equation rfl
-                (by simpa only [hright] using hequation)) hnonvarConflict hnonvarReconcile
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution, hright] at hequation
-      | expression rightAtoms =>
-          simpa only [hright] using hexpression p hright
+  cases modelHeadCase_of_equation (p.headSatisfied_of_trace valuation htrace).2 with
+  | symbols name source target =>
+      subst nextLeft
+      exact p.exists_coreResidualSymbol target
+  | grounds value source target =>
+      subst nextLeft
+      exact p.exists_coreResidualGrounded target
+  | assignLeft key source nonvar occursFree =>
+      subst nextLeft
+      exact p.exists_coreResidualVarNonVar_of_coveredConflicts covered rfl nonvar occursFree
+        hassignmentConflict hassignmentReconcile
+  | assignRight key target nonvar occursFree =>
+      exact p.exists_coreResidualNonVarVar_of_coveredConflicts covered target nonvar occursFree
+        hnonvarConflict hnonvarReconcile
+  | twoVariables first second source target =>
+      subst nextLeft
+      have allowedHead := p.varVarAllowed_of_originalCoverage covered.originalCoverage haliases target
+      exact (HEProjectedEqualityHeadCoreResidualComplete.of_operationalConflicts
+        hequalityPair hequalityClass) p target allowedHead
+  | expressions first second source target =>
+      subst nextLeft
+      exact hexpression p target
 
 /-- Fresh and no-change symmetric heads are direct.  The remaining branches
 use the same two operational recursive results as variable/non-variable

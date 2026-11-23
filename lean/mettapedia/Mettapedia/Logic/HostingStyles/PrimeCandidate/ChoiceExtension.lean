@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationBatch
 import Mettapedia.Logic.HostingStyles.PrimeCandidate.ProbeDynamics
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
 import Mettapedia.OSLF.MeTTaIL.PlainRuleValidation
@@ -112,25 +113,10 @@ theorem probeWithChoice_rewrites_checked :
 
 /-- **The probe extended with choice passes the declaration gate.** -/
 theorem probeWithChoice_validate : probeWithChoice.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
-  case htypes => decide +kernel
-  case hconstructors => decide +kernel
-  case hequations => decide +kernel
-  case hrewrites => decide +kernel
-  case hcategory => decide +kernel
-  case hparams => decide +kernel
-  case hsyntax => decide +kernel
-  case hequationValid =>
-    intro equation member
-    exact LanguageDef.validateEquation_eq_nil_of_plainEquationOk
-      (List.all_eq_true.mp
-        (by decide +kernel :
-          probeWithChoice.equations.all (LanguageDef.plainEquationOk probeWithChoice) = true)
-        equation member)
-  case hrewriteValid =>
-    intro rewrite member
-    exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check (by decide +kernel)
-      (probeWithChoice_rewrites_checked rewrite member)
+  exact RewriteValidationCertificate.validate_eq_nil_of_signature_and_checks
+    (RewriteValidationCertificate.validate_signature_of_plain_equations (lang := probeWithChoice)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel)) (by decide +kernel) probeWithChoice_rewrites_checked
 
 /-- **The probe extended with choice, as a presentation.** -/
 def choicePresentation : ValidatedLanguageDef := ⟨probeWithChoice, probeWithChoice_validate⟩

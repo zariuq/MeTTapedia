@@ -1,0 +1,150 @@
+{
+  "scope": "Native rest-aware schema typing, declared base-domain substitution profile",
+  "cases": [
+    {
+      "name": "absent_rest",
+      "call": "(gslt:premise:schema-rest (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\") RNone)",
+      "expected": "true"
+    },
+    {
+      "name": "declared_rest_type",
+      "call": "(gslt:premise:schema-rest (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\") (RSome \"xs\"))",
+      "expected": "true"
+    },
+    {
+      "name": "missing_rest",
+      "call": "(gslt:premise:schema-rest (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\") (RSome \"missing\"))",
+      "expected": "false"
+    },
+    {
+      "name": "rest_wrong_kind",
+      "call": "(gslt:premise:schema-rest (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashSet\" (TBase \"Proc\") (RSome \"xs\"))",
+      "expected": "false"
+    },
+    {
+      "name": "rest_wrong_element_type",
+      "call": "(gslt:premise:schema-rest (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Other\") (RSome \"xs\"))",
+      "expected": "false"
+    },
+    {
+      "name": "rest_first_match_context",
+      "call": "(gslt:premise:schema-rest (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Other\"))) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\") (RSome \"xs\"))",
+      "expected": "false"
+    },
+    {
+      "name": "collection_element_and_rest",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (FVar \"x\") LNil) (RSome \"xs\")) (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))",
+      "expected": "true"
+    },
+    {
+      "name": "collection_wrong_element",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (FVar \"other\") LNil) (RSome \"xs\")) (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))",
+      "expected": "false"
+    },
+    {
+      "name": "nested_data_role",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (FVar \"x\") LNil) (RSome \"xs\")) LNil) (RSome \"xss\")) (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))))",
+      "expected": "true"
+    },
+    {
+      "name": "nested_data_role_wrong_capture",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (FVar \"x\") LNil) RNone) LNil) (RSome \"xs\")) (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))))",
+      "expected": "false"
+    },
+    {
+      "name": "declared_bare_collection",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (FVar \"x\") LNil) (RSome \"xs\")) (TBase \"Proc\"))",
+      "expected": "true"
+    },
+    {
+      "name": "cross_constructor_result_sort",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Other\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (FVar \"x\") LNil) (RSome \"xs\")) (TBase \"Proc\"))",
+      "expected": "false"
+    },
+    {
+      "name": "wrapped_collection_cannot_supply_bare_law",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (FVar \"x\") LNil) (RSome \"xs\")) (TBase \"Proc\"))",
+      "expected": "false"
+    },
+    {
+      "name": "wrapped_constructor_with_rest",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PApp \"Wrap\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (FVar \"x\") LNil) (RSome \"xs\")) LNil)) (TBase \"Proc\"))",
+      "expected": "true"
+    },
+    {
+      "name": "bare_constructor_application_refused",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PApp \"Parallel\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (FVar \"x\") LNil) (RSome \"xs\")) LNil)) (TBase \"Proc\"))",
+      "expected": "false"
+    },
+    {
+      "name": "lambda_uses_exact_domain",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PLam BNone (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (Var 0) LNil) (RSome \"xs\"))) (TArrow (TBase \"Proc\") (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))))",
+      "expected": "true"
+    },
+    {
+      "name": "lambda_wrong_domain_same_depth",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PLam BNone (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (Var 0) LNil) (RSome \"xs\"))) (TArrow (TArrow (TBase \"Proc\") (TBase \"Proc\")) (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))))",
+      "expected": "false"
+    },
+    {
+      "name": "multi_lambda_retains_two_binders",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PMultiLam 2 LNil (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (Var 0) (LCons (Var 1) LNil)) (RSome \"xs\"))) (TArrow (TMultiBinder (TBase \"Proc\")) (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))))",
+      "expected": "true"
+    },
+    {
+      "name": "multi_lambda_unbound_index_refused",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PMultiLam 2 LNil (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (Var 2) LNil) (RSome \"xs\"))) (TArrow (TMultiBinder (TBase \"Proc\")) (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))))",
+      "expected": "false"
+    },
+    {
+      "name": "subst_searches_declared_base_domains",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PSubst (Var 0) (FVar \"x\")) (TBase \"Proc\"))",
+      "expected": "true"
+    },
+    {
+      "name": "subst_missing_domain_declaration",
+      "call": "(gslt:premise:schema-has (LCons \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PSubst (Var 0) (FVar \"x\")) (TBase \"Proc\"))",
+      "expected": "false"
+    },
+    {
+      "name": "subst_wrong_replacement_type",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (PSubst (Var 0) (FVar \"other\")) (TBase \"Proc\"))",
+      "expected": "false"
+    },
+    {
+      "name": "arguments_exact_length",
+      "call": "(gslt:premise:schema-arguments (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (LCons (FVar \"x\") LNil) (LCons (TermSimple \"a\" (TBase \"Proc\")) LNil))",
+      "expected": "true"
+    },
+    {
+      "name": "arguments_missing_argument",
+      "call": "(gslt:premise:schema-arguments (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil LNil (LCons (TermSimple \"a\" (TBase \"Proc\")) LNil))",
+      "expected": "false"
+    },
+    {
+      "name": "arguments_valid_abstraction_representation",
+      "call": "(gslt:premise:schema-arguments (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (LCons (PLam BNone (Var 0)) LNil) (LCons (TermAbstraction (BSome \"x\") \"body\" (TArrow (TBase \"Proc\") (TBase \"Proc\"))) LNil))",
+      "expected": "true"
+    },
+    {
+      "name": "arguments_wrong_representation",
+      "call": "(gslt:premise:schema-arguments (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (LCons (PLam (BSome \"x\") (Var 0)) LNil) (LCons (TermAbstraction (BSome \"x\") \"body\" (TArrow (TBase \"Proc\") (TBase \"Proc\"))) LNil))",
+      "expected": "false"
+    },
+    {
+      "name": "arguments_valid_multi_representation",
+      "call": "(gslt:premise:schema-arguments (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (LCons (PMultiLam 2 LNil (Var 1)) LNil) (LCons (TermMultiAbstraction (LCons \"x\" (LCons \"y\" LNil)) \"body\" (TArrow (TMultiBinder (TBase \"Proc\")) (TBase \"Proc\"))) LNil))",
+      "expected": "true"
+    },
+    {
+      "name": "arguments_wrong_multi_representation",
+      "call": "(gslt:premise:schema-arguments (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"x\" (TBase \"Proc\")) (LCons (Binding \"xs\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) (LCons (Binding \"xss\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\")))) (LCons (Binding \"other\" (TBase \"Other\")) LNil)))) LNil (LCons (PMultiLam 2 (LCons \"x\" (LCons \"y\" LNil)) (Var 1)) LNil) (LCons (TermMultiAbstraction (LCons \"x\" (LCons \"y\" LNil)) \"body\" (TArrow (TMultiBinder (TBase \"Proc\")) (TBase \"Proc\"))) LNil))",
+      "expected": "false"
+    },
+    {
+      "name": "compound_substitution_domain_is_not_claimed",
+      "call": "(gslt:premise:schema-has (LCons \"Proc\" (LCons \"Other\" LNil)) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) (LCons (GrammarTypingV1 \"Parallel\" \"Proc\" (LCons (TermSimple \"items\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"Proc\"))) LNil)) LNil)) (LCons (Binding \"f\" (TArrow (TBase \"Proc\") (TBase \"Proc\"))) LNil) LNil (PSubst (Var 0) (FVar \"f\")) (TArrow (TBase \"Proc\") (TBase \"Proc\")))",
+      "expected": "false"
+    }
+  ]
+}

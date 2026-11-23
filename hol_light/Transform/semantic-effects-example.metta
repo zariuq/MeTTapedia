@@ -1,0 +1,5 @@
+!(import! &self holkernel)
+!(let* (($k (hol:kernel standard))
+        ($_ (hol:replay $k "Mettapedia/hol_light/Transform/semantic-effects.holr")))
+    ((hol:sequent (hol:theorem $k "TC_SEMANTIC_MODELS_ALONG"))
+     (hol:sequent (hol:theorem $k "TC_STRICT_REFINEMENT_NOT_EXACT"))))

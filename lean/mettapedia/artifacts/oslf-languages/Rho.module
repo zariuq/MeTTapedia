@@ -1,0 +1,24 @@
+Module RhoCalc {
+  Theory RhoCalc() {
+    Types {
+      Proc;
+      Name;
+    }
+    Terms {
+      "PZero" .  |- "0" : Proc;
+      "PDrop" . n:Name |- "*" "(" n ")" : Proc;
+      "NQuote" . p:Proc |- "@" "(" p ")" : Name;
+      "PPar" . ps:HashBag(Proc) |- "{" ps sep("|") "}" : Proc ![flatten, unit "PZero"];
+      "POutput" . n:Name, q:Proc |- n "!" "(" q ")" : Proc;
+      "PInput" . n:Name, ^p:[Name -> Proc] |- n "?" "." "{" p "}" : Proc;
+    }
+    Equations {
+      "QuoteDrop" . N:Name |- "NQuote"("PDrop"(N)) = N;
+    }
+    Rewrites {
+      "Comm" . n:Name, p:Proc, q:Proc |- {"PInput"(n, ^.p), "POutput"(n, q), ...rest} ~> {["NQuote"(q)/#0]p, ...rest};
+      ParCong : if S ~> T then {S, ...rest} ~> {T, ...rest};
+    }
+  }
+  theory RhoCalc()
+}

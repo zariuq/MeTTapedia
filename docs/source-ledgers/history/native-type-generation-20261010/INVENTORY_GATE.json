@@ -1,0 +1,1210 @@
+{
+  "status": "pass",
+  "module_count": 148,
+  "unique_kernel_declarations": 11445,
+  "unique_theorems": 6911,
+  "unique_runtime_implementations": 64,
+  "unique_compiler_only_declarations": 6503,
+  "transitive_axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+  ],
+  "module_name_coverage": [
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterFiniteBinding",
+      "kernel": 63,
+      "runtime": 5,
+      "compiler_only": 52,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19BindingValueRepresentation",
+      "kernel": 9,
+      "runtime": 0,
+      "compiler_only": 4,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19BindingEmptyAmbient",
+      "kernel": 15,
+      "runtime": 0,
+      "compiler_only": 6,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19BindingCenterStability",
+      "kernel": 6,
+      "runtime": 0,
+      "compiler_only": 2,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19EquationalCenter",
+      "kernel": 26,
+      "runtime": 0,
+      "compiler_only": 34,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterCompiler",
+      "kernel": 300,
+      "runtime": 4,
+      "compiler_only": 161,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterCompilerSemantics",
+      "kernel": 79,
+      "runtime": 2,
+      "compiler_only": 10,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceFormation",
+      "kernel": 45,
+      "runtime": 0,
+      "compiler_only": 33,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceBoundaries",
+      "kernel": 4,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceStability",
+      "kernel": 29,
+      "runtime": 0,
+      "compiler_only": 24,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterCompilerOrigins",
+      "kernel": 12,
+      "runtime": 0,
+      "compiler_only": 2,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceSource",
+      "kernel": 20,
+      "runtime": 0,
+      "compiler_only": 26,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceStableSource",
+      "kernel": 18,
+      "runtime": 0,
+      "compiler_only": 14,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterCompilerRenaming",
+      "kernel": 63,
+      "runtime": 2,
+      "compiler_only": 4,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterNullaryGuards",
+      "kernel": 72,
+      "runtime": 1,
+      "compiler_only": 36,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterGuardedSource",
+      "kernel": 32,
+      "runtime": 1,
+      "compiler_only": 13,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceStableSubstitution",
+      "kernel": 2,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceGraphLaws",
+      "kernel": 7,
+      "runtime": 0,
+      "compiler_only": 7,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceStableConsequences",
+      "kernel": 16,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceStableQuotient",
+      "kernel": 10,
+      "runtime": 0,
+      "compiler_only": 4,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterActiveSystem",
+      "kernel": 15,
+      "runtime": 1,
+      "compiler_only": 2,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterBindingCodec",
+      "kernel": 70,
+      "runtime": 2,
+      "compiler_only": 16,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterBindingControls",
+      "kernel": 29,
+      "runtime": 0,
+      "compiler_only": 45,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19Sites",
+      "kernel": 146,
+      "runtime": 2,
+      "compiler_only": 70,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SchemaSitesChecker",
+      "kernel": 110,
+      "runtime": 5,
+      "compiler_only": 17,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SchemaSitesLicensed",
+      "kernel": 54,
+      "runtime": 1,
+      "compiler_only": 5,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SchemaSitesCompleteness",
+      "kernel": 7,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SchemaSites",
+      "kernel": 61,
+      "runtime": 1,
+      "compiler_only": 35,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SitesTyping",
+      "kernel": 73,
+      "runtime": 0,
+      "compiler_only": 69,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralFormers",
+      "kernel": 64,
+      "runtime": 0,
+      "compiler_only": 39,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SortSlots",
+      "kernel": 96,
+      "runtime": 0,
+      "compiler_only": 105,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ProfileCenter",
+      "kernel": 35,
+      "runtime": 0,
+      "compiler_only": 76,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ProfileCenterControls",
+      "kernel": 45,
+      "runtime": 0,
+      "compiler_only": 47,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceControls",
+      "kernel": 19,
+      "runtime": 0,
+      "compiler_only": 39,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterGuardControls",
+      "kernel": 28,
+      "runtime": 0,
+      "compiler_only": 27,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterGuardDescent",
+      "kernel": 27,
+      "runtime": 0,
+      "compiler_only": 49,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CenterGuardedExecution",
+      "kernel": 4,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceStableControls",
+      "kernel": 23,
+      "runtime": 0,
+      "compiler_only": 17,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19CoherenceStableGraphLaws",
+      "kernel": 10,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalAnnotations",
+      "kernel": 296,
+      "runtime": 11,
+      "compiler_only": 68,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalDescentAnnotations",
+      "kernel": 230,
+      "runtime": 3,
+      "compiler_only": 51,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedProfiles",
+      "kernel": 55,
+      "runtime": 0,
+      "compiler_only": 79,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalInstantiation",
+      "kernel": 110,
+      "runtime": 2,
+      "compiler_only": 12,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalRules",
+      "kernel": 141,
+      "runtime": 0,
+      "compiler_only": 16,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalFormation",
+      "kernel": 29,
+      "runtime": 0,
+      "compiler_only": 1,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalSourceCarriers",
+      "kernel": 63,
+      "runtime": 0,
+      "compiler_only": 28,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalProgramCarriers",
+      "kernel": 30,
+      "runtime": 0,
+      "compiler_only": 7,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalProgramAdmission",
+      "kernel": 55,
+      "runtime": 0,
+      "compiler_only": 23,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralSpatialDeclarations",
+      "kernel": 56,
+      "runtime": 0,
+      "compiler_only": 28,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralLogic",
+      "kernel": 389,
+      "runtime": 4,
+      "compiler_only": 219,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19Generator",
+      "kernel": 91,
+      "runtime": 0,
+      "compiler_only": 54,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SitesNameBridge",
+      "kernel": 36,
+      "runtime": 0,
+      "compiler_only": 3,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedSources",
+      "kernel": 146,
+      "runtime": 0,
+      "compiler_only": 66,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedSchemas",
+      "kernel": 5,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedSchemaAdmission",
+      "kernel": 49,
+      "runtime": 0,
+      "compiler_only": 48,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedModalCodes",
+      "kernel": 36,
+      "runtime": 0,
+      "compiler_only": 17,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedSchemas",
+      "kernel": 54,
+      "runtime": 0,
+      "compiler_only": 20,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalCatalogueCoverage",
+      "kernel": 7,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalSourceIntroduction",
+      "kernel": 69,
+      "runtime": 1,
+      "compiler_only": 35,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalSourceCarrierControls",
+      "kernel": 189,
+      "runtime": 0,
+      "compiler_only": 72,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedArrowControls",
+      "kernel": 146,
+      "runtime": 0,
+      "compiler_only": 34,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedModalCoverage",
+      "kernel": 8,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedCoverage",
+      "kernel": 4,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralSemantics",
+      "kernel": 41,
+      "runtime": 1,
+      "compiler_only": 1,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralExecution",
+      "kernel": 36,
+      "runtime": 0,
+      "compiler_only": 9,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralFrontierReadout",
+      "kernel": 7,
+      "runtime": 0,
+      "compiler_only": 1,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralPropositionalReadout",
+      "kernel": 50,
+      "runtime": 1,
+      "compiler_only": 15,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralComponentReadout",
+      "kernel": 36,
+      "runtime": 0,
+      "compiler_only": 10,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralSplitReadout",
+      "kernel": 97,
+      "runtime": 0,
+      "compiler_only": 55,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralSpatialSplitReadout",
+      "kernel": 43,
+      "runtime": 0,
+      "compiler_only": 11,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralDecompositionReadout",
+      "kernel": 29,
+      "runtime": 1,
+      "compiler_only": 12,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorChecking",
+      "kernel": 167,
+      "runtime": 0,
+      "compiler_only": 63,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalEquations",
+      "kernel": 17,
+      "runtime": 0,
+      "compiler_only": 1,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalNativeEvidence",
+      "kernel": 9,
+      "runtime": 0,
+      "compiler_only": 10,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedModalChecking",
+      "kernel": 174,
+      "runtime": 0,
+      "compiler_only": 89,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedModalCheckingLaws",
+      "kernel": 27,
+      "runtime": 0,
+      "compiler_only": 6,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedChecking",
+      "kernel": 33,
+      "runtime": 0,
+      "compiler_only": 16,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedArrowFormation",
+      "kernel": 14,
+      "runtime": 0,
+      "compiler_only": 7,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19LambdaConsumer",
+      "kernel": 188,
+      "runtime": 0,
+      "compiler_only": 148,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedModalFormation",
+      "kernel": 7,
+      "runtime": 0,
+      "compiler_only": 2,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedModalCheckingControls",
+      "kernel": 660,
+      "runtime": 0,
+      "compiler_only": 143,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedBetaChecking",
+      "kernel": 46,
+      "runtime": 0,
+      "compiler_only": 23,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedPendingControls",
+      "kernel": 89,
+      "runtime": 0,
+      "compiler_only": 62,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedSubstitutionControls",
+      "kernel": 71,
+      "runtime": 0,
+      "compiler_only": 55,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedAnnotatedSubstitutionFormation",
+      "kernel": 13,
+      "runtime": 0,
+      "compiler_only": 7,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedCenter",
+      "kernel": 9,
+      "runtime": 0,
+      "compiler_only": 1,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedModalCheckingIsolation",
+      "kernel": 32,
+      "runtime": 0,
+      "compiler_only": 15,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedModalCheckingWrongRHS",
+      "kernel": 219,
+      "runtime": 0,
+      "compiler_only": 99,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SourceCenterSyntax",
+      "kernel": 97,
+      "runtime": 3,
+      "compiler_only": 22,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedStructuralCodes",
+      "kernel": 20,
+      "runtime": 0,
+      "compiler_only": 13,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SourceCenterCodes",
+      "kernel": 126,
+      "runtime": 1,
+      "compiler_only": 62,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedPropositionalCodes",
+      "kernel": 268,
+      "runtime": 5,
+      "compiler_only": 69,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratedReadoutSound",
+      "kernel": 16,
+      "runtime": 0,
+      "compiler_only": 6,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorGuardedCenter",
+      "kernel": 21,
+      "runtime": 0,
+      "compiler_only": 11,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorBindingCenter",
+      "kernel": 63,
+      "runtime": 2,
+      "compiler_only": 47,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorBindingControls",
+      "kernel": 19,
+      "runtime": 0,
+      "compiler_only": 9,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorBindingStability",
+      "kernel": 50,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorBindingStabilityControls",
+      "kernel": 37,
+      "runtime": 0,
+      "compiler_only": 36,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalComparison",
+      "kernel": 4,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalCounterexamples",
+      "kernel": 242,
+      "runtime": 0,
+      "compiler_only": 86,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralAC",
+      "kernel": 37,
+      "runtime": 0,
+      "compiler_only": 18,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralControls",
+      "kernel": 43,
+      "runtime": 0,
+      "compiler_only": 61,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SourceBoundaries",
+      "kernel": 10,
+      "runtime": 0,
+      "compiler_only": 2,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorBudgetControls",
+      "kernel": 35,
+      "runtime": 0,
+      "compiler_only": 15,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SourceCenterLaws",
+      "kernel": 26,
+      "runtime": 1,
+      "compiler_only": 3,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorCertifiedCenter",
+      "kernel": 57,
+      "runtime": 0,
+      "compiler_only": 35,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SourceCenterModalCodes",
+      "kernel": 120,
+      "runtime": 0,
+      "compiler_only": 30,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorCertifiedModalCenter",
+      "kernel": 20,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorCertifiedCenterControls",
+      "kernel": 666,
+      "runtime": 0,
+      "compiler_only": 145,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorControls",
+      "kernel": 52,
+      "runtime": 0,
+      "compiler_only": 35,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19GeneratorGuardControls",
+      "kernel": 21,
+      "runtime": 0,
+      "compiler_only": 14,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalConditionalControls",
+      "kernel": 120,
+      "runtime": 0,
+      "compiler_only": 51,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalContextEquations",
+      "kernel": 9,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalContextControls",
+      "kernel": 151,
+      "runtime": 0,
+      "compiler_only": 61,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalHiddenAssignments",
+      "kernel": 107,
+      "runtime": 0,
+      "compiler_only": 25,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalNativeElimination",
+      "kernel": 25,
+      "runtime": 0,
+      "compiler_only": 4,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalPossibility",
+      "kernel": 5,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalProgramCarrierControls",
+      "kernel": 12,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalSourceProfile",
+      "kernel": 340,
+      "runtime": 0,
+      "compiler_only": 91,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ModalSourceControls",
+      "kernel": 125,
+      "runtime": 0,
+      "compiler_only": 45,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ObservationControls",
+      "kernel": 256,
+      "runtime": 0,
+      "compiler_only": 77,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SortRelativePropositionalCodes",
+      "kernel": 59,
+      "runtime": 0,
+      "compiler_only": 5,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SourceCenterFormation",
+      "kernel": 37,
+      "runtime": 0,
+      "compiler_only": 27,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SourceCenterAdmissionControls",
+      "kernel": 534,
+      "runtime": 0,
+      "compiler_only": 176,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19PropositionalCodeControls",
+      "kernel": 127,
+      "runtime": 0,
+      "compiler_only": 45,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19RhoConsumer",
+      "kernel": 18,
+      "runtime": 0,
+      "compiler_only": 13,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19RhoGeometry",
+      "kernel": 35,
+      "runtime": 0,
+      "compiler_only": 41,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19RhoPaperBinding",
+      "kernel": 75,
+      "runtime": 0,
+      "compiler_only": 19,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19RhoPaperConsumer",
+      "kernel": 370,
+      "runtime": 0,
+      "compiler_only": 164,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SchemaSitesSource",
+      "kernel": 26,
+      "runtime": 0,
+      "compiler_only": 42,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19RhoSchemaConsumer",
+      "kernel": 250,
+      "runtime": 0,
+      "compiler_only": 84,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SitesControls",
+      "kernel": 27,
+      "runtime": 0,
+      "compiler_only": 84,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SortRelativeNativeCodes",
+      "kernel": 30,
+      "runtime": 0,
+      "compiler_only": 13,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SortRelativeGeneratedCodes",
+      "kernel": 38,
+      "runtime": 0,
+      "compiler_only": 9,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SortRelativeNativeIntroduction",
+      "kernel": 20,
+      "runtime": 0,
+      "compiler_only": 5,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SortRelativeNativeTransport",
+      "kernel": 11,
+      "runtime": 0,
+      "compiler_only": 5,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SortRelativeLambdaControls",
+      "kernel": 368,
+      "runtime": 0,
+      "compiler_only": 127,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19SourceCenterRhoControls",
+      "kernel": 38,
+      "runtime": 0,
+      "compiler_only": 14,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralDecompositionControls",
+      "kernel": 243,
+      "runtime": 0,
+      "compiler_only": 69,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralSpatialLaws",
+      "kernel": 5,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19StructuralRhoSpatial",
+      "kernel": 10,
+      "runtime": 0,
+      "compiler_only": 6,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19ExecutableGenerator",
+      "kernel": 0,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.MeTTaIL.GeneralPremiseCaptureRepresentations",
+      "kernel": 61,
+      "runtime": 1,
+      "compiler_only": 7,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.MeTTaIL.GeneralPremiseCanonicalFlow",
+      "kernel": 22,
+      "runtime": 0,
+      "compiler_only": 1,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.MeTTaIL.GeneralPremiseQuantifierTotality",
+      "kernel": 12,
+      "runtime": 0,
+      "compiler_only": 1,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.EquationExecution",
+      "kernel": 339,
+      "runtime": 0,
+      "compiler_only": 651,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.SourceLedger",
+      "kernel": 129,
+      "runtime": 0,
+      "compiler_only": 990,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    },
+    {
+      "module": "Mettapedia.OSLF.DeliverableAudit",
+      "kernel": 0,
+      "runtime": 0,
+      "compiler_only": 0,
+      "complete_name_agreement": true,
+      "complete_axiom_agreement": true
+    }
+  ],
+  "audit_summary": {
+    "compilerOnlyDeclarations": 6503,
+    "containsAdmission": false,
+    "inventoryCount": 18012,
+    "kind": "summary",
+    "modules": 148,
+    "repeatedModuleEntries": 791,
+    "safeKernelDeclarations": 11445,
+    "separateRuntimeImplementations": 64,
+    "theorems": 6911
+  }
+}

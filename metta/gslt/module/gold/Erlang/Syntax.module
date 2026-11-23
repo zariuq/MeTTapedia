@@ -1,0 +1,206 @@
+import "../SourceLexical.module" as lex
+
+Module Syntax {
+  Theory Sorts(l: lex.Grammar) {
+    l Types { ErAtomicLiteral; ErExprRaw; ErSingleExpr; ErSingle; ErFunctionNameRaw; ErFunctionBody; ErFun; ErLiteralRaw; ErPatternRaw; ErPatternList; ErAnnotation; ErAttribute; ErAttributes; ErClause; ErClauses; ErDefinition; ErDefinitions; ErExpr; ErExprList; ErExpressions; ErFunctionName; ErFunctionNames; ErLiteral; ErLiteralList; ErLiterals; ErModule; ErPattern; ErPatterns; ErVariable; ErVariables; }
+  }
+  Theory Modules(s: Sorts) {
+    s Terms {
+      «core-erlang-src:program» . a0:SrcTrivia, a1:ErModule, a2:SrcTrivia |- a0 a1 a2 : SourceProgram;
+      «core-erlang-src:module» . a0:SrcSpacing, a1:SrcQuotedAtom, a2:SrcTrivia, a3:SrcTrivia, a4:ErFunctionNames, a5:SrcTrivia, a6:SrcTrivia, a7:SrcTrivia, a8:ErAttributes, a9:SrcTrivia, a10:ErDefinitions |- "module" a0 a1 a2 "[" a3 a4 "]" a5 "attributes" a6 "[" a7 a8 "]" a9 a10 "end" : ErModule;
+      «core-erlang-src:module-annotated» . a0:SrcTrivia, a1:ErModule, a2:SrcTrivia, a3:SrcTrivia, a4:ErAnnotation, a5:SrcTrivia |- "(" a0 a1 a2 "-|" a3 a4 a5 ")" : ErModule;
+      «core-erlang-src:function-name-raw» . a0:ErFunctionNameRaw |- a0 : ErFunctionName;
+      «core-erlang-src:function-name» . a0:SrcQuotedAtom, a1:SrcTrivia, a2:SrcTrivia, a3:SrcDigits |- a0 a1 "/" a2 a3 : ErFunctionNameRaw;
+      «core-erlang-src:function-name-annotated» . a0:SrcTrivia, a1:ErFunctionNameRaw, a2:SrcTrivia, a3:SrcTrivia, a4:ErAnnotation, a5:SrcTrivia |- "(" a0 a1 a2 "-|" a3 a4 a5 ")" : ErFunctionName;
+      «core-erlang-src:function-names-empty» .  |-  : ErFunctionNames;
+      «core-erlang-src:function-names-one» . a0:ErFunctionName, a1:SrcTrivia |- a0 a1 : ErFunctionNames;
+      «core-erlang-src:function-names-more» . a0:ErFunctionName, a1:SrcTrivia, a2:SrcTrivia, a3:ErFunctionNames |- a0 a1 "," a2 a3 : ErFunctionNames;
+      «core-erlang-src:attributes-empty» .  |-  : ErAttributes;
+      «core-erlang-src:attributes-one» . a0:ErAttribute, a1:SrcTrivia |- a0 a1 : ErAttributes;
+      «core-erlang-src:attributes-more» . a0:ErAttribute, a1:SrcTrivia, a2:SrcTrivia, a3:ErAttributes |- a0 a1 "," a2 a3 : ErAttributes;
+      «core-erlang-src:attribute» . a0:SrcQuotedAtom, a1:SrcTrivia, a2:SrcTrivia, a3:ErLiteral |- a0 a1 "=" a2 a3 : ErAttribute;
+      «core-erlang-src:definitions-empty» .  |-  : ErDefinitions;
+      «core-erlang-src:definitions-more» . a0:ErDefinition, a1:SrcTrivia, a2:ErDefinitions |- a0 a1 a2 : ErDefinitions;
+      «core-erlang-src:definition» . a0:ErFunctionName, a1:SrcTrivia, a2:SrcTrivia, a3:ErFunctionBody |- a0 a1 "=" a2 a3 : ErDefinition;
+    }
+  }
+  Theory Expressions(s: Sorts) {
+    s Terms {
+      «core-erlang-src:expr-raw» . a0:ErExprRaw |- a0 : ErExpr;
+      «core-erlang-src:expr-single» . a0:ErSingleExpr |- a0 : ErExprRaw;
+      «core-erlang-src:single-raw» . a0:ErSingleExpr |- a0 : ErSingle;
+      «core-erlang-src:single-annotated» . a0:SrcTrivia, a1:ErSingleExpr, a2:SrcTrivia, a3:SrcTrivia, a4:ErAnnotation, a5:SrcTrivia |- "(" a0 a1 a2 "-|" a3 a4 a5 ")" : ErSingle;
+      «core-erlang-src:expr-fun» . a0:ErFun |- a0 : ErSingleExpr;
+      «core-erlang-src:function-body» . a0:ErFun |- a0 : ErFunctionBody;
+      «core-erlang-src:function-body-annotated» . a0:SrcTrivia, a1:ErFun, a2:SrcTrivia, a3:SrcTrivia, a4:ErAnnotation, a5:SrcTrivia |- "(" a0 a1 a2 "-|" a3 a4 a5 ")" : ErFunctionBody;
+      «core-erlang-src:expr-literal» . a0:ErAtomicLiteral |- a0 : ErSingleExpr;
+      «core-erlang-src:expr-variable» . a0:SrcVariableName |- a0 : ErSingleExpr;
+      «core-erlang-src:expr-function-name» . a0:ErFunctionNameRaw |- a0 : ErSingleExpr;
+      «core-erlang-src:expr-values» . a0:SrcTrivia, a1:ErExpressions |- "<" a0 a1 ">" : ErExprRaw;
+      «core-erlang-src:expr-tuple» . a0:SrcTrivia, a1:ErExpressions |- "{" a0 a1 "}" : ErSingleExpr;
+      «core-erlang-src:expr-list» . a0:SrcTrivia, a1:ErExprList |- "[" a0 a1 "]" : ErSingleExpr;
+      «core-erlang-src:expr-annotated» . a0:SrcTrivia, a1:ErExprRaw, a2:SrcTrivia, a3:SrcTrivia, a4:ErAnnotation, a5:SrcTrivia |- "(" a0 a1 a2 "-|" a3 a4 a5 ")" : ErExpr;
+      «core-erlang-src:fun» . a0:SrcTrivia, a1:SrcTrivia, a2:ErVariables, a3:SrcTrivia, a4:SrcTrivia, a5:ErExpr |- "fun" a0 "(" a1 a2 ")" a3 "->" a4 a5 : ErFun;
+      «core-erlang-src:let» . a0:SrcSpacing, a1:SrcTrivia, a2:ErVariables, a3:SrcTrivia, a4:SrcTrivia, a5:ErExpr, a6:SrcSpacing, a7:SrcSpacing, a8:ErExpr |- "let" a0 "<" a1 a2 ">" a3 "=" a4 a5 a6 "in" a7 a8 : ErSingleExpr;
+      «core-erlang-src:letrec» . a0:SrcSpacing, a1:ErDefinitions, a2:SrcSpacing, a3:ErExpr |- "letrec" a0 a1 "in" a2 a3 : ErSingleExpr;
+      «core-erlang-src:case» . a0:SrcSpacing, a1:ErExpr, a2:SrcSpacing, a3:SrcTrivia, a4:ErClauses |- "case" a0 a1 a2 "of" a3 a4 "end" : ErSingleExpr;
+      «core-erlang-src:do» . a0:SrcSpacing, a1:ErExpr, a2:SrcSpacing, a3:ErExpr |- "do" a0 a1 a2 a3 : ErSingleExpr;
+      «core-erlang-src:apply» . a0:SrcSpacing, a1:ErExpr, a2:SrcTrivia, a3:SrcTrivia, a4:ErExpressions |- "apply" a0 a1 a2 "(" a3 a4 ")" : ErSingleExpr;
+      «core-erlang-src:call» . a0:SrcSpacing, a1:ErExpr, a2:SrcTrivia, a3:SrcTrivia, a4:ErExpr, a5:SrcTrivia, a6:SrcTrivia, a7:ErExpressions |- "call" a0 a1 a2 ":" a3 a4 a5 "(" a6 a7 ")" : ErSingleExpr;
+      «core-erlang-src:primop» . a0:SrcSpacing, a1:SrcQuotedAtom, a2:SrcTrivia, a3:SrcTrivia, a4:ErExpressions |- "primop" a0 a1 a2 "(" a3 a4 ")" : ErSingleExpr;
+      «core-erlang-src:receive» . a0:SrcTrivia, a1:ErClauses, a2:SrcSpacing, a3:ErExpr, a4:SrcTrivia, a5:SrcTrivia, a6:ErExpr |- "receive" a0 a1 "after" a2 a3 a4 "->" a5 a6 : ErSingleExpr;
+      «core-erlang-src:try» . a0:SrcSpacing, a1:ErExpr, a2:SrcSpacing, a3:SrcSpacing, a4:SrcTrivia, a5:ErVariables, a6:SrcTrivia, a7:SrcTrivia, a8:ErExpr, a9:SrcSpacing, a10:SrcSpacing, a11:SrcTrivia, a12:ErVariables, a13:SrcTrivia, a14:SrcTrivia, a15:ErExpr |- "try" a0 a1 a2 "of" a3 "<" a4 a5 ">" a6 "->" a7 a8 a9 "catch" a10 "<" a11 a12 ">" a13 "->" a14 a15 : ErSingleExpr;
+      «core-erlang-src:catch» . a0:SrcSpacing, a1:ErExpr |- "catch" a0 a1 : ErSingleExpr;
+      «core-erlang-src:expressions-empty» .  |-  : ErExpressions;
+      «core-erlang-src:expressions-one» . a0:ErSingle, a1:SrcTrivia |- a0 a1 : ErExpressions;
+      «core-erlang-src:expressions-more» . a0:ErSingle, a1:SrcTrivia, a2:SrcTrivia, a3:ErExpressions |- a0 a1 "," a2 a3 : ErExpressions;
+      «core-erlang-src:expr-list-one» . a0:ErSingle, a1:SrcTrivia |- a0 a1 : ErExprList;
+      «core-erlang-src:expr-list-more» . a0:ErSingle, a1:SrcTrivia, a2:SrcTrivia, a3:ErExprList |- a0 a1 "," a2 a3 : ErExprList;
+      «core-erlang-src:expr-list-tail» . a0:ErSingle, a1:SrcTrivia, a2:SrcTrivia, a3:ErSingle, a4:SrcTrivia |- a0 a1 "|" a2 a3 a4 : ErExprList;
+    }
+  }
+  Theory Patterns(s: Sorts) {
+    s Terms {
+      «core-erlang-src:variable» . a0:SrcVariableName |- a0 : ErVariable;
+      «core-erlang-src:variable-annotated» . a0:SrcTrivia, a1:ErVariable, a2:SrcTrivia, a3:SrcTrivia, a4:ErAnnotation, a5:SrcTrivia |- "(" a0 a1 a2 "-|" a3 a4 a5 ")" : ErVariable;
+      «core-erlang-src:variables-empty» .  |-  : ErVariables;
+      «core-erlang-src:variables-one» . a0:ErVariable, a1:SrcTrivia |- a0 a1 : ErVariables;
+      «core-erlang-src:variables-more» . a0:ErVariable, a1:SrcTrivia, a2:SrcTrivia, a3:ErVariables |- a0 a1 "," a2 a3 : ErVariables;
+      «core-erlang-src:pattern-raw» . a0:ErPatternRaw |- a0 : ErPattern;
+      «core-erlang-src:pattern-list-one» . a0:ErPattern, a1:SrcTrivia |- a0 a1 : ErPatternList;
+      «core-erlang-src:pattern-list-more» . a0:ErPattern, a1:SrcTrivia, a2:SrcTrivia, a3:ErPatternList |- a0 a1 "," a2 a3 : ErPatternList;
+      «core-erlang-src:pattern-list-tail» . a0:ErPattern, a1:SrcTrivia, a2:SrcTrivia, a3:ErPattern, a4:SrcTrivia |- a0 a1 "|" a2 a3 a4 : ErPatternList;
+      «core-erlang-src:pattern-variable» . a0:ErVariable |- a0 : ErPattern;
+      «core-erlang-src:pattern-literal» . a0:ErAtomicLiteral |- a0 : ErPatternRaw;
+      «core-erlang-src:pattern-tuple» . a0:SrcTrivia, a1:ErPatterns |- "{" a0 a1 "}" : ErPatternRaw;
+      «core-erlang-src:pattern-cons» . a0:SrcTrivia, a1:ErPatternList |- "[" a0 a1 "]" : ErPatternRaw;
+      «core-erlang-src:pattern-alias» . a0:ErVariable, a1:SrcTrivia, a2:SrcTrivia, a3:ErPattern |- a0 a1 "=" a2 a3 : ErPatternRaw;
+      «core-erlang-src:pattern-annotated» . a0:SrcTrivia, a1:ErPatternRaw, a2:SrcTrivia, a3:SrcTrivia, a4:ErAnnotation, a5:SrcTrivia |- "(" a0 a1 a2 "-|" a3 a4 a5 ")" : ErPattern;
+      «core-erlang-src:patterns-empty» .  |-  : ErPatterns;
+      «core-erlang-src:patterns-one» . a0:ErPattern, a1:SrcTrivia |- a0 a1 : ErPatterns;
+      «core-erlang-src:patterns-more» . a0:ErPattern, a1:SrcTrivia, a2:SrcTrivia, a3:ErPatterns |- a0 a1 "," a2 a3 : ErPatterns;
+      «core-erlang-src:clauses-empty» .  |-  : ErClauses;
+      «core-erlang-src:clauses-more» . a0:ErClause, a1:SrcTrivia, a2:ErClauses |- a0 a1 a2 : ErClauses;
+      «core-erlang-src:clause» . a0:SrcTrivia, a1:ErPatterns, a2:SrcTrivia, a3:SrcSpacing, a4:ErExpr, a5:SrcTrivia, a6:SrcTrivia, a7:ErExpr |- "<" a0 a1 ">" a2 "when" a3 a4 a5 "->" a6 a7 : ErClause;
+      «core-erlang-src:clause-annotated» . a0:SrcTrivia, a1:ErClause, a2:SrcTrivia, a3:SrcTrivia, a4:ErAnnotation, a5:SrcTrivia |- "(" a0 a1 a2 "-|" a3 a4 a5 ")" : ErClause;
+    }
+  }
+  Theory Literals(s: Sorts) {
+    s Terms {
+      «core-erlang-src:literal-raw» . a0:ErLiteralRaw |- a0 : ErLiteral;
+      «core-erlang-src:literal-atomic» . a0:ErAtomicLiteral |- a0 : ErLiteralRaw;
+      «core-erlang-src:integer» . a0:SrcInteger |- a0 : ErAtomicLiteral;
+      «core-erlang-src:atom» . a0:SrcQuotedAtom |- a0 : ErAtomicLiteral;
+      «core-erlang-src:string» . a0:SrcString |- a0 : ErAtomicLiteral;
+      «core-erlang-src:literal-empty-list» . a0:SrcTrivia |- "[" a0 "]" : ErAtomicLiteral;
+      «core-erlang-src:literal-list» . a0:SrcTrivia, a1:ErLiteralList |- "[" a0 a1 "]" : ErLiteralRaw;
+      «core-erlang-src:literal-tuple» . a0:SrcTrivia, a1:ErLiterals |- "{" a0 a1 "}" : ErLiteralRaw;
+      «core-erlang-src:literal-annotated» . a0:SrcTrivia, a1:ErLiteralRaw, a2:SrcTrivia, a3:SrcTrivia, a4:ErAnnotation, a5:SrcTrivia |- "(" a0 a1 a2 "-|" a3 a4 a5 ")" : ErLiteral;
+      «core-erlang-src:literals-empty» .  |-  : ErLiterals;
+      «core-erlang-src:literals-one» . a0:ErLiteralRaw, a1:SrcTrivia |- a0 a1 : ErLiterals;
+      «core-erlang-src:literals-more» . a0:ErLiteralRaw, a1:SrcTrivia, a2:SrcTrivia, a3:ErLiterals |- a0 a1 "," a2 a3 : ErLiterals;
+      «core-erlang-src:literal-list-one» . a0:ErLiteralRaw, a1:SrcTrivia |- a0 a1 : ErLiteralList;
+      «core-erlang-src:literal-list-more» . a0:ErLiteralRaw, a1:SrcTrivia, a2:SrcTrivia, a3:ErLiteralList |- a0 a1 "," a2 a3 : ErLiteralList;
+      «core-erlang-src:literal-list-tail» . a0:ErLiteralRaw, a1:SrcTrivia, a2:SrcTrivia, a3:ErLiteralRaw, a4:SrcTrivia |- a0 a1 "|" a2 a3 a4 : ErLiteralList;
+      «core-erlang-src:annotation» . a0:SrcTrivia, a1:ErLiterals |- "[" a0 a1 "]" : ErAnnotation;
+    }
+  }
+  Theory Comments(s: Sorts) {
+    s Terms {
+      «core-erlang-src:comment-trivia» . a0:SrcLineBody, a1:SrcTrivia |- "%" a0 "\n" a1 : SrcTrivia;
+      «core-erlang-src:comment-spacing» . a0:SrcLineBody, a1:SrcTrivia |- "%" a0 "\n" a1 : SrcSpacing;
+    }
+  }
+  Theory SourceSelection() {
+    Types { SrcSelectionData; }
+    Terms {
+      «%» .  |-  : SrcSelectionData;
+      «10» .  |-  : SrcSelectionData;
+      «100» .  |-  : SrcSelectionData;
+      «101» .  |-  : SrcSelectionData;
+      «102» .  |-  : SrcSelectionData;
+      «103» .  |-  : SrcSelectionData;
+      «104» .  |-  : SrcSelectionData;
+      «105» .  |-  : SrcSelectionData;
+      «106» .  |-  : SrcSelectionData;
+      «107» .  |-  : SrcSelectionData;
+      «108» .  |-  : SrcSelectionData;
+      «109» .  |-  : SrcSelectionData;
+      «11» .  |-  : SrcSelectionData;
+      «110» .  |-  : SrcSelectionData;
+      «111» .  |-  : SrcSelectionData;
+      «112» .  |-  : SrcSelectionData;
+      «113» .  |-  : SrcSelectionData;
+      «114» .  |-  : SrcSelectionData;
+      «115» .  |-  : SrcSelectionData;
+      «116» .  |-  : SrcSelectionData;
+      «117» .  |-  : SrcSelectionData;
+      «118» .  |-  : SrcSelectionData;
+      «119» .  |-  : SrcSelectionData;
+      «12» .  |-  : SrcSelectionData;
+      «120» .  |-  : SrcSelectionData;
+      «121» .  |-  : SrcSelectionData;
+      «122» .  |-  : SrcSelectionData;
+      «13» .  |-  : SrcSelectionData;
+      «32» .  |-  : SrcSelectionData;
+      «39» .  |-  : SrcSelectionData;
+      «48» .  |-  : SrcSelectionData;
+      «49» .  |-  : SrcSelectionData;
+      «50» .  |-  : SrcSelectionData;
+      «51» .  |-  : SrcSelectionData;
+      «52» .  |-  : SrcSelectionData;
+      «53» .  |-  : SrcSelectionData;
+      «54» .  |-  : SrcSelectionData;
+      «55» .  |-  : SrcSelectionData;
+      «56» .  |-  : SrcSelectionData;
+      «57» .  |-  : SrcSelectionData;
+      «65» .  |-  : SrcSelectionData;
+      «66» .  |-  : SrcSelectionData;
+      «67» .  |-  : SrcSelectionData;
+      «68» .  |-  : SrcSelectionData;
+      «69» .  |-  : SrcSelectionData;
+      «70» .  |-  : SrcSelectionData;
+      «71» .  |-  : SrcSelectionData;
+      «72» .  |-  : SrcSelectionData;
+      «73» .  |-  : SrcSelectionData;
+      «74» .  |-  : SrcSelectionData;
+      «75» .  |-  : SrcSelectionData;
+      «76» .  |-  : SrcSelectionData;
+      «77» .  |-  : SrcSelectionData;
+      «78» .  |-  : SrcSelectionData;
+      «79» .  |-  : SrcSelectionData;
+      «80» .  |-  : SrcSelectionData;
+      «81» .  |-  : SrcSelectionData;
+      «82» .  |-  : SrcSelectionData;
+      «83» .  |-  : SrcSelectionData;
+      «84» .  |-  : SrcSelectionData;
+      «85» .  |-  : SrcSelectionData;
+      «86» .  |-  : SrcSelectionData;
+      «87» .  |-  : SrcSelectionData;
+      «88» .  |-  : SrcSelectionData;
+      «89» .  |-  : SrcSelectionData;
+      «9» .  |-  : SrcSelectionData;
+      «90» .  |-  : SrcSelectionData;
+      «95» .  |-  : SrcSelectionData;
+      «97» .  |-  : SrcSelectionData;
+      «98» .  |-  : SrcSelectionData;
+      «99» .  |-  : SrcSelectionData;
+      «GetSourceSelection» .  |-  : SrcSelectionData;
+      «LCons» . a0:SrcSelectionData, a1:SrcSelectionData |- a0 a1 : SrcSelectionData;
+      «LNil» .  |-  : SrcSelectionData;
+      «MaximalToken» . a0:SrcSelectionData, a1:SrcSelectionData, a2:SrcSelectionData |- a0 a1 a2 : SrcSelectionData;
+      «SourceSelectionV1» . a0:SrcSelectionData |- a0 : SrcSelectionData;
+      «SrcSpacing» .  |-  : SrcSelectionData;
+      «SrcTrivia» .  |-  : SrcSelectionData;
+      «SrcVariableName» .  |-  : SrcSelectionData;
+    }
+    Rewrites {
+      ReturnSourceSelection : (GetSourceSelection) ~> "SourceSelectionV1"("LCons"("MaximalToken"("SrcVariableName", "LCons"("65", "LCons"("66", "LCons"("67", "LCons"("68", "LCons"("69", "LCons"("70", "LCons"("71", "LCons"("72", "LCons"("73", "LCons"("74", "LCons"("75", "LCons"("76", "LCons"("77", "LCons"("78", "LCons"("79", "LCons"("80", "LCons"("81", "LCons"("82", "LCons"("83", "LCons"("84", "LCons"("85", "LCons"("86", "LCons"("87", "LCons"("88", "LCons"("89", "LCons"("90", "LCons"("97", "LCons"("98", "LCons"("99", "LCons"("100", "LCons"("101", "LCons"("102", "LCons"("103", "LCons"("104", "LCons"("105", "LCons"("106", "LCons"("107", "LCons"("108", "LCons"("109", "LCons"("110", "LCons"("111", "LCons"("112", "LCons"("113", "LCons"("114", "LCons"("115", "LCons"("116", "LCons"("117", "LCons"("118", "LCons"("119", "LCons"("120", "LCons"("121", "LCons"("122", "LCons"("48", "LCons"("49", "LCons"("50", "LCons"("51", "LCons"("52", "LCons"("53", "LCons"("54", "LCons"("55", "LCons"("56", "LCons"("57", "LCons"("95", "LCons"("39", "LNil")))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))), "LNil"), "LCons"("MaximalToken"("SrcTrivia", "LCons"("9", "LCons"("10", "LCons"("11", "LCons"("12", "LCons"("13", "LCons"("32", "LNil")))))), "LCons"("%", "LNil")), "LCons"("MaximalToken"("SrcSpacing", "LCons"("9", "LCons"("10", "LCons"("11", "LCons"("12", "LCons"("13", "LCons"("32", "LNil")))))), "LCons"("%", "LNil")), "LNil"))));
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts(lex.Grammar()) in (Modules(s) \/ Expressions(s) \/ Patterns(s) \/ Literals(s) \/ Comments(s))
+  }
+  Theory LexicalProfile() { lex.LexicalProfile() }
+  theory Grammar()
+}

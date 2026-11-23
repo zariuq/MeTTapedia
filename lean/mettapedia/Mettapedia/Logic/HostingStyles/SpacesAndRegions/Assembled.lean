@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationBatch
 import Mettapedia.Logic.HostingStyles.SpacesAndRegions.Generated
 
 /-!
@@ -345,47 +346,17 @@ theorem generatedWithPair_rewrites_checked :
 
 /-- **The written presentation with the pair passes the declaration gate.** -/
 theorem writtenWithPair_validate : writtenWithPair.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
-  case htypes => decide +kernel
-  case hconstructors => decide +kernel
-  case hequations => decide +kernel
-  case hrewrites => decide +kernel
-  case hcategory => decide +kernel
-  case hparams => decide +kernel
-  case hsyntax => decide +kernel
-  case hequationValid =>
-    intro equation member
-    exact LanguageDef.validateEquation_eq_nil_of_plainEquationOk
-      (List.all_eq_true.mp
-        (by decide +kernel :
-          writtenWithPair.equations.all (LanguageDef.plainEquationOk writtenWithPair) = true)
-        equation member)
-  case hrewriteValid =>
-    intro rewrite member
-    exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check (by decide +kernel)
-      (writtenWithPair_rewrites_checked rewrite member)
+  exact RewriteValidationCertificate.validate_eq_nil_of_signature_and_checks
+    (RewriteValidationCertificate.validate_signature_of_plain_equations (lang := writtenWithPair)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel)) (by decide +kernel) writtenWithPair_rewrites_checked
 
 /-- **The generated presentation with the pair passes the declaration gate.** -/
 theorem generatedWithPair_validate : generatedWithPair.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
-  case htypes => decide +kernel
-  case hconstructors => decide +kernel
-  case hequations => decide +kernel
-  case hrewrites => decide +kernel
-  case hcategory => decide +kernel
-  case hparams => decide +kernel
-  case hsyntax => decide +kernel
-  case hequationValid =>
-    intro equation member
-    exact LanguageDef.validateEquation_eq_nil_of_plainEquationOk
-      (List.all_eq_true.mp
-        (by decide +kernel :
-          generatedWithPair.equations.all (LanguageDef.plainEquationOk generatedWithPair) = true)
-        equation member)
-  case hrewriteValid =>
-    intro rewrite member
-    exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check (by decide +kernel)
-      (generatedWithPair_rewrites_checked rewrite member)
+  exact RewriteValidationCertificate.validate_eq_nil_of_signature_and_checks
+    (RewriteValidationCertificate.validate_signature_of_plain_equations (lang := generatedWithPair)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel)) (by decide +kernel) generatedWithPair_rewrites_checked
 
 /-- **The written heads miss the pair**: it is a declared constructor of
 atoms other than the run, and it heads no written root step. -/

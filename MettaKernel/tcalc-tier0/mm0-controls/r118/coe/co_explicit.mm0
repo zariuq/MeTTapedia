@@ -1,0 +1,8 @@
+provable sort wff;
+sort a; sort b; sort c; sort d;
+term ab: a > b; coercion ab: a > b;
+term cd: c > d; coercion cd: c > d;
+term bc: b > c; coercion bc: b > c;
+term fd: d > wff;
+term x0: a;
+axiom ax: $ fd (cd (bc (ab x0))) $;

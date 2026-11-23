@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.ApplicationSpine
 import Mettapedia.Logic.MetaInterpretiveLearning.CumulativeTheory.MILConversionParallel
 
 /-!
@@ -37,21 +38,16 @@ def spineDepth : Tower.Tm n → Nat
   | .app function _ => spineDepth function + 1
   | _ => 0
 
+private theorem spine_eq_constant (name : DeclName) (arguments : List (Tower.Tm n)) :
+    spine name arguments = ApplicationSpine.constant name arguments := by
+  induction arguments with
+  | nil => rfl
+  | cons _ _ ih => simp only [spine, ApplicationSpine.constant, ih]
+
 theorem spine_injective (name : DeclName) : Function.Injective (spine (n := n) name) := by
-  intro first
-  induction first with
-  | nil =>
-      intro second equality
-      cases second with
-      | nil => rfl
-      | cons _ _ => cases equality
-  | cons argument rest ih =>
-      intro second equality
-      cases second with
-      | nil => cases equality
-      | cons argument' rest' =>
-          obtain ⟨tail, head⟩ := Tm.app.inj equality
-          exact congrArg₂ List.cons head (ih tail)
+  intro first second same
+  apply ApplicationSpine.constant_injective name
+  simpa only [spine_eq_constant] using same
 
 @[simp] theorem spineHead_spine (name : DeclName) (arguments : List (Tower.Tm n)) :
     spineHead (spine name arguments) = some name := by
@@ -89,29 +85,15 @@ private theorem spine_inversion_aux {source target : Tower.Tm n} (parallel : Par
           exact ⟨argument' :: rest', by simp only [spine, shape], .cons argumentStep arguments⟩
   | primitive =>
       intro name arguments equality rigid
-      have names : eliminateName = name := by
-        simpa only [eliminateApp, spineHead, spineHead_spine, Option.some.injEq] using
-          congrArg spineHead equality
-      have counts : 8 = arguments.length := by
-        simpa only [eliminateApp, spineDepth, spineDepth_spine] using congrArg spineDepth equality
-      rcases rigid with different | short
-      · exact False.elim (different names.symm)
-      · omega
+      exact (ApplicationSpine.excludes_root rigid rfl (equality.trans (spine_eq_constant _ _))).elim
   | chain =>
       intro name arguments equality rigid
-      have names : eliminateName = name := by
-        simpa only [eliminateApp, spineHead, spineHead_spine, Option.some.injEq] using
-          congrArg spineHead equality
-      have counts : 8 = arguments.length := by
-        simpa only [eliminateApp, spineDepth, spineDepth_spine] using congrArg spineDepth equality
-      rcases rigid with different | short
-      · exact False.elim (different names.symm)
-      · omega
+      exact (ApplicationSpine.excludes_root rigid rfl (equality.trans (spine_eq_constant _ _))).elim
   | _ =>
       intro name arguments equality _
-      have impossible := congrArg spineHead equality
-      simp only [spineHead, spineHead_spine] at impossible
-      cases impossible
+      exact (ApplicationSpine.excludes_headless rfl (equality.trans (spine_eq_constant _ _))).elim
+
+
 
 theorem spine_inversion (name : DeclName) (arguments : List (Tower.Tm n))
     (rigid : name ≠ eliminateName ∨ arguments.length < 8)

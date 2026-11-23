@@ -1,0 +1,19 @@
+Module Levels {
+  Theory Levels() {
+    Types {
+      Phase;
+    }
+    Terms {
+      "Low" .  |- "Low" : Phase;
+      "Mid" .  |- "Mid" : Phase;
+      "High" .  |- "High" : Phase;
+    }
+    Equations {
+    }
+    Rewrites {
+      LowMid : "Low" ~> "Mid";
+      MidHigh : "Mid" ~> "High";
+    }
+  }
+  theory Levels()
+}

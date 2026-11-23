@@ -1,0 +1,7 @@
+Retained historical proof source
+
+flat_fire_untraced.ml is the original independent functional leaf proof, saved
+unchanged before its active entry was consolidated around the traced theorem.
+The accepted proof bank does not load this directory. The ordinary-row adapter
+stall audit and its original logs remain the evidence for the unfinished linked
+pack/adapter attempt; this retention does not complete that attempt.

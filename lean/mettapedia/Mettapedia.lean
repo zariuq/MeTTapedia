@@ -1,3 +1,5 @@
+import Mettapedia.Algorithms.Retrieval.BatchedQueryMerge
+import Mettapedia.Machines.Resources.CappedAdmission
 import Mettapedia.Languages.GuardedAtomRule
 import Mettapedia.Languages.MeTTa.PrimeComparisons.StudyBuild
 import Mettapedia.Languages.FiniteChoice
@@ -1067,7 +1069,7 @@ import Mettapedia.Machines.PromotionCopyWork
 import Mettapedia.Machines.CollectionHeadroom
 import Mettapedia.Machines.GrowingSurvivorSchedule
 import Mettapedia.Machines.DepthFirstFrontier
-import Mettapedia.Machines.ValidationClock
+import Mettapedia.Machines.VersionedValidation.Clock
 import Mettapedia.Machines.ObservationThreshold
 import Mettapedia.Machines.DeferredLocalUpdate
 import Mettapedia.Machines.TierUpReplayCost
@@ -1093,6 +1095,7 @@ import Mettapedia.Machines.AdmissionRewriting
 import Mettapedia.Machines.AnswerRecipes
 import Mettapedia.Machines.SecondSideAnswers
 import Mettapedia.Machines.SpaceReclamationCost
+import Mettapedia.Machines.GracePeriodPins
 import Mettapedia.Machines.HeadIndexCost
 import Mettapedia.Machines.SetPresenceChurn
 import Mettapedia.Machines.PresenceSetForm

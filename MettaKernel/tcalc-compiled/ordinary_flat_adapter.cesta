@@ -1,0 +1,38 @@
+(cesta checked-c/1
+  (module ordinary_flat)
+  (word-bits 64)
+  (failure ordinary_flat_failure)
+  (import "tcalc.cesta" as Pack)
+
+  (foreign fire flat_fire
+    (params (fields (span u32 read) data)
+            (rows (span u32 read) data)
+            (guards (span u32 read) data_len)
+            (makes (span u32 read) data_len)
+            (dest (span u32 write) data)
+            (scratch (span u32 write) data))
+    (returns u64)
+    (effects)
+    (obligation "The exact flat_fire leaf decides the validated descriptors; on refusal it preserves dest and scratch, and it retains no pointer."))
+
+  (fn adapter
+    (params (source (span u32 read))
+            (premises (span u32 read))
+            (constants (span u32 read))
+            (guards (span u32 read))
+            (makes (span u32 read))
+            (fields (span u32 write))
+            (rows (span u32 write))
+            (dest (span u32 write))
+            (scratch (span u32 write)))
+    (returns u64)
+    (effects)
+    (body
+      (if (gt (len guards) (usize 32)) (then (return (u64 2))) (else))
+      (if (gt (len makes) (usize 32)) (then (return (u64 2))) (else))
+      (if (gt (len makes) (len dest)) (then (return (u64 2))) (else))
+      (if (gt (len makes) (len scratch)) (then (return (u64 2))) (else))
+      (let packed bool (call Pack_pack source premises constants fields rows))
+      (if (not packed) (then (return (u64 2))) (else))
+      (return (call fire fields rows guards makes dest scratch))))
+)

@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: Apache-2.0
+-- SPDX-License-Identifier: MIT
 import Mettapedia.Languages.MeTTa.HE.LeaTTaBindingTransport
 open Mettapedia.Languages.MeTTa.HE.Spec.Match.SolutionTheory
 open Mettapedia.Languages.MeTTa.HE.BindingComposition

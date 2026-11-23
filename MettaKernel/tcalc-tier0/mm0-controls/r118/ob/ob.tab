@@ -1,0 +1,56 @@
+sort_drop_strict|s/^strict provable sort wff;/provable sort wff;/
+sort_add_free|s/^strict provable sort wff;/strict provable free sort wff;/
+sort_pure_nat|s/^sort nat;/pure sort nat;/
+sort_order|s/^strict provable sort wff;/provable strict sort wff;/
+sort_dup_mod|s/^strict provable sort wff;/strict strict provable sort wff;/
+term_rename|s/^term im (a b: wff): wff;/term im (p q: wff): wff;/
+term_sort|s/^term im (a b: wff): wff;/term im (a: wff) (b: nat): wff;/
+term_bound_to_reg|s/^term al {x: nat} (a: wff x): wff;/term al (x: nat) (a: wff x): wff;/
+term_drop_dep|s/^term al {x: nat} (a: wff x): wff;/term al {x: nat} (a: wff): wff;/
+term_ret_dep|s/^term al {x: nat} (a: wff x): wff;/term al {x: nat} (a: wff x): wff x;/
+term_arrow|s/^term im (a b: wff): wff;/term im: wff > wff > wff;/
+term_arrow_wrong|s/^term im (a b: wff): wff;/term im: wff > nat > wff;/
+term_arity|s/^term im (a b: wff): wff;/term im (a b c: wff): wff;/
+term_as_def|s/^term z: nat;/def z: nat;/
+def_as_term|s/^def an (a b: wff): wff = .*/term an (a b: wff): wff;/
+def_drop_body|s/^def an (a b: wff): wff = .*/def an (a b: wff): wff;/
+def_body_swap|s/^def an (a b: wff): wff = .*/def an (a b: wff): wff = $ ~(b -> ~a) $;/
+def_body_extra|s/^def an (a b: wff): wff = .*/def an (a b: wff): wff = $ ~(a -> ~ ~b) $;/
+def_rename|s/^def an (a b: wff): wff = .*/def an (p q: wff): wff = $ ~(p -> ~q) $;/
+def_dummy_rename|s/^def tru (.y: nat): wff = .*/def tru (.w: nat): wff = $ A. w, w = w $;/
+def_dummy_sort|s/^def tru (.y: nat): wff = .*/def tru (.y: wff): wff = $ A. y, y = y $;/
+def_dummy_extra|s/^def tru (.y: nat): wff = .*/def tru (.y .q: nat): wff = $ A. y, y = y $;/
+def_dummy_drop_body|s/^def tru (.y: nat): wff = .*/def tru: wff;/
+def_dummy_but_body_no|s/^def tru (.y: nat): wff = .*/def tru (.y: nat): wff;/
+abs_add_body|s/^def abs (a: wff): wff;/def abs (a: wff): wff = $ a -> a $;/
+abs_wrong_body|s/^def abs (a: wff): wff;/def abs (a: wff): wff = $ a -> ~a $;/
+ex_body_bound|s/^def ex {x: nat} (a: wff x): wff = .*/def ex {x: nat} (a: wff x): wff = $ ~(A. x, ~ ~a) $;/
+ax_rename|s/^axiom mp (a b: wff): .*/axiom mp (p q: wff): $ p -> q $ > $ p $ > $ q $;/
+ax_pos_swap|s/^axiom mp (a b: wff): .*/axiom mp (b a: wff): $ a -> b $ > $ a $ > $ b $;/
+ax_hyp_order|s/^axiom mp (a b: wff): .*/axiom mp (a b: wff): $ a $ > $ a -> b $ > $ b $;/
+ax_hyp_drop|s/^axiom mp (a b: wff): .*/axiom mp (a b: wff): $ a -> b $ > $ b $;/
+ax_hyp_dup|s/^axiom mp (a b: wff): .*/axiom mp (a b: wff): $ a -> b $ > $ a $ > $ a $ > $ b $;/
+ax_hyp_named|s/^axiom mp (a b: wff): .*/axiom mp (a b: wff) (h1: $ a -> b $) (h2: $ a $): $ b $;/
+ax_hyp_named_grp|s/^axiom mp (a b: wff): .*/axiom mp (a b: wff) (h1 h2: $ a -> b $): $ b $;/
+ax_concl|s/^axiom ax1 (a b: wff): .*/axiom ax1 (a b: wff): $ a -> a -> b $;/
+ax_assoc_paren|s/^axiom ax1 (a b: wff): .*/axiom ax1 (a b: wff): $ (a -> b) -> a $;/
+ax_explicit_paren|s/^axiom ax1 (a b: wff): .*/axiom ax1 (a b: wff): $ a -> (b -> a) $;/
+ax_prefix_app|s/^axiom ax1 (a b: wff): .*/axiom ax1 (a b: wff): $ im a (im b a) $;/
+ax_bound_reg|s/^axiom ax_eq {x: nat}: .*/axiom ax_eq (x: nat): $ x = x $;/
+ax_as_thm|s/^axiom ax1 /theorem ax1 /
+thm_as_ax|s/^theorem a1i /axiom a1i /
+thm_dep_add|s/^theorem gen2 {x: nat} (a: wff x) (b: wff):/theorem gen2 {x: nat} (a: wff x) (b: wff x):/
+thm_dep_drop|s/^theorem gen2 {x: nat} (a: wff x) (b: wff):/theorem gen2 {x: nat} (a: wff) (b: wff):/
+thm_hyp_swap|s/^theorem gen2 \(.*\): \$ a \$ > \$ b \$ > /theorem gen2 \1: $ b $ > $ a $ > /
+thm_bound_rename|s/^theorem gen2 {x: nat} (a: wff x) (b: wff): \$ a \$ > \$ b \$ > \$ A. x, a \$;/theorem gen2 {w: nat} (a: wff w) (b: wff): $ a $ > $ b $ > $ A. w, a $;/
+order_swap_ax|/^axiom mp/{h;d};/^axiom ax1/{G}
+local_listed|s/^theorem gen2 /theorem loc1 (a b: wff): $ a $ > $ b -> a $;\ntheorem gen2 /
+omit_a1i|/^theorem a1i/d
+omit_sort|/^sort nat;/d
+infixl_im|s/^term im (a b: wff): wff; infixr im/term im (a b: wff): wff; infixl im/
+im_prec_hi|s/infixr im: \$->\$ prec 25;/infixr im: $->$ prec 45;/
+neg_prec_lo|s/prefix neg: \$~\$ prec 40;/prefix neg: $~$ prec 10;/
+notation_al_swap|s/^notation al .*/notation al {x: nat} (a: wff x): wff = ($A.$:30) a ($,$:30) x;/
+notation_missing_var|s/^notation al .*/notation al {x: nat} (a: wff x): wff = ($A.$:30) x ($,$:30);/
+notation_dup_var|s/^notation al .*/notation al {x: nat} (a: wff x): wff = ($A.$:30) a ($,$:30) a;/
+prefix_overwrite|s/^term z: nat;/term z: nat; prefix eq: $~$ prec 40;/

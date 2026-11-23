@@ -1,0 +1,7 @@
+strict argument evaluates=true
+Atom argument holds syntax=true
+nested call/let/collapse=true; entry steps=4
+branch-local remaining arguments=true
+answerless operand retains effect=true
+empty collapse retains effect and returns one value=true
+case resumes reached world=true

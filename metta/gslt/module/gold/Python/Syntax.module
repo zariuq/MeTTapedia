@@ -1,0 +1,366 @@
+import "../SourceLexical.module" as lex
+
+Module PythonSyntaxGSLT {
+  Theory Sorts(l: lex.Grammar) {
+    l
+    Types {
+      PyFile;
+      PyStmtList;
+      PyStmt;
+      PyParamList;
+      PyAugOpTok;
+      PyExpr;
+      PyOr;
+      PyAnd;
+      PyCompare;
+      PyAdd;
+      PyMultiply;
+      PyUnary;
+      PyPostfix;
+      PyAtom;
+      PyArgList;
+      PyDictEntries;
+      PyDictEntry;
+      PyCompClause;
+      PyASTModule;
+      PyASTStmts;
+      PyASTStmt;
+      PyASTParams;
+      PyASTExprs;
+      PyASTExpr;
+      PyASTDictItems;
+      PyASTBinOp;
+      PyASTAugOp;
+      PyASTBoolLit;
+    }
+  }
+  Theory Expressions(s: Sorts) {
+    s
+    Terms {
+      «py-src:expr-or» . a0:PyOr |- a0 : PyExpr;
+      «py-src:expr-if» . a0:PyOr, a1:SrcSpacing, a2:SrcSpacing, a3:PyOr, a4:SrcSpacing, a5:SrcSpacing, a6:PyExpr |- a0 a1 "if" a2 a3 a4 "else" a5 a6 : PyExpr;
+      «py-src:or-base» . a0:PyAnd |- a0 : PyOr;
+      «py-src:or-op» . a0:PyAnd, a1:SrcSpacing, a2:SrcSpacing, a3:PyOr |- a0 a1 "or" a2 a3 : PyOr;
+      «py-src:and-base» . a0:PyCompare |- a0 : PyAnd;
+      «py-src:and-op» . a0:PyCompare, a1:SrcSpacing, a2:SrcSpacing, a3:PyAnd |- a0 a1 "and" a2 a3 : PyAnd;
+      «py-src:compare-base» . a0:PyAdd |- a0 : PyCompare;
+      «py-src:compare-eq» . a0:PyAdd, a1:SrcTrivia, a2:SrcTrivia, a3:PyAdd |- a0 a1 "==" a2 a3 : PyCompare;
+      «py-src:compare-ne» . a0:PyAdd, a1:SrcTrivia, a2:SrcTrivia, a3:PyAdd |- a0 a1 "!=" a2 a3 : PyCompare;
+      «py-src:compare-lt» . a0:PyAdd, a1:SrcTrivia, a2:SrcTrivia, a3:PyAdd |- a0 a1 "<" a2 a3 : PyCompare;
+      «py-src:compare-le» . a0:PyAdd, a1:SrcTrivia, a2:SrcTrivia, a3:PyAdd |- a0 a1 "<=" a2 a3 : PyCompare;
+      «py-src:compare-gt» . a0:PyAdd, a1:SrcTrivia, a2:SrcTrivia, a3:PyAdd |- a0 a1 ">" a2 a3 : PyCompare;
+      «py-src:compare-ge» . a0:PyAdd, a1:SrcTrivia, a2:SrcTrivia, a3:PyAdd |- a0 a1 ">=" a2 a3 : PyCompare;
+      «py-src:compare-in» . a0:PyAdd, a1:SrcSpacing, a2:SrcSpacing, a3:PyAdd |- a0 a1 "in" a2 a3 : PyCompare;
+      «py-src:add-base» . a0:PyMultiply |- a0 : PyAdd;
+      «py-src:add-plus» . a0:PyAdd, a1:SrcTrivia, a2:SrcTrivia, a3:PyMultiply |- a0 a1 "+" a2 a3 : PyAdd;
+      «py-src:add-minus» . a0:PyAdd, a1:SrcTrivia, a2:SrcTrivia, a3:PyMultiply |- a0 a1 "-" a2 a3 : PyAdd;
+      «py-src:mul-base» . a0:PyUnary |- a0 : PyMultiply;
+      «py-src:mul-times» . a0:PyMultiply, a1:SrcTrivia, a2:SrcTrivia, a3:PyUnary |- a0 a1 "*" a2 a3 : PyMultiply;
+      «py-src:mul-floordiv» . a0:PyMultiply, a1:SrcTrivia, a2:SrcTrivia, a3:PyUnary |- a0 a1 "//" a2 a3 : PyMultiply;
+      «py-src:mul-mod» . a0:PyMultiply, a1:SrcTrivia, a2:SrcTrivia, a3:PyUnary |- a0 a1 "%" a2 a3 : PyMultiply;
+      «py-src:unary-base» . a0:PyPostfix |- a0 : PyUnary;
+      «py-src:unary-neg» . a0:SrcTrivia, a1:PyUnary |- "-" a0 a1 : PyUnary;
+      «py-src:postfix-base» . a0:PyAtom |- a0 : PyPostfix;
+      «py-src:postfix-call» . a0:PyPostfix, a1:SrcTrivia, a2:PyArgList |- a0 "(" a1 a2 ")" : PyPostfix;
+      «py-src:postfix-subscript» . a0:PyPostfix, a1:SrcTrivia, a2:PyExpr, a3:SrcTrivia |- a0 "[" a1 a2 a3 "]" : PyPostfix;
+      «py-src:postfix-attr» . a0:PyPostfix, a1:SrcTrivia, a2:SrcTrivia, a3:SrcLowerName |- a0 a1 "." a2 a3 : PyPostfix;
+      «py-src:atom-var» . a0:SrcLowerName |- a0 : PyAtom;
+      «py-src:atom-int» . a0:SrcInteger |- a0 : PyAtom;
+      «py-src:atom-true» . |- "True" : PyAtom;
+      «py-src:atom-false» . |- "False" : PyAtom;
+      «py-src:atom-none» . |- "None" : PyAtom;
+      «py-src:atom-paren» . a0:SrcTrivia, a1:PyExpr, a2:SrcTrivia |- "(" a0 a1 a2 ")" : PyAtom;
+      «py-src:atom-dict» . a0:SrcTrivia, a1:PyDictEntries |- "{" a0 a1 "}" : PyAtom;
+      «py-src:atom-comp» . a0:SrcTrivia, a1:PyExpr, a2:SrcSpacing, a3:PyCompClause, a4:SrcTrivia |- "[" a0 a1 a2 a3 a4 "]" : PyAtom;
+      «py-src:comp-for» . a0:SrcSpacing, a1:SrcLowerName, a2:SrcSpacing, a3:SrcSpacing, a4:PyOr |- "for" a0 a1 a2 "in" a3 a4 : PyCompClause;
+      «py-src:comp-for-if» . a0:SrcSpacing, a1:SrcLowerName, a2:SrcSpacing, a3:SrcSpacing, a4:PyOr, a5:SrcSpacing, a6:SrcSpacing, a7:PyOr |- "for" a0 a1 a2 "in" a3 a4 a5 "if" a6 a7 : PyCompClause;
+      «py-src:args-empty» . |- : PyArgList;
+      «py-src:args-one» . a0:PyExpr, a1:SrcTrivia |- a0 a1 : PyArgList;
+      «py-src:args-more» . a0:PyExpr, a1:SrcTrivia, a2:SrcTrivia, a3:PyArgList |- a0 a1 "," a2 a3 : PyArgList;
+      «py-src:dict-empty» . |- : PyDictEntries;
+      «py-src:dict-one» . a0:PyDictEntry, a1:SrcTrivia |- a0 a1 : PyDictEntries;
+      «py-src:dict-more» . a0:PyDictEntry, a1:SrcTrivia, a2:SrcTrivia, a3:PyDictEntries |- a0 a1 "," a2 a3 : PyDictEntries;
+      «py-src:dict-entry» . a0:PyExpr, a1:SrcTrivia, a2:SrcTrivia, a3:PyExpr |- a0 a1 ":" a2 a3 : PyDictEntry;
+    }
+  }
+  Theory Statements(s: Sorts) {
+    s
+    Terms {
+      «py-src:program» . a0:SrcTrivia, a1:PyFile |- a0 a1 : SourceProgram;
+      «py-src:file» . a0:PyStmtList |- a0 : PyFile;
+      «py-src:stmts-empty» . |- : PyStmtList;
+      «py-src:stmts-more» . a0:PyStmt, a1:SrcTrivia, a2:PyStmtList |- a0 a1 a2 : PyStmtList;
+      «py-src:stmt-def» . a0:SrcSpacing, a1:SrcLowerName, a2:SrcTrivia, a3:PyParamList, a4:SrcTrivia, a5:SrcTrivia, a6:PyStmt |- "def" a0 a1 "(" a2 a3 ")" a4 ":" a5 a6 : PyStmt;
+      «py-src:params-empty» . |- : PyParamList;
+      «py-src:params-one» . a0:SrcLowerName, a1:SrcTrivia |- a0 a1 : PyParamList;
+      «py-src:params-more» . a0:SrcLowerName, a1:SrcTrivia, a2:SrcTrivia, a3:PyParamList |- a0 a1 "," a2 a3 : PyParamList;
+      «py-src:stmt-assign» . a0:PyPostfix, a1:SrcTrivia, a2:SrcTrivia, a3:PyExpr |- a0 a1 "=" a2 a3 : PyStmt;
+      «py-src:stmt-aug-assign» . a0:PyPostfix, a1:SrcTrivia, a2:PyAugOpTok, a3:SrcTrivia, a4:PyExpr |- a0 a1 a2 a3 a4 : PyStmt;
+      «py-src:aug-add» . |- "+=" : PyAugOpTok;
+      «py-src:aug-sub» . |- "-=" : PyAugOpTok;
+      «py-src:aug-mul» . |- "*=" : PyAugOpTok;
+      «py-src:stmt-return» . a0:SrcSpacing, a1:PyExpr |- "return" a0 a1 : PyStmt;
+      «py-src:stmt-if» . a0:SrcSpacing, a1:PyExpr, a2:SrcTrivia, a3:SrcTrivia, a4:PyStmt, a5:SrcSpacing, a6:SrcTrivia, a7:SrcTrivia, a8:PyStmt |- "if" a0 a1 a2 ":" a3 a4 a5 "else" a6 ":" a7 a8 : PyStmt;
+      «py-src:stmt-while» . a0:SrcSpacing, a1:PyExpr, a2:SrcTrivia, a3:SrcTrivia, a4:PyStmt |- "while" a0 a1 a2 ":" a3 a4 : PyStmt;
+      «py-src:stmt-block» . a0:SrcTrivia, a1:PyStmtList |- "{" a0 a1 "}" : PyStmt;
+      «py-src:stmt-expr» . a0:PyExpr |- a0 : PyStmt;
+    }
+  }
+  Theory Comments(s: Sorts) {
+    s
+    Terms {
+      «py-src:comment-trivia» . a0:SrcLineBody, a1:SrcTrivia |- "#" a0 "\n" a1 : SrcTrivia;
+      «py-src:comment-spacing» . a0:SrcLineBody, a1:SrcTrivia |- "#" a0 "\n" a1 : SrcSpacing;
+    }
+  }
+  Theory AST(s: Sorts) {
+    s
+    Terms {
+      PyModule . body:PyASTStmts |- "PyModule" body : PyASTModule;
+      PyStmtsNil . |- "PyStmtsNil" : PyASTStmts;
+      PyStmtsCons . head:PyASTStmt, tail:PyASTStmts |- "PyStmtsCons" head tail : PyASTStmts;
+      PyParamsNil . |- "PyParamsNil" : PyASTParams;
+      PyParamsCons . head:SrcLowerName, tail:PyASTParams |- "PyParamsCons" head tail : PyASTParams;
+      PyExprsNil . |- "PyExprsNil" : PyASTExprs;
+      PyExprsCons . head:PyASTExpr, tail:PyASTExprs |- "PyExprsCons" head tail : PyASTExprs;
+      PyDictItemsNil . |- "PyDictItemsNil" : PyASTDictItems;
+      PyDictItemsCons . key:PyASTExpr, val:PyASTExpr, tail:PyASTDictItems |- "PyDictItemsCons" key val tail : PyASTDictItems;
+      PyDef . fnName:SrcLowerName, params:PyASTParams, body:PyASTStmt |- "PyDef" fnName params body : PyASTStmt;
+      PyAssign . target:PyASTExpr, value:PyASTExpr |- "PyAssign" target value : PyASTStmt;
+      PyAugAssign . target:PyASTExpr, op:PyASTAugOp, value:PyASTExpr |- "PyAugAssign" target op value : PyASTStmt;
+      PyReturn . value:PyASTExpr |- "PyReturn" value : PyASTStmt;
+      PyIf . cond:PyASTExpr, thenBranch:PyASTStmt, elseBranch:PyASTStmt |- "PyIf" cond thenBranch elseBranch : PyASTStmt;
+      PyWhile . cond:PyASTExpr, body:PyASTStmt |- "PyWhile" cond body : PyASTStmt;
+      PyBlock . body:PyASTStmts |- "PyBlock" body : PyASTStmt;
+      PyExprStmt . expr:PyASTExpr |- "PyExprStmt" expr : PyASTStmt;
+      PyBinOp . op:PyASTBinOp, left:PyASTExpr, right:PyASTExpr |- "PyBinOp" op left right : PyASTExpr;
+      PyCall . func:PyASTExpr, args:PyASTExprs |- "PyCall" func args : PyASTExpr;
+      PyDict . entries:PyASTDictItems |- "PyDict" entries : PyASTExpr;
+      PySubscript . collection:PyASTExpr, key:PyASTExpr |- "PySubscript" collection key : PyASTExpr;
+      PyAttr . object:PyASTExpr, attr:SrcLowerName |- "PyAttr" object attr : PyASTExpr;
+      PyComp . element:PyASTExpr, varName:SrcLowerName, iterable:PyASTExpr, cond:PyASTExpr |- "PyComp" element varName iterable cond : PyASTExpr;
+      PyIfExpr . body:PyASTExpr, cond:PyASTExpr, orelse:PyASTExpr |- "PyIfExpr" body cond orelse : PyASTExpr;
+      PyVar . varName:SrcLowerName |- "PyVar" varName : PyASTExpr;
+      PyInt . value:SrcInteger |- "PyInt" value : PyASTExpr;
+      PyBool . value:PyASTBoolLit |- "PyBool" value : PyASTExpr;
+      PyNone . |- "PyNone" : PyASTExpr;
+      PyBoolTrue . |- "PyBoolTrue" : PyASTBoolLit;
+      PyBoolFalse . |- "PyBoolFalse" : PyASTBoolLit;
+      PyOpOr . |- "PyOpOr" : PyASTBinOp;
+      PyOpAnd . |- "PyOpAnd" : PyASTBinOp;
+      PyOpEq . |- "PyOpEq" : PyASTBinOp;
+      PyOpNe . |- "PyOpNe" : PyASTBinOp;
+      PyOpLt . |- "PyOpLt" : PyASTBinOp;
+      PyOpLe . |- "PyOpLe" : PyASTBinOp;
+      PyOpGt . |- "PyOpGt" : PyASTBinOp;
+      PyOpGe . |- "PyOpGe" : PyASTBinOp;
+      PyOpIn . |- "PyOpIn" : PyASTBinOp;
+      PyOpAdd . |- "PyOpAdd" : PyASTBinOp;
+      PyOpSub . |- "PyOpSub" : PyASTBinOp;
+      PyOpMul . |- "PyOpMul" : PyASTBinOp;
+      PyOpFloorDiv . |- "PyOpFloorDiv" : PyASTBinOp;
+      PyOpMod . |- "PyOpMod" : PyASTBinOp;
+      PyAugOpAdd . |- "PyAugOpAdd" : PyASTAugOp;
+      PyAugOpSub . |- "PyAugOpSub" : PyASTAugOp;
+      PyAugOpMul . |- "PyAugOpMul" : PyASTAugOp;
+    }
+  }
+  Theory Lowering(s: Sorts) {
+    Expressions(s) \/ Statements(s) \/ AST(s)
+    Terms {
+      ProjectProgram . src:SourceProgram |- "ProjectProgram" src : PyASTModule;
+      ProjectFile . src:PyFile |- "ProjectFile" src : PyASTModule;
+      ProjectStmts . src:PyStmtList |- "ProjectStmts" src : PyASTStmts;
+      ProjectStmt . src:PyStmt |- "ProjectStmt" src : PyASTStmt;
+      ProjectParams . src:PyParamList |- "ProjectParams" src : PyASTParams;
+      ProjectAugOp . src:PyAugOpTok |- "ProjectAugOp" src : PyASTAugOp;
+      ProjectExpr . src:PyExpr |- "ProjectExpr" src : PyASTExpr;
+      ProjectOr . src:PyOr |- "ProjectOr" src : PyASTExpr;
+      ProjectAnd . src:PyAnd |- "ProjectAnd" src : PyASTExpr;
+      ProjectCompare . src:PyCompare |- "ProjectCompare" src : PyASTExpr;
+      ProjectAdd . src:PyAdd |- "ProjectAdd" src : PyASTExpr;
+      ProjectMultiply . src:PyMultiply |- "ProjectMultiply" src : PyASTExpr;
+      ProjectUnary . src:PyUnary |- "ProjectUnary" src : PyASTExpr;
+      ProjectPostfix . src:PyPostfix |- "ProjectPostfix" src : PyASTExpr;
+      ProjectAtom . src:PyAtom |- "ProjectAtom" src : PyASTExpr;
+      ProjectComp . elem:PyASTExpr, clause:PyCompClause |- "ProjectComp" elem clause : PyASTExpr;
+      ProjectArgs . src:PyArgList |- "ProjectArgs" src : PyASTExprs;
+      ProjectDict . src:PyDictEntries |- "ProjectDict" src : PyASTDictItems;
+    }
+    Rewrites {
+      LowerProgram . t0:SrcTrivia, f:PyFile, out:PyASTModule
+        | (ProjectFile f) ~> out
+        |- (ProjectProgram («py-src:program» t0 f)) ~> out;
+      LowerFile . stmts:PyStmtList, lowered:PyASTStmts
+        | (ProjectStmts stmts) ~> lowered
+        |- (ProjectFile («py-src:file» stmts)) ~> (PyModule lowered);
+      LowerStmtsEmpty .
+        |- (ProjectStmts "py-src:stmts-empty") ~> "PyStmtsNil";
+      LowerStmtsMore . head:PyStmt, gap:SrcTrivia, tail:PyStmtList, hOut:PyASTStmt, tOut:PyASTStmts
+        | (ProjectStmt head) ~> hOut, (ProjectStmts tail) ~> tOut
+        |- (ProjectStmts («py-src:stmts-more» head gap tail)) ~> (PyStmtsCons hOut tOut);
+      LowerStmtDef . s0:SrcSpacing, fnName:SrcLowerName, t0:SrcTrivia, params:PyParamList, t1:SrcTrivia, t2:SrcTrivia, body:PyStmt, pOut:PyASTParams, bOut:PyASTStmt
+        | (ProjectParams params) ~> pOut, (ProjectStmt body) ~> bOut
+        |- (ProjectStmt («py-src:stmt-def» s0 fnName t0 params t1 t2 body)) ~> (PyDef fnName pOut bOut);
+      LowerParamsEmpty .
+        |- (ProjectParams "py-src:params-empty") ~> "PyParamsNil";
+      LowerParamsOne . p0:SrcLowerName, t0:SrcTrivia
+        |- (ProjectParams («py-src:params-one» p0 t0)) ~> (PyParamsCons p0 "PyParamsNil");
+      LowerParamsMore . p0:SrcLowerName, t0:SrcTrivia, t1:SrcTrivia, rest:PyParamList, rOut:PyASTParams
+        | (ProjectParams rest) ~> rOut
+        |- (ProjectParams («py-src:params-more» p0 t0 t1 rest)) ~> (PyParamsCons p0 rOut);
+      LowerStmtAssign . target:PyPostfix, t0:SrcTrivia, t1:SrcTrivia, val:PyExpr, lhs:PyASTExpr, rhs:PyASTExpr
+        | (ProjectPostfix target) ~> lhs, (ProjectExpr val) ~> rhs
+        |- (ProjectStmt («py-src:stmt-assign» target t0 t1 val)) ~> (PyAssign lhs rhs);
+      LowerStmtAugAssign . target:PyPostfix, t0:SrcTrivia, op:PyAugOpTok, t1:SrcTrivia, val:PyExpr, lhs:PyASTExpr, opOut:PyASTAugOp, rhs:PyASTExpr
+        | (ProjectPostfix target) ~> lhs, (ProjectAugOp op) ~> opOut, (ProjectExpr val) ~> rhs
+        |- (ProjectStmt («py-src:stmt-aug-assign» target t0 op t1 val)) ~> (PyAugAssign lhs opOut rhs);
+      LowerAugAdd . |- (ProjectAugOp "py-src:aug-add") ~> "PyAugOpAdd";
+      LowerAugSub . |- (ProjectAugOp "py-src:aug-sub") ~> "PyAugOpSub";
+      LowerAugMul . |- (ProjectAugOp "py-src:aug-mul") ~> "PyAugOpMul";
+      LowerStmtReturn . s0:SrcSpacing, val:PyExpr, vOut:PyASTExpr
+        | (ProjectExpr val) ~> vOut
+        |- (ProjectStmt («py-src:stmt-return» s0 val)) ~> (PyReturn vOut);
+      LowerStmtIf . s0:SrcSpacing, cond:PyExpr, t0:SrcTrivia, t1:SrcTrivia, yes:PyStmt, s1:SrcSpacing, t2:SrcTrivia, t3:SrcTrivia, no:PyStmt, cOut:PyASTExpr, yOut:PyASTStmt, nOut:PyASTStmt
+        | (ProjectExpr cond) ~> cOut, (ProjectStmt yes) ~> yOut, (ProjectStmt no) ~> nOut
+        |- (ProjectStmt («py-src:stmt-if» s0 cond t0 t1 yes s1 t2 t3 no)) ~> (PyIf cOut yOut nOut);
+      LowerStmtWhile . s0:SrcSpacing, cond:PyExpr, t0:SrcTrivia, t1:SrcTrivia, body:PyStmt, cOut:PyASTExpr, bOut:PyASTStmt
+        | (ProjectExpr cond) ~> cOut, (ProjectStmt body) ~> bOut
+        |- (ProjectStmt («py-src:stmt-while» s0 cond t0 t1 body)) ~> (PyWhile cOut bOut);
+      LowerStmtBlock . t0:SrcTrivia, stmts:PyStmtList, sOut:PyASTStmts
+        | (ProjectStmts stmts) ~> sOut
+        |- (ProjectStmt («py-src:stmt-block» t0 stmts)) ~> (PyBlock sOut);
+      LowerStmtExpr . e:PyExpr, eOut:PyASTExpr
+        | (ProjectExpr e) ~> eOut
+        |- (ProjectStmt («py-src:stmt-expr» e)) ~> (PyExprStmt eOut);
+      LowerExprOr . e:PyOr, out:PyASTExpr
+        | (ProjectOr e) ~> out
+        |- (ProjectExpr («py-src:expr-or» e)) ~> out;
+      LowerExprIf . body:PyOr, s0:SrcSpacing, s1:SrcSpacing, cond:PyOr, s2:SrcSpacing, s3:SrcSpacing, orelse:PyExpr, bOut:PyASTExpr, cOut:PyASTExpr, oOut:PyASTExpr
+        | (ProjectOr body) ~> bOut, (ProjectOr cond) ~> cOut, (ProjectExpr orelse) ~> oOut
+        |- (ProjectExpr («py-src:expr-if» body s0 s1 cond s2 s3 orelse)) ~> (PyIfExpr bOut cOut oOut);
+      LowerOrBase . e:PyAnd, out:PyASTExpr
+        | (ProjectAnd e) ~> out
+        |- (ProjectOr («py-src:or-base» e)) ~> out;
+      LowerOrOp . l:PyAnd, s0:SrcSpacing, s1:SrcSpacing, r:PyOr, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAnd l) ~> lOut, (ProjectOr r) ~> rOut
+        |- (ProjectOr («py-src:or-op» l s0 s1 r)) ~> (PyBinOp "PyOpOr" lOut rOut);
+      LowerAndBase . e:PyCompare, out:PyASTExpr
+        | (ProjectCompare e) ~> out
+        |- (ProjectAnd («py-src:and-base» e)) ~> out;
+      LowerAndOp . l:PyCompare, s0:SrcSpacing, s1:SrcSpacing, r:PyAnd, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectCompare l) ~> lOut, (ProjectAnd r) ~> rOut
+        |- (ProjectAnd («py-src:and-op» l s0 s1 r)) ~> (PyBinOp "PyOpAnd" lOut rOut);
+      LowerCompareBase . e:PyAdd, out:PyASTExpr
+        | (ProjectAdd e) ~> out
+        |- (ProjectCompare («py-src:compare-base» e)) ~> out;
+      LowerCompareEq . l:PyAdd, t0:SrcTrivia, t1:SrcTrivia, r:PyAdd, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAdd l) ~> lOut, (ProjectAdd r) ~> rOut
+        |- (ProjectCompare («py-src:compare-eq» l t0 t1 r)) ~> (PyBinOp "PyOpEq" lOut rOut);
+      LowerCompareNe . l:PyAdd, t0:SrcTrivia, t1:SrcTrivia, r:PyAdd, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAdd l) ~> lOut, (ProjectAdd r) ~> rOut
+        |- (ProjectCompare («py-src:compare-ne» l t0 t1 r)) ~> (PyBinOp "PyOpNe" lOut rOut);
+      LowerCompareLt . l:PyAdd, t0:SrcTrivia, t1:SrcTrivia, r:PyAdd, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAdd l) ~> lOut, (ProjectAdd r) ~> rOut
+        |- (ProjectCompare («py-src:compare-lt» l t0 t1 r)) ~> (PyBinOp "PyOpLt" lOut rOut);
+      LowerCompareLe . l:PyAdd, t0:SrcTrivia, t1:SrcTrivia, r:PyAdd, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAdd l) ~> lOut, (ProjectAdd r) ~> rOut
+        |- (ProjectCompare («py-src:compare-le» l t0 t1 r)) ~> (PyBinOp "PyOpLe" lOut rOut);
+      LowerCompareGt . l:PyAdd, t0:SrcTrivia, t1:SrcTrivia, r:PyAdd, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAdd l) ~> lOut, (ProjectAdd r) ~> rOut
+        |- (ProjectCompare («py-src:compare-gt» l t0 t1 r)) ~> (PyBinOp "PyOpGt" lOut rOut);
+      LowerCompareGe . l:PyAdd, t0:SrcTrivia, t1:SrcTrivia, r:PyAdd, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAdd l) ~> lOut, (ProjectAdd r) ~> rOut
+        |- (ProjectCompare («py-src:compare-ge» l t0 t1 r)) ~> (PyBinOp "PyOpGe" lOut rOut);
+      LowerCompareIn . l:PyAdd, s0:SrcSpacing, s1:SrcSpacing, r:PyAdd, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAdd l) ~> lOut, (ProjectAdd r) ~> rOut
+        |- (ProjectCompare («py-src:compare-in» l s0 s1 r)) ~> (PyBinOp "PyOpIn" lOut rOut);
+      LowerAddBase . e:PyMultiply, out:PyASTExpr
+        | (ProjectMultiply e) ~> out
+        |- (ProjectAdd («py-src:add-base» e)) ~> out;
+      LowerAddPlus . l:PyAdd, t0:SrcTrivia, t1:SrcTrivia, r:PyMultiply, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAdd l) ~> lOut, (ProjectMultiply r) ~> rOut
+        |- (ProjectAdd («py-src:add-plus» l t0 t1 r)) ~> (PyBinOp "PyOpAdd" lOut rOut);
+      LowerAddMinus . l:PyAdd, t0:SrcTrivia, t1:SrcTrivia, r:PyMultiply, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectAdd l) ~> lOut, (ProjectMultiply r) ~> rOut
+        |- (ProjectAdd («py-src:add-minus» l t0 t1 r)) ~> (PyBinOp "PyOpSub" lOut rOut);
+      LowerMulBase . e:PyUnary, out:PyASTExpr
+        | (ProjectUnary e) ~> out
+        |- (ProjectMultiply («py-src:mul-base» e)) ~> out;
+      LowerMulTimes . l:PyMultiply, t0:SrcTrivia, t1:SrcTrivia, r:PyUnary, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectMultiply l) ~> lOut, (ProjectUnary r) ~> rOut
+        |- (ProjectMultiply («py-src:mul-times» l t0 t1 r)) ~> (PyBinOp "PyOpMul" lOut rOut);
+      LowerMulFloorDiv . l:PyMultiply, t0:SrcTrivia, t1:SrcTrivia, r:PyUnary, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectMultiply l) ~> lOut, (ProjectUnary r) ~> rOut
+        |- (ProjectMultiply («py-src:mul-floordiv» l t0 t1 r)) ~> (PyBinOp "PyOpFloorDiv" lOut rOut);
+      LowerMulMod . l:PyMultiply, t0:SrcTrivia, t1:SrcTrivia, r:PyUnary, lOut:PyASTExpr, rOut:PyASTExpr
+        | (ProjectMultiply l) ~> lOut, (ProjectUnary r) ~> rOut
+        |- (ProjectMultiply («py-src:mul-mod» l t0 t1 r)) ~> (PyBinOp "PyOpMod" lOut rOut);
+      LowerUnaryBase . e:PyPostfix, out:PyASTExpr
+        | (ProjectPostfix e) ~> out
+        |- (ProjectUnary («py-src:unary-base» e)) ~> out;
+      LowerPostfixBase . e:PyAtom, out:PyASTExpr
+        | (ProjectAtom e) ~> out
+        |- (ProjectPostfix («py-src:postfix-base» e)) ~> out;
+      LowerPostfixCall . fn:PyPostfix, t0:SrcTrivia, args:PyArgList, fOut:PyASTExpr, aOut:PyASTExprs
+        | (ProjectPostfix fn) ~> fOut, (ProjectArgs args) ~> aOut
+        |- (ProjectPostfix («py-src:postfix-call» fn t0 args)) ~> (PyCall fOut aOut);
+      LowerPostfixSubscript . coll:PyPostfix, t0:SrcTrivia, key:PyExpr, t1:SrcTrivia, cOut:PyASTExpr, kOut:PyASTExpr
+        | (ProjectPostfix coll) ~> cOut, (ProjectExpr key) ~> kOut
+        |- (ProjectPostfix («py-src:postfix-subscript» coll t0 key t1)) ~> (PySubscript cOut kOut);
+      LowerPostfixAttr . obj:PyPostfix, t0:SrcTrivia, t1:SrcTrivia, attr:SrcLowerName, oOut:PyASTExpr
+        | (ProjectPostfix obj) ~> oOut
+        |- (ProjectPostfix («py-src:postfix-attr» obj t0 t1 attr)) ~> (PyAttr oOut attr);
+      LowerAtomVar . varName:SrcLowerName
+        |- (ProjectAtom («py-src:atom-var» varName)) ~> (PyVar varName);
+      LowerAtomInt . val:SrcInteger
+        |- (ProjectAtom («py-src:atom-int» val)) ~> (PyInt val);
+      LowerAtomTrue .
+        |- (ProjectAtom "py-src:atom-true") ~> (PyBool "PyBoolTrue");
+      LowerAtomFalse .
+        |- (ProjectAtom "py-src:atom-false") ~> (PyBool "PyBoolFalse");
+      LowerAtomNone .
+        |- (ProjectAtom "py-src:atom-none") ~> "PyNone";
+      LowerAtomParen . t0:SrcTrivia, e:PyExpr, t1:SrcTrivia, out:PyASTExpr
+        | (ProjectExpr e) ~> out
+        |- (ProjectAtom («py-src:atom-paren» t0 e t1)) ~> out;
+      LowerAtomDict . t0:SrcTrivia, entries:PyDictEntries, dOut:PyASTDictItems
+        | (ProjectDict entries) ~> dOut
+        |- (ProjectAtom («py-src:atom-dict» t0 entries)) ~> (PyDict dOut);
+      LowerAtomComp . t0:SrcTrivia, elem:PyExpr, s0:SrcSpacing, clause:PyCompClause, t1:SrcTrivia, eOut:PyASTExpr, cOut:PyASTExpr
+        | (ProjectExpr elem) ~> eOut, (ProjectComp eOut clause) ~> cOut
+        |- (ProjectAtom («py-src:atom-comp» t0 elem s0 clause t1)) ~> cOut;
+      LowerCompFor . eOut:PyASTExpr, s0:SrcSpacing, varName:SrcLowerName, s1:SrcSpacing, s2:SrcSpacing, iter:PyOr, iOut:PyASTExpr
+        | (ProjectOr iter) ~> iOut
+        |- (ProjectComp eOut («py-src:comp-for» s0 varName s1 s2 iter)) ~> (PyComp eOut varName iOut (PyBool "PyBoolTrue"));
+      LowerCompForIf . eOut:PyASTExpr, s0:SrcSpacing, varName:SrcLowerName, s1:SrcSpacing, s2:SrcSpacing, iter:PyOr, s3:SrcSpacing, s4:SrcSpacing, cond:PyOr, iOut:PyASTExpr, cOut:PyASTExpr
+        | (ProjectOr iter) ~> iOut, (ProjectOr cond) ~> cOut
+        |- (ProjectComp eOut («py-src:comp-for-if» s0 varName s1 s2 iter s3 s4 cond)) ~> (PyComp eOut varName iOut cOut);
+      LowerArgsEmpty .
+        |- (ProjectArgs "py-src:args-empty") ~> "PyExprsNil";
+      LowerArgsOne . e:PyExpr, t0:SrcTrivia, eOut:PyASTExpr
+        | (ProjectExpr e) ~> eOut
+        |- (ProjectArgs («py-src:args-one» e t0)) ~> (PyExprsCons eOut "PyExprsNil");
+      LowerArgsMore . e:PyExpr, t0:SrcTrivia, t1:SrcTrivia, rest:PyArgList, eOut:PyASTExpr, rOut:PyASTExprs
+        | (ProjectExpr e) ~> eOut, (ProjectArgs rest) ~> rOut
+        |- (ProjectArgs («py-src:args-more» e t0 t1 rest)) ~> (PyExprsCons eOut rOut);
+      LowerDictEmpty .
+        |- (ProjectDict "py-src:dict-empty") ~> "PyDictItemsNil";
+      LowerDictOne . k:PyExpr, t0:SrcTrivia, t1:SrcTrivia, v:PyExpr, t2:SrcTrivia, kOut:PyASTExpr, vOut:PyASTExpr
+        | (ProjectExpr k) ~> kOut, (ProjectExpr v) ~> vOut
+        |- (ProjectDict («py-src:dict-one» («py-src:dict-entry» k t0 t1 v) t2)) ~> (PyDictItemsCons kOut vOut "PyDictItemsNil");
+      LowerDictMore . k:PyExpr, t0:SrcTrivia, t1:SrcTrivia, v:PyExpr, t2:SrcTrivia, t3:SrcTrivia, rest:PyDictEntries, kOut:PyASTExpr, vOut:PyASTExpr, rOut:PyASTDictItems
+        | (ProjectExpr k) ~> kOut, (ProjectExpr v) ~> vOut, (ProjectDict rest) ~> rOut
+        |- (ProjectDict («py-src:dict-more» («py-src:dict-entry» k t0 t1 v) t2 t3 rest)) ~> (PyDictItemsCons kOut vOut rOut);
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts(lex.Grammar()) in (
+      Lowering(s) \/ Comments(s)
+    )
+  }
+  Theory LexicalProfile() {
+    lex.LexicalProfile()
+  }
+  theory Grammar()
+}

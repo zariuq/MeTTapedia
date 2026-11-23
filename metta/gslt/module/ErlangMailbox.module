@@ -1,0 +1,59 @@
+import "ErlangData.module" as er
+
+Module ErlangMailbox {
+  Theory Mailbox(d: er.Data) {
+    d
+      Types { ErMailboxData; ErMailboxConfig; }
+      Terms {
+        ErMailbox . savedRev:ErValues, front:ErValues, rearRev:ErValues
+          |- "mailbox" savedRev front rearRev : ErMailboxData;
+        ErPeek . mailbox:ErMailboxData |- "recv-peek-message" mailbox : ErMailboxConfig;
+        ErPeekValue . value:ErValue, mailbox:ErMailboxData |- "peek-value" value mailbox : ErMailboxConfig;
+        ErPeekEmpty . mailbox:ErMailboxData |- "peek-empty" mailbox : ErMailboxConfig;
+        ErRotate . savedRev:ErValues, front:ErValues, rear:ErValues
+          |- "rotate" savedRev front rear : ErMailboxConfig;
+        ErNext . mailbox:ErMailboxData |- "recv-next" mailbox : ErMailboxConfig;
+        ErAdvanced . mailbox:ErMailboxData |- "advanced" mailbox : ErMailboxConfig;
+        ErRemove . mailbox:ErMailboxData |- "remove-message" mailbox : ErMailboxConfig;
+        ErRestore . savedRev:ErValues, front:ErValues, rearRev:ErValues
+          |- "restore" savedRev front rearRev : ErMailboxConfig;
+        ErRemoved . mailbox:ErMailboxData |- "removed" mailbox : ErMailboxConfig;
+        ErDeliver . value:ErValue, mailbox:ErMailboxData |- "deliver" value mailbox : ErMailboxConfig;
+        ErDelivered . mailbox:ErMailboxData |- "delivered" mailbox : ErMailboxConfig;
+        ErWait . mailbox:ErMailboxData |- "recv-wait-infinity" mailbox : ErMailboxConfig;
+        ErReady . mailbox:ErMailboxData |- "ready" mailbox : ErMailboxConfig;
+        ErWaiting . mailbox:ErMailboxData |- "waiting" mailbox : ErMailboxConfig;
+        ErWake . value:ErValue, mailbox:ErMailboxData |- "wake" value mailbox : ErMailboxConfig;
+      }
+      Rewrites {
+        PeekValue : (ErPeek (ErMailbox saved (ErValuesCons head tail) rear))
+          ~> (ErPeekValue head (ErMailbox saved (ErValuesCons head tail) rear));
+        PeekEmpty : (ErPeek (ErMailbox saved (ErValuesNil) (ErValuesNil)))
+          ~> (ErPeekEmpty (ErMailbox saved (ErValuesNil) (ErValuesNil)));
+        PeekRotate : (ErPeek (ErMailbox saved (ErValuesNil) (ErValuesCons head tail)))
+          ~> (ErRotate saved (ErValuesCons head (ErValuesNil)) tail);
+        RotateMore : (ErRotate saved front (ErValuesCons head tail))
+          ~> (ErRotate saved (ErValuesCons head front) tail);
+        RotateDone : (ErRotate saved front (ErValuesNil))
+          ~> (ErPeek (ErMailbox saved front (ErValuesNil)));
+        Next : (ErNext (ErMailbox saved (ErValuesCons head tail) rear))
+          ~> (ErAdvanced (ErMailbox (ErValuesCons head saved) tail rear));
+        Remove : (ErRemove (ErMailbox saved (ErValuesCons head tail) rear)) ~> (ErRestore saved tail rear);
+        RestoreMore : (ErRestore (ErValuesCons head tail) front rear)
+          ~> (ErRestore tail (ErValuesCons head front) rear);
+        RestoreDone : (ErRestore (ErValuesNil) front rear)
+          ~> (ErRemoved (ErMailbox (ErValuesNil) front rear));
+        Deliver : (ErDeliver value (ErMailbox saved front rear))
+          ~> (ErDelivered (ErMailbox saved front (ErValuesCons value rear)));
+        WaitFront : (ErWait (ErMailbox saved (ErValuesCons head tail) rear))
+          ~> (ErReady (ErMailbox saved (ErValuesCons head tail) rear));
+        WaitRear : (ErWait (ErMailbox saved (ErValuesNil) (ErValuesCons head tail)))
+          ~> (ErReady (ErMailbox saved (ErValuesNil) (ErValuesCons head tail)));
+        WaitEmpty : (ErWait (ErMailbox saved (ErValuesNil) (ErValuesNil)))
+          ~> (ErWaiting (ErMailbox saved (ErValuesNil) (ErValuesNil)));
+        Wake : (ErWake value (ErMailbox saved (ErValuesNil) (ErValuesNil)))
+          ~> (ErReady (ErMailbox saved (ErValuesNil) (ErValuesCons value (ErValuesNil))));
+      }
+  }
+  theory Mailbox(er.Data())
+}

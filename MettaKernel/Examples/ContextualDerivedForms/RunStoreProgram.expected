@@ -1,0 +1,5 @@
+prefix charge=2; completed=false
+prefix store=[a, b, a]
+resumed charge=4; completed=true
+resumed store=[b]
+answers correct=true

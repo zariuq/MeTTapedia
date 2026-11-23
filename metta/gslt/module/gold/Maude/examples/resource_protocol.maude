@@ -1,0 +1,20 @@
+load jobs.maude
+
+mod GOLD-RESOURCE-PROTOCOL is
+  protecting GOLD-JOBS .
+  sorts Gate State .
+  ops open closed : -> Gate [ctor] .
+  op empty : -> State [ctor] .
+  op __ : State State -> State [ctor assoc comm id: empty] .
+  op token : -> State [ctor] .
+  op permission : Job Gate -> State [ctor] .
+  ops request running done : Job -> State [ctor] .
+  op pool : State -> State [ctor] .
+  op sealed : State -> State [ctor frozen] .
+  var J : Job .
+  var G : Gate .
+
+  crl [allocate] : permission(J, G) request(J) token
+    => permission(J, G) running(J) if G = open .
+  rl [finish] : running(J) => done(J) token .
+endm

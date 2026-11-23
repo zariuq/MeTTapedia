@@ -1,0 +1,5 @@
+(sort wff provable)
+(term wi ((a wff ()) (b wff ())) (wff ()))
+(axiom ax1 ((a wff ()) (b wff ())) () (wi a (wi b a)))
+(axiom mp ((a wff ()) (b wff ())) (a (wi a b)) b)
+(theorem bad ((a wff ()) (b wff ())) ((h b)) (wi b a) () (mp (a (wi b a)) h (ax1 (a b))))

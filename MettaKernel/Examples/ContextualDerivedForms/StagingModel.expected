@@ -1,0 +1,8 @@
+code: ["lambda_2", "lambda_1"]
+cursor: 2
+nested: ["(pair a b)"]
+quoted-code: 0
+unselected: ["safe"]
+held: ["held"]
+frozen-future-head: ["(lambda_1)"]
+future-arguments: ["(lambda_1 a)"]

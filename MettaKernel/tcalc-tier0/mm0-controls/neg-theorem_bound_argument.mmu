@@ -1,0 +1,12 @@
+-- The fixture generator removes the x allowance from ax5 after compiling.
+-- That makes the binary match the companion .mm0 but invalidates this proof.
+(sort wff strict provable)
+(sort nat)
+(term wi ((a wff ()) (b wff ())) (wff ()))
+(term al ((x nat) (a wff (x))) (wff ()))
+(term z () (nat ()))
+(term eq ((a nat ()) (b nat ())) (wff ()))
+(def isz ((x nat)) (wff (x)) () (eq x (z)))
+(axiom ax5 ((x nat) (a wff ())) () (wi a (al x a)))
+(theorem bad ((x nat)) () (wi (isz x) (al x (isz x))) ()
+  (ax5 (x (isz x))))

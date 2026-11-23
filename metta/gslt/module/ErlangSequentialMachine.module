@@ -1,0 +1,106 @@
+import "ErlangSequentialIR.module" as ir
+
+Module ErlangSequentialMachine {
+  Theory Core(d: ir.Data) {
+    d Rewrites {
+      ReturnDone : (ErReturn values (ErKDone)) ~> (ErDone values);
+      ReturnApply : (ErReturn (ErValuesCons function (ErValuesNil)) (ErKApply arguments environment rest))
+        ~> (ErStart (ErBuildApply function) arguments environment rest);
+      ReturnApplyEmpty : (ErReturn (ErValuesNil) (ErKApply arguments environment rest))
+        ~> (ErInvalid (ErOneValueRequired (ErValuesNil)));
+      ReturnApplyMany : (ErReturn (ErValuesCons first (ErValuesCons second tail)) (ErKApply arguments environment rest))
+        ~> (ErInvalid (ErOneValueRequired (ErValuesCons first (ErValuesCons second tail))));
+      ReturnLet : (ErReturn values (ErKLet count body environment rest))
+        ~> (ErBindLet count values environment body count values rest);
+      ReturnSequence : (ErReturn values (ErKSequence body environment rest)) ~> (ErEvaluate body environment rest);
+      ReturnGatherMore : (ErReturn (ErValuesCons value (ErValuesNil))
+          (ErKGather kind (ErCodesCons next later) environment reversed rest))
+        ~> (ErEvaluate next environment (ErKGather kind later environment (ErValuesCons value reversed) rest));
+      ReturnGatherLast : (ErReturn (ErValuesCons value (ErValuesNil))
+          (ErKGather kind (ErCodesNil) environment reversed rest))
+        ~> (ErReverseBuild kind (ErValuesCons value reversed) (ErValuesNil) environment (ErValuesCons value reversed) rest);
+      ReturnGatherEmpty : (ErReturn (ErValuesNil) (ErKGather kind remaining environment reversed rest))
+        ~> (ErInvalid (ErOneValueRequired (ErValuesNil)));
+      ReturnGatherMany : (ErReturn (ErValuesCons first (ErValuesCons second tail))
+          (ErKGather kind remaining environment reversed rest))
+        ~> (ErInvalid (ErOneValueRequired (ErValuesCons first (ErValuesCons second tail))));
+      ReturnCase : (ErReturn values (ErKCase clauses environment rest)) ~> (ErChoose values clauses environment rest);
+      ReturnGuard : (ErReturn values (ErKGuard arguments later body bound outer rest))
+        ~> (ErGuardRequest values arguments later body bound outer rest);
+      ReturnMatchFail : (ErReturn (ErValuesCons value (ErValuesNil)) (ErKMatchFail rest))
+        ~> (ErRaise (ErMatchFail value) rest);
+      ReturnMatchFailEmpty : (ErReturn (ErValuesNil) (ErKMatchFail rest))
+        ~> (ErInvalid (ErOneValueRequired (ErValuesNil)));
+      ReturnMatchFailMany : (ErReturn (ErValuesCons first (ErValuesCons second tail)) (ErKMatchFail rest))
+        ~> (ErInvalid (ErOneValueRequired (ErValuesCons first (ErValuesCons second tail))));
+      StartEmpty : (ErStart kind (ErCodesNil) environment rest)
+        ~> (ErBuildConfig kind (ErValuesNil) environment (ErValuesNil) rest);
+      StartMore : (ErStart kind (ErCodesCons first later) environment rest)
+        ~> (ErEvaluate first environment (ErKGather kind later environment (ErValuesNil) rest));
+      ReverseMore : (ErReverseBuild kind (ErValuesCons head tail) ordered environment original rest)
+        ~> (ErReverseBuild kind tail (ErValuesCons head ordered) environment original rest);
+      ReverseDone : (ErReverseBuild kind (ErValuesNil) ordered environment original rest)
+        ~> (ErBuildConfig kind ordered environment original rest);
+      BuildValues : (ErBuildConfig (ErBuildValues) values environment original rest) ~> (ErReturn values rest);
+      BuildTuple : (ErBuildConfig (ErBuildTuple) values environment original rest)
+        ~> (ErReturn (ErValuesCons (ErTuple values) (ErValuesNil)) rest);
+      BuildCons : (ErBuildConfig (ErBuildCons) (ErValuesCons head (ErValuesCons tail (ErValuesNil))) environment original rest)
+        ~> (ErReturn (ErValuesCons (ErCons head tail) (ErValuesNil)) rest);
+      BuildApply : (ErBuildConfig (ErBuildApply function) arguments environment original rest)
+        ~> (ErApply function arguments rest);
+      BuildPrimitive : (ErBuildConfig (ErBuildPrimitive operator) arguments environment original rest)
+        ~> (ErPrimitiveRequest operator arguments rest);
+      BuildActor : (ErBuildConfig (ErBuildActor operation) arguments environment original rest)
+        ~> (ErActorRequest operation arguments rest);
+      BindCallMore : (ErBindCall (ErSucc count) (ErValuesCons head tail) environment body function original rest)
+        ~> (ErBindCall count tail (ErEnvironmentCons head environment) body function original rest);
+      BindCallDone : (ErBindCall (ErZero) (ErValuesNil) environment body function original rest)
+        ~> (ErEvaluate body environment rest);
+      BindCallShort : (ErBindCall (ErSucc count) (ErValuesNil) environment body function original rest)
+        ~> (ErRaise (ErBadarity function original) rest);
+      BindCallLong : (ErBindCall (ErZero) (ErValuesCons head tail) environment body function original rest)
+        ~> (ErRaise (ErBadarity function original) rest);
+      BindLetMore : (ErBindLet (ErSucc count) (ErValuesCons head tail) environment body expected original rest)
+        ~> (ErBindLet count tail (ErEnvironmentCons head environment) body expected original rest);
+      BindLetDone : (ErBindLet (ErZero) (ErValuesNil) environment body expected original rest)
+        ~> (ErEvaluate body environment rest);
+      BindLetShort : (ErBindLet (ErSucc count) (ErValuesNil) environment body expected original rest)
+        ~> (ErInvalid (ErReturnArity expected original));
+      BindLetLong : (ErBindLet (ErZero) (ErValuesCons head tail) environment body expected original rest)
+        ~> (ErInvalid (ErReturnArity expected original));
+      LookupZero : (ErLookup (ErZero) (ErEnvironmentCons head tail) original full rest)
+        ~> (ErReturn (ErValuesCons head (ErValuesNil)) rest);
+      LookupMore : (ErLookup (ErSucc count) (ErEnvironmentCons head tail) original full rest)
+        ~> (ErLookup count tail original full rest);
+      LookupEmpty : (ErLookup count (ErEnvironmentNil) original full rest) ~> (ErInvalid (ErUnboundIndex original));
+      SelectEmpty : (ErChoose arguments (ErClausesNil) environment rest) ~> (ErRaise (ErCaseClause arguments) rest);
+      SelectClause : (ErChoose arguments (ErClausesCons pattern guard body later) environment rest)
+        ~> (ErTryClause pattern arguments environment guard body later rest);
+      ClauseFailure . pattern:ErPatternId, arguments:ErValues, environment:ErEnvironment,
+          guard:ErCode, body:ErCode, later:ErClauses, rest:ErContinuation |
+        "er-pattern-failure"(pattern, arguments, environment) |-
+        (ErTryClause pattern arguments environment guard body later rest) ~> (ErChoose arguments later environment rest);
+      GuardTrue . values:ErValues, arguments:ErValues, later:ErClauses, body:ErCode,
+          bound:ErEnvironment, outer:ErEnvironment, rest:ErContinuation | "er-guard"(values, (ErYes)) |-
+        (ErGuardRequest values arguments later body bound outer rest) ~> (ErEvaluate body bound rest);
+      GuardFalse . values:ErValues, arguments:ErValues, later:ErClauses, body:ErCode,
+          bound:ErEnvironment, outer:ErEnvironment, rest:ErContinuation | "er-guard"(values, (ErNo)) |-
+        (ErGuardRequest values arguments later body bound outer rest) ~> (ErChoose arguments later outer rest);
+      ComputePrimitive . operator:ErPrimitive, arguments:ErValues, result:ErPrimitiveResult, rest:ErContinuation |
+        "er-primitive"(operator, arguments, result) |-
+        (ErPrimitiveRequest operator arguments rest) ~> (ErPrimitiveReturned result rest);
+      PrimitiveValue : (ErPrimitiveReturned (ErPrimitiveValue value) rest)
+        ~> (ErReturn (ErValuesCons value (ErValuesNil)) rest);
+      PrimitiveFault : (ErPrimitiveReturned (ErPrimitiveFault fault) rest) ~> (ErRaise fault rest);
+      RaiseDone : (ErRaise fault (ErKDone)) ~> (ErFault fault);
+      RaiseApply : (ErRaise fault (ErKApply arguments environment rest)) ~> (ErRaise fault rest);
+      RaiseLet : (ErRaise fault (ErKLet count body environment rest)) ~> (ErRaise fault rest);
+      RaiseSequence : (ErRaise fault (ErKSequence body environment rest)) ~> (ErRaise fault rest);
+      RaiseGather : (ErRaise fault (ErKGather kind remaining environment reversed rest)) ~> (ErRaise fault rest);
+      RaiseCase : (ErRaise fault (ErKCase clauses environment rest)) ~> (ErRaise fault rest);
+      RaiseMatchFail : (ErRaise fault (ErKMatchFail rest)) ~> (ErRaise fault rest);
+      RaiseGuard : (ErRaise fault (ErKGuard arguments later body bound outer rest)) ~> (ErChoose arguments later outer rest);
+    }
+  }
+  theory Core(ir.Data())
+}

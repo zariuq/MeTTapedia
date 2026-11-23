@@ -63,6 +63,7 @@ rather than executed in `PrologEval`.
 
 ## Related
 
+- [SWI runtime protocols](SWI/README.md) — generation publication, clause garbage collection and supervisor lifetimes, with checked counterexamples.
 - [LP kernel](../../Logic/LP) — unification, SLD resolution, Herbrand semantics
 - [PeTTa layer](../MeTTa/PeTTa) — evaluation, effects, expression compilation
 

@@ -1,0 +1,172 @@
+-- SPDX-License-Identifier: MIT
+-- How a chat message reaches an agent, the same for every channel.
+--
+-- Two independent axes decide a message: its visibility (drop it, or record
+-- it into the agent's history) and its wake (never, on a mention, or always;
+-- a direct message counts as a mention). A rule sets both, and selects how a
+-- wake works: a wake reason makes it a sender wake, which wakes the agent at
+-- once with its whole banked budget, and an arming tier sets the fuel it
+-- grants. Rules are set per sender class: owner, a named group that carries
+-- its own rule, listed, or stranger. A sender is listed when the generic
+-- allowlist or the channel's own allowlist names the sender, directly or
+-- through a named group; the two lists combine. A scope's access sits above
+-- the rules: allowlist (the default) applies them, open treats a stranger as
+-- listed, disabled drops every message. A message wakes the agent only when
+-- it is recorded. A recorded message carries its sender's class, and whether
+-- the sender is trusted (an owner or listed), as provenance: a label the
+-- agent reads with it, never a block. Settings come in layers (generic,
+-- channel, account, and for a group message the group), each changing only
+-- the fields it states; a layer's named-group rules come first. Admission
+-- (requests and invites) is kept apart: it never changes a message's
+-- visibility or wake.
+Module GodelClawAccessPolicy {
+  Theory AccessPolicy() {
+    Empty Exports {
+      Channel; Sender; Group; NamedGroup; Scope; Entry;
+      SenderClass; Match; Access; Visibility; Wake; Reason; Tier; Rule; Rules; NamedRules;
+      Mention; Flag; Provenance; Settings; AccessField; RuleField; NamedField; Override;
+    }
+    Terms {
+      Telegram . Channel ::= "telegram";
+      Slack . Channel ::= "slack";
+      Signal . Channel ::= "signal";
+      Irc . Channel ::= "irc";
+      Mattermost . Channel ::= "mattermost";
+      Console . Channel ::= "console";
+
+      SenderOf . Sender ::= "sender" "(" Channel "," String ")";
+      GroupOf . Group ::= "group" "(" Channel "," String ")";
+      NamedGroupOf . NamedGroup ::= "named-group" "(" String ")";
+      Everywhere . Scope ::= "everywhere";
+      OnChannel . Scope ::= "on" "(" Channel ")";
+      AllowSender . Entry ::= "allow-sender" "(" Scope "," Sender ")";
+      AllowNamedGroup . Entry ::= "allow-named-group" "(" Scope "," NamedGroup ")";
+
+      Open . Access ::= "open";
+      Allowlist . Access ::= "allowlist";
+      Disabled . Access ::= "disabled";
+      Drop . Visibility ::= "drop";
+      Record . Visibility ::= "record";
+      WakeNever . Wake ::= "wake-never";
+      WakeOnMention . Wake ::= "wake-on-mention";
+      WakeAlways . Wake ::= "wake-always";
+      NoReason . Reason ::= "no-reason";
+      ReasonOf . Reason ::= "reason" "(" String ")";
+      TierDefault . Tier ::= "tier-default";
+      TierOf . Tier ::= "tier" "(" String ")";
+      RuleOf . Rule ::= "rule" "(" Visibility "," Wake "," Reason "," Tier ")";
+      -- The rules for an owner, a listed sender and a stranger, in that order.
+      RulesOf . Rules ::= "rules" "(" Rule "," Rule "," Rule ")";
+      NoNamedRules . NamedRules ::= "no-named-rules";
+      NamedRuleOf . NamedRules ::= "named-rule" "(" NamedGroup "," Rule "," NamedRules ")";
+
+      OwnerClass . SenderClass ::= "owner";
+      NamedClass . SenderClass ::= "named" "(" NamedGroup "," Rule ")";
+      ListedClass . SenderClass ::= "listed";
+      StrangerClass . SenderClass ::= "stranger";
+      NoMatch . Match ::= "no-match";
+      MatchOf . Match ::= "match" "(" NamedGroup "," Rule ")";
+      Mentioned . Mention ::= "mentioned";
+      Unmentioned . Mention ::= "unmentioned";
+      FlagFalse . Flag ::= "flag-false";
+      FlagTrue . Flag ::= "flag-true";
+      Trusted . Provenance ::= "trusted" "(" SenderClass ")";
+      Untrusted . Provenance ::= "untrusted" "(" SenderClass ")";
+
+      -- Is the sender an owner; the first named group with a rule that holds
+      -- the sender; is the sender listed.
+      ClassOf . SenderClass ::= "class-of" "(" Flag "," Match "," Flag ")";
+      Effective . Rule ::= "effective" "(" Access "," SenderClass "," Rules ")";
+      ClassRule . Rule ::= "class-rule" "(" SenderClass "," Rules ")";
+      Visible . Flag ::= "visible" "(" Rule ")";
+      Wakes . Flag ::= "wakes" "(" Rule "," Mention ")";
+      Label . Provenance ::= "label" "(" SenderClass "," Flag ")";
+      MayCommand . Flag ::= "may-command" "(" SenderClass ")";
+
+      Configured . Settings ::= "settings" "(" Access "," Rules "," NamedRules ")";
+      DirectDefaults . Settings ::= "direct-defaults";
+      GroupDefaults . Settings ::= "group-defaults";
+      KeepAccess . AccessField ::= "keep-access";
+      SetAccess . AccessField ::= "set-access" "(" Access ")";
+      KeepRule . RuleField ::= "keep-rule";
+      SetRule . RuleField ::= "set-rule" "(" Rule ")";
+      KeepNamed . NamedField ::= "keep-named";
+      AddNamed . NamedField ::= "add-named" "(" NamedRules ")";
+      OverrideOf . Override ::= "override" "(" AccessField "," RuleField "," RuleField "," RuleField "," NamedField ")";
+      Inherit . Settings ::= "inherit" "(" Settings "," Override ")";
+      PickAccess . Access ::= "pick-access" "(" AccessField "," Access ")";
+      PickRule . Rule ::= "pick-rule" "(" RuleField "," Rule ")";
+      PickNamed . NamedRules ::= "pick-named" "(" NamedField "," NamedRules ")";
+      Append . NamedRules ::= "append" "(" NamedRules "," NamedRules ")";
+    }
+    Rewrites {
+      -- An owner first, then a named group's rule, then listed or a stranger.
+      ClassOwner: (ClassOf (FlagTrue) m l) ~> (OwnerClass);
+      ClassNamed: (ClassOf (FlagFalse) (MatchOf n r) l) ~> (NamedClass n r);
+      ClassListed: (ClassOf (FlagFalse) (NoMatch) (FlagTrue)) ~> (ListedClass);
+      ClassStranger: (ClassOf (FlagFalse) (NoMatch) (FlagFalse)) ~> (StrangerClass);
+
+      -- The scope's access, then the rule of the sender's class.
+      DisabledAny: (Effective (Disabled) c rs) ~> (RuleOf (Drop) (WakeNever) (NoReason) (TierDefault));
+      AllowlistAny: (Effective (Allowlist) c rs) ~> (ClassRule c rs);
+      OpenOwner: (Effective (Open) (OwnerClass) rs) ~> (ClassRule (OwnerClass) rs);
+      OpenNamed: (Effective (Open) (NamedClass n r) rs) ~> r;
+      OpenListed: (Effective (Open) (ListedClass) rs) ~> (ClassRule (ListedClass) rs);
+      OpenStranger: (Effective (Open) (StrangerClass) rs) ~> (ClassRule (ListedClass) rs);
+      OwnerRule: (ClassRule (OwnerClass) (RulesOf o l s)) ~> o;
+      NamedRule: (ClassRule (NamedClass n r) rs) ~> r;
+      ListedRule: (ClassRule (ListedClass) (RulesOf o l s)) ~> l;
+      StrangerRule: (ClassRule (StrangerClass) (RulesOf o l s)) ~> s;
+
+      -- Visibility, and a wake only for a recorded message.
+      VisibleDrop: (Visible (RuleOf (Drop) w e t)) ~> (FlagFalse);
+      VisibleRecord: (Visible (RuleOf (Record) w e t)) ~> (FlagTrue);
+      WakesDropped: (Wakes (RuleOf (Drop) w e t) m) ~> (FlagFalse);
+      WakesNever: (Wakes (RuleOf (Record) (WakeNever) e t) m) ~> (FlagFalse);
+      WakesAlways: (Wakes (RuleOf (Record) (WakeAlways) e t) m) ~> (FlagTrue);
+      WakesMentioned: (Wakes (RuleOf (Record) (WakeOnMention) e t) (Mentioned)) ~> (FlagTrue);
+      WakesUnmentioned: (Wakes (RuleOf (Record) (WakeOnMention) e t) (Unmentioned)) ~> (FlagFalse);
+
+      -- Provenance of a recorded message: the sender's class, and trust.
+      LabelTrusted: (Label c (FlagTrue)) ~> (Trusted c);
+      LabelUntrusted: (Label c (FlagFalse)) ~> (Untrusted c);
+
+      -- Privileged commands are an owner's alone.
+      OwnerCommands: (MayCommand (OwnerClass)) ~> (FlagTrue);
+      NamedCommands: (MayCommand (NamedClass n r)) ~> (FlagFalse);
+      ListedCommands: (MayCommand (ListedClass)) ~> (FlagFalse);
+      StrangerCommands: (MayCommand (StrangerClass)) ~> (FlagFalse);
+
+      -- Defaults: the allowlist, and strangers are dropped. Owners and listed
+      -- senders are recorded and wake the agent, except that in a group a
+      -- listed sender wakes it by a mention.
+      DirectDefaultsRule:
+        (DirectDefaults) ~> (Configured (Allowlist)
+          (RulesOf (RuleOf (Record) (WakeAlways) (NoReason) (TierDefault))
+                   (RuleOf (Record) (WakeAlways) (NoReason) (TierDefault))
+                   (RuleOf (Drop) (WakeNever) (NoReason) (TierDefault)))
+          (NoNamedRules));
+      GroupDefaultsRule:
+        (GroupDefaults) ~> (Configured (Allowlist)
+          (RulesOf (RuleOf (Record) (WakeAlways) (NoReason) (TierDefault))
+                   (RuleOf (Record) (WakeOnMention) (NoReason) (TierDefault))
+                   (RuleOf (Drop) (WakeNever) (NoReason) (TierDefault)))
+          (NoNamedRules));
+
+      -- A layer changes only the fields it states; its named rules come first.
+      InheritFields:
+        (Inherit (Configured a (RulesOf o l s) nr) (OverrideOf af of lf sf nf))
+          ~> (Configured (PickAccess af a) (RulesOf (PickRule of o) (PickRule lf l) (PickRule sf s))
+                (PickNamed nf nr));
+      KeepAccessField: (PickAccess (KeepAccess) a) ~> a;
+      SetAccessField: (PickAccess (SetAccess v) a) ~> v;
+      KeepRuleField: (PickRule (KeepRule) r) ~> r;
+      SetRuleField: (PickRule (SetRule v) r) ~> v;
+      KeepNamedField: (PickNamed (KeepNamed) nr) ~> nr;
+      AddNamedField: (PickNamed (AddNamed x) nr) ~> (Append x nr);
+      AppendNone: (Append (NoNamedRules) nr) ~> nr;
+      AppendRule: (Append (NamedRuleOf n r x) nr) ~> (NamedRuleOf n r (Append x nr));
+    }
+  }
+  theory AccessPolicy()
+}

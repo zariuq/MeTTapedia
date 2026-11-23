@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 import Mettapedia.PLN.WorldModel.PLNWorldModelSupportForgetting
 import Mettapedia.PLN.WorldModel.WorldModelConservationPack
@@ -821,31 +822,11 @@ def withPremiseFreeInverse : LanguageDef :=
 
 def unsupportedRedex : Pattern := pForget scopeZero (pRevise baseOne revisionZeroTwo)
 
-private def noncontextualPremises : List Premise → Bool
-  | [] => true
-  | .freshness _ :: rest => noncontextualPremises rest
-  | .relationQuery _ _ :: rest => noncontextualPremises rest
-  | .forAll _ _ _ :: rest => noncontextualPremises rest
-  | .congruence _ _ :: _ => false
-  | .scopedStep _ :: _ => false
-
-private theorem noncontextualPremises_sound : ∀ {premises : List Premise},
-    noncontextualPremises premises = true → NoncontextualPremises premises
-  | [], _ => .nil
-  | .freshness _ :: _, accepted => .freshness (noncontextualPremises_sound accepted)
-  | .relationQuery _ _ :: _, accepted => .relationQuery (noncontextualPremises_sound accepted)
-  | .forAll _ _ _ :: _, accepted => .forAll (noncontextualPremises_sound accepted)
-  | .congruence _ _ :: _, accepted => by simp [noncontextualPremises] at accepted
-  | .scopedStep _ :: _, accepted => by simp [noncontextualPremises] at accepted
-
 /-- No premise of the maximal calculus is contextual, so its steps are
 the root steps the executable frontier lists. -/
 theorem maximal_noncontextual :
-    ∀ rule ∈ maximalCalculus.rewrites, NoncontextualPremises rule.premises := by
-  have checked : ∀ rule ∈ maximalCalculus.rewrites,
-      noncontextualPremises rule.premises = true := by
-    decide +kernel
-  exact fun rule member => noncontextualPremises_sound (checked rule member)
+    ∀ rule ∈ maximalCalculus.rewrites, NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 theorem withPremiseFreeInverse_noncontextual :
     ∀ rule ∈ withPremiseFreeInverse.rewrites, NoncontextualPremises rule.premises := by

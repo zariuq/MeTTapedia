@@ -1,0 +1,8 @@
+per-answer-equal: true
+joint-equal: false
+inverse-alias: ["True"]
+display-alias: ["False"]
+branch-bindings: ["True", "False"]
+erased-bindings: ["False", "False"]
+collect-alternatives: ["False"]
+collect-pair: ["True"]

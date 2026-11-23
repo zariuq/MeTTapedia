@@ -1,0 +1,6 @@
+(reserved a)
+b
+(pair a b)
+(pair (println! 9) b)
+(pair a b)
+()

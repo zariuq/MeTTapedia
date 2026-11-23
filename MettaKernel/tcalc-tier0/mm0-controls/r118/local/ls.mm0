@@ -1,0 +1,6 @@
+provable sort wff;
+sort nat;
+term unit: wff;
+term empty: wff;
+term f: nat > wff;
+axiom proof_of_unit: $ unit $;

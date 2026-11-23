@@ -1,0 +1,71 @@
+Retained preparation, receipt graphs and occurrence identities
+=============================================================
+
+PreparedStoreStability derives later readiness from actual writer footprints.
+An append's reserved identities must not be made by the intervening writer.
+A complete key-region removal keeps its ordered selection when the writer
+neither takes nor makes anything matching those keys. ready_after_publication
+uses a real successful publication. direct_after_change connects the preserved
+readiness to the existing direct publication operation without another semantic
+selection obligation.
+
+OrderedStoreStability lifts the existing occurrence-commit exactness theorem to
+the actual ordered tcalc step, retaining shape and knowledge requirements. It
+accounts for takes, makes, keeps and captured predicate regions. An unrelated
+append changes the store but leaves a pending key removal valid. Other controls
+show disjoint takes can still spoil an absence condition or remove a keep.
+
+The observation profile matters. One matching occurrence can be replaced by
+another without changing the count. An exact captured region then changes even
+though a count-only observation does not. The exact-region theorem is not a
+minimal-dependency theorem for every count observer, nor a restriction of the
+ambient calculus. It also does not authorize changing source firing order.
+
+PreparedReceiptOwnership connects actual prepared-publication receipts to the
+existing finite resource-heap and owner-lifecycle model. Distinct occurrences
+have distinct ownership labels even when they share a payload address. patch
+updates only the taken and made footprints. patch_store_exact relates that
+incremental update to the full live-store invariant; patch_single_append and
+patch_single_take reduce to one insert or erase. The expression requires no
+reconstruction from all live store rows. These are algebraic root-update laws:
+the cost of Lean's Finset operations is not proved constant, and no native
+collector or instruction bound follows merely from this normal form.
+
+finish exports requested receipt roots before cancellation and collection.
+committed_receipt_observation derives the retained addresses from the actual
+successful publication, not an independently supplied assertion. Complete
+receipt, store and outside-owner graphs survive collection, including shared
+nodes and cycles. The none case adds no receipt roots. Two receipt entries in
+the control share one root and retain a two-cell cycle. Releasing the last
+receipt reclaims that cycle; omitting ownership while retaining the receipt
+loses it. Removing only one occurrence retains the other occurrence's shared
+payload. A readable receipt does not restore permission to consume its removed
+occurrences. Liveness is also not immutability under unrelated payload writes.
+
+RetainedOccurrenceAllocation strengthens the existing numbered allocator using
+a finite inventory of held identities. It keeps values and multiplicity while
+avoiding both current and retained numeric IDs. When the inventory is empty it
+uses the original allocator. Release therefore permits reuse; permanent history
+or universally monotone allocation is not required.
+
+RetainedStorePrograms installs that allocator in the existing interpreter of
+actual tcalc effects. Source value replies and final value stores remain equal
+for every adaptive client. A retired held ID is not revived, and unique numeric
+IDs remain unique through append, remove and query. The empty initial store
+establishes this invariant constructively. A negative control distinguishes
+numeric-ID uniqueness from distinct (ID,value) pairs.
+
+The retained-ID observer is stronger than the value-only source observer. The
+same add/remove/add/query program ends at ID 1 while ID 0 is held, and can end at
+ID 0 after release, with identical value answers. Erasing retention is therefore
+not justified for an observer that still depends on those identities. A native
+implementation must supply a complete live inventory and the appropriate
+resource ownership, reservation and finite-counter behavior. These proofs do
+not prescribe its data structure, native instructions or wall time.
+
+Run from the Lean project root:
+
+  lake env lean --run ../../MettaKernel/Examples/ContextualDerivedForms/RetainedPublicationModel.lean
+
+Compare stdout with RetainedPublicationModel.expected. This is a derived model
+consumer, not a native performance qualification or C-to-Lean correspondence.

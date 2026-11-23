@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.EquationFrontierFrames
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.CompoundBindings
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.GroundedRuns
 
@@ -750,14 +751,7 @@ theorem fine_query_equations {atoms : List Atom} (program : ScopedProgram atoms)
         value.erase activation.bindings works := by
       rw [erased]
       exact frontier
-    obtain ⟨environments, paired⟩ := Entry.Value.UnifyRel.equation_frontier
-      (policy := policy.rebuilding) activation.certified frontier'
-    have unifiers : ∀ w ∈ works, ∃ output : Frame, output.bindings = w.bindings ∧
-        Entry.Value.UnifyRel policy.rebuilding activation.environment value
-          (Entry.Value.ofAtom w.pattern) output.environment := by
-      intro w member
-      obtain ⟨after, unified, certificate⟩ := forall₂_left_exists paired w member
-      exact ⟨⟨w.bindings, after, certificate⟩, rfl, unified⟩
+    have unifiers := activation.equationFrontier_unifiers (policy := policy) (query := value) frontier'
     have related : List.Forall₂ (fun work L => ∃ i, (∀ output : Frame,
           output.bindings = work.bindings →
             (output.read policy (Entry.Value.ofAtom work.body)).erase = i ∧

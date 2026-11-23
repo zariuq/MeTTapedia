@@ -1,0 +1,16 @@
+(sort wff provable)
+
+(sort nat)
+
+(term al ((x nat) (a wff (x))) (wff ()))
+
+(term eq ((a nat ()) (b nat ())) (wff ()))
+
+(def two () (wff ())
+((u nat) (v nat))
+(al u (al v (eq u v))))
+
+(def one () (wff ())
+((u nat))
+(al u (eq u u)))
+

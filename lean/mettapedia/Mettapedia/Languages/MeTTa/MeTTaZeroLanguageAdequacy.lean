@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.Languages.MeTTa.MeTTaZero
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.StructuralModal.Formula
@@ -45,12 +46,8 @@ the contextual closure adds no hidden recursive reduction to the root
 query/evaluation behavior. -/
 private theorem zero_rules_noncontextual :
     ∀ rule, rule ∈ language.rewrites →
-      NoncontextualPremises rule.premises := by
-  intro rule ruleMember
-  change rule ∈ [queryRewrite, evaluationRewrite] at ruleMember
-  simp only [List.mem_cons, List.mem_nil_iff, or_false] at ruleMember
-  rcases ruleMember with rfl | rfl
-  all_goals exact .relationQuery .nil
+      NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 /-- Root-step evidence is precisely membership in the generic root executor. -/
 private theorem rootStep_iff_mem_executor (relEnv : RelationEnv)

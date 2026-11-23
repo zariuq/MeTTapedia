@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileCodec
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteControlProgram
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
@@ -1330,13 +1331,8 @@ def executeIR : IRLanguage := ⟨validated, relationEnv⟩
 
 open Mettapedia.OSLF.MeTTaIL.ContextualStep in
 theorem rules_noncontextual :
-    ∀ rule, rule ∈ language.rewrites → NoncontextualPremises rule.premises := by
-  intro rule member
-  change rule ∈ transitions at member
-  simp only [transitions, List.mem_cons, List.mem_nil_iff, or_false] at member
-  rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  all_goals first | exact .nil | exact .relationQuery .nil
+    ∀ rule, rule ∈ language.rewrites → NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 theorem language_isEquationFree : language.isEquationFree = true := by
   decide

@@ -1,0 +1,8 @@
+delimiter $ ( ~ $ $ ) $;
+provable sort wff;
+term im (a b: wff): wff; infixr im: $->$ prec 25;
+term neg (a: wff): wff; prefix neg: $~$ prec 40;
+term top: wff;
+term bad (a: wff): wff; prefix bad: $~$ prec 40;
+--| The axiom below reads as "not top".
+axiom ax_top: $ ~ top $;

@@ -8,7 +8,8 @@ import Mettapedia.Languages.Metamath.SourceStateNativeTypes
 import Mettapedia.Languages.ProcessCalculi.MORK.AuthoredContextBridge
 import Mettapedia.Languages.ProcessCalculi.MORK.ComputablePatternFactorOrigin
 import Mettapedia.Languages.ProcessCalculi.MORK.InvertibleHead
-import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveExecution
+import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveSinkObservation
+import Mettapedia.Languages.ProcessCalculi.MORK.PatternMatchTrace
 import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveGSLTNativeTypes
 
 /-!
@@ -1425,22 +1426,10 @@ private theorem normalBodyReloadMatchRow_mem
     simp [normalBodyReloadBundleTemplate, normalBodyMatchRuleBundle,
       afterRequest, substitution, normalBodyReloadSubstitution, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution,
-    {normalBodyReloadRule, request, normalBodyMatchRuleBundle}), ?_, rfl⟩
-  simp only [normalBodyReloadDirective, matchInputSpec,
-    normalBodyReloadPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterSelf, normalBodyReloadRule),
-    matchOneInSpace_mem [] _ read normalBodyReloadRule selfMem afterSelf
-      matchSelf, ?_⟩
-  refine ⟨(afterRequest, request),
-    matchOneInSpace_mem afterSelf _ read request requestMem afterRequest
-      matchRequest, ?_⟩
-  refine ⟨(substitution, normalBodyMatchRuleBundle),
-    matchOneInSpace_mem afterRequest _ read normalBodyMatchRuleBundle
-      bundleMem substitution matchBundle, ?_⟩
-  simp [substitution, request]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons selfMem matchSelf
+    (.cons requestMem matchRequest
+    (.cons bundleMem matchBundle (.nil _))))
 
 theorem normalBodyReloadPhase_inhabits_target_native_type
     (proofOwner : Atom) (proofPosition : Nat) :
@@ -2497,57 +2486,6 @@ theorem normalAcceptPhase_selects_directive
       normalAcceptInput, normalAcceptOutput, normalAcceptPatternAtoms])
     (by rfl)
 
-private theorem reflectiveStage_add_contains_of_row
-    (rows : List Subst) (substitution : Subst) (template candidate : Atom)
-    (rowMember : substitution ∈ rows)
-    (instantiates : instantiateTemplateAtom? substitution template =
-      some candidate) :
-    candidate ∈ rows.foldl
-      (stageReflectiveSupportSink (.add template)) [] := by
-  have stagePreserves : ∀ (remaining : List Subst) (staged : List Atom),
-      candidate ∈ staged →
-      candidate ∈ remaining.foldl
-        (stageReflectiveSupportSink (.add template)) staged := by
-    intro remaining
-    induction remaining with
-    | nil =>
-        intro staged member
-        exact member
-    | cons head tail induction =>
-        intro staged member
-        apply induction
-        simp only [stageReflectiveSupportSink, Sink.atom]
-        split
-        · exact member
-        · simp only [insertSupport]
-          split
-          · exact member
-          · exact List.mem_append_left _ member
-  suffices containsOfRow : ∀ (remaining : List Subst) (staged : List Atom),
-      substitution ∈ remaining →
-      candidate ∈ remaining.foldl
-        (stageReflectiveSupportSink (.add template)) staged by
-    exact containsOfRow rows [] rowMember
-  intro remaining
-  induction remaining with
-  | nil =>
-      intro staged rowMember
-      simp at rowMember
-  | cons head tail induction =>
-      intro staged rowMember
-      simp only [List.mem_cons] at rowMember
-      simp only [List.foldl_cons]
-      rcases rowMember with rfl | rowMember
-      · apply stagePreserves tail
-          (stageReflectiveSupportSink (.add template) staged substitution)
-        simp only [stageReflectiveSupportSink, Sink.atom]
-        rw [instantiates]
-        by_cases present : candidate ∈ staged
-        · simp [insertSupport, present]
-        · simp [insertSupport, present]
-      · exact induction
-          (stageReflectiveSupportSink (.add template) staged head) rowMember
-
 /-- The body reloader reinstalls the exact captured case-rule atoms.  This is
 the semantic property that syntactic surface acceptance alone cannot show. -/
 theorem normalBodyReloadDirective_fires_boundary_rules
@@ -2557,42 +2495,12 @@ theorem normalBodyReloadDirective_fires_boundary_rules
       normalBodyReloadDirective
     normalBodyMatchConstRule ∈ result ∧
       normalBodyMatchNilRule ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyReloadPhaseSpace proofOwner proofPosition)
-      normalBodyReloadDirective.atom)
-    normalBodyReloadDirective.rule.input).map Prod.fst
-  let substitution := normalBodyReloadSubstitution proofOwner proofPosition
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyReloadDirective] using
-      normalBodyReloadMatchRow_mem proofOwner proofPosition
-  have constInstantiates :
-      instantiateTemplateAtom? substitution (.var "body-rule-const") =
-        some normalBodyMatchConstRule := by
-    rfl
-  have nilInstantiates :
-      instantiateTemplateAtom? substitution (.var "body-rule-nil") =
-        some normalBodyMatchNilRule := by
-    rfl
-  have constStaged := reflectiveStage_add_contains_of_row rows substitution
-    (.var "body-rule-const") normalBodyMatchConstRule rowMember
-    constInstantiates
-  have nilStaged := reflectiveStage_add_contains_of_row rows substitution
-    (.var "body-rule-nil") normalBodyMatchNilRule rowMember nilInstantiates
+  have rowMember :=
+    normalBodyReloadMatchRow_mem proofOwner proofPosition
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyReloadDirective, normalBodyReloadSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_left _
-        (Finset.mem_union_left _
-          (Finset.mem_union_left _
-            (Finset.mem_union_right _
-              (List.mem_toFinset.mpr constStaged)))))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyReloadDirective, normalBodyReloadSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr nilStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 6 rfl rfl rowMember rfl
 
 /-! ### Active-hypothesis transition boundary -/
 
@@ -2936,28 +2844,12 @@ private theorem normalHypothesisMatchRow_mem
           successor = some finalRow := by
     simp [afterLookup, finalRow, normalHypothesisSubstitution, successor,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow,
-    {normalHypothesisStepRule, control, proofRow, lookupRow, successor}), ?_, rfl⟩
-  simp only [normalHypothesisDirective, matchInputSpec,
-    normalStepPatternAtoms, mkPattern, matchPattern, matchPattern.go,
-    List.mem_flatMap]
-  refine ⟨(afterSelf, normalHypothesisStepRule),
-    matchOneInSpace_mem [] _ read normalHypothesisStepRule selfMem afterSelf
-      matchSelf, ?_⟩
-  refine ⟨(afterControl, control),
-    matchOneInSpace_mem afterSelf _ read control controlMem afterControl
-      matchControl, ?_⟩
-  refine ⟨(afterProofRow, proofRow),
-    matchOneInSpace_mem afterControl _ read proofRow proofRowMem afterProofRow
-      matchProofRow, ?_⟩
-  refine ⟨(afterLookup, lookupRow),
-    matchOneInSpace_mem afterProofRow _ read lookupRow lookupRowMem afterLookup
-      matchLookup, ?_⟩
-  refine ⟨(finalRow, successor),
-    matchOneInSpace_mem afterLookup _ read successor successorMem finalRow
-      matchSuccessor, ?_⟩
-  simp [finalRow, control, proofRow, lookupRow, successor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons selfMem matchSelf
+    (.cons controlMem matchControl
+    (.cons proofRowMem matchProofRow
+    (.cons lookupRowMem matchLookup
+    (.cons successorMem matchSuccessor (.nil _))))))
 
 /-- Firing the actual emitted active-hypothesis directive produces the exact
 source formula and proof occurrence as an MM2 stack cell. -/
@@ -2971,18 +2863,9 @@ theorem normalHypothesisDirective_fires_stack
         (normalHypothesisPhaseSpace scopeOwner proofOwner proofPosition
           nextProofPosition stackPosition nextStackPosition hypothesis)
         normalHypothesisDirective := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalHypothesisPhaseSpace scopeOwner proofOwner proofPosition
-        nextProofPosition stackPosition nextStackPosition hypothesis)
-      normalHypothesisDirective.atom)
-    normalHypothesisDirective.rule.input).map Prod.fst
-  have rowMember :
-      normalHypothesisSubstitution scopeOwner proofOwner proofPosition
-          nextProofPosition stackPosition nextStackPosition hypothesis ∈ rows := by
-    simpa [rows, normalHypothesisDirective] using
-      normalHypothesisMatchRow_mem scopeOwner proofOwner proofPosition
-        nextProofPosition stackPosition nextStackPosition hypothesis
+  have rowMember :=
+    normalHypothesisMatchRow_mem scopeOwner proofOwner proofPosition
+      nextProofPosition stackPosition nextStackPosition hypothesis
   have stackInstantiates :
       instantiateTemplateAtom?
           (normalHypothesisSubstitution scopeOwner proofOwner proofPosition
@@ -2992,22 +2875,7 @@ theorem normalHypothesisDirective_fires_stack
           proofPosition) := by
     cases hypothesis <;>
       rfl
-  have stagedMember :
-      normalHypothesisStackAtom proofOwner stackPosition hypothesis
-          proofPosition ∈
-        rows.foldl
-          (stageReflectiveSupportSink (.add normalStepStackTemplate)) [] :=
-    reflectiveStage_add_contains_of_row rows
-      (normalHypothesisSubstitution scopeOwner proofOwner proofPosition
-        nextProofPosition stackPosition nextStackPosition hypothesis)
-      normalStepStackTemplate
-      (normalHypothesisStackAtom proofOwner stackPosition hypothesis
-        proofPosition)
-      rowMember stackInstantiates
-  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-    normalHypothesisDirective, normalStepSinks,
-    reflectiveSupportSinkProvider]
-  exact Finset.mem_union_right _ (List.mem_toFinset.mpr stagedMember)
+  exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 3 rfl rfl rowMember stackInstantiates
 
 /-- The canonical active-hypothesis boundary is an actual scheduled step of
 the supplied reflective MM2 GSLT, hence an inhabitant of its OSLF-generated
@@ -3213,21 +3081,10 @@ private theorem normalAssertionStartMatchRow_mem
     simp [normalAssertionStartPatternAtoms, afterProof, finalRow,
       normalAssertionStartSubstitution, header, assertionHeaderRow, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow, {control, proofRow, header}), ?_, rfl⟩
-  simp only [normalAssertionStartDirective, matchInputSpec,
-    normalAssertionStartPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterControl, control),
-    matchOneInSpace_mem [] _ read control controlMem afterControl
-      matchControl, ?_⟩
-  refine ⟨(afterProof, proofRow),
-    matchOneInSpace_mem afterControl _ read proofRow proofRowMem afterProof
-      matchProof, ?_⟩
-  refine ⟨(finalRow, header),
-    matchOneInSpace_mem afterProof _ read header headerMem finalRow
-      matchHeader, ?_⟩
-  simp [finalRow, control, proofRow, header]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons controlMem matchControl
+    (.cons proofRowMem matchProof
+    (.cons headerMem matchHeader (.nil _))))
 
 /-- Firing the actual emitted assertion-entry directive enters the exact
 source assertion and preserves its ordered mandatory-hypothesis count. -/
@@ -3241,38 +3098,18 @@ theorem normalAssertionStartDirective_fires_pop
         (normalAssertionStartPhaseSpace scopeOwner proofOwner proofPosition
           nextProofPosition stackTop assertionPosition assertion)
         normalAssertionStartDirective := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalAssertionStartPhaseSpace scopeOwner proofOwner proofPosition
-        nextProofPosition stackTop assertionPosition assertion)
-      normalAssertionStartDirective.atom)
-    normalAssertionStartDirective.rule.input).map Prod.fst
   let substitution := normalAssertionStartSubstitution scopeOwner proofOwner
     proofPosition nextProofPosition stackTop assertionPosition assertion
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalAssertionStartDirective] using
-      normalAssertionStartMatchRow_mem scopeOwner proofOwner proofPosition
-        nextProofPosition stackTop assertionPosition assertion
+  have rowMember :=
+    normalAssertionStartMatchRow_mem scopeOwner proofOwner proofPosition
+      nextProofPosition stackTop assertionPosition assertion
   have instantiates :
       instantiateTemplateAtom? substitution normalAssertionStartPopTemplate =
         some (normalAssertionPopAtom scopeOwner proofOwner proofPosition
           nextProofPosition assertion stackTop) := by
     cases assertion
     rfl
-  have stagedMember :
-      normalAssertionPopAtom scopeOwner proofOwner proofPosition
-          nextProofPosition assertion stackTop ∈
-        rows.foldl
-          (stageReflectiveSupportSink (.add normalAssertionStartPopTemplate))
-          [] :=
-    reflectiveStage_add_contains_of_row rows substitution
-      normalAssertionStartPopTemplate
-      (normalAssertionPopAtom scopeOwner proofOwner proofPosition
-        nextProofPosition assertion stackTop) rowMember instantiates
-  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-    normalAssertionStartDirective, normalAssertionStartSinks,
-    reflectiveSupportSinkProvider]
-  exact Finset.mem_union_right _ (List.mem_toFinset.mpr stagedMember)
+  exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember instantiates
 
 /-- Assertion entry is an actual scheduled step of the reflective MM2 GSLT,
 hence inhabits the exact target type generated by OSLF; the target retains the
@@ -3435,12 +3272,8 @@ private theorem normalAssertionPopMatchRow_mem
   have readMember (atom : Atom)
       (member : atom ∈ normalAssertionPopPhaseSpace scopeOwner proofOwner
         proofPosition nextProofPosition assertionLabel previousHypothesis
-        hypothesisCursor previousStack stackCursor) : atom ∈ read := by
-    by_cases equal : atom = normalAssertionPopRule
-    · subst atom
-      simp [read, readCopyAtom]
-    · exact Finset.mem_union_left _
-        (Finset.mem_erase.mpr ⟨equal, member⟩)
+        hypothesisCursor previousStack stackCursor) : atom ∈ read :=
+    mem_readCopyAtom_of_mem member
   have selfMem : normalAssertionPopRule ∈ read := by
     apply readMember
     simp [normalAssertionPopPhaseSpace, normalAssertionPopPhaseAtoms]
@@ -3485,26 +3318,11 @@ private theorem normalAssertionPopMatchRow_mem
     simp [normalAssertionPopPatternAtoms, afterHypothesis, afterCurrent,
       finalRow, normalAssertionPopSubstitution, stackSuccessor, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow,
-    {normalAssertionPopRule, current, hypothesisSuccessor, stackSuccessor}),
-    ?_, rfl⟩
-  simp only [normalAssertionPopDirective, matchInputSpec,
-    normalAssertionPopPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterSelf, normalAssertionPopRule),
-    matchOneInSpace_mem [] _ read normalAssertionPopRule selfMem afterSelf
-      matchSelf, ?_⟩
-  refine ⟨(afterCurrent, current),
-    matchOneInSpace_mem afterSelf _ read current currentMem afterCurrent
-      matchCurrent, ?_⟩
-  refine ⟨(afterHypothesis, hypothesisSuccessor),
-    matchOneInSpace_mem afterCurrent _ read hypothesisSuccessor
-      hypothesisSuccessorMem afterHypothesis matchHypothesisSuccessor, ?_⟩
-  refine ⟨(finalRow, stackSuccessor),
-    matchOneInSpace_mem afterHypothesis _ read stackSuccessor
-      stackSuccessorMem finalRow matchStackSuccessor, ?_⟩
-  simp [finalRow, current, hypothesisSuccessor, stackSuccessor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons selfMem matchSelf
+    (.cons currentMem matchCurrent
+    (.cons hypothesisSuccessorMem matchHypothesisSuccessor
+    (.cons stackSuccessorMem matchStackSuccessor (.nil _)))))
 
 /-- One actual pop firing decrements both cursors along the two explicit
 successor relations. -/
@@ -3519,41 +3337,11 @@ theorem normalAssertionPopDirective_fires_previous
           nextProofPosition assertionLabel previousHypothesis hypothesisCursor
           previousStack stackCursor)
         normalAssertionPopDirective := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalAssertionPopPhaseSpace scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel previousHypothesis hypothesisCursor
-        previousStack stackCursor)
-      normalAssertionPopDirective.atom)
-    normalAssertionPopDirective.rule.input).map Prod.fst
-  let substitution := normalAssertionPopSubstitution scopeOwner proofOwner
-    proofPosition nextProofPosition assertionLabel previousHypothesis
-    hypothesisCursor previousStack stackCursor
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalAssertionPopDirective] using
-      normalAssertionPopMatchRow_mem scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel previousHypothesis hypothesisCursor
-        previousStack stackCursor
-  have instantiates :
-      instantiateTemplateAtom? substitution normalAssertionPopPreviousTemplate =
-        some (normalAssertionPopCursorAtom scopeOwner proofOwner proofPosition
-          nextProofPosition assertionLabel previousHypothesis previousStack) := by
-    rfl
-  have stagedMember :
-      normalAssertionPopCursorAtom scopeOwner proofOwner proofPosition
-          nextProofPosition assertionLabel previousHypothesis previousStack ∈
-        rows.foldl
-          (stageReflectiveSupportSink (.add normalAssertionPopPreviousTemplate))
-          [] :=
-    reflectiveStage_add_contains_of_row rows substitution
-      normalAssertionPopPreviousTemplate
-      (normalAssertionPopCursorAtom scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel previousHypothesis previousStack)
-      rowMember instantiates
-  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-    normalAssertionPopDirective, normalAssertionPopSinks,
-    reflectiveSupportSinkProvider]
-  exact Finset.mem_union_right _ (List.mem_toFinset.mpr stagedMember)
+  have rowMember :=
+    normalAssertionPopMatchRow_mem scopeOwner proofOwner proofPosition
+      nextProofPosition assertionLabel previousHypothesis hypothesisCursor
+      previousStack stackCursor
+  exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 /-- One cursor decrement is an actual scheduled reflective-MM2 step and
 therefore inhabits the exact OSLF-generated target type. -/
@@ -3805,17 +3593,9 @@ private theorem normalAssertionBeginMatchRow_mem
     simp [normalAssertionBeginPatternAtoms, afterPop, finalRow,
       normalAssertionBeginSubstitution, header, assertionHeaderRow, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow, {pop, header}), ?_, rfl⟩
-  simp only [normalAssertionBeginDirective, matchInputSpec,
-    normalAssertionBeginPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterPop, pop),
-    matchOneInSpace_mem [] _ read pop popMem afterPop matchPop, ?_⟩
-  refine ⟨(finalRow, header),
-    matchOneInSpace_mem afterPop _ read header headerMem finalRow
-      matchHeader, ?_⟩
-  simp [finalRow, pop, header]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons popMem matchPop
+    (.cons headerMem matchHeader (.nil _)))
 
 /-- The actual begin directive turns the zero cursor into the exact first
 hypothesis bind state. -/
@@ -3830,18 +3610,11 @@ theorem normalAssertionBeginDirective_fires_bind
         (normalAssertionBeginPhaseSpace scopeOwner proofOwner proofPosition
           nextProofPosition stackBase assertionPosition assertion)
         normalAssertionBeginDirective := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalAssertionBeginPhaseSpace scopeOwner proofOwner proofPosition
-        nextProofPosition stackBase assertionPosition assertion)
-      normalAssertionBeginDirective.atom)
-    normalAssertionBeginDirective.rule.input).map Prod.fst
   let substitution := normalAssertionBeginSubstitution scopeOwner proofOwner
     proofPosition nextProofPosition stackBase assertionPosition assertion
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalAssertionBeginDirective] using
-      normalAssertionBeginMatchRow_mem scopeOwner proofOwner proofPosition
-        nextProofPosition stackBase assertionPosition assertion
+  have rowMember :=
+    normalAssertionBeginMatchRow_mem scopeOwner proofOwner proofPosition
+      nextProofPosition stackBase assertionPosition assertion
   have instantiates :
       instantiateTemplateAtom? substitution normalAssertionBeginBindTemplate =
         some (normalAssertionNextBindAtom scopeOwner proofOwner proofPosition
@@ -3849,22 +3622,7 @@ theorem normalAssertionBeginDirective_fires_bind
           stackBase stackBase) := by
     cases assertion
     rfl
-  have stagedMember :
-      normalAssertionNextBindAtom scopeOwner proofOwner proofPosition
-          nextProofPosition assertion.label 0 assertion.hypotheses.length
-          stackBase stackBase ∈
-        rows.foldl
-          (stageReflectiveSupportSink (.add normalAssertionBeginBindTemplate))
-          [] :=
-    reflectiveStage_add_contains_of_row rows substitution
-      normalAssertionBeginBindTemplate
-      (normalAssertionNextBindAtom scopeOwner proofOwner proofPosition
-        nextProofPosition assertion.label 0 assertion.hypotheses.length
-        stackBase stackBase) rowMember instantiates
-  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-    normalAssertionBeginDirective, normalAssertionBeginSinks,
-    reflectiveSupportSinkProvider]
-  exact Finset.mem_union_right _ (List.mem_toFinset.mpr stagedMember)
+  exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember instantiates
 
 /-- The transition from the zero pop cursor to the first ordered bind state is
 an actual scheduled reflective-MM2 step inhabiting its OSLF-generated target
@@ -4130,12 +3888,8 @@ private theorem normalAssertionFloatingMatchRow_mem
           nextProofPosition assertionLabel hypothesisPosition
           nextHypothesisPosition hypothesisEnd stackPosition nextStackPosition
           stackBase hypothesisLabel typecode variableName actualBody
-          childOccurrence) : atom ∈ read := by
-    by_cases equal : atom = normalAssertionFloatingRule
-    · subst atom
-      simp [read, readCopyAtom]
-    · exact Finset.mem_union_left _
-        (Finset.mem_erase.mpr ⟨equal, member⟩)
+          childOccurrence) : atom ∈ read :=
+    mem_readCopyAtom_of_mem member
   have selfMem : normalAssertionFloatingRule ∈ read := by
     apply readMember
     simp [normalAssertionFloatingPhaseSpace,
@@ -4205,33 +3959,13 @@ private theorem normalAssertionFloatingMatchRow_mem
       afterHypothesisSuccessor, afterHypothesis, finalRow,
       normalAssertionFloatingSubstitution, stack, formulaAtom, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow,
-    {normalAssertionFloatingRule, bind, hypothesisRow,
-      hypothesisSuccessor, stackSuccessor, stack}), ?_, rfl⟩
-  simp only [normalAssertionFloatingDirective, matchInputSpec,
-    normalAssertionFloatingPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterSelf, normalAssertionFloatingRule),
-    matchOneInSpace_mem [] _ read normalAssertionFloatingRule selfMem
-      afterSelf matchSelf, ?_⟩
-  refine ⟨(afterBind, bind),
-    matchOneInSpace_mem afterSelf _ read bind bindMem afterBind matchBind, ?_⟩
-  refine ⟨(afterHypothesis, hypothesisRow),
-    matchOneInSpace_mem afterBind _ read hypothesisRow hypothesisRowMem
-      afterHypothesis matchHypothesis, ?_⟩
-  refine ⟨(afterHypothesisSuccessor, hypothesisSuccessor),
-    matchOneInSpace_mem afterHypothesis _ read hypothesisSuccessor
-      hypothesisSuccessorMem afterHypothesisSuccessor
-      matchHypothesisSuccessor, ?_⟩
-  refine ⟨(afterStackSuccessor, stackSuccessor),
-    matchOneInSpace_mem afterHypothesisSuccessor _ read stackSuccessor
-      stackSuccessorMem afterStackSuccessor matchStackSuccessor, ?_⟩
-  refine ⟨(finalRow, stack),
-    matchOneInSpace_mem afterStackSuccessor _ read stack stackMem finalRow
-      matchStack, ?_⟩
-  simp [finalRow, bind, hypothesisRow, hypothesisSuccessor, stackSuccessor,
-    stack]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons selfMem matchSelf
+    (.cons bindMem matchBind
+    (.cons hypothesisRowMem matchHypothesis
+    (.cons hypothesisSuccessorMem matchHypothesisSuccessor
+    (.cons stackSuccessorMem matchStackSuccessor
+    (.cons stackMem matchStack (.nil _)))))))
 
 /-- Firing the actual emitted floating-hypothesis directive retains both the
 finite-substitution binding and the ordered child occurrence. -/
@@ -4256,94 +3990,19 @@ theorem normalAssertionFloatingDirective_fires_evidence
             actualBody ∈ target ∧
         normalAssertionChildAtom proofOwner proofPosition hypothesisPosition
             childOccurrence ∈ target := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalAssertionFloatingPhaseSpace scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel hypothesisPosition
-        nextHypothesisPosition hypothesisEnd stackPosition nextStackPosition
-        stackBase hypothesisLabel typecode variableName actualBody
-        childOccurrence)
-      normalAssertionFloatingDirective.atom)
-    normalAssertionFloatingDirective.rule.input).map Prod.fst
-  let substitution := normalAssertionFloatingSubstitution scopeOwner proofOwner
-    proofPosition nextProofPosition assertionLabel hypothesisPosition
-    nextHypothesisPosition hypothesisEnd stackPosition nextStackPosition
-    stackBase hypothesisLabel typecode variableName actualBody childOccurrence
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalAssertionFloatingDirective] using
-      normalAssertionFloatingMatchRow_mem scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel hypothesisPosition
-        nextHypothesisPosition hypothesisEnd stackPosition nextStackPosition
-        stackBase hypothesisLabel typecode variableName actualBody
-        childOccurrence
-  have substitutionInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionFloatingSubstitutionTemplate =
-        some (normalAssertionSubstitutionAtom proofOwner proofPosition
-          variableName actualBody) := by
-    rfl
-  have nextBindInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionFloatingNextBindTemplate =
-        some (normalAssertionNextBindAtom scopeOwner proofOwner proofPosition
-          nextProofPosition assertionLabel nextHypothesisPosition
-          hypothesisEnd nextStackPosition stackBase) := by
-    rfl
-  have childInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionFloatingChildTemplate =
-        some (normalAssertionChildAtom proofOwner proofPosition
-          hypothesisPosition childOccurrence) := by
-    rfl
-  have substitutionStaged :
-      normalAssertionSubstitutionAtom proofOwner proofPosition variableName
-          actualBody ∈
-        rows.foldl
-          (stageReflectiveSupportSink
-            (.add normalAssertionFloatingSubstitutionTemplate)) [] :=
-    reflectiveStage_add_contains_of_row rows substitution
-      normalAssertionFloatingSubstitutionTemplate
-      (normalAssertionSubstitutionAtom proofOwner proofPosition variableName
-      actualBody) rowMember substitutionInstantiates
-  have nextBindStaged :
-      normalAssertionNextBindAtom scopeOwner proofOwner proofPosition
-          nextProofPosition assertionLabel nextHypothesisPosition
-          hypothesisEnd nextStackPosition stackBase ∈
-        rows.foldl
-          (stageReflectiveSupportSink
-            (.add normalAssertionFloatingNextBindTemplate)) [] :=
-    reflectiveStage_add_contains_of_row rows substitution
-      normalAssertionFloatingNextBindTemplate
-      (normalAssertionNextBindAtom scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel nextHypothesisPosition hypothesisEnd
-        nextStackPosition stackBase) rowMember nextBindInstantiates
-  have childStaged :
-      normalAssertionChildAtom proofOwner proofPosition hypothesisPosition
-          childOccurrence ∈
-        rows.foldl
-          (stageReflectiveSupportSink
-            (.add normalAssertionFloatingChildTemplate)) [] :=
-    reflectiveStage_add_contains_of_row rows substitution
-      normalAssertionFloatingChildTemplate
-      (normalAssertionChildAtom proofOwner proofPosition hypothesisPosition
-        childOccurrence) rowMember childInstantiates
+  have rowMember :=
+    normalAssertionFloatingMatchRow_mem scopeOwner proofOwner proofPosition
+      nextProofPosition assertionLabel hypothesisPosition
+      nextHypothesisPosition hypothesisEnd stackPosition nextStackPosition
+      stackBase hypothesisLabel typecode variableName actualBody
+      childOccurrence
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalAssertionFloatingDirective, normalAssertionFloatingSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_left _
-        (Finset.mem_union_right _ (List.mem_toFinset.mpr nextBindStaged)))
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 3 rfl rfl rowMember rfl
+
   · constructor
-    · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-        normalAssertionFloatingDirective, normalAssertionFloatingSinks,
-        reflectiveSupportSinkProvider]
-      exact Finset.mem_union_left _
-        (Finset.mem_union_right _ (List.mem_toFinset.mpr substitutionStaged))
-    · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-        normalAssertionFloatingDirective, normalAssertionFloatingSinks,
-        reflectiveSupportSinkProvider]
-      exact Finset.mem_union_right _ (List.mem_toFinset.mpr childStaged)
+    · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 4 rfl rfl rowMember rfl
+
+    · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 5 rfl rfl rowMember rfl
 
 /-- The floating-hypothesis transition is an actual scheduled reflective-MM2
 step inhabiting its exact OSLF-generated target type; the native observation
@@ -4639,12 +4298,8 @@ private theorem normalAssertionEssentialMatchRow_mem
           nextProofPosition assertionLabel hypothesisPosition
           nextHypothesisPosition hypothesisEnd stackPosition
           nextStackPosition stackBase hypothesisLabel typecode sourceBody
-          actualBody childOccurrence) : atom ∈ read := by
-    by_cases equal : atom = normalAssertionEssentialRule
-    · subst atom
-      simp [read, readCopyAtom]
-    · exact Finset.mem_union_left _
-        (Finset.mem_erase.mpr ⟨equal, member⟩)
+          actualBody childOccurrence) : atom ∈ read :=
+    mem_readCopyAtom_of_mem member
   have bindMem : bind ∈ read := by
     apply readMember
     simp [bind, normalAssertionEssentialPhaseSpace,
@@ -4700,30 +4355,12 @@ private theorem normalAssertionEssentialMatchRow_mem
       afterHypothesisSuccessor, afterHypothesis, finalRow,
       normalAssertionEssentialSubstitution, stack, formulaAtom, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow,
-    {bind, hypothesisRow, hypothesisSuccessor, stackSuccessor, stack}),
-    ?_, rfl⟩
-  simp only [normalAssertionEssentialDirective, matchInputSpec,
-    normalAssertionEssentialPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterBind, bind),
-    matchOneInSpace_mem [] _ read bind bindMem afterBind matchBind, ?_⟩
-  refine ⟨(afterHypothesis, hypothesisRow),
-    matchOneInSpace_mem afterBind _ read hypothesisRow hypothesisRowMem
-      afterHypothesis matchHypothesis, ?_⟩
-  refine ⟨(afterHypothesisSuccessor, hypothesisSuccessor),
-    matchOneInSpace_mem afterHypothesis _ read hypothesisSuccessor
-      hypothesisSuccessorMem afterHypothesisSuccessor
-      matchHypothesisSuccessor, ?_⟩
-  refine ⟨(afterStackSuccessor, stackSuccessor),
-    matchOneInSpace_mem afterHypothesisSuccessor _ read stackSuccessor
-      stackSuccessorMem afterStackSuccessor matchStackSuccessor, ?_⟩
-  refine ⟨(finalRow, stack),
-    matchOneInSpace_mem afterStackSuccessor _ read stack stackMem finalRow
-      matchStack, ?_⟩
-  simp [finalRow, bind, hypothesisRow, hypothesisSuccessor, stackSuccessor,
-    stack]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons bindMem matchBind
+    (.cons hypothesisRowMem matchHypothesis
+    (.cons hypothesisSuccessorMem matchHypothesisSuccessor
+    (.cons stackSuccessorMem matchStackSuccessor
+    (.cons stackMem matchStack (.nil _))))))
 
 /-- Firing the actual emitted essential directive starts exactly the body
 match whose continuation retains the ordered child occurrence. -/
@@ -4746,53 +4383,13 @@ theorem normalAssertionEssentialDirective_fires_match
           nextStackPosition stackBase hypothesisLabel typecode sourceBody
           actualBody childOccurrence)
         normalAssertionEssentialDirective := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalAssertionEssentialPhaseSpace scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel hypothesisPosition
-        nextHypothesisPosition hypothesisEnd stackPosition nextStackPosition
-        stackBase hypothesisLabel typecode sourceBody actualBody
-        childOccurrence)
-      normalAssertionEssentialDirective.atom)
-    normalAssertionEssentialDirective.rule.input).map Prod.fst
-  let substitution := normalAssertionEssentialSubstitution scopeOwner
-    proofOwner proofPosition nextProofPosition assertionLabel
-    hypothesisPosition nextHypothesisPosition hypothesisEnd stackPosition
-    nextStackPosition stackBase hypothesisLabel typecode sourceBody actualBody
-    childOccurrence
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalAssertionEssentialDirective] using
-      normalAssertionEssentialMatchRow_mem scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel hypothesisPosition
-        nextHypothesisPosition hypothesisEnd stackPosition nextStackPosition
-        stackBase hypothesisLabel typecode sourceBody actualBody
-        childOccurrence
-  have instantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionEssentialMatchTemplate =
-        some (normalAssertionEssentialMatchAtom scopeOwner proofOwner
-          proofPosition nextProofPosition assertionLabel
-          nextHypothesisPosition hypothesisEnd nextStackPosition stackBase
-          hypothesisPosition childOccurrence sourceBody actualBody) := by
-    rfl
-  have stagedMember :
-      normalAssertionEssentialMatchAtom scopeOwner proofOwner proofPosition
-          nextProofPosition assertionLabel nextHypothesisPosition
-          hypothesisEnd nextStackPosition stackBase hypothesisPosition
-          childOccurrence sourceBody actualBody ∈
-        rows.foldl
-          (stageReflectiveSupportSink
-            (.add normalAssertionEssentialMatchTemplate)) [] :=
-    reflectiveStage_add_contains_of_row rows substitution
-      normalAssertionEssentialMatchTemplate
-      (normalAssertionEssentialMatchAtom scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel nextHypothesisPosition hypothesisEnd
-        nextStackPosition stackBase hypothesisPosition childOccurrence
-        sourceBody actualBody) rowMember instantiates
-  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-    normalAssertionEssentialDirective, normalAssertionEssentialSinks,
-    reflectiveSupportSinkProvider]
-  exact Finset.mem_union_right _ (List.mem_toFinset.mpr stagedMember)
+  have rowMember :=
+    normalAssertionEssentialMatchRow_mem scopeOwner proofOwner proofPosition
+      nextProofPosition assertionLabel hypothesisPosition
+      nextHypothesisPosition hypothesisEnd stackPosition nextStackPosition
+      stackBase hypothesisLabel typecode sourceBody actualBody
+      childOccurrence
+  exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 /-- The essential-hypothesis transition is an actual scheduled reflective-MM2
 step inhabiting its exact OSLF-generated target type.  Its target observation
@@ -4978,15 +4575,8 @@ private theorem normalAssertionEssentialCompleteMatchRow_mem
       normalAssertionEssentialContinuationAtom, substitution,
       normalAssertionEssentialCompleteSubstitution, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {continuation}), ?_, rfl⟩
-  simp only [normalAssertionEssentialCompleteDirective, matchInputSpec,
-    normalAssertionEssentialCompletePatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, continuation),
-    matchOneInSpace_mem [] _ read continuation continuationMem substitution
-      matchContinuation, ?_⟩
-  simp [substitution, continuation]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons continuationMem matchContinuation (.nil _))
 
 /-- Completing the actual essential directive advances the ordered fold,
 retains the exact child occurrence, and reloads normal dispatch. -/
@@ -5007,71 +4597,18 @@ theorem normalAssertionEssentialCompleteDirective_fires_evidence
       normalAssertionChildAtom proofOwner proofPosition hypothesisPosition
             childOccurrence ∈ result ∧
         normalAssertionReloadAtom proofOwner ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalAssertionEssentialCompletePhaseSpace scopeOwner proofOwner
-        proofPosition nextProofPosition assertionLabel nextHypothesisPosition
-        hypothesisEnd nextStackPosition stackBase hypothesisPosition
-        childOccurrence)
-      normalAssertionEssentialCompleteDirective.atom)
-    normalAssertionEssentialCompleteDirective.rule.input).map Prod.fst
-  let substitution := normalAssertionEssentialCompleteSubstitution scopeOwner
-    proofOwner proofPosition nextProofPosition assertionLabel
-    nextHypothesisPosition hypothesisEnd nextStackPosition stackBase
-    hypothesisPosition childOccurrence
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalAssertionEssentialCompleteDirective] using
-      normalAssertionEssentialCompleteMatchRow_mem scopeOwner proofOwner
-        proofPosition nextProofPosition assertionLabel
-        nextHypothesisPosition hypothesisEnd nextStackPosition stackBase
-        hypothesisPosition childOccurrence
-  have nextInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionEssentialCompleteNextBindTemplate =
-        some (normalAssertionNextBindAtom scopeOwner proofOwner proofPosition
-          nextProofPosition assertionLabel nextHypothesisPosition
-          hypothesisEnd nextStackPosition stackBase) := by
-    rfl
-  have childInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionEssentialCompleteChildTemplate =
-        some (normalAssertionChildAtom proofOwner proofPosition
-          hypothesisPosition childOccurrence) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionEssentialCompleteReloadTemplate =
-        some (normalAssertionReloadAtom proofOwner) := by
-    rfl
-  have nextStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalAssertionEssentialCompleteNextBindTemplate
-    (normalAssertionNextBindAtom scopeOwner proofOwner proofPosition
-      nextProofPosition assertionLabel nextHypothesisPosition hypothesisEnd
-      nextStackPosition stackBase) rowMember nextInstantiates
-  have childStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalAssertionEssentialCompleteChildTemplate
-    (normalAssertionChildAtom proofOwner proofPosition hypothesisPosition
-      childOccurrence) rowMember childInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalAssertionEssentialCompleteReloadTemplate
-    (normalAssertionReloadAtom proofOwner) rowMember reloadInstantiates
+  have rowMember :=
+    normalAssertionEssentialCompleteMatchRow_mem scopeOwner proofOwner
+      proofPosition nextProofPosition assertionLabel
+      nextHypothesisPosition hypothesisEnd nextStackPosition stackBase
+      hypothesisPosition childOccurrence
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalAssertionEssentialCompleteDirective,
-      normalAssertionEssentialCompleteSinks, reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_left _
-        (Finset.mem_union_right _ (List.mem_toFinset.mpr nextStaged)))
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
   · constructor
-    · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-        normalAssertionEssentialCompleteDirective,
-        normalAssertionEssentialCompleteSinks, reflectiveSupportSinkProvider]
-      exact Finset.mem_union_left _
-        (Finset.mem_union_right _ (List.mem_toFinset.mpr childStaged))
-    · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-        normalAssertionEssentialCompleteDirective,
-        normalAssertionEssentialCompleteSinks, reflectiveSupportSinkProvider]
-      exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+    · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
+
+    · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 3 rfl rfl rowMember rfl
 
 /-- Essential completion is an actual scheduled reflective-MM2 step
 inhabiting its exact OSLF-generated target type. -/
@@ -5209,15 +4746,8 @@ private theorem normalBodyMatchConstMatchRow_mem
       substitution, normalBodyMatchConstSubstitution, runtimeSymAtom,
       listAtom, consTag, constTag, matchAtom, matchAtom.matchAtomList,
       Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {current}), ?_, rfl⟩
-  simp only [normalBodyMatchConstDirective, matchInputSpec,
-    normalBodyMatchConstPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, current),
-    matchOneInSpace_mem [] _ read current currentMem substitution
-      matchCurrent, ?_⟩
-  simp [substitution, current]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons currentMem matchCurrent (.nil _))
 
 /-- The actual emitted constant rule preserves one equal leading constant
 and continues on the exact source and actual tails. -/
@@ -5232,45 +4762,13 @@ theorem normalBodyMatchConstDirective_fires_tail
     normalBodyMatchAtom proofOwner proofPosition sourceTail actualTail
           continuation ∈ result ∧
       normalBodyMatchReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyMatchConstPhaseSpace proofOwner continuation proofPosition
-        constantName sourceTail actualTail)
-      normalBodyMatchConstDirective.atom)
-    normalBodyMatchConstDirective.rule.input).map Prod.fst
-  let substitution := normalBodyMatchConstSubstitution proofOwner
-    continuation proofPosition constantName sourceTail actualTail
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyMatchConstDirective] using
-      normalBodyMatchConstMatchRow_mem proofOwner continuation proofPosition
-        constantName sourceTail actualTail
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution normalBodyMatchConstTailTemplate =
-        some (normalBodyMatchAtom proofOwner proofPosition sourceTail
-          actualTail continuation) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalBodyMatchReloadTemplate =
-        some (normalBodyMatchReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyMatchConstTailTemplate
-    (normalBodyMatchAtom proofOwner proofPosition sourceTail actualTail
-      continuation) rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyMatchReloadTemplate
-    (normalBodyMatchReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyMatchConstMatchRow_mem proofOwner continuation proofPosition
+      constantName sourceTail actualTail
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyMatchConstDirective, normalBodyMatchConstSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyMatchConstDirective, normalBodyMatchConstSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 /-- Matching one equal leading constant is an actual scheduled
 reflective-MM2 step inhabiting its exact OSLF-generated target type. -/
@@ -5421,18 +4919,9 @@ private theorem normalBodyMatchVariableMatchRow_mem
       normalBodyMatchVariableAfterCurrent, finalRow,
       normalBodyMatchVariableSubstitution, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow, {current, substitutionRow}), ?_, rfl⟩
-  simp only [normalBodyMatchVariableDirective, matchInputSpec,
-    normalBodyMatchVariablePatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterCurrent, current),
-    matchOneInSpace_mem [] _ read current currentMem afterCurrent
-      matchCurrent, ?_⟩
-  refine ⟨(finalRow, substitutionRow),
-    matchOneInSpace_mem afterCurrent _ read substitutionRow substitutionMem
-      finalRow matchSubstitution, ?_⟩
-  simp [finalRow, current, substitutionRow]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons currentMem matchCurrent
+    (.cons substitutionMem matchSubstitution (.nil _)))
 
 /-- The emitted variable rule consumes an exact source-derived substitution
 row and starts comparison with that entire replacement body. -/
@@ -5447,46 +4936,13 @@ theorem normalBodyMatchVariableDirective_fires_prefix
     normalBodyPrefixAtom proofOwner proofPosition replacementBody actualBody
           sourceTail continuation ∈ result ∧
       normalBodyMatchReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyMatchVariablePhaseSpace proofOwner continuation proofPosition
-        variableName replacementBody sourceTail actualBody)
-      normalBodyMatchVariableDirective.atom)
-    normalBodyMatchVariableDirective.rule.input).map Prod.fst
-  let substitution := normalBodyMatchVariableSubstitution proofOwner
-    continuation proofPosition variableName replacementBody sourceTail
-    actualBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyMatchVariableDirective] using
-      normalBodyMatchVariableMatchRow_mem proofOwner continuation proofPosition
-        variableName replacementBody sourceTail actualBody
-  have prefixInstantiates :
-      instantiateTemplateAtom? substitution normalBodyMatchVariablePrefixTemplate =
-        some (normalBodyPrefixAtom proofOwner proofPosition replacementBody
-          actualBody sourceTail continuation) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalBodyMatchVariableReloadTemplate =
-        some (normalBodyMatchReloadAtom proofOwner proofPosition) := by
-    rfl
-  have prefixStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyMatchVariablePrefixTemplate
-    (normalBodyPrefixAtom proofOwner proofPosition replacementBody actualBody
-      sourceTail continuation) rowMember prefixInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyMatchVariableReloadTemplate
-    (normalBodyMatchReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyMatchVariableMatchRow_mem proofOwner continuation proofPosition
+      variableName replacementBody sourceTail actualBody
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyMatchVariableDirective, normalBodyMatchVariableSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr prefixStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyMatchVariableDirective, normalBodyMatchVariableSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 /-- Expanding one substituted variable is an actual scheduled reflective-MM2
 step inhabiting its exact OSLF-generated target type. -/
@@ -5581,15 +5037,8 @@ private theorem normalBodyPrefixNilMatchRow_mem
       normalBodyPrefixNilPatternAtoms, current, normalBodyPrefixAtom,
       substitution, normalBodyPrefixNilSubstitution, listAtom, nilTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {current}), ?_, rfl⟩
-  simp only [normalBodyPrefixNilDirective, matchInputSpec,
-    normalBodyPrefixNilPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, current),
-    matchOneInSpace_mem [] _ read current currentMem substitution
-      matchCurrent, ?_⟩
-  simp [substitution, current]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons currentMem matchCurrent (.nil _))
 
 /-- Empty replacement prefixes resume the outer source-body match without
 changing either remaining tail. -/
@@ -5603,45 +5052,13 @@ theorem normalBodyPrefixNilDirective_fires_match
     normalBodyMatchAtom proofOwner proofPosition sourceTail actualBody
           continuation ∈ result ∧
       normalBodyMatchReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyPrefixNilPhaseSpace proofOwner continuation proofPosition
-        sourceTail actualBody)
-      normalBodyPrefixNilDirective.atom)
-    normalBodyPrefixNilDirective.rule.input).map Prod.fst
-  let substitution := normalBodyPrefixNilSubstitution proofOwner continuation
-    proofPosition sourceTail actualBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyPrefixNilDirective] using
-      normalBodyPrefixNilMatchRow_mem proofOwner continuation proofPosition
-        sourceTail actualBody
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution normalBodyPrefixNilTailTemplate =
-        some (normalBodyMatchAtom proofOwner proofPosition sourceTail actualBody
-          continuation) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalBodyPrefixNilReloadTemplate =
-        some (normalBodyMatchReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyPrefixNilTailTemplate
-    (normalBodyMatchAtom proofOwner proofPosition sourceTail actualBody
-      continuation) rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyPrefixNilReloadTemplate
-    (normalBodyMatchReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyPrefixNilMatchRow_mem proofOwner continuation proofPosition
+      sourceTail actualBody
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyPrefixNilDirective, normalBodyPrefixNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyPrefixNilDirective, normalBodyPrefixNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 /-- Exhausting a replacement prefix is an actual scheduled reflective-MM2
 step inhabiting its exact OSLF-generated target type. -/
@@ -5741,15 +5158,8 @@ private theorem normalBodyPrefixConsMatchRow_mem
       normalBodyPrefixConsPatternAtoms, current, normalBodyPrefixAtom,
       substitution, normalBodyPrefixConsSubstitution, listAtom, consTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {current}), ?_, rfl⟩
-  simp only [normalBodyPrefixConsDirective, matchInputSpec,
-    normalBodyPrefixConsPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, current),
-    matchOneInSpace_mem [] _ read current currentMem substitution
-      matchCurrent, ?_⟩
-  simp [substitution, current]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons currentMem matchCurrent (.nil _))
 
 /-- Equal leading symbols in a replacement and actual body are consumed by
 the emitted prefix rule, retaining all three exact tails. -/
@@ -5764,45 +5174,13 @@ theorem normalBodyPrefixConsDirective_fires_tail
     normalBodyPrefixAtom proofOwner proofPosition replacementTail actualTail
           sourceTail continuation ∈ result ∧
       normalBodyMatchReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyPrefixConsPhaseSpace proofOwner continuation proofPosition
-        replacementSymbol replacementTail actualTail sourceTail)
-      normalBodyPrefixConsDirective.atom)
-    normalBodyPrefixConsDirective.rule.input).map Prod.fst
-  let substitution := normalBodyPrefixConsSubstitution proofOwner continuation
-    proofPosition replacementSymbol replacementTail actualTail sourceTail
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyPrefixConsDirective] using
-      normalBodyPrefixConsMatchRow_mem proofOwner continuation proofPosition
-        replacementSymbol replacementTail actualTail sourceTail
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution normalBodyPrefixConsTailTemplate =
-        some (normalBodyPrefixAtom proofOwner proofPosition replacementTail
-          actualTail sourceTail continuation) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalBodyPrefixConsReloadTemplate =
-        some (normalBodyMatchReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyPrefixConsTailTemplate
-    (normalBodyPrefixAtom proofOwner proofPosition replacementTail actualTail
-      sourceTail continuation) rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyPrefixConsReloadTemplate
-    (normalBodyMatchReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyPrefixConsMatchRow_mem proofOwner continuation proofPosition
+      replacementSymbol replacementTail actualTail sourceTail
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyPrefixConsDirective, normalBodyPrefixConsSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyPrefixConsDirective, normalBodyPrefixConsSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 /-- Consuming one equal replacement symbol is an actual scheduled
 reflective-MM2 step inhabiting its exact OSLF-generated target type. -/
@@ -5902,15 +5280,8 @@ private theorem normalBodyMatchNilMatchRow_mem
       normalBodyMatchNilPatternAtoms, current, normalBodyMatchAtom,
       substitution, normalBodyMatchNilSubstitution, listAtom, nilTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {current}), ?_, rfl⟩
-  simp only [normalBodyMatchNilDirective, matchInputSpec,
-    normalBodyMatchNilPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, current),
-    matchOneInSpace_mem [] _ read current currentMem substitution
-      matchCurrent, ?_⟩
-  simp [substitution, current]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons currentMem matchCurrent (.nil _))
 
 /-- Exhausting both bodies emits the exact authored continuation and keeps
 the generic matcher available for the next essential hypothesis. -/
@@ -5921,41 +5292,12 @@ theorem normalBodyMatchNilDirective_fires_continuation
       normalBodyMatchNilDirective
     continuation ∈ result ∧
       normalBodyMatchReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyMatchNilPhaseSpace proofOwner continuation proofPosition)
-      normalBodyMatchNilDirective.atom)
-    normalBodyMatchNilDirective.rule.input).map Prod.fst
-  let substitution := normalBodyMatchNilSubstitution proofOwner continuation
-    proofPosition
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyMatchNilDirective] using
-      normalBodyMatchNilMatchRow_mem proofOwner continuation proofPosition
-  have continuationInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyMatchNilContinuationTemplate = some continuation := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalBodyMatchNilReloadTemplate =
-        some (normalBodyMatchReloadAtom proofOwner proofPosition) := by
-    rfl
-  have continuationStaged := reflectiveStage_add_contains_of_row rows
-    substitution normalBodyMatchNilContinuationTemplate continuation rowMember
-    continuationInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyMatchNilReloadTemplate
-    (normalBodyMatchReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyMatchNilMatchRow_mem proofOwner continuation proofPosition
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyMatchNilDirective, normalBodyMatchNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr continuationStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyMatchNilDirective, normalBodyMatchNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 /-- Finishing a complete substituted body is an actual scheduled
 reflective-MM2 step inhabiting its exact OSLF-generated target type. -/
@@ -6090,23 +5432,12 @@ private theorem normalAcceptMatchRow_mem
           stack = some finalRow := by
     simp [afterProof, finalRow, normalAcceptSubstitution, stack, matchAtom,
       matchAtom.matchAtomList, Subst.lookup, matchNatZero]
-  rw [List.mem_map]
-  refine ⟨(finalRow, {control, proofEnd, proof, successor, stack}), ?_, rfl⟩
-  simp only [normalAcceptDirective, matchInputSpec, normalAcceptPatternAtoms,
-    mkPattern, matchPattern, matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterControl, control),
-    matchOneInSpace_mem [] _ read control controlMem afterControl matchControl, ?_⟩
-  refine ⟨(afterControl, proofEnd),
-    matchOneInSpace_mem afterControl _ read proofEnd proofEndMem afterControl
-      matchProofEnd, ?_⟩
-  refine ⟨(afterProof, proof),
-    matchOneInSpace_mem afterControl _ read proof proofMem afterProof matchProof, ?_⟩
-  refine ⟨(afterProof, successor),
-    matchOneInSpace_mem afterProof _ read successor successorMem afterProof
-      matchSuccessor, ?_⟩
-  refine ⟨(finalRow, stack),
-    matchOneInSpace_mem afterProof _ read stack stackMem finalRow matchStack, ?_⟩
-  simp [finalRow, control, proofEnd, proof, successor, stack]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons controlMem matchControl
+    (.cons proofEndMem matchProofEnd
+    (.cons proofMem matchProof
+    (.cons successorMem matchSuccessor
+    (.cons stackMem matchStack (.nil _))))))
 
 /-- The actual reflective-MM2 firing of the emitted acceptance directive adds
 the exact terminal observation.  This is an operational statement about the
@@ -6119,34 +5450,10 @@ theorem normalAcceptDirective_fires_terminal
         (normalAcceptPhaseSpace scopeOwner proofOwner theoremLabel expected
           occurrence endPosition)
         normalAcceptDirective := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalAcceptPhaseSpace scopeOwner proofOwner theoremLabel expected
-        occurrence endPosition)
-      normalAcceptDirective.atom)
-    normalAcceptDirective.rule.input).map Prod.fst
-  have rowMember :
-      normalAcceptSubstitution scopeOwner proofOwner (natAtom endPosition)
-          (natAtom 1) theoremLabel expected occurrence ∈ rows := by
-    simpa [rows, normalAcceptDirective] using
-      normalAcceptMatchRow_mem scopeOwner proofOwner theoremLabel expected
-        occurrence endPosition
-  have stagedMember :
-      normalAcceptedAtom scopeOwner proofOwner theoremLabel expected occurrence ∈
-        rows.foldl
-          (stageReflectiveSupportSink (.add normalAcceptedTemplate)) [] :=
-    reflectiveStage_add_contains_of_row rows
-      (normalAcceptSubstitution scopeOwner proofOwner (natAtom endPosition)
-        (natAtom 1) theoremLabel expected occurrence)
-      normalAcceptedTemplate
-      (normalAcceptedAtom scopeOwner proofOwner theoremLabel expected occurrence)
-      rowMember
-      (normalAcceptedTemplate_instantiates scopeOwner proofOwner
-        (natAtom endPosition) (natAtom 1) theoremLabel expected occurrence)
-  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-    normalAcceptDirective, normalAcceptSinks,
-    reflectiveSupportSinkProvider]
-  exact Finset.mem_union_right _ (List.mem_toFinset.mpr stagedMember)
+  have rowMember :=
+    normalAcceptMatchRow_mem scopeOwner proofOwner theoremLabel expected
+      occurrence endPosition
+  exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember (normalAcceptedTemplate_instantiates scopeOwner proofOwner (natAtom endPosition) (natAtom 1) theoremLabel expected occurrence)
 
 /-- Terminal acceptance is an actual scheduled reflective-MM2 step inhabiting
 its exact OSLF-generated target type and producing the declared observation. -/
@@ -6460,22 +5767,11 @@ private theorem normalAssertionFinishMatchRow_mem
     simp [normalAssertionFinishPatternAtoms, successor, afterDV, afterResult,
       afterBind, finalRow, normalAssertionFinishSubstitution, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow, {bind, resultRow, dvHeader, successor}), ?_, rfl⟩
-  simp only [normalAssertionFinishDirective, matchInputSpec,
-    normalAssertionFinishPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterBind, bind),
-    matchOneInSpace_mem [] _ read bind bindMem afterBind matchBind, ?_⟩
-  refine ⟨(afterResult, resultRow),
-    matchOneInSpace_mem afterBind _ read resultRow resultMem afterResult
-      matchResult, ?_⟩
-  refine ⟨(afterDV, dvHeader),
-    matchOneInSpace_mem afterResult _ read dvHeader dvMem afterDV matchDV, ?_⟩
-  refine ⟨(finalRow, successor),
-    matchOneInSpace_mem afterDV _ read successor successorMem finalRow
-      matchSuccessor, ?_⟩
-  simp [finalRow, bind, resultRow, dvHeader, successor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons bindMem matchBind
+    (.cons resultMem matchResult
+    (.cons dvMem matchDV
+    (.cons successorMem matchSuccessor (.nil _)))))
 
 theorem normalAssertionFinishDirective_fires_dv_entry
     (scopeOwner proofOwner : Atom)
@@ -6493,54 +5789,14 @@ theorem normalAssertionFinishDirective_fires_dv_entry
           dvEnd sourceBody context ∈ result ∧
       normalDVReloadAtom proofOwner proofPosition ∈ result := by
   dsimp only
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalAssertionFinishPhaseSpace scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel hypothesisEnd stackEnd stackBase
-        resultTypecode sourceBody dvEnd nextTop)
-      normalAssertionFinishDirective.atom)
-    normalAssertionFinishDirective.rule.input).map Prod.fst
-  let substitution := normalAssertionFinishSubstitution scopeOwner proofOwner
-    proofPosition nextProofPosition assertionLabel hypothesisEnd stackEnd
-    stackBase resultTypecode sourceBody dvEnd nextTop
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalAssertionFinishDirective] using
-      normalAssertionFinishMatchRow_mem scopeOwner proofOwner proofPosition
-        nextProofPosition assertionLabel hypothesisEnd stackEnd stackBase
-        resultTypecode sourceBody dvEnd nextTop
-  have nextInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionFinishNextPairTemplate =
-        some (normalDVNextPairAtom scopeOwner proofOwner proofPosition
-          assertionLabel 0 dvEnd sourceBody
-          (normalAssertionResultContextAtom scopeOwner nextProofPosition
-            assertionLabel resultTypecode stackBase nextTop)) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionFinishReloadTemplate =
-        some (normalDVReloadAtom proofOwner proofPosition) := by
-    rfl
-  have nextStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalAssertionFinishNextPairTemplate
-    (normalDVNextPairAtom scopeOwner proofOwner proofPosition assertionLabel 0
-      dvEnd sourceBody
-      (normalAssertionResultContextAtom scopeOwner nextProofPosition
-        assertionLabel resultTypecode stackBase nextTop))
-    rowMember nextInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalAssertionFinishReloadTemplate
-    (normalDVReloadAtom proofOwner proofPosition) rowMember reloadInstantiates
+  have rowMember :=
+    normalAssertionFinishMatchRow_mem scopeOwner proofOwner proofPosition
+      nextProofPosition assertionLabel hypothesisEnd stackEnd stackBase
+      resultTypecode sourceBody dvEnd nextTop
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalAssertionFinishDirective, normalAssertionFinishSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr nextStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalAssertionFinishDirective, normalAssertionFinishSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 /-- Entering the DV machine is an actual scheduled reflective-MM2 step
 inhabiting the exact target native type synthesized by OSLF. -/
@@ -6786,12 +6042,8 @@ private theorem normalDVPairBeginMatchRow_mem
       (member : atom ∈
         normalDVPairBeginPhaseSpace scopeOwner proofOwner proofPosition
           assertionLabel pairPosition nextPairPosition pairEnd leftVariable
-          rightVariable leftBody rightBody sourceBody context) : atom ∈ read := by
-    by_cases equal : atom = normalDVPairBeginRule
-    · subst atom
-      simp [read, readCopyAtom]
-    · exact Finset.mem_union_left _
-        (Finset.mem_erase.mpr ⟨equal, member⟩)
+          rightVariable leftBody rightBody sourceBody context) : atom ∈ read :=
+    mem_readCopyAtom_of_mem member
   have cursorMem : cursor ∈ read := by
     apply readMember
     simp [cursor, normalDVPairBeginPhaseSpace,
@@ -6846,26 +6098,12 @@ private theorem normalDVPairBeginMatchRow_mem
       normalAssertionSubstitutionAtom, afterLeft, afterSuccessor,
       afterPair, afterCursor, finalRow, normalDVPairBeginSubstitution,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(finalRow, {cursor, pairRow, successor, leftRow, rightRow}), ?_, rfl⟩
-  simp only [normalDVPairBeginDirective, matchInputSpec,
-    normalDVPairBeginPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterCursor, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem afterCursor matchCursor, ?_⟩
-  refine ⟨(afterPair, pairRow),
-    matchOneInSpace_mem afterCursor _ read pairRow pairMem afterPair
-      matchPair, ?_⟩
-  refine ⟨(afterSuccessor, successor),
-    matchOneInSpace_mem afterPair _ read successor successorMem
-      afterSuccessor matchSuccessor, ?_⟩
-  refine ⟨(afterLeft, leftRow),
-    matchOneInSpace_mem afterSuccessor _ read leftRow leftMem afterLeft
-      matchLeft, ?_⟩
-  refine ⟨(finalRow, rightRow),
-    matchOneInSpace_mem afterLeft _ read rightRow rightMem finalRow
-      matchRight, ?_⟩
-  simp [finalRow, cursor, pairRow, successor, leftRow, rightRow]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor
+    (.cons pairMem matchPair
+    (.cons successorMem matchSuccessor
+    (.cons leftMem matchLeft
+    (.cons rightMem matchRight (.nil _))))))
 
 theorem normalDVPairBeginDirective_fires_scan
     (scopeOwner proofOwner : Atom)
@@ -6884,49 +6122,14 @@ theorem normalDVPairBeginDirective_fires_scan
         result ∧
       normalDVReloadAtom proofOwner proofPosition ∈ result := by
   dsimp only
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalDVPairBeginPhaseSpace scopeOwner proofOwner proofPosition
-        assertionLabel pairPosition nextPairPosition pairEnd leftVariable
-        rightVariable leftBody rightBody sourceBody context)
-      normalDVPairBeginDirective.atom)
-    normalDVPairBeginDirective.rule.input).map Prod.fst
-  let substitution := normalDVPairBeginSubstitution scopeOwner proofOwner
-    proofPosition assertionLabel pairPosition nextPairPosition pairEnd
-    leftVariable rightVariable leftBody rightBody sourceBody context
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalDVPairBeginDirective] using
-      normalDVPairBeginMatchRow_mem scopeOwner proofOwner proofPosition
-        assertionLabel pairPosition nextPairPosition pairEnd leftVariable
-        rightVariable leftBody rightBody sourceBody context
-  have scanInstantiates :
-      instantiateTemplateAtom? substitution normalDVPairBeginScanTemplate =
-        some (normalDVScanLeftAtom scopeOwner proofOwner proofPosition
-          assertionLabel nextPairPosition pairEnd leftBody rightBody
-          sourceBody context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalDVPairBeginReloadTemplate =
-        some (normalDVReloadAtom proofOwner proofPosition) := by
-    rfl
-  have scanStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVPairBeginScanTemplate
-    (normalDVScanLeftAtom scopeOwner proofOwner proofPosition assertionLabel
-      nextPairPosition pairEnd leftBody rightBody sourceBody context)
-    rowMember scanInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVPairBeginReloadTemplate
-    (normalDVReloadAtom proofOwner proofPosition) rowMember reloadInstantiates
+  have rowMember :=
+    normalDVPairBeginMatchRow_mem scopeOwner proofOwner proofPosition
+      assertionLabel pairPosition nextPairPosition pairEnd leftVariable
+      rightVariable leftBody rightBody sourceBody context
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVPairBeginDirective, normalDVPairBeginSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr scanStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVPairBeginDirective, normalDVPairBeginSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 /-- Selecting a source-owned callee DV pair enters the exact Cartesian-product
 scan state and inhabits the target native type synthesized by OSLF. -/
@@ -7101,15 +6304,8 @@ private theorem normalDVLeftConstMatchRow_mem
       substitution,
       normalDVLeftConstSubstitution, runtimeSymAtom, listAtom, consTag,
       constTag, matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalDVLeftConstDirective, matchInputSpec,
-    normalDVLeftConstPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalDVLeftConstDirective_fires_tail
     (scopeOwner proofOwner : Atom)
@@ -7126,49 +6322,14 @@ theorem normalDVLeftConstDirective_fires_tail
           nextPairPosition pairEnd leftTail rightBody sourceBody context ∈
         result ∧
       normalDVReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalDVLeftConstPhaseSpace scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd constantName leftTail
-        rightBody sourceBody context)
-      normalDVLeftConstDirective.atom)
-    normalDVLeftConstDirective.rule.input).map Prod.fst
-  let substitution := normalDVLeftConstSubstitution scopeOwner proofOwner
-    proofPosition assertionLabel nextPairPosition pairEnd constantName
-    leftTail rightBody sourceBody context
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalDVLeftConstDirective] using
-      normalDVLeftConstMatchRow_mem scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd constantName leftTail
-        rightBody sourceBody context
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution normalDVLeftConstTailTemplate =
-        some (normalDVScanLeftAtom scopeOwner proofOwner proofPosition
-          assertionLabel nextPairPosition pairEnd leftTail rightBody
-          sourceBody context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalDVPairBeginReloadTemplate =
-        some (normalDVReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVLeftConstTailTemplate
-    (normalDVScanLeftAtom scopeOwner proofOwner proofPosition assertionLabel
-      nextPairPosition pairEnd leftTail rightBody sourceBody context)
-    rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVPairBeginReloadTemplate
-    (normalDVReloadAtom proofOwner proofPosition) rowMember reloadInstantiates
+  have rowMember :=
+    normalDVLeftConstMatchRow_mem scopeOwner proofOwner proofPosition
+      assertionLabel nextPairPosition pairEnd constantName leftTail
+      rightBody sourceBody context
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVLeftConstDirective, normalDVLeftConstSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVLeftConstDirective, normalDVLeftConstSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalDVLeftConstPhase_inhabits_target_native_type
     (scopeOwner proofOwner : Atom)
@@ -7339,15 +6500,8 @@ private theorem normalDVLeftVariableMatchRow_mem
       normalDVScanLeftAtom, substitution, normalDVLeftVariableSubstitution,
       runtimeSymAtom, listAtom, consTag, variableTag, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalDVLeftVariableDirective, matchInputSpec,
-    normalDVLeftVariablePatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalDVLeftVariableDirective_fires_right_scan
     (scopeOwner proofOwner : Atom)
@@ -7364,50 +6518,14 @@ theorem normalDVLeftVariableDirective_fires_right_scan
           nextPairPosition pairEnd leftVariable leftTail rightBody rightBody
           sourceBody context ∈ result ∧
       normalDVReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalDVLeftVariablePhaseSpace scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd leftVariable leftTail
-        rightBody sourceBody context)
-      normalDVLeftVariableDirective.atom)
-    normalDVLeftVariableDirective.rule.input).map Prod.fst
-  let substitution := normalDVLeftVariableSubstitution scopeOwner proofOwner
-    proofPosition assertionLabel nextPairPosition pairEnd leftVariable
-    leftTail rightBody sourceBody context
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalDVLeftVariableDirective] using
-      normalDVLeftVariableMatchRow_mem scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd leftVariable leftTail
-        rightBody sourceBody context
-  have rightInstantiates :
-      instantiateTemplateAtom? substitution
-          normalDVLeftVariableRightTemplate =
-        some (normalDVScanRightAtom scopeOwner proofOwner proofPosition
-          assertionLabel nextPairPosition pairEnd leftVariable leftTail
-          rightBody rightBody sourceBody context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalDVPairBeginReloadTemplate =
-        some (normalDVReloadAtom proofOwner proofPosition) := by
-    rfl
-  have rightStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVLeftVariableRightTemplate
-    (normalDVScanRightAtom scopeOwner proofOwner proofPosition assertionLabel
-      nextPairPosition pairEnd leftVariable leftTail rightBody rightBody
-      sourceBody context) rowMember rightInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVPairBeginReloadTemplate
-    (normalDVReloadAtom proofOwner proofPosition) rowMember reloadInstantiates
+  have rowMember :=
+    normalDVLeftVariableMatchRow_mem scopeOwner proofOwner proofPosition
+      assertionLabel nextPairPosition pairEnd leftVariable leftTail
+      rightBody sourceBody context
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVLeftVariableDirective, normalDVLeftVariableSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr rightStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVLeftVariableDirective, normalDVLeftVariableSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalDVLeftVariablePhase_inhabits_target_native_type
     (scopeOwner proofOwner : Atom)
@@ -7600,18 +6718,9 @@ private theorem normalDVRightVariableMatchRow_mem
     simp [normalDVRightVariablePatternAtoms, obligation, callerDVRow,
       substitution, normalDVRightVariableSubstitution, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor, obligation}), ?_, rfl⟩
-  simp only [normalDVRightVariableDirective, matchInputSpec,
-    normalDVRightVariablePatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  refine ⟨(substitution, obligation),
-    matchOneInSpace_mem substitution _ read obligation obligationMem
-      substitution matchObligation, ?_⟩
-  simp [substitution, cursor, obligation]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor
+    (.cons obligationMem matchObligation (.nil _)))
 
 theorem normalDVRightVariableDirective_fires_tail
     (scopeOwner proofOwner : Atom)
@@ -7628,50 +6737,14 @@ theorem normalDVRightVariableDirective_fires_tail
           nextPairPosition pairEnd leftVariable leftTail rightTail rightBody
           sourceBody context ∈ result ∧
       normalDVReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalDVRightVariablePhaseSpace scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd leftVariable rightVariable
-        leftTail rightTail rightBody sourceBody context)
-      normalDVRightVariableDirective.atom)
-    normalDVRightVariableDirective.rule.input).map Prod.fst
-  let substitution := normalDVRightVariableSubstitution scopeOwner proofOwner
-    proofPosition assertionLabel nextPairPosition pairEnd leftVariable
-    rightVariable leftTail rightTail rightBody sourceBody context
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalDVRightVariableDirective] using
-      normalDVRightVariableMatchRow_mem scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd leftVariable rightVariable
-        leftTail rightTail rightBody sourceBody context
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution
-          normalDVRightVariableTailTemplate =
-        some (normalDVScanRightAtom scopeOwner proofOwner proofPosition
-          assertionLabel nextPairPosition pairEnd leftVariable leftTail
-          rightTail rightBody sourceBody context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalDVPairBeginReloadTemplate =
-        some (normalDVReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVRightVariableTailTemplate
-    (normalDVScanRightAtom scopeOwner proofOwner proofPosition assertionLabel
-      nextPairPosition pairEnd leftVariable leftTail rightTail rightBody
-      sourceBody context) rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVPairBeginReloadTemplate
-    (normalDVReloadAtom proofOwner proofPosition) rowMember reloadInstantiates
+  have rowMember :=
+    normalDVRightVariableMatchRow_mem scopeOwner proofOwner proofPosition
+      assertionLabel nextPairPosition pairEnd leftVariable rightVariable
+      leftTail rightTail rightBody sourceBody context
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVRightVariableDirective, normalDVRightVariableSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVRightVariableDirective, normalDVRightVariableSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalDVRightVariablePhase_inhabits_target_native_type
     (scopeOwner proofOwner : Atom)
@@ -7900,15 +6973,8 @@ private theorem normalDVRightConstMatchRow_mem
       normalDVScanRightAtom, substitution, normalDVRightConstSubstitution,
       runtimeSymAtom, listAtom, consTag, constTag, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalDVRightConstDirective, matchInputSpec,
-    normalDVRightConstPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalDVRightConstDirective_fires_tail
     (scopeOwner proofOwner : Atom)
@@ -7925,49 +6991,14 @@ theorem normalDVRightConstDirective_fires_tail
           nextPairPosition pairEnd leftVariable leftTail rightTail rightBody
           sourceBody context ∈ result ∧
       normalDVReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalDVRightConstPhaseSpace scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd leftVariable constantName
-        leftTail rightTail rightBody sourceBody context)
-      normalDVRightConstDirective.atom)
-    normalDVRightConstDirective.rule.input).map Prod.fst
-  let substitution := normalDVRightConstSubstitution scopeOwner proofOwner
-    proofPosition assertionLabel nextPairPosition pairEnd leftVariable
-    constantName leftTail rightTail rightBody sourceBody context
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalDVRightConstDirective] using
-      normalDVRightConstMatchRow_mem scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd leftVariable constantName
-        leftTail rightTail rightBody sourceBody context
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution normalDVRightConstTailTemplate =
-        some (normalDVScanRightAtom scopeOwner proofOwner proofPosition
-          assertionLabel nextPairPosition pairEnd leftVariable leftTail
-          rightTail rightBody sourceBody context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalDVPairBeginReloadTemplate =
-        some (normalDVReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVRightConstTailTemplate
-    (normalDVScanRightAtom scopeOwner proofOwner proofPosition assertionLabel
-      nextPairPosition pairEnd leftVariable leftTail rightTail rightBody
-      sourceBody context) rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVPairBeginReloadTemplate
-    (normalDVReloadAtom proofOwner proofPosition) rowMember reloadInstantiates
+  have rowMember :=
+    normalDVRightConstMatchRow_mem scopeOwner proofOwner proofPosition
+      assertionLabel nextPairPosition pairEnd leftVariable constantName
+      leftTail rightTail rightBody sourceBody context
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVRightConstDirective, normalDVRightConstSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVRightConstDirective, normalDVRightConstSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalDVRightConstPhase_inhabits_target_native_type
     (scopeOwner proofOwner : Atom)
@@ -8130,15 +7161,8 @@ private theorem normalDVRightNilMatchRow_mem
     simp [normalDVRightNilCursorTemplate, cursor, normalDVScanRightAtom,
       substitution, normalDVRightNilSubstitution, listAtom, nilTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalDVRightNilDirective, matchInputSpec,
-    normalDVRightNilPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalDVRightNilDirective_fires_left_scan
     (scopeOwner proofOwner : Atom)
@@ -8155,49 +7179,14 @@ theorem normalDVRightNilDirective_fires_left_scan
           nextPairPosition pairEnd leftTail rightBody sourceBody context ∈
         result ∧
       normalDVReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalDVRightNilPhaseSpace scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd leftVariable leftTail
-        rightBody sourceBody context)
-      normalDVRightNilDirective.atom)
-    normalDVRightNilDirective.rule.input).map Prod.fst
-  let substitution := normalDVRightNilSubstitution scopeOwner proofOwner
-    proofPosition assertionLabel nextPairPosition pairEnd leftVariable
-    leftTail rightBody sourceBody context
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalDVRightNilDirective] using
-      normalDVRightNilMatchRow_mem scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd leftVariable leftTail
-        rightBody sourceBody context
-  have leftInstantiates :
-      instantiateTemplateAtom? substitution normalDVRightNilLeftTemplate =
-        some (normalDVScanLeftAtom scopeOwner proofOwner proofPosition
-          assertionLabel nextPairPosition pairEnd leftTail rightBody
-          sourceBody context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalDVPairBeginReloadTemplate =
-        some (normalDVReloadAtom proofOwner proofPosition) := by
-    rfl
-  have leftStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVRightNilLeftTemplate
-    (normalDVScanLeftAtom scopeOwner proofOwner proofPosition assertionLabel
-      nextPairPosition pairEnd leftTail rightBody sourceBody context)
-    rowMember leftInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVPairBeginReloadTemplate
-    (normalDVReloadAtom proofOwner proofPosition) rowMember reloadInstantiates
+  have rowMember :=
+    normalDVRightNilMatchRow_mem scopeOwner proofOwner proofPosition
+      assertionLabel nextPairPosition pairEnd leftVariable leftTail
+      rightBody sourceBody context
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVRightNilDirective, normalDVRightNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr leftStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVRightNilDirective, normalDVRightNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalDVRightNilPhase_inhabits_target_native_type
     (scopeOwner proofOwner : Atom)
@@ -8350,15 +7339,8 @@ private theorem normalDVLeftNilMatchRow_mem
     simp [normalDVLeftNilCursorTemplate, cursor, normalDVScanLeftAtom,
       substitution, normalDVLeftNilSubstitution, listAtom, nilTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalDVLeftNilDirective, matchInputSpec,
-    normalDVLeftNilPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalDVLeftNilDirective_fires_next_pair
     (scopeOwner proofOwner : Atom)
@@ -8373,45 +7355,13 @@ theorem normalDVLeftNilDirective_fires_next_pair
     normalDVNextPairAtom scopeOwner proofOwner proofPosition assertionLabel
           nextPairPosition pairEnd sourceBody context ∈ result ∧
       normalDVReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalDVLeftNilPhaseSpace scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd rightBody sourceBody context)
-      normalDVLeftNilDirective.atom)
-    normalDVLeftNilDirective.rule.input).map Prod.fst
-  let substitution := normalDVLeftNilSubstitution scopeOwner proofOwner
-    proofPosition assertionLabel nextPairPosition pairEnd rightBody
-    sourceBody context
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalDVLeftNilDirective] using
-      normalDVLeftNilMatchRow_mem scopeOwner proofOwner proofPosition
-        assertionLabel nextPairPosition pairEnd rightBody sourceBody context
-  have nextInstantiates :
-      instantiateTemplateAtom? substitution normalDVLeftNilNextPairTemplate =
-        some (normalDVNextPairAtom scopeOwner proofOwner proofPosition
-          assertionLabel nextPairPosition pairEnd sourceBody context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution normalDVPairBeginReloadTemplate =
-        some (normalDVReloadAtom proofOwner proofPosition) := by
-    rfl
-  have nextStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVLeftNilNextPairTemplate
-    (normalDVNextPairAtom scopeOwner proofOwner proofPosition assertionLabel
-      nextPairPosition pairEnd sourceBody context) rowMember nextInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVPairBeginReloadTemplate
-    (normalDVReloadAtom proofOwner proofPosition) rowMember reloadInstantiates
+  have rowMember :=
+    normalDVLeftNilMatchRow_mem scopeOwner proofOwner proofPosition
+      assertionLabel nextPairPosition pairEnd rightBody sourceBody context
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVLeftNilDirective, normalDVLeftNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr nextStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalDVLeftNilDirective, normalDVLeftNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalDVLeftNilPhase_inhabits_target_native_type
     (scopeOwner proofOwner : Atom)
@@ -8579,22 +7529,10 @@ private theorem normalDVReloadMatchRow_mem
     simp [normalDVReloadBundleTemplate, normalDVRuleBundle,
       afterRequest, substitution, normalDVReloadSubstitution, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution,
-    {normalDVReloadRule, request, normalDVRuleBundle}), ?_, rfl⟩
-  simp only [normalDVReloadDirective, matchInputSpec,
-    normalDVReloadPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterSelf, normalDVReloadRule),
-    matchOneInSpace_mem [] _ read normalDVReloadRule selfMem afterSelf
-      matchSelf, ?_⟩
-  refine ⟨(afterRequest, request),
-    matchOneInSpace_mem afterSelf _ read request requestMem afterRequest
-      matchRequest, ?_⟩
-  refine ⟨(substitution, normalDVRuleBundle),
-    matchOneInSpace_mem afterRequest _ read normalDVRuleBundle bundleMem
-      substitution matchBundle, ?_⟩
-  simp [substitution, request]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons selfMem matchSelf
+    (.cons requestMem matchRequest
+    (.cons bundleMem matchBundle (.nil _))))
 
 /-- Reload is itself an ordinary selected MM2 step.  Its exact target is
 therefore classified by the native type generated from the reflective-MM2
@@ -8779,15 +7717,8 @@ private theorem normalBodyBuildConstMatchRow_mem
       substitution, normalBodyBuildConstSubstitution, runtimeSymAtom,
       listAtom, consTag, constTag, matchAtom, matchAtom.matchAtomList,
       Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalBodyBuildConstDirective, matchInputSpec,
-    normalBodyBuildConstPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalBodyBuildConstDirective_fires_tail
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -8800,47 +7731,13 @@ theorem normalBodyBuildConstDirective_fires_tail
     normalBodyBuildAtom proofOwner proofPosition sourceTail
           (.const constantName :: reversedBody) context ∈ result ∧
       normalBodyBuildReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyBuildConstPhaseSpace proofOwner context proofPosition
-        constantName sourceTail reversedBody)
-      normalBodyBuildConstDirective.atom)
-    normalBodyBuildConstDirective.rule.input).map Prod.fst
-  let substitution := normalBodyBuildConstSubstitution proofOwner context
-    proofPosition constantName sourceTail reversedBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyBuildConstDirective] using
-      normalBodyBuildConstMatchRow_mem proofOwner context proofPosition
-        constantName sourceTail reversedBody
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution normalBodyBuildConstTailTemplate =
-        some (normalBodyBuildAtom proofOwner proofPosition sourceTail
-          (.const constantName :: reversedBody) context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildReloadRequestTemplate =
-        some (normalBodyBuildReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildConstTailTemplate
-    (normalBodyBuildAtom proofOwner proofPosition sourceTail
-      (.const constantName :: reversedBody) context)
-    rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildReloadRequestTemplate
-    (normalBodyBuildReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyBuildConstMatchRow_mem proofOwner context proofPosition
+      constantName sourceTail reversedBody
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildConstDirective, normalBodyBuildConstSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildConstDirective, normalBodyBuildConstSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalBodyBuildConstPhase_inhabits_target_native_type
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9009,18 +7906,9 @@ private theorem normalBodyBuildVariableMatchRow_mem
       normalAssertionSubstitutionAtom, afterCursor, substitution,
       normalBodyBuildVariableSubstitution, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor, substitutionRow}), ?_, rfl⟩
-  simp only [normalBodyBuildVariableDirective, matchInputSpec,
-    normalBodyBuildVariablePatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterCursor, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem afterCursor
-      matchCursor, ?_⟩
-  refine ⟨(substitution, substitutionRow),
-    matchOneInSpace_mem afterCursor _ read substitutionRow substitutionMem
-      substitution matchSubstitution, ?_⟩
-  simp [substitution, cursor, substitutionRow]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor
+    (.cons substitutionMem matchSubstitution (.nil _)))
 
 theorem normalBodyBuildVariableDirective_fires_prefix
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9033,47 +7921,13 @@ theorem normalBodyBuildVariableDirective_fires_prefix
     normalBodyBuildPrefixAtom proofOwner proofPosition replacementBody
           sourceTail reversedBody context ∈ result ∧
       normalBodyBuildReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyBuildVariablePhaseSpace proofOwner context proofPosition
-        variableName replacementBody sourceTail reversedBody)
-      normalBodyBuildVariableDirective.atom)
-    normalBodyBuildVariableDirective.rule.input).map Prod.fst
-  let substitution := normalBodyBuildVariableSubstitution proofOwner context
-    proofPosition variableName replacementBody sourceTail reversedBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyBuildVariableDirective] using
-      normalBodyBuildVariableMatchRow_mem proofOwner context proofPosition
-        variableName replacementBody sourceTail reversedBody
-  have prefixInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildVariablePrefixTemplate =
-        some (normalBodyBuildPrefixAtom proofOwner proofPosition
-          replacementBody sourceTail reversedBody context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildReloadRequestTemplate =
-        some (normalBodyBuildReloadAtom proofOwner proofPosition) := by
-    rfl
-  have prefixStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildVariablePrefixTemplate
-    (normalBodyBuildPrefixAtom proofOwner proofPosition replacementBody
-      sourceTail reversedBody context) rowMember prefixInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildReloadRequestTemplate
-    (normalBodyBuildReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyBuildVariableMatchRow_mem proofOwner context proofPosition
+      variableName replacementBody sourceTail reversedBody
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildVariableDirective, normalBodyBuildVariableSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr prefixStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildVariableDirective, normalBodyBuildVariableSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalBodyBuildVariablePhase_inhabits_target_native_type
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9204,15 +8058,8 @@ private theorem normalBodyBuildPrefixNilMatchRow_mem
       normalBodyBuildPrefixAtom, substitution,
       normalBodyBuildPrefixNilSubstitution, listAtom, nilTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalBodyBuildPrefixNilDirective, matchInputSpec,
-    normalBodyBuildPrefixNilPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalBodyBuildPrefixNilDirective_fires_tail
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9224,47 +8071,13 @@ theorem normalBodyBuildPrefixNilDirective_fires_tail
     normalBodyBuildAtom proofOwner proofPosition sourceTail reversedBody
           context ∈ result ∧
       normalBodyBuildReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyBuildPrefixNilPhaseSpace proofOwner context proofPosition
-        sourceTail reversedBody)
-      normalBodyBuildPrefixNilDirective.atom)
-    normalBodyBuildPrefixNilDirective.rule.input).map Prod.fst
-  let substitution := normalBodyBuildPrefixNilSubstitution proofOwner context
-    proofPosition sourceTail reversedBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyBuildPrefixNilDirective] using
-      normalBodyBuildPrefixNilMatchRow_mem proofOwner context proofPosition
-        sourceTail reversedBody
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildPrefixNilTailTemplate =
-        some (normalBodyBuildAtom proofOwner proofPosition sourceTail
-          reversedBody context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildReloadRequestTemplate =
-        some (normalBodyBuildReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildPrefixNilTailTemplate
-    (normalBodyBuildAtom proofOwner proofPosition sourceTail reversedBody
-      context) rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildReloadRequestTemplate
-    (normalBodyBuildReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyBuildPrefixNilMatchRow_mem proofOwner context proofPosition
+      sourceTail reversedBody
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildPrefixNilDirective, normalBodyBuildPrefixNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildPrefixNilDirective, normalBodyBuildPrefixNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalBodyBuildPrefixNilPhase_inhabits_target_native_type
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9410,15 +8223,8 @@ private theorem normalBodyBuildPrefixConsMatchRow_mem
       normalBodyBuildPrefixAtom, substitution,
       normalBodyBuildPrefixConsSubstitution, listAtom, consTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalBodyBuildPrefixConsDirective, matchInputSpec,
-    normalBodyBuildPrefixConsPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalBodyBuildPrefixConsDirective_fires_tail
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9431,50 +8237,13 @@ theorem normalBodyBuildPrefixConsDirective_fires_tail
     normalBodyBuildPrefixAtom proofOwner proofPosition replacementTail
           sourceTail (replacementSymbol :: reversedBody) context ∈ result ∧
       normalBodyBuildReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyBuildPrefixConsPhaseSpace proofOwner context proofPosition
-        replacementSymbol replacementTail sourceTail reversedBody)
-      normalBodyBuildPrefixConsDirective.atom)
-    normalBodyBuildPrefixConsDirective.rule.input).map Prod.fst
-  let substitution := normalBodyBuildPrefixConsSubstitution proofOwner
-    context proofPosition replacementSymbol replacementTail sourceTail
-    reversedBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyBuildPrefixConsDirective] using
-      normalBodyBuildPrefixConsMatchRow_mem proofOwner context proofPosition
-        replacementSymbol replacementTail sourceTail reversedBody
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildPrefixConsTailTemplate =
-        some (normalBodyBuildPrefixAtom proofOwner proofPosition
-          replacementTail sourceTail (replacementSymbol :: reversedBody)
-          context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildReloadRequestTemplate =
-        some (normalBodyBuildReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildPrefixConsTailTemplate
-    (normalBodyBuildPrefixAtom proofOwner proofPosition replacementTail
-      sourceTail (replacementSymbol :: reversedBody) context)
-    rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildReloadRequestTemplate
-    (normalBodyBuildReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyBuildPrefixConsMatchRow_mem proofOwner context proofPosition
+      replacementSymbol replacementTail sourceTail reversedBody
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildPrefixConsDirective, normalBodyBuildPrefixConsSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildPrefixConsDirective, normalBodyBuildPrefixConsSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalBodyBuildPrefixConsPhase_inhabits_target_native_type
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9601,15 +8370,8 @@ private theorem normalBodyBuildNilMatchRow_mem
     simp [normalBodyBuildNilCursorTemplate, cursor, normalBodyBuildAtom,
       substitution, normalBodyBuildNilSubstitution, listAtom, nilTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalBodyBuildNilDirective, matchInputSpec,
-    normalBodyBuildNilPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalBodyBuildNilDirective_fires_reverse
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9621,47 +8383,13 @@ theorem normalBodyBuildNilDirective_fires_reverse
     normalBodyReverseAtom proofOwner proofPosition reversedBody [] context ∈
           result ∧
       normalBodyBuildReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyBuildNilPhaseSpace proofOwner context proofPosition
-        reversedBody)
-      normalBodyBuildNilDirective.atom)
-    normalBodyBuildNilDirective.rule.input).map Prod.fst
-  let substitution := normalBodyBuildNilSubstitution proofOwner context
-    proofPosition reversedBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyBuildNilDirective] using
-      normalBodyBuildNilMatchRow_mem proofOwner context proofPosition
-        reversedBody
-  have reverseInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildNilReverseTemplate =
-        some (normalBodyReverseAtom proofOwner proofPosition reversedBody []
-          context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildReloadRequestTemplate =
-        some (normalBodyBuildReloadAtom proofOwner proofPosition) := by
-    rfl
-  have reverseStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildNilReverseTemplate
-    (normalBodyReverseAtom proofOwner proofPosition reversedBody [] context)
-    rowMember reverseInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildReloadRequestTemplate
-    (normalBodyBuildReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyBuildNilMatchRow_mem proofOwner context proofPosition
+      reversedBody
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildNilDirective, normalBodyBuildNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr reverseStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyBuildNilDirective, normalBodyBuildNilSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalBodyBuildNilPhase_inhabits_target_native_type
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9796,15 +8524,8 @@ private theorem normalBodyReverseConsMatchRow_mem
       normalBodyReverseAtom, substitution,
       normalBodyReverseConsSubstitution, listAtom, consTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalBodyReverseConsDirective, matchInputSpec,
-    normalBodyReverseConsPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalBodyReverseConsDirective_fires_tail
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9817,47 +8538,13 @@ theorem normalBodyReverseConsDirective_fires_tail
     normalBodyReverseAtom proofOwner proofPosition reversedTail
           (head :: resultBody) context ∈ result ∧
       normalBodyBuildReloadAtom proofOwner proofPosition ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyReverseConsPhaseSpace proofOwner context proofPosition head
-        reversedTail resultBody)
-      normalBodyReverseConsDirective.atom)
-    normalBodyReverseConsDirective.rule.input).map Prod.fst
-  let substitution := normalBodyReverseConsSubstitution proofOwner context
-    proofPosition head reversedTail resultBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyReverseConsDirective] using
-      normalBodyReverseConsMatchRow_mem proofOwner context proofPosition head
-        reversedTail resultBody
-  have tailInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyReverseConsTailTemplate =
-        some (normalBodyReverseAtom proofOwner proofPosition reversedTail
-          (head :: resultBody) context) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyBuildReloadRequestTemplate =
-        some (normalBodyBuildReloadAtom proofOwner proofPosition) := by
-    rfl
-  have tailStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyReverseConsTailTemplate
-    (normalBodyReverseAtom proofOwner proofPosition reversedTail
-      (head :: resultBody) context) rowMember tailInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyBuildReloadRequestTemplate
-    (normalBodyBuildReloadAtom proofOwner proofPosition) rowMember
-    reloadInstantiates
+  have rowMember :=
+    normalBodyReverseConsMatchRow_mem proofOwner context proofPosition head
+      reversedTail resultBody
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyReverseConsDirective, normalBodyReverseConsSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_right _ (List.mem_toFinset.mpr tailStaged))
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalBodyReverseConsDirective, normalBodyReverseConsSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalBodyReverseConsPhase_inhabits_target_native_type
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9980,15 +8667,8 @@ private theorem normalBodyReverseNilMatchRow_mem
       normalBodyReverseAtom, substitution,
       normalBodyReverseNilSubstitution, listAtom, nilTag,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalBodyReverseNilDirective, matchInputSpec,
-    normalBodyReverseNilPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalBodyReverseNilDirective_fires_built
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -9999,32 +8679,10 @@ theorem normalBodyReverseNilDirective_fires_built
       normalBodyReverseNilDirective
     normalBodyBuiltAtom proofOwner proofPosition context resultBody ∈
       result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalBodyReverseNilPhaseSpace proofOwner context proofPosition
-        resultBody)
-      normalBodyReverseNilDirective.atom)
-    normalBodyReverseNilDirective.rule.input).map Prod.fst
-  let substitution := normalBodyReverseNilSubstitution proofOwner context
-    proofPosition resultBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalBodyReverseNilDirective] using
-      normalBodyReverseNilMatchRow_mem proofOwner context proofPosition
-        resultBody
-  have builtInstantiates :
-      instantiateTemplateAtom? substitution
-          normalBodyReverseNilBuiltTemplate =
-        some (normalBodyBuiltAtom proofOwner proofPosition context
-          resultBody) := by
-    rfl
-  have builtStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalBodyReverseNilBuiltTemplate
-    (normalBodyBuiltAtom proofOwner proofPosition context resultBody)
-    rowMember builtInstantiates
-  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-    normalBodyReverseNilDirective, normalBodyReverseNilSinks,
-    reflectiveSupportSinkProvider]
-  exact Finset.mem_union_right _ (List.mem_toFinset.mpr builtStaged)
+  have rowMember :=
+    normalBodyReverseNilMatchRow_mem proofOwner context proofPosition
+      resultBody
+  exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
 
 theorem normalBodyReverseNilPhase_inhabits_target_native_type
     (proofOwner context : Atom) (proofPosition : Nat)
@@ -10187,22 +8845,10 @@ private theorem normalBodyBuildReloadMatchRow_mem
     simp [normalBodyBuildReloadBundleTemplate, normalBodyBuildRuleBundle,
       afterRequest, substitution, normalBodyBuildReloadSubstitution,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution,
-    {normalBodyBuildReloadRule, request, normalBodyBuildRuleBundle}), ?_, rfl⟩
-  simp only [normalBodyBuildReloadDirective, matchInputSpec,
-    normalBodyBuildReloadPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterSelf, normalBodyBuildReloadRule),
-    matchOneInSpace_mem [] _ read normalBodyBuildReloadRule selfMem afterSelf
-      matchSelf, ?_⟩
-  refine ⟨(afterRequest, request),
-    matchOneInSpace_mem afterSelf _ read request requestMem afterRequest
-      matchRequest, ?_⟩
-  refine ⟨(substitution, normalBodyBuildRuleBundle),
-    matchOneInSpace_mem afterRequest _ read normalBodyBuildRuleBundle
-      bundleMem substitution matchBundle, ?_⟩
-  simp [substitution, request]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons selfMem matchSelf
+    (.cons requestMem matchRequest
+    (.cons bundleMem matchBundle (.nil _))))
 
 /-- Reload is part of the authored MM2 dynamics: OSLF classifies its exact
 target rather than treating rule reinstallation as a host-side operation. -/
@@ -10394,15 +9040,8 @@ private theorem normalAssertionResultCompleteMatchRow_mem
       normalBodyBuiltAtom, normalAssertionResultContextAtom, substitution,
       normalAssertionResultCompleteSubstitution, matchAtom,
       matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalAssertionResultCompleteDirective, matchInputSpec,
-    normalAssertionResultCompletePatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution
-      matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalAssertionResultCompleteDirective_fires_result
     (scopeOwner proofOwner : Atom)
@@ -10420,67 +9059,17 @@ theorem normalAssertionResultCompleteDirective_fires_result
       normalAssertionStackAtom proofOwner stackBase resultTypecode resultBody
             proofPosition assertionLabel ∈ result ∧
         normalAssertionReloadAtom proofOwner ∈ result := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalAssertionResultCompletePhaseSpace scopeOwner proofOwner
-        proofPosition nextProofPosition assertionLabel resultTypecode
-        stackBase nextTop resultBody)
-      normalAssertionResultCompleteDirective.atom)
-    normalAssertionResultCompleteDirective.rule.input).map Prod.fst
-  let substitution := normalAssertionResultCompleteSubstitution scopeOwner
-    proofOwner proofPosition nextProofPosition assertionLabel resultTypecode
-    stackBase nextTop resultBody
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution,
-      normalAssertionResultCompleteDirective] using
-      normalAssertionResultCompleteMatchRow_mem scopeOwner proofOwner
-        proofPosition nextProofPosition assertionLabel resultTypecode
-        stackBase nextTop resultBody
-  have controlInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionResultCompleteControlTemplate =
-        some (normalControlAtom scopeOwner proofOwner nextProofPosition
-          nextTop) := by
-    rfl
-  have stackInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionResultCompleteStackTemplate =
-        some (normalAssertionStackAtom proofOwner stackBase resultTypecode
-          resultBody proofPosition assertionLabel) := by
-    rfl
-  have reloadInstantiates :
-      instantiateTemplateAtom? substitution
-          normalAssertionResultCompleteReloadTemplate =
-        some (normalAssertionReloadAtom proofOwner) := by
-    rfl
-  have controlStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalAssertionResultCompleteControlTemplate
-    (normalControlAtom scopeOwner proofOwner nextProofPosition nextTop)
-    rowMember controlInstantiates
-  have stackStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalAssertionResultCompleteStackTemplate
-    (normalAssertionStackAtom proofOwner stackBase resultTypecode resultBody
-      proofPosition assertionLabel) rowMember stackInstantiates
-  have reloadStaged := reflectiveStage_add_contains_of_row rows substitution
-    normalAssertionResultCompleteReloadTemplate
-    (normalAssertionReloadAtom proofOwner) rowMember reloadInstantiates
+  have rowMember :=
+    normalAssertionResultCompleteMatchRow_mem scopeOwner proofOwner
+      proofPosition nextProofPosition assertionLabel resultTypecode
+      stackBase nextTop resultBody
   constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      normalAssertionResultCompleteDirective,
-      normalAssertionResultCompleteSinks, reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_left _
-        (Finset.mem_union_right _ (List.mem_toFinset.mpr controlStaged)))
+  · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
+
   · constructor
-    · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-        normalAssertionResultCompleteDirective,
-        normalAssertionResultCompleteSinks, reflectiveSupportSinkProvider]
-      exact Finset.mem_union_left _
-        (Finset.mem_union_right _ (List.mem_toFinset.mpr stackStaged))
-    · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-        normalAssertionResultCompleteDirective,
-        normalAssertionResultCompleteSinks, reflectiveSupportSinkProvider]
-      exact Finset.mem_union_right _ (List.mem_toFinset.mpr reloadStaged)
+    · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
+
+    · exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 3 rfl rfl rowMember rfl
 
 theorem normalAssertionResultCompletePhase_inhabits_target_native_type
     (scopeOwner proofOwner : Atom)
@@ -10637,14 +9226,8 @@ private theorem normalDVCompleteMatchRow_mem
       substitution,
       normalDVCompleteSubstitution, matchAtom, matchAtom.matchAtomList,
       Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution, {cursor}), ?_, rfl⟩
-  simp only [normalDVCompleteDirective, matchInputSpec,
-    normalDVCompletePatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(substitution, cursor),
-    matchOneInSpace_mem [] _ read cursor cursorMem substitution matchCursor, ?_⟩
-  simp [substitution, cursor]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons cursorMem matchCursor (.nil _))
 
 theorem normalDVCompleteDirective_fires_body_build
     (scopeOwner proofOwner : Atom)
@@ -10655,31 +9238,10 @@ theorem normalDVCompleteDirective_fires_body_build
         (normalDVCompletePhaseSpace scopeOwner proofOwner proofPosition
           assertionLabel pairEnd sourceBody context)
         normalDVCompleteDirective := by
-  let rows := (matchInputSpec []
-    (readCopyAtom
-      (normalDVCompletePhaseSpace scopeOwner proofOwner proofPosition
-        assertionLabel pairEnd sourceBody context)
-      normalDVCompleteDirective.atom)
-    normalDVCompleteDirective.rule.input).map Prod.fst
-  let substitution := normalDVCompleteSubstitution scopeOwner proofOwner
-    proofPosition assertionLabel pairEnd sourceBody context
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalDVCompleteDirective] using
-      normalDVCompleteMatchRow_mem scopeOwner proofOwner proofPosition
-        assertionLabel pairEnd sourceBody context
-  have instantiates :
-      instantiateTemplateAtom? substitution normalDVCompleteBodyTemplate =
-        some (normalBodyBuildAtom proofOwner proofPosition sourceBody []
-          context) := by
-    rfl
-  have staged := reflectiveStage_add_contains_of_row rows substitution
-    normalDVCompleteBodyTemplate
-    (normalBodyBuildAtom proofOwner proofPosition sourceBody [] context)
-    rowMember instantiates
-  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-    normalDVCompleteDirective, normalDVCompleteSinks,
-    reflectiveSupportSinkProvider]
-  exact Finset.mem_union_right _ (List.mem_toFinset.mpr staged)
+  have rowMember :=
+    normalDVCompleteMatchRow_mem scopeOwner proofOwner proofPosition
+      assertionLabel pairEnd sourceBody context
+  exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 1 rfl rfl rowMember rfl
 
 theorem normalDVCompletePhase_inhabits_target_native_type
     (scopeOwner proofOwner : Atom)
@@ -10881,22 +9443,10 @@ private theorem normalDispatchReloadMatchRow_mem (proofOwner rule : Atom) :
     simp [normalDispatchReloadRuleTemplate, normalDispatchRuleRow, ruleRow,
       normalDispatchReloadSubstitution, afterRequest, substitution,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution,
-    {normalDispatchReloadRule, request, ruleRow}), ?_, rfl⟩
-  simp only [normalDispatchReloadDirective, matchInputSpec,
-    normalDispatchReloadPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterSelf, normalDispatchReloadRule),
-    matchOneInSpace_mem [] _ read normalDispatchReloadRule selfMem afterSelf
-      matchSelf, ?_⟩
-  refine ⟨(afterRequest, request),
-    matchOneInSpace_mem afterSelf _ read request requestMem afterRequest
-      matchRequest, ?_⟩
-  refine ⟨(substitution, ruleRow),
-    matchOneInSpace_mem afterRequest _ read ruleRow
-      ruleRowMem substitution matchRuleRow, ?_⟩
-  simp [substitution, request, ruleRow]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons selfMem matchSelf
+    (.cons requestMem matchRequest
+    (.cons ruleRowMem matchRuleRow (.nil _))))
 
 /-- The real reload space contains the whole verifier-owned rule relation.
 The unary row representation keeps each stored MM2 expression within the
@@ -10954,22 +9504,10 @@ private theorem normalDispatchReloadFullMatchRow_mem
     simp [normalDispatchReloadRuleTemplate, normalDispatchRuleRow, ruleRow,
       normalDispatchReloadSubstitution, afterRequest, substitution,
       matchAtom, matchAtom.matchAtomList, Subst.lookup]
-  rw [List.mem_map]
-  refine ⟨(substitution,
-    {normalDispatchReloadRule, request, ruleRow}), ?_, rfl⟩
-  simp only [normalDispatchReloadDirective, matchInputSpec,
-    normalDispatchReloadPatternAtoms, mkPattern, matchPattern,
-    matchPattern.go, List.mem_flatMap]
-  refine ⟨(afterSelf, normalDispatchReloadRule),
-    matchOneInSpace_mem [] _ read normalDispatchReloadRule selfMem afterSelf
-      matchSelf, ?_⟩
-  refine ⟨(afterRequest, request),
-    matchOneInSpace_mem afterSelf _ read request requestMem afterRequest
-      matchRequest, ?_⟩
-  refine ⟨(substitution, ruleRow),
-    matchOneInSpace_mem afterRequest _ read ruleRow
-      ruleRowMem substitution matchRuleRow, ?_⟩
-  simp [substitution, request, ruleRow]
+  exact mem_matchInputSpec_compat_of_trace
+    (.cons selfMem matchSelf
+    (.cons requestMem matchRequest
+    (.cons ruleRowMem matchRuleRow (.nil _))))
 
 /-- Dispatch reinstallation is one real authored target step and therefore
 inhabits the exact OSLF-derived target native type for its successor. -/
@@ -10996,25 +9534,9 @@ theorem normalDispatchReloadDirective_fires_rule
       fireReflectiveSourceExecFact
         (normalDispatchReloadFullPhaseSpace proofOwner)
         normalDispatchReloadDirective := by
-  let rows := (matchInputSpec []
-    (readCopyAtom (normalDispatchReloadFullPhaseSpace proofOwner)
-      normalDispatchReloadDirective.atom)
-    normalDispatchReloadDirective.rule.input).map Prod.fst
-  let substitution := normalDispatchReloadSubstitution proofOwner
-    rule
-  have rowMember : substitution ∈ rows := by
-    simpa [rows, substitution, normalDispatchReloadDirective] using
-      normalDispatchReloadFullMatchRow_mem proofOwner rule ruleMember
-  have instantiates :
-      instantiateTemplateAtom? substitution (.var "reload-rule") =
-        some rule := by
-    rfl
-  have staged := reflectiveStage_add_contains_of_row rows substitution
-    (.var "reload-rule") rule rowMember instantiates
-  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-    normalDispatchReloadDirective, normalDispatchReloadSinks,
-    reflectiveSupportSinkProvider]
-  exact Finset.mem_union_right _ (List.mem_toFinset.mpr staged)
+  have rowMember :=
+    normalDispatchReloadFullMatchRow_mem proofOwner rule ruleMember
+  exact mem_fireReflectiveSourceExecFact_of_add_at _ _ 2 rfl rfl rowMember rfl
 
 theorem normalDispatchReloadDirective_fires_last_rule
     (proofOwner : Atom) :

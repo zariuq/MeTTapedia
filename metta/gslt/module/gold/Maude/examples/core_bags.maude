@@ -1,0 +1,21 @@
+fmod GOLD-BAG is
+  sorts Nat Bag .
+  op 0 : -> Nat [ctor] .
+  op s : Nat -> Nat [ctor] .
+  ops empty a b : -> Bag [ctor] .
+  op __ : Bag Bag -> Bag [ctor assoc comm id: empty] .
+  op card : Bag -> Nat .
+  var B : Bag .
+  eq card(empty) = 0 .
+  eq card(a B) = s(card(B)) .
+  eq card(b B) = s(card(B)) .
+endfm
+red card(a b a empty) .
+fmod GOLD-SET is
+  sort Bag .
+  ops empty a b : -> Bag [ctor] .
+  op __ : Bag Bag -> Bag [ctor assoc comm id: empty] .
+  var B : Bag .
+  eq B B = B .
+endfm
+red a b a empty .

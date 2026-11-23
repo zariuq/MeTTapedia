@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.ApplicationSpine
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Conversion.NativeParallelReceipt
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Conversion.NativeRelatorConversionParallelSpine
 
@@ -19,7 +20,7 @@ set_option autoImplicit false
 namespace Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.NativeParallelReceipt
 
 open Presentation NativeIndexedFamilies
-open NativeRelatorConversionParallel (spine spineHead spineDepth Rigidity)
+open NativeRelatorConversionParallel (spine spineHead spine_eq_constant Rigidity)
 
 variable {n : Nat}
 
@@ -50,64 +51,19 @@ private def spineViewAux {source target : Tower.Tm n} (receipt : Receipt source 
           exact ⟨_ :: rest', ⟨by simp only [spine, shape]⟩, .cons argumentStep arguments⟩
   | .listNil _ _ _ _ _ => by
       intro name arguments equality rigid
-      have names : Intrinsic.eliminateName = name := by
-        simpa only [Intrinsic.eliminateApp, spineHead, NativeRelatorConversionParallel.spineHead_spine,
-          Option.some.injEq] using congrArg spineHead equality
-      have counts : 5 = arguments.length := by
-        simpa only [Intrinsic.eliminateApp, spineDepth, NativeRelatorConversionParallel.spineDepth_spine]
-          using congrArg spineDepth equality
-      apply False.elim
-      rcases rigid.1 with different | short
-      · exact different names.symm
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.1 rfl (equality.trans (spine_eq_constant _ _))).elim
   | .listCons _ _ _ _ _ _ _ => by
       intro name arguments equality rigid
-      have names : Intrinsic.eliminateName = name := by
-        simpa only [Intrinsic.eliminateApp, spineHead, NativeRelatorConversionParallel.spineHead_spine,
-          Option.some.injEq] using congrArg spineHead equality
-      have counts : 5 = arguments.length := by
-        simpa only [Intrinsic.eliminateApp, spineDepth, NativeRelatorConversionParallel.spineDepth_spine]
-          using congrArg spineDepth equality
-      apply False.elim
-      rcases rigid.1 with different | short
-      · exact different names.symm
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.1 rfl (equality.trans (spine_eq_constant _ _))).elim
   | .identity _ _ _ _ _ _ _ _ => by
       intro name arguments equality rigid
-      have names : Intrinsic.identityEliminateName = name := by
-        simpa only [Intrinsic.identityEliminateApp, spineHead, NativeRelatorConversionParallel.spineHead_spine,
-          Option.some.injEq] using congrArg spineHead equality
-      have counts : 6 = arguments.length := by
-        simpa only [Intrinsic.identityEliminateApp, spineDepth, NativeRelatorConversionParallel.spineDepth_spine]
-          using congrArg spineDepth equality
-      apply False.elim
-      rcases rigid.2.1 with different | short
-      · exact different names.symm
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.2.1 rfl (equality.trans (spine_eq_constant _ _))).elim
   | .relNil _ _ _ _ _ _ _ _ _ _ _ _ _ => by
       intro name arguments equality rigid
-      have names : IntrinsicRelator.eliminateName = name := by
-        simpa only [IntrinsicRelator.eliminateApp, spineHead, NativeRelatorConversionParallel.spineHead_spine,
-          Option.some.injEq] using congrArg spineHead equality
-      have counts : 9 = arguments.length := by
-        simpa only [IntrinsicRelator.eliminateApp, spineDepth, NativeRelatorConversionParallel.spineDepth_spine]
-          using congrArg spineDepth equality
-      apply False.elim
-      rcases rigid.2.2 with different | short
-      · exact different names.symm
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.2.2 rfl (equality.trans (spine_eq_constant _ _))).elim
   | .relCons _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ => by
       intro name arguments equality rigid
-      have names : IntrinsicRelator.eliminateName = name := by
-        simpa only [IntrinsicRelator.eliminateApp, spineHead, NativeRelatorConversionParallel.spineHead_spine,
-          Option.some.injEq] using congrArg spineHead equality
-      have counts : 9 = arguments.length := by
-        simpa only [IntrinsicRelator.eliminateApp, spineDepth, NativeRelatorConversionParallel.spineDepth_spine]
-          using congrArg spineDepth equality
-      apply False.elim
-      rcases rigid.2.2 with different | short
-      · exact different names.symm
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.2.2 rfl (equality.trans (spine_eq_constant _ _))).elim
   | .var _ => by
       intro name arguments equality _
       have impossible := congrArg spineHead equality

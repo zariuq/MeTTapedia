@@ -1,0 +1,5 @@
+(sort wff provable)
+(sort nat free)
+(term al ((x nat) (a wff (x))) (wff ()))
+(term eq ((a nat ()) (b nat ())) (wff ()))
+(def foo () (wff ()) ((y nat)) (al y (eq y y)))

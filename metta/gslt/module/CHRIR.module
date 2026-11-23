@@ -1,0 +1,23 @@
+Module CHRIR {
+  Theory Data() {
+    Types { ChrInteger = Int; ChrAtom = String; ChrOccurrenceId; ChrRuleId; }
+  }
+  Theory Constraints(d: Data) {
+    d
+      Types { ChrValue; ChrConstraintData; ChrOccurrenceData; ChrStoreData; ChrHeadsData; ChrBodyData; ChrKeyData; }
+      Terms {
+        ChrInt . value:ChrInteger |- "integer" value : ChrValue;
+        ChrSymbol . atomText:ChrAtom |- "atom" atomText : ChrValue;
+        ChrTuple . fields:Vec(ChrValue) |- "tuple" fields : ChrValue ![wrapped];
+        ChrConstraint . atomText:ChrAtom, arguments:Vec(ChrValue)
+          |- "constraint" atomText arguments : ChrConstraintData;
+        ChrOccurrence . identifier:ChrOccurrenceId, constraint:ChrConstraintData
+          |- "occurrence" identifier constraint : ChrOccurrenceData;
+        ChrStore . occurrences:HashBag(ChrOccurrenceData) |- "store" occurrences : ChrStoreData ![wrapped];
+        ChrHeads . occurrences:Vec(ChrOccurrenceData) |- "heads" occurrences : ChrHeadsData ![wrapped];
+        ChrBody . constraints:Vec(ChrConstraintData) |- "body" constraints : ChrBodyData ![wrapped];
+        ChrKey . ruleTag:ChrRuleId, heads:Vec(ChrOccurrenceId) |- "firing" ruleTag heads : ChrKeyData;
+      }
+  }
+  theory Constraints(Data())
+}

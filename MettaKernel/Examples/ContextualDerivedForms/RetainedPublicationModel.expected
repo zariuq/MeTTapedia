@@ -1,0 +1,8 @@
+changed rows=2->3; preparation valid=true
+after writer: absence valid=false; keep valid=false
+same count=true; captured region valid=false
+receipt entries=2; roots=1; graph cells=2
+removed rows=0; old preparation valid=false
+without receipt ownership=0; after final release=0
+one occurrence removed: remaining roots=1; graph cells=2
+retained IDs=[1]; released IDs=[0]; same answers=true

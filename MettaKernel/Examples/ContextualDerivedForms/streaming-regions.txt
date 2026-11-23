@@ -1,0 +1,54 @@
+Streaming marker order and continuation association
+
+StreamingRegions describes the existing agenda without adding a runtime
+region table. Its markers projection retains kind, allocation key and, for a
+collection, its exact saved caller. Marker keys strictly decrease through the
+agenda and remain below nextBoundary. They are distinct across kinds.
+
+framesFit links a saved continuation to later markers in the same order.
+Source frames introduce no marker. A collection frame must find the marker
+whose stored caller is exactly its own remaining continuation. A caller may
+skip an old callee handler that remains pending after return. Requiring literal
+equality between the frame stack and every older marker would reject that
+valid case.
+
+StreamingRegionSelections proves exact first/handler cuts and collection
+association. Collection recording changes one bank and retains its key,
+original substitution, caller, prefix and suffix. Ordered keys establish that
+the marker found by the actual operation is the one required by the saved
+frame. A well-linked collection, first frame or nearest handler earns success
+of the actual finite marker search; marker presence is not simply assumed.
+Generic first-selection construction/uniqueness laws remain with Data/List.
+
+StreamingRegionPreservation covers every actual placement, delivery and
+controller transition. Alternative expansion shares the older markers;
+opening earns a fresh key; successful cuts retain a valid suffix; source phases
+use the reached world without changing ownership of older jobs. The proof
+imposes no termination requirement on the producer.
+
+StreamingRegionReachability proves actual entry, arbitrary finite paths,
+every bounded endpoint and paid resumption. Every pending task has its own
+suffix-relative links, rather than borrowing the selected task's invariant.
+Marker uniqueness and the fresh next key are consequences. These identities
+are separate from the logical-variable allocation counter.
+
+Negative controls distinguish missing markers, a matching number with the
+wrong kind, duplicate keys across kinds and a collection with the wrong saved
+caller. Positive controls retain an old callee handler outside the caller and
+execute a first-demand cut that discards the second packet and inner handler
+while preserving the outer collection. These are internal representation
+controls, not new language admission restrictions or reported C defects.
+
+StreamingRegionsModel checks eight actual observations through partial
+execution, paid resumption, old-handler return and nested source collection.
+OutputPlanModel carries binding refinement, variable support and region links
+over the same actual reached states and retains its original 49 observations,
+with eight later sharing/list-head observations added.
+The proofs erase; they do not rerun a matcher or validate markers at runtime.
+
+This closes the maintained streaming machine's binding/support/region transfer.
+Cross-branch canonical source readout, the full producer/control/compiler
+simulation, remaining typed/list-view/lambda/dynamic policies, recursive HE
+demand, richer transform authority and both authored surfaces' full operational
+and cost correspondence remain open. No C or machine-code theorem follows
+from these Lean controller invariants.

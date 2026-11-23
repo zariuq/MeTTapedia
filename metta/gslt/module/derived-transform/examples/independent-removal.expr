@@ -1,0 +1,1 @@
+(let $ignored (remove-atom &q (item $x)) (collapse (match &q (item $y) (value $y))))

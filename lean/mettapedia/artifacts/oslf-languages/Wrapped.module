@@ -1,0 +1,20 @@
+Module WrappedAsWritten {
+  Theory WrappedAsWritten() {
+    Types {
+      Term;
+    }
+    Terms {
+      "Wrap" . x:Term |- "wrap" x : Term;
+      "Pair" . x:Term, y:Term |- x y : Term;
+      "Ok" .  |- "Ok" : Term;
+      "Err" .  |- "Err" : Term;
+    }
+    Equations {
+      "Unwrap" .  |- "Wrap"(x) = x;
+    }
+    Rewrites {
+      First : "Pair"(x, y) ~> x;
+    }
+  }
+  theory WrappedAsWritten()
+}

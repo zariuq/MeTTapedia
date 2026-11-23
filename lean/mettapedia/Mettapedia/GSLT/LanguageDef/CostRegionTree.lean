@@ -1,3 +1,5 @@
+import Mettapedia.Data.List.OptionMapM
+import Mettapedia.GSLT.LanguageDef.ContextRenamingScope
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mettapedia.GSLT.LanguageDef.CostCanonicalSection
 import Mettapedia.GSLT.LanguageDef.Cost.StaticTypeThinning
@@ -1635,17 +1637,6 @@ theorem embedIndexAt_lt {source : CIGSLT} {color : CostStaticColor}
     simp only [embedIndexAt, if_neg inside]
     omega
 
-private theorem list_map_eq_self_of_mem {α : Type*} (function : α → α)
-    (values : List α) (fixed : ∀ value ∈ values, function value = value) :
-    values.map function = values := by
-  induction values with
-  | nil => rfl
-  | cons head tail inductionHypothesis =>
-      simp only [List.map]
-      rw [fixed head (by simp), inductionHypothesis]
-      intro value membership
-      exact fixed value (by simp [membership])
-
 /-- A pattern already safe using only locally introduced binders is unchanged
 when a deeper ambient context is embedded.  This is the quotation case of
 mixed-context scope preservation: quotation resets safety to zero, so no
@@ -1658,78 +1649,9 @@ theorem thickenAmbientBVars_eq_self_of_binderSafeAt_le
     {pattern : Pattern}
     (safe : binderSafeAt quoteConstructor safeDepth pattern = true)
     (depthOrder : safeDepth ≤ transformDepth) :
-    thinning.thickenAmbientBVars transformDepth pattern = pattern := by
-  induction pattern using Pattern.inductionOn generalizing safeDepth
-      transformDepth with
-  | hbvar index =>
-      simp only [binderSafeAt, decide_eq_true_eq] at safe
-      simp [thickenAmbientBVars_bvar, embedIndexAt,
-        if_pos (lt_of_lt_of_le safe depthOrder)]
-  | hfvar name => simp [thickenAmbientBVars_fvar]
-  | happly constructor arguments inductionHypothesis =>
-      cases arguments with
-      | nil => simp [thickenAmbientBVars_apply]
-      | cons argument arguments =>
-          cases arguments with
-          | nil =>
-              by_cases quoted : constructor = quoteConstructor
-              · subst constructor
-                have argumentSafe :
-                    binderSafeAt quoteConstructor 0 argument = true := by
-                  simpa [binderSafeAt] using safe
-                have fixed := inductionHypothesis argument (by simp)
-                  argumentSafe (Nat.zero_le transformDepth)
-                simp [thickenAmbientBVars_apply, fixed]
-              · have argumentSafe :
-                    binderSafeAt quoteConstructor safeDepth argument = true := by
-                  simpa [binderSafeAt, binderSafeListAt, quoted] using safe
-                have fixed := inductionHypothesis argument (by simp)
-                  argumentSafe depthOrder
-                simp [thickenAmbientBVars_apply, fixed]
-          | cons second remainder =>
-              have argumentsSafe : ∀ member ∈
-                  argument :: second :: remainder,
-                  binderSafeAt quoteConstructor safeDepth member = true := by
-                rw [← binderSafeListAt_eq_true_iff]
-                simpa [binderSafeAt] using safe
-              have fixed := list_map_eq_self_of_mem
-                (thickenAmbientBVars thinning transformDepth)
-                (argument :: second :: remainder) (by
-                  intro member membership
-                  exact inductionHypothesis member membership
-                    (argumentsSafe member membership) depthOrder)
-              simp [thickenAmbientBVars_apply, fixed]
-  | hlambda binder body inductionHypothesis =>
-      have bodySafe :
-          binderSafeAt quoteConstructor (safeDepth + 1) body = true := by
-        simpa [binderSafeAt] using safe
-      have fixed := inductionHypothesis bodySafe
-        (Nat.add_le_add_right depthOrder 1)
-      simp [thickenAmbientBVars_lambda, fixed]
-  | hmultiLambda arity binders body inductionHypothesis =>
-      have bodySafe :
-          binderSafeAt quoteConstructor (safeDepth + arity) body = true := by
-        simpa [binderSafeAt] using safe
-      have fixed := inductionHypothesis bodySafe
-        (Nat.add_le_add_right depthOrder arity)
-      simp [thickenAmbientBVars_multiLambda, fixed]
-  | hsubst body replacement bodyHypothesis replacementHypothesis =>
-      simp only [binderSafeAt, Bool.and_eq_true] at safe
-      have bodyFixed := bodyHypothesis safe.1
-        (Nat.add_le_add_right depthOrder 1)
-      have replacementFixed := replacementHypothesis safe.2 depthOrder
-      simp [thickenAmbientBVars_subst, bodyFixed, replacementFixed]
-  | hcollection collectionType elements rest inductionHypothesis =>
-      have elementsSafe : ∀ element ∈ elements,
-          binderSafeAt quoteConstructor safeDepth element = true := by
-        rw [← binderSafeListAt_eq_true_iff]
-        simpa [binderSafeAt] using safe
-      have fixed := list_map_eq_self_of_mem
-        (thickenAmbientBVars thinning transformDepth) elements (by
-          intro element membership
-          exact inductionHypothesis element membership
-            (elementsSafe element membership) depthOrder)
-      simp [thickenAmbientBVars_collection, fixed]
+    thinning.thickenAmbientBVars transformDepth pattern = pattern :=
+  ContextSubstitution.renameAmbientBVarsAt_eq_self_of_isWellScopedAt
+    thinning.toTargetIndex (isWellScopedAt_mono (isWellScopedAt_of_binderSafeAt quoteConstructor safe) depthOrder)
 
 /-- A frame sealed by a quotation boundary is unchanged by insertion of any
 target-only ambient binders. -/
@@ -1797,27 +1719,9 @@ private theorem thickenAmbientBVarList_of_mapM_eq_some
     (contracted :
       patterns.mapM (thinAmbientBVars? thinning depth) = some thinnedPatterns) :
     thinnedPatterns.map (thickenAmbientBVars thinning depth) = patterns := by
-  induction patterns generalizing thinnedPatterns with
-  | nil =>
-      simp only [List.mapM_nil, Option.pure_def, Option.some.injEq] at contracted
-      subst thinnedPatterns
-      rfl
-  | cons head tail inductionHypothesis =>
-      simp only [List.mapM_cons] at contracted
-      cases headResult : thinAmbientBVars? thinning depth head with
-      | none => simp [headResult] at contracted
-      | some thinnedHead =>
-          cases tailResult :
-              tail.mapM (thinAmbientBVars? thinning depth) with
-          | none => simp [headResult, tailResult] at contracted
-          | some thinnedTail =>
-              simp [headResult, tailResult] at contracted
-              subst thinnedPatterns
-              simp only [List.map_cons, List.cons.injEq]
-              refine ⟨pointwise head (by simp) thinnedHead headResult, ?_⟩
-              exact inductionHypothesis thinnedTail
-                (fun pattern membership => pointwise pattern (by simp [membership]))
-                tailResult
+  simpa only [List.map_id] using Mettapedia.Data.List.option_mapM_projection_on
+    (thinAmbientBVars? thinning depth) patterns thinnedPatterns id
+    (thickenAmbientBVars thinning depth) contracted pointwise
 
 /-- Successful contraction and subsequent embedding is an exact raw-pattern
 round trip, including beneath binders and through ordered argument and
@@ -7410,6 +7314,16 @@ private def inspectOption {α : Type} :
   subst result
   rfl
 
+private theorem reflectiveSpine_cons {profile : ReflectionProfile} {depth : Nat}
+    {head : Pattern} {tail : List Pattern}
+    (safe : ∀ presentation ∈ profile.presentations,
+      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor depth (head :: tail) = true) :
+    ReflectiveWellSorted.ReflectiveScopeSafeAt profile depth head ∧
+      (∀ presentation ∈ profile.presentations,
+        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor depth tail = true) := by
+  simpa only [ReflectiveWellSorted.ReflectiveScopeSafeAt, scopeSafeListAt_cons,
+    Bool.and_eq_true, forall_and] using safe
+
 /- Build the unique typed structural plan selected by the authored
 presentation and exact generated constructor identities.  Failure is
 explicit; no default type, rule, color, or boundary is fabricated. -/
@@ -7926,22 +7840,7 @@ theorem exists_buildCostStaticArgumentPlan?_of_typed
                       WellSorted.isObjectPattern argument = true ∧
                         WellSorted.isObjectPatternList arguments = true := by
                     simpa [WellSorted.isObjectPatternList] using objects
-                  have argumentReflective :
-                      ReflectiveWellSorted.ReflectiveScopeSafeAt
-                        source.costWholeReflectionProfile
-                        available.length argument := by
-                    intro presentation membership
-                    have spine := reflective presentation membership
-                    simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
-                    exact spine.1
-                  have tailReflective : ∀ presentation ∈
-                        source.costWholeReflectionProfile.presentations,
-                      scopeSafeListAt presentation.quoteScope presentation.quoteConstructor
-                        available.length arguments = true := by
-                    intro presentation membership
-                    have spine := reflective presentation membership
-                    simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
-                    exact spine.2
+                  obtain ⟨argumentReflective, tailReflective⟩ := reflectiveSpine_cons reflective
                   have argumentCoreWellSorted :
                       WellSorted.OpenPatternWellSorted source.costWholeLanguage
                         targetFree available
@@ -8246,22 +8145,7 @@ theorem exists_buildCostStaticElementPlan?_of_typed
               WellSorted.isObjectPattern element = true ∧
                 WellSorted.isObjectPatternList elements = true := by
             simpa [WellSorted.isObjectPatternList] using objects
-          have elementReflective :
-              ReflectiveWellSorted.ReflectiveScopeSafeAt
-                source.costWholeReflectionProfile
-                available.length element := by
-            intro presentation membership
-            have spine := reflective presentation membership
-            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
-            exact spine.1
-          have tailReflective : ∀ presentation ∈
-                source.costWholeReflectionProfile.presentations,
-              scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
-                elements = true := by
-            intro presentation membership
-            have spine := reflective presentation membership
-            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
-            exact spine.2
+          obtain ⟨elementReflective, tailReflective⟩ := reflectiveSpine_cons reflective
           have elementCoreWellSorted :
               WellSorted.OpenPatternWellSorted source.costWholeLanguage
                 targetFree available
@@ -13984,6 +13868,26 @@ def CostRegionArgumentTrees.build? {source : CIGSLT}
             none
   | _, _ => none
 
+/-- A successful declared argument step retains the actual parameter
+representation, sort check, head result, and ordered tail. -/
+theorem CostRegionArgumentTrees.build?_cons
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {decompose : (available outer : List TypeExpr) → (pattern : Pattern) → (type : TypeExpr) →
+      Option (CostRegionTree source targetFree available outer pattern type)}
+    {available outer : List TypeExpr} {argument : Pattern} {arguments : List Pattern}
+    {parameter : TermParam} {parameters : List TermParam} {expected : TypeExpr}
+    (representation : WellSorted.MatchesParameterRepresentation parameter argument)
+    (parameterType : WellSorted.parameterType? parameter = some expected)
+    {head : CostRegionTree source targetFree available outer argument expected}
+    {tail : CostRegionArgumentTrees source targetFree available outer arguments parameters}
+    (headBuilt : decompose available outer argument expected = some head)
+    (tailBuilt : CostRegionArgumentTrees.build? decompose available outer arguments parameters = some tail) :
+    CostRegionArgumentTrees.build? decompose available outer (argument :: arguments) (parameter :: parameters) =
+      some (.cons representation parameterType head tail) := by
+  have checked := (WellSorted.matchesParameterRepresentation?_eq_true_iff parameter argument).mpr representation
+  simp only [CostRegionArgumentTrees.build?, inspectOption_eq_accepted parameterType, dif_pos checked,
+    headBuilt, tailBuilt]
+
 /-- Compile a homogeneous element spine using the same recursive
 decomposition callback.  Element order and duplicate occurrences are
 preserved definitionally. -/
@@ -14813,6 +14717,12 @@ theorem costRegionPatternWeight_le_listWeight_of_mem
       · have := inductionHypothesis membership
         omega
 
+private theorem costRegionPatternListWeight_cons_lt {pattern : Pattern} {patterns : List Pattern}
+    {fuel : Nat} (enough : costRegionPatternListWeight (pattern :: patterns) < fuel) :
+    costRegionPatternWeight pattern < fuel ∧ costRegionPatternListWeight patterns < fuel := by
+  simp only [costRegionPatternListWeight] at enough
+  omega
+
 /-- Typed open-object admission and recursive success on strictly smaller
 arguments are sufficient to compile an authored constructor spine.  This is
 the direct totality companion to `CostRegionArgumentTrees.build?`; it does not
@@ -14858,20 +14768,7 @@ theorem CostRegionArgumentTrees.exists_build?_eq_some_of_wellSorted
           have objectParts : WellSorted.isObjectPattern argument = true ∧
               WellSorted.isObjectPatternList arguments = true := by
             simpa [WellSorted.isObjectPatternList] using objects
-          have reflectiveHead : ReflectiveWellSorted.ReflectiveScopeSafeAt
-              source.costWholeReflectionProfile available.length argument := by
-            intro presentation membership
-            have spine := reflective presentation membership
-            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
-            exact spine.1
-          have reflectiveTail : ∀ presentation ∈
-                source.costWholeReflectionProfile.presentations,
-              scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
-                arguments = true := by
-            intro presentation membership
-            have spine := reflective presentation membership
-            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
-            exact spine.2
+          obtain ⟨reflectiveHead, reflectiveTail⟩ := reflectiveSpine_cons reflective
           have argumentCoreWellSorted : WellSorted.OpenPatternWellSorted
               source.costWholeLanguage targetFree available expected argument :=
             ⟨argumentTyped, canonicalParts.1, objectParts.1,
@@ -14881,25 +14778,12 @@ theorem CostRegionArgumentTrees.exists_build?_eq_some_of_wellSorted
                 source.costWholeReflectionProfile source.costWholeLanguage
                 targetFree available expected argument :=
             ⟨argumentCoreWellSorted, reflectiveHead⟩
-          have headBound : costRegionPatternWeight argument < fuelBound := by
-            simp only [costRegionPatternListWeight] at enough
-            omega
+          obtain ⟨headBound, tailBound⟩ := costRegionPatternListWeight_cons_lt enough
           obtain ⟨head, headBuilt⟩ :=
             succeeds (outer := outer) argumentWellSorted headBound
-          have tailBound :
-              costRegionPatternListWeight arguments < fuelBound := by
-            simp only [costRegionPatternListWeight] at enough
-            omega
           obtain ⟨tail, tailBuilt⟩ := inductionHypothesis argumentsTyped
             canonicalParts.2 objectParts.2 reflectiveTail tailBound
-          have representationChecked :
-              WellSorted.matchesParameterRepresentation? headParameter argument =
-                true :=
-            (WellSorted.matchesParameterRepresentation?_eq_true_iff
-              headParameter argument).mpr representation
-          apply Option.isSome_iff_exists.mp
-          simp [CostRegionArgumentTrees.build?, parameterType,
-            representationChecked, headBuilt, tailBuilt]
+          exact ⟨_, CostRegionArgumentTrees.build?_cons representation parameterType headBuilt tailBuilt⟩
 
 /-- Homogeneous collection companion to direct argument-spine totality. -/
 theorem CostRegionElementTrees.exists_build?_eq_some_of_wellSorted
@@ -14941,20 +14825,7 @@ theorem CostRegionElementTrees.exists_build?_eq_some_of_wellSorted
           have objectParts : WellSorted.isObjectPattern element = true ∧
               WellSorted.isObjectPatternList elements = true := by
             simpa [WellSorted.isObjectPatternList] using objects
-          have reflectiveHead : ReflectiveWellSorted.ReflectiveScopeSafeAt
-              source.costWholeReflectionProfile available.length element := by
-            intro presentation membership
-            have spine := reflective presentation membership
-            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
-            exact spine.1
-          have reflectiveTail : ∀ presentation ∈
-                source.costWholeReflectionProfile.presentations,
-              scopeSafeListAt presentation.quoteScope presentation.quoteConstructor available.length
-                elements = true := by
-            intro presentation membership
-            have spine := reflective presentation membership
-            simp only [scopeSafeListAt_cons, Bool.and_eq_true] at spine
-            exact spine.2
+          obtain ⟨reflectiveHead, reflectiveTail⟩ := reflectiveSpine_cons reflective
           have elementCoreWellSorted : WellSorted.OpenPatternWellSorted
               source.costWholeLanguage targetFree available elementType
                 element :=
@@ -14965,15 +14836,9 @@ theorem CostRegionElementTrees.exists_build?_eq_some_of_wellSorted
                 source.costWholeReflectionProfile source.costWholeLanguage
                 targetFree available elementType element :=
             ⟨elementCoreWellSorted, reflectiveHead⟩
-          have headBound : costRegionPatternWeight element < fuelBound := by
-            simp only [costRegionPatternListWeight] at enough
-            omega
+          obtain ⟨headBound, tailBound⟩ := costRegionPatternListWeight_cons_lt enough
           obtain ⟨head, headBuilt⟩ :=
             succeeds (outer := outer) elementWellSorted headBound
-          have tailBound :
-              costRegionPatternListWeight elements < fuelBound := by
-            simp only [costRegionPatternListWeight] at enough
-            omega
           obtain ⟨tail, tailBuilt⟩ := inductionHypothesis elementsTyped
             canonicalParts.2 objectParts.2 reflectiveTail tailBound
           exact ⟨.cons head tail, by
@@ -15010,85 +14875,13 @@ theorem CostRegionArgumentTrees.exists_build?_eq_some_of_trees
   | cons argument arguments inductionHypothesis =>
       cases trees with
       | cons representation parameterType head tail =>
-          rename_i parameter parameters expected
-          have headBound : costRegionPatternWeight argument < fuelBound := by
-            simp only [costRegionPatternListWeight] at enough
-            omega
+          obtain ⟨headBound, tailBound⟩ := costRegionPatternListWeight_cons_lt enough
           simp only [WellSorted.isObjectPatternList, Bool.and_eq_true] at objects
           obtain ⟨headBuilt, headBuilds⟩ :=
             succeeds head objects.1 headBound
-          have tailBound : costRegionPatternListWeight arguments < fuelBound := by
-            simp only [costRegionPatternListWeight] at enough
-            omega
           obtain ⟨tailBuilt, tailBuilds⟩ :=
             inductionHypothesis tail objects.2 tailBound
-          have representationChecked :
-              WellSorted.matchesParameterRepresentation? _ argument =
-                true :=
-            (WellSorted.matchesParameterRepresentation?_eq_true_iff
-              _ argument).mpr representation
-          apply Option.isSome_iff_exists.mp
-          cases parameter with
-          | simple parameterName parameterTypeExpr =>
-              have expectedEquality : parameterTypeExpr = expected :=
-                Option.some.inj parameterType
-              subst expected
-              simp [WellSorted.parameterType?,
-                CostRegionArgumentTrees.build?, representationChecked,
-                headBuilds, tailBuilds]
-          | abstractionNamed binderName bodyName parameterTypeExpr =>
-              cases parameterTypeExpr with
-              | base sort =>
-                  have expectedEquality :
-                      (.arrow (.base sort) (.base sort) : TypeExpr) =
-                        expected := Option.some.inj parameterType
-                  subst expected
-                  simp [WellSorted.parameterType?,
-                    CostRegionArgumentTrees.build?, representationChecked,
-                    headBuilds, tailBuilds]
-              | arrow domain codomain =>
-                  have expectedEquality :
-                      (.arrow domain codomain : TypeExpr) = expected :=
-                    Option.some.inj parameterType
-                  subst expected
-                  simp [WellSorted.parameterType?,
-                    CostRegionArgumentTrees.build?, representationChecked,
-                    headBuilds, tailBuilds]
-              | multiBinder body =>
-                  simp [WellSorted.parameterType?] at parameterType
-              | collection collectionType elementType =>
-                  simp [WellSorted.parameterType?] at parameterType
-          | multiAbstractionNamed binderNames bodyName parameterTypeExpr =>
-              cases parameterTypeExpr with
-              | base sort =>
-                  have expectedEquality :
-                      (.arrow (.multiBinder (.base sort)) (.base sort) :
-                        TypeExpr) = expected := Option.some.inj parameterType
-                  subst expected
-                  simp [WellSorted.parameterType?,
-                    CostRegionArgumentTrees.build?, representationChecked,
-                    headBuilds, tailBuilds]
-              | arrow domain codomain =>
-                  cases domain with
-                  | base sort =>
-                      simp [WellSorted.parameterType?] at parameterType
-                  | arrow first second =>
-                      simp [WellSorted.parameterType?] at parameterType
-                  | multiBinder binderType =>
-                      have expectedEquality :
-                          (.arrow (.multiBinder binderType) codomain :
-                            TypeExpr) = expected :=
-                        Option.some.inj parameterType
-                      subst expected
-                      simp [WellSorted.parameterType?,
-                        CostRegionArgumentTrees.build?, representationChecked,
-                        headBuilds, tailBuilds]
-                  | collection collectionType elementType =>
-                      simp [WellSorted.parameterType?] at parameterType
-              | multiBinder body =>
-                  simp [WellSorted.parameterType?] at parameterType
-              | collection collectionType elementType =>
-                  simp [WellSorted.parameterType?] at parameterType
+          exact ⟨_, CostRegionArgumentTrees.build?_cons representation parameterType headBuilds tailBuilds⟩
 
 /-- The analogous finite-spine completeness theorem for homogeneous
 collections.  Duplicate elements remain separate recursive calls. -/
@@ -15119,15 +14912,10 @@ theorem CostRegionElementTrees.exists_build?_eq_some_of_trees
   | cons element elements inductionHypothesis =>
       cases trees with
       | cons head tail =>
-          have headBound : costRegionPatternWeight element < fuelBound := by
-            simp only [costRegionPatternListWeight] at enough
-            omega
+          obtain ⟨headBound, tailBound⟩ := costRegionPatternListWeight_cons_lt enough
           simp only [WellSorted.isObjectPatternList, Bool.and_eq_true] at objects
           obtain ⟨headBuilt, headBuilds⟩ :=
             succeeds head objects.1 headBound
-          have tailBound : costRegionPatternListWeight elements < fuelBound := by
-            simp only [costRegionPatternListWeight] at enough
-            omega
           obtain ⟨tailBuilt, tailBuilds⟩ :=
             inductionHypothesis tail objects.2 tailBound
           exact ⟨.cons headBuilt tailBuilt, by

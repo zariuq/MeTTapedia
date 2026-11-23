@@ -1,0 +1,12 @@
+first: available=["()"] store=["before", "first"] closed=false
+drain: available=["()"] store=["before", "first", "later"] closed=true
+pause: available=[] store=["before"] closed=false
+resume: available=["()"] store=["before", "first"] closed=false
+restart: available=["()"] store=["before", "before", "first"] closed=false
+errors: available=["(Error same BadDestination)", "(Error same BadDestination)"] store=["before"] closed=true
+error-prefix: available=[] store=["before"] closed=false
+cursor-success: answer=() store=["before", "first"]
+cursor-error: answer=(Error same BadDestination) store=["before"]
+cursor-pause: paused store=["before"]
+cursor-empty: exhausted store=[]
+cursor-unavailable: interrupted store=[]

@@ -1,0 +1,5 @@
+!(bind! &jobs (new-space))
+!(add-atom &jobs (p a))
+!(add-atom &jobs (exec first (,) (O (+ (exec second (, (p $outside)) (O (+ (q $outside))))))))
+!(select 100 (search-policy (control FIFO (resources MM2) (budget 100000))) &jobs)
+!(collapse (get-atoms &jobs))

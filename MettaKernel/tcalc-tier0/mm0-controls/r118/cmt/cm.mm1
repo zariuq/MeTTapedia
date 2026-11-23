@@ -1,0 +1,6 @@
+delimiter $ ( ) $;
+provable sort wff;
+term im (a b: wff): wff; infixr im: $->$ prec 25;
+term neg (a: wff): wff; prefix neg: $--$ prec 40;
+def t (a b: wff): wff = $ b $;
+pub theorem thm (a b: wff) (h: $ t a b $): $ b $ = 'h;

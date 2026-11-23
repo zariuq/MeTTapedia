@@ -1,0 +1,11 @@
+import "NatSignature.module" as n
+Module RecursiveArithmetic {
+  Theory Arithmetic(d: n.Data) {
+    d
+      Rewrites {
+        AddZero . value:Nat |- (Add (Zero) value) ~> value;
+        AddSucc . left:Nat, right:Nat |- (Add (Succ left) right) ~> (Succ (Add left right));
+      }
+  }
+  theory Arithmetic(n.Data())
+}

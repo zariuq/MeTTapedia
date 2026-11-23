@@ -1,0 +1,42 @@
+Module MicromathKernel {
+  Theory Inference() {
+    Types { MmSymbol; MmClaim; MmStore; MmCommand; }
+    Terms {
+      X . |- "X" : MmSymbol;
+      Y . |- "Y" : MmSymbol;
+      EQ . out:MmSymbol, f:MmSymbol, x:MmSymbol, y:MmSymbol
+        |- "EQ" out f x y : MmClaim;
+      Store . claims:HashSet(MmClaim)
+        |- "{" claims.*sep(",") "}" : MmStore;
+      AdmitProj1 . a:MmSymbol, b:MmSymbol, store:MmStore
+        |- "proj1" a b store : MmCommand;
+      AdmitProj2 . a:MmSymbol, b:MmSymbol, store:MmStore
+        |- "proj2" a b store : MmCommand;
+      AdmitRefl . a:MmSymbol, store:MmStore
+        |- "refl" a store : MmCommand;
+    }
+    Rewrites {
+      Proj1Rule : (AdmitProj1 a b (Store #{...rest}))
+        ~> (Store #{(EQ a X a b), ...rest});
+      Proj2Rule : (AdmitProj2 a b (Store #{...rest}))
+        ~> (Store #{(EQ b Y a b), ...rest});
+      ReflRule : (AdmitRefl a (Store #{...rest}))
+        ~> (Store #{(EQ a a X Y), ...rest});
+      Sub1 . claims:HashSet(MmClaim), x:MmSymbol, t:MmSymbol, u:MmSymbol, w:MmSymbol,
+        u1:MmSymbol, a:MmSymbol, b:MmSymbol, w1:MmSymbol, x1:MmSymbol |
+        "collection-member"(claims, (EQ x t u w)),
+        "collection-member"(claims, (EQ u1 u a b)),
+        "collection-member"(claims, (EQ w1 w a b)),
+        "collection-member"(claims, (EQ x1 x a b)) |-
+        (Store #{...claims}) ~> (Store #{(EQ x1 t u1 w1), ...claims});
+      Sub2 . claims:HashSet(MmClaim), x:MmSymbol, t:MmSymbol, u:MmSymbol, w:MmSymbol,
+        u1:MmSymbol, a:MmSymbol, b:MmSymbol, w1:MmSymbol, x1:MmSymbol |
+        "collection-member"(claims, (EQ x t u w)),
+        "collection-member"(claims, (EQ u1 u a b)),
+        "collection-member"(claims, (EQ w1 w a b)),
+        "collection-member"(claims, (EQ x1 t u1 w1)) |-
+        (Store #{...claims}) ~> (Store #{(EQ x1 x a b), ...claims});
+    }
+  }
+  theory Inference()
+}

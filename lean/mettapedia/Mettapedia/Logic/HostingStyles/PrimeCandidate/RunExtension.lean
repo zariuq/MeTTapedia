@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationBatch
 import Mettapedia.Logic.HostingStyles.PrimeCandidate.ProbeData
 import Mettapedia.Logic.HostingStyles.PrimeCandidate.ChoiceExtension
 
@@ -150,25 +151,10 @@ theorem probeWithRun_rewrites_checked :
 
 /-- **The probe with a run constructor passes the declaration gate.** -/
 theorem probeWithRun_validate : probeWithRun.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
-  case htypes => decide +kernel
-  case hconstructors => decide +kernel
-  case hequations => decide +kernel
-  case hrewrites => decide +kernel
-  case hcategory => decide +kernel
-  case hparams => decide +kernel
-  case hsyntax => decide +kernel
-  case hequationValid =>
-    intro equation member
-    exact LanguageDef.validateEquation_eq_nil_of_plainEquationOk
-      (List.all_eq_true.mp
-        (by decide +kernel :
-          probeWithRun.equations.all (LanguageDef.plainEquationOk probeWithRun) = true)
-        equation member)
-  case hrewriteValid =>
-    intro rewrite member
-    exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check (by decide +kernel)
-      (probeWithRun_rewrites_checked rewrite member)
+  exact RewriteValidationCertificate.validate_eq_nil_of_signature_and_checks
+    (RewriteValidationCertificate.validate_signature_of_plain_equations (lang := probeWithRun)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel)) (by decide +kernel) probeWithRun_rewrites_checked
 
 /-- The probe with a run constructor, as a presentation. -/
 def runPresentation : ValidatedLanguageDef := ⟨probeWithRun, probeWithRun_validate⟩

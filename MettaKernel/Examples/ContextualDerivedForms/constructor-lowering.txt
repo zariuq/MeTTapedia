@@ -1,0 +1,74 @@
+Retained constructor decisions and ordered operands
+
+ConstructorDataHeads emits an unknown literal head as ordinary quoted nullary
+data or native-cons construction of its head and operands. Source control
+forms and known calls remain operations. The expansion uses the existing
+cons-atom primitive and introduces no fresh variables or new native operation.
+
+ConstructorEvaluation independently describes completed operand schedules
+using actual source paths. Each alternative carries its own substitution;
+suffixes run in discovery order through the reached shared world. ConstructorDirect
+and ConstructorRealization reach identical return packets and world above
+arbitrary saved callers. Normality follows from the actual unifier invariant.
+ConstructorContinuations proves agreement under every subsequent allowance
+after the two finite administrative prefixes. Equal initial fuel need not
+have equal cutoffs; native instruction counts and timing are not measured.
+
+ConstructorSpine lifts arbitrary operand prefixes without requiring termination.
+ConstructorFaults transports escaping faults to the same caller recovery and
+reached effects. UnifyingRecoveryFrames retains inner runtime handlers, and
+argument waiters discard unfinished operand packets. General reflection of
+arbitrary unfinished constructor runs remains open.
+
+frozen_step and run_frozen prove the exact return boundary under any future
+registry, including the caller frames, world, bindings, I/O and identity supply.
+run_raw_nullary proves eight steps to that boundary through the ordinary
+unknown-head route. Quotation takes one. These are logical source charges;
+finite cutoffs differ, and neither theorem measures native instructions or time.
+
+UnifyingCompilerLocals proves properties of the actual binder and unifier:
+- FreshLocal excludes a key from both existing keys and existing bound values.
+- fresh_local_bindVar retains the original substitution literally as its tail.
+- fresh_local_resolve preserves resolution of source terms avoiding the local.
+- unifyBinding_fresh_local derives the successful binding with the actual
+  unifier's automatically supplied allowance, rather than assuming success.
+- erase_new_local recovers the original substitution, and idempotence is kept.
+
+UnifyingLocalProjection proves lookup/resolution projection and commutation
+with ordinary bindings at other keys. CleanValues excludes latent references
+to the local from stored bound values. These are sufficient algebraic laws;
+whole evaluator/context erasure and general unifier projection remain open.
+They do not justify dropping arbitrary source branch constraints.
+
+PeTTaConstructorControls exercises later registration, an ordinary known call,
+the changed cutoff, empty-result control and input consumption. It also checks
+the actual fresh binder and the clash caused by reusing an existing source key.
+ConstructorModel executes nine observations. StagingModel executes eight,
+including both corrected future-head cases. ConstructorOperandsModel reads
+constructor-operands.metta through the shared reader and executes eight
+independently specified observations. Binder and case patterns stay syntax;
+their initializers and executable bodies are prepared in their source roles.
+
+constructor-faults.metta distinguishes root-answer retention, an answerless
+operand and an error-only operand; earlier writes survive all three. Its first
+observation exposed a Lean recovery bug present with and without expansion:
+an outer singleton clause collector overwrote an inner completed root prefix.
+The corrected recovery combines root prefixes in discovery order and clears
+tentative values at operand/continuation boundaries. PeTTaConstructorFaultControls
+checks direct and expanded roots, nested collectors and tentative-value rejection.
+General recursive operand streaming is still outside this completed-operand
+profile. No public Prime syntax or C correspondence is selected here.
+
+constructor-streaming-frontier.metta records that remaining boundary with
+observable writes. SWI and the retained native snapshot produce the same
+answers and event order left,suffix,right,suffix. The completed-operand profile
+produces left,right,suffix,suffix: it finishes choose before running the suffix.
+The independent expectation is unchanged. This calibration remains unqualified
+for that profile and requires a streaming operand/continuation connection;
+the completed-schedule constructor theorem is not full SWI source adequacy.
+
+PeTTa/Streaming now supplies that schedule in a distinct profile, and
+StreamingModel reproduces the required source order. The older profile's
+observation remains recorded separately. Whole compiler adequacy still needs
+compiled output constraints, as source-initializer-constraint.metta demonstrates;
+streaming alone does not make post-return binding match SWI's early constraint.

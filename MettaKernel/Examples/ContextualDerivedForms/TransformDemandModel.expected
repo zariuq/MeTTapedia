@@ -1,0 +1,9 @@
+zero demand unchanged=true
+source first=["b"]; store=["c"]
+cursor first=["b"]; store=["c"]
+consumer-change resume=["c"]; store=["outside"]
+restart store=[]; residual store=["a"]
+poll cutoff answers=["b"]; reason=Mettapedia.GSLT.LanguageDef.NativeControlBoundedCursor.Stop.budget
+resumed answers=["b", "c"]; reason=Mettapedia.GSLT.LanguageDef.NativeControlBoundedCursor.Stop.limit
+contention order preserved=true; remaining=0
+empty template: answers=0; remaining=0

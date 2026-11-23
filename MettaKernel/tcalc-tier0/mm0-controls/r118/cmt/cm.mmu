@@ -1,0 +1,13 @@
+(sort wff provable)
+
+(term im ((a wff ()) (b wff ())) (wff ()))
+
+(term neg ((a wff ())) (wff ()))
+
+(def t ((a wff ()) (b wff ())) (wff ())
+()
+b)
+
+(theorem thm ((a wff ()) (b wff ()))
+  ((h (t a b)))
+  b

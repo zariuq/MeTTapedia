@@ -1,0 +1,8 @@
+!(let (pair $a $b) (quote (pair $x $x)) (== $a $b))
+!(let (pair $a $b) (quote (pair $x $y)) (== $a $b))
+!(let ($a $b) (collapse (superpose ($x $x))) (== $a $b))
+!(let ((pair $a $b)) (collapse (quote (pair $x $x))) (== $a $b))
+!(let $_ (change-state! readout-cell (row $x))
+   (let (row $a) (get-state readout-cell)
+     (let (row $b) (get-state readout-cell) (== $a $b))))
+!(let (pair $a $b) (quote (pair $0 $outside)) (== $a $b))

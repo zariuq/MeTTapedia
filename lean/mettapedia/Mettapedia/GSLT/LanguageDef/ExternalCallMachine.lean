@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ConstructorCategory
@@ -216,21 +217,8 @@ none of the target rules hides a recursive invocation of the ExternalCall evalua
 premise. -/
 theorem externalCallLanguageTransitions_noncontextual :
     ∀ rule, rule ∈ externalCallLanguageTransitions →
-      NoncontextualPremises rule.premises := by
-  intro rule ruleMember
-  simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
-    or_false] at ruleMember
-  rcases ruleMember with
-    rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  all_goals
-    simp only [fuelExhaustedRule, branchZeroTransition,
-      branchNonzeroTransition, callValueTransition,
-      callLanguageFaultTransition, callEngineFaultTransition,
-      callResourceFaultTransition, returnValueTransition,
-      returnDeclinedTransition, returnLanguageFaultTransition,
-      returnEngineFaultTransition, returnResourceFaultTransition,
-      branchRule, callRule, returnFaultRule, consumeFuel, fetch, query]
-  all_goals repeat' constructor
+      NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 /-- The authored external-call operational target. -/
 def externalCallLanguage : LanguageDef := {

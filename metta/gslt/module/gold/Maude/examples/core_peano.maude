@@ -1,0 +1,12 @@
+fmod GOLD-PEANO is
+  sort Nat .
+  op 0 : -> Nat [ctor] .
+  op s : Nat -> Nat [ctor] .
+  ops _+_ _*_ : Nat Nat -> Nat .
+  vars N M : Nat .
+  eq 0 + M = M .
+  eq s(N) + M = s(N + M) .
+  eq 0 * M = 0 .
+  eq s(N) * M = M + (N * M) .
+endfm
+red s(s(0)) * s(s(s(0))) .

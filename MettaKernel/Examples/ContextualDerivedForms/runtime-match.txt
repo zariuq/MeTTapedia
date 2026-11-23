@@ -1,0 +1,43 @@
+Written and runtime matching
+============================
+
+Runtime dispatch has already evaluated its arguments. For example:
+
+  !(let $m match
+      (let $v ($m &self (row $x) $x) (pair $v $x)))
+
+With (row a) in the space, both components are a. Returning only an instantiated
+template value without the row's branch substitution loses the second binding.
+The maintained unifying machine now carries that substitution in its answers.
+
+A second distinction is observable:
+
+  !(let $m match ($m &self (row a) (quote (println! 9))))
+
+The runtime argument evaluation produces held (println! 9). Matching returns
+that value; it does not print 9. Written match with an unquoted println! body
+does execute the body after selection. Reusing its body scheduler for the runtime
+value would evaluate the template a second time.
+
+Runtime matching also freshly copies open stored rows and unifies in both
+directions. The older ground primitive table cannot replace that adapter for
+open-row inputs. It retains its declared ground-store profile.
+
+PeTTaRuntimeMatchControls proves the distinctions through actual source runs;
+RuntimeMatchModel executes four observations. runtime-match-binding.metta has
+five independently expected SWI observations, also matched by retained native
+executable cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24.
+This is artifact-bound calibration rather than a new opt performance result.
+
+The allocation laws now cover term and list-view unification, argument and
+quoted-binding unification, clause/row frontiers, answer copying, let/case
+continuations and nested-let formation. Retained-cell support follows from
+actual primitive update classification. native_query_scoped_step connects row
+copying and unification to the real runtime-query step for arbitrary well-scoped
+callers, retaining their frames, cells and output.
+
+Complete allocation preservation through every primitive reply and source
+control case of the maintained machine is now proved in UnifyingTransitionPreservation,
+with bounded/suspended-prefix laws in UnifyingPrefixScopes. Open-answer readout
+and source-compiler adequacy remain separate. The allocation supply is for
+logical variable identities; it is separate from evaluator fuel.

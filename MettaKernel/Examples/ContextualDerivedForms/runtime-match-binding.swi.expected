@@ -1,0 +1,5 @@
+true
+(pair a a)
+(println! 9)
+true
+yes

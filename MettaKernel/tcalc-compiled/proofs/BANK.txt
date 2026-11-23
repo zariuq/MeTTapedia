@@ -1,0 +1,79 @@
+ACCEPTED ORDINARY-ROW MATHEMATICS AND MACHINE LEAVES
+
+  proofs/check-bank.sh --math-only
+  proofs/check-bank.sh
+
+An optional final argument chooses a new output directory. Existing directories
+are refused so that a new run cannot overwrite its evidence. HOLDIR and S2N name
+external HOL Light and s2n-bignum checkouts. Native qualification also uses GCC,
+Clang and GNU binutils. Ordinary runtime builds do not require these proof tools.
+Replay runs from its output directory with explicit library search paths, so
+neither the caller's working directory nor the s2n checkout location supplies
+implicit project dependencies.
+
+Mathematical layer
+------------------
+flat_spec.ml gives packed 32-bit descriptors and the flat firing contract.
+ordinary_flat.ml independently defines four-word rows, constants, guards and
+selection, and proves their packed representation agrees with that meaning.
+ordinary_pack_spec.ml defines extent and capacity checks and complete output
+lists, including untouched suffixes. cesta_adapter_semantics.ml relates those
+capacity-preserving outputs to the independent ordinary-row operation.
+
+This layer needs generic HOL word/list libraries. It loads no x86 instruction
+model, object file, Cesta compiler or frozen adapter. bank_math.ml enumerates
+the accepted theorem values. bank_controls.ml supplies positive selection and
+negative guard, column and source-extent examples.
+
+Machine layer
+-------------
+flat_fire_trace.ml is the canonical exact 211-byte leaf proof, including its
+modeled data-access bounds. flat_trace_weaken.ml derives the functional contract;
+flat_fire.ml is its entry point. The earlier independent functional proof is
+retained in history/flat_fire_untraced.ml and is not an active dependency.
+
+flat_workspace.ml supplies word-array splitting and unchanged-suffix splicing.
+flat_trace_workspace.ml composes access events and widens permitted regions.
+flat_trace_wide.ml and flat_fire_wide.ml lift the exact leaf to full output
+workspaces. bank_native.ml also includes the exact retained mm_sub1_leaf object
+and its inside/outside contracts. The existing optional Cesta span-word lemmas
+are reused rather than copied.
+
+The native gate assembles flat_fire.S, executes its existing independent C
+controls under GCC and Clang, and requires a changed guard instruction to fail
+those controls. HOL checks the selected object bytes against the proof's literal
+instructions. A fresh native HOL process must construct every named theorem,
+leave no local theorem assumptions and pass the axiom audit. Input hashes are
+checked again after replay; expanded proof, executable and log hashes are kept.
+
+The receipt is result.txt together with inputs.before, inputs.checked,
+artifacts.sha256 and proof.log. The math and native manifests are explicit HOL
+theorem values, not an evaluator transcript or a certificate for arbitrary C.
+
+Completion boundary
+-------------------
+The complete generated pack and linked adapter machine proofs remain open.
+proofs/check.sh retains their full acceptance conditions. Its failure cannot be
+turned into success by running the smaller bank gate. run.sh and the runtime's
+frozen bytes are unchanged by this separation.
+
+The live runtime's four function bodies can be compared independently with the
+retained linked image. Such identity checks do not establish that dirty current
+sources rebuild to those bytes, nor do they prove outer admission, allocation,
+growth, publication or AVX behavior. No general emitter, Cesta-to-C or C compiler
+correctness result follows from these selected artifact theorems.
+
+The bank has no dependency on proofs/history or the unfinished
+cesta_pack_core.ml/cesta_adapter*.ml machine-proof chain. The pure
+cesta_adapter_semantics.ml refinement is an intentional exception to that name
+pattern: it has no machine/artifact dependency.
+
+Artifact roles
+--------------
+Generic substrate: flat_spec.ml, ordinary_flat.ml, ordinary_pack_spec.ml,
+cesta_adapter_semantics.ml and the workspace/trace lemmas.
+Calibration fixtures: bank_controls.ml and test_flat_fire.c.
+Artifact correspondence: flat_fire_trace.ml, its weakening/full-workspace
+theorems, and mm_sub1_leaf.ml.
+Derived qualification data: theorem manifests and per-run evidence.
+Historical evidence: history/flat_fire_untraced.ml and the earlier failure logs.

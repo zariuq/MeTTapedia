@@ -1,0 +1,617 @@
+Transform calculus consolidation: evidence inventory
+===================================================
+
+This inventory records the mathematical evidence for the consolidation
+requirements. The final fresh dependency rebuild and artifact qualification
+are separate gates; this inventory alone is not a completion certificate.
+
+Scope
+-----
+
+The general core separates preparation, admission, execution and observation.
+The structural occurrence and quoted contextual profiles have actual source
+interpretations. Represented native states and candidates have prepared-result
+closure; exact codecs apply only to those represented carriers. Reflection of
+all permitted paths requires candidate coverage at represented states.
+Faithful candidate interpretation additionally gives unique path lifting.
+An unbounded counted-store source consumer instantiates these laws.
+The GSOS connection retains its finite-branching set-observation assumptions.
+Native implementation refinement and full rho/PeTTa factorization are separate
+consumer and subsequent-work obligations.
+
+Evidence
+--------
+
+core.preparation — Prepared effects are independent of permission
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectCore
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectCore
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Admission
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectCore
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Event
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Interface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Interface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.guarded
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Interface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.prepares
+
+core.refinement — Semantic solution pullbacks and optional exactness
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectCore
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.models_along
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectCore
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.models_result_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Interface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.literal_exact
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Interface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.models_along
+
+core.distinctions — Exactness, coverage and consistency are distinct
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProfileControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.ProfileControls.normalization_exact
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProfileControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.ProfileControls.normalization_not_literal
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProfileControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.ProfileControls.normalization_covers
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProfileControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.ProfileControls.strict_not_exact
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProfileControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.ProfileControls.strict_result_consistent
+
+permission.policy — Evaluators cannot bypass a fixed admission profile
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventEvaluation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Evaluation.evaluator_cannot_bypass
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventEvaluation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Evaluation.evaluation_refines
+
+permission.outcomes — Refusal, unresolved work and exhausted budget remain distinct
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventEvaluationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Evaluation.Controls.zero_budget_is_not_a_refutation
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventEvaluationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Evaluation.Controls.unresolved_does_not_refute_valid_work
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventEvaluationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Evaluation.Controls.completed_effect_is_retained
+
+publications.receipts — Prepared payload inheritance does not fabricate a base receipt
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PreparedPublicationsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.PreparedPublicationsControls.inherited_payload_available
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PreparedPublicationsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.PreparedPublicationsControls.new_receipt_without_base_receipt
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PreparedPublicationsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.PreparedPublicationsControls.inherited_observation_erases
+
+publications.transport — Inheritance requires laws on the actual admission domain
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PreparedPublicationsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.PublicationTransportControls.strict_compatible
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PreparedPublicationsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.PublicationTransportControls.total_payload_not_compatible
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PreparedPublicationsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.PublicationTransportControls.same_data_different_obligation
+
+observers.lifting — Unique observer lifting and erasure of a complete path
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventObserverLifting
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventObserver.unique_lift
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventObserverLifting
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventObserver.evaluate_comap
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EscapeEventLifting
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.Escape.lifted_run_erases
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EscapeEventLifting
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.Escape.escaping_run_unique
+
+observers.feedback — A record consulted by later execution is operational state and cannot be erased from permission
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventFeedbackControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventFeedbackControls.first_result
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventFeedbackControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventFeedbackControls.same_world
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventFeedbackControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventFeedbackControls.false_allowed_after_false
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventFeedbackControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventFeedbackControls.false_refused_after_true
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventFeedbackControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventFeedbackControls.refusal_retains_preparation
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventFeedbackControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventFeedbackControls.record_is_execution_state
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventFeedbackControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventFeedbackControls.recorded_from_actual_event
+
+choices.recording — Operational choices use event recording without existence or exhaustiveness defaults
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RecordedChoice
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RecordedChoice.Choices.record_eq_account
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RecordedChoice
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RecordedChoice.Choices.record_append
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RecordedChoice
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RecordedChoice.Choices.record_eq_word
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventRecordingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RecordedChoice.EventControls.empty_choices_have_no_event
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventRecordingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RecordedChoice.EventControls.choices_remain_distinct
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventRecordingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RecordedChoice.EventControls.observation_erases
+
+syntax.authored — The shared authored module supplies the validated calculus object
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationComposition
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.authored_elaborates
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationComposition
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.shared_types_once
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationComposition
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.constructors_once
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationComposition
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.authored_rewrites
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationComposition
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.tcalcLanguageDef_valid
+
+syntax.interpretation — Preparation and admission queries interpret real effect data
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationInterpretation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.preparation_encoded
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationInterpretation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.permission_encoded
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationInterpretation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.execution_iff_event
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationOccurrenceProfile
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.OccurrenceProfile.encoding
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationOccurrenceProfile
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.OccurrenceProfile.execution_iff
+
+syntax.articles — Authored inference articles retain ordered premises and semantic admission
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationArticles
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.article_iff_event
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationArticles
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.ArticleControls.correct_article_has_event
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationArticles
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.ArticleControls.structural_check_does_not_certify_premises
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationArticles
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.ArticleControls.false_preparation_refused
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationArticles
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.ArticleControls.wrong_child_order_refused
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationArticles
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.ArticleControls.missing_permission_refused
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationArticles
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.ArticleControls.refused_permission_is_not_a_receipt
+
+syntax.parser — Lexical and grammar replay retain ambiguity and reject invalid forests
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationParserControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Parser.Controls.both_certificates_replay
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationParserControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Parser.Controls.forest_complete
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationParserControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Parser.Controls.ambiguity_survives
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationParserControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Parser.Controls.missing_alternative_refused
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationParserControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Parser.Controls.malformed_lexical_span_refused
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationParserControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Parser.Controls.forged_rule_origin_refused
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationParserControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Parser.Controls.explicit_policy_separates
+
+syntax.readback — Canonical scalar recovery covers every parse and the versioned document
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSourceRecovery
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Source.canonical_request_recovery
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSourceRecovery
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Source.packed_reader_agrees
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSourceRecovery
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Source.versioned_request_recovery
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSourceRecovery
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Source.stale_request_refused
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSourceRecovery
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Source.event_input_normalizes
+
+syntax.normalization — Source normalization retains only its declared observations
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSourceObservation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Source.normalized_record_commutes
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSourceObservation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Source.raw_record_unique_lift
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSourceObservation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Source.Controls.raw_observer_cannot_descend
+
+syntax.binding — Binding-aware lowering retains scope and distinguishes variables from holes
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationBindingHeads
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Binding.lowerPattern_eq_iff_alpha
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationBindingHeads
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Binding.lowerPattern_substitution
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationBindingHeads
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Binding.object_variable_is_not_schema_hole
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationBindingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Payloads.BindingControls.capture_equation_unsolvable
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationBindingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Payloads.BindingControls.closed_substitution_solves
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationBindingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Payloads.BindingControls.both_terms_well_scoped
+
+syntax.schema — Physical schema opening retains selected uses, captures and freshness
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSchemaPreparation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.SchemaPreparation.openRule_exact
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSchemaPreparation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.SchemaPreparation.selected_read_source
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSchemaControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.SchemaControls.distinct_use_scopes
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSchemaControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.SchemaControls.scopes_are_fresh
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSchemaControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.SchemaControls.private_views_distinct
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSchemaControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.SchemaControls.shared_views_agree
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSchemaControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.SchemaControls.selected_schema_has_source_readback
+
+syntax.prepared_views — Source views recover the actual native preparation, not arbitrary publication recipes
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativePreparation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativePreparation.prepare_unique
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativePreparation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativePreparation.source_readback
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativePreparation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativePreparation.checks_retained
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativePreparation
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativePreparation.event_source_views
+
+syntax.origins — Origin profiles retain full candidates, base admission and explicit authority
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Origins
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Origins.admits_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Origins
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Origins.base_refusal_retained
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Origins
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Origins.different_origins_distinct
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativeOriginControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativeOriginControls.actual_publication_controls
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativeOriginControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativeOriginControls.absent_origin_refused
+
+syntax.origin_runs — Parsed references preserve origin paths and their observations
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativeOriginRuns
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativeOrigins.reference_paths_surjective
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativeOriginRuns
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativeOrigins.reference_composition
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativeOriginExecution
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativeOrigins.authored_execution_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativeOriginExecution
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativeOrigins.source_encoding_retains_recipes
+
+representations.preparation — Represented carriers inherit actual effects and close all prepared results
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedEffects
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Representation
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedEffects
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Representation.prepares_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedEffects
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Representation.event_reflects
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedEffects
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Representation.event_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedEffects
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.represent_admits_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedEffects
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.represent_exact
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedEffectsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.RepresentedEffectsControls.prepared_refusal
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedEffectsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.RepresentedEffectsControls.admitted_closure
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedEffectsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.RepresentedEffectsControls.cannot_represent_prepared_result
+
+representations.native — Exact codecs apply to represented native calls with actual publication/refusal controls
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativeOriginExecution
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativeOrigins.authored_execution_preserves
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationNativeOriginExecution
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.NativeOrigins.native_event_has_authored_execution
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedNativeControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedNativeControls.state_readback
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedNativeControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedNativeControls.firing_readback
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedNativeControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedNativeControls.authored_publication_has_native_event
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedNativeControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedNativeControls.refused_preparation_retained
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedNativeControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedNativeControls.actual_native_presentation
+
+representations.paths — Permitted candidate coverage gives source path reflection and faithful candidates give uniqueness
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedPaths
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Representation.Covers
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedPaths
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Representation.path_surjective
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedPaths
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Representation.path_bijective
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedPaths
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.Representation.observer_commutes
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedRuns
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedRuns.interpret_encoded_run
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedRuns
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedRuns.covers_semantic_runs
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedRuns
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedRuns.unique_source_run
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedPathsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.RepresentedPathsControls.run_last
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedPathsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.RepresentedPathsControls.run_labels
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedPathsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.RepresentedPathsControls.arbitrary_run_unique
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedPathsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.RepresentedPathsControls.equal_endpoint_labels_distinct
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.RepresentedPathsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.RepresentedPathsControls.missing_candidate_not_covered
+
+representations.source_hol — Unbounded source run consumer and loaded HOL preserve complete interpreted words
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedRunsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedRunsControls.state_readback
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedRunsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedRunsControls.firing_readback
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedRunsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedRunsControls.every_semantic_run_has_unique_source
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedRunsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedRunsControls.actual_source_run
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedRunsControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedRunsControls.authored_step
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedHOL
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedHOL.source_run_preserves
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationRepresentedHOL
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.RepresentedHOL.source_run_reflects
+
+syntax.quoted_events — Quoted scalar source runs reach the shared contextual event interface
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersInterface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProgramBinders.InterfaceProfile.prepared_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersInterface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProgramBinders.InterfaceProfile.event_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersInterface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProgramBinders.InterfaceProfile.run_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersInterface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProgramBinders.InterfaceProfile.source_execution_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.ProgramBindersInterface
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ProgramBinders.InterfaceProfile.run_cursor
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationQuotedEvents
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.QuotedEvents.source_path_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationQuotedEvents
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.QuotedEvents.Controls.named_code_executes
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationQuotedEvents
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.QuotedEvents.Controls.captures_survive_execution
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationQuotedEvents
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.QuotedEvents.Controls.loop_has_an_actual_event
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationQuotedEvents
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.QuotedEvents.Controls.quoted_loop_has_no_event
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationQuotedEvents
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.QuotedEvents.Controls.event_changes_occurrence
+
+syntax.lowering — Administrative lowering is observed explicitly and has a converse
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSubmission
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Submission.completedRunEquiv
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationSubmission
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Submission.lower_length
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Controls.real_lowering_has_administrative_step
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Controls.real_lowering_reflects
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Controls.bypass_invents_a_transition
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Controls.invented_transition_has_no_event
+
+runs.free — Admitted-event paths are the free category and agree with endpoint runs
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventCategory
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectCore.interpretation_exists_unique
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventCategory
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.runPathEquiv
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventCategory
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.endpointPath_append
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventCategory
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.eventWord_injective
+
+runs.accounts — Ordered monoid accounts specialize the free interpretation
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventAccount
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.account_interpretation_exists_unique
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventAccount
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Run.account_eq_pathAccount
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventAccountObserver
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.accountObserver_run_one
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventAccountObserver
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.accountObserver_unique_lift
+
+traces.descent — Readouts descend exactly under the actual quotient relation
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTrace
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.Trace.observation_exists_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTrace
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.Trace.observation_unique
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTrace
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.Trace.no_observation_of_distinguished_related
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTraceRuns
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.eventTrace_run
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTraceRuns
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.observation_eventTrace_run
+
+traces.consumers — Actual charge, count and transported record consumers obey their laws
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTraceCharge
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.Trace.total_eventTrace_run
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTraceCharge
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.Trace.net_eventTrace_run
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTraceControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventTraceControls.labels_cannot_descend
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTraceControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventTraceControls.free_paths_differ
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTraceControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventTraceControls.quotient_identifies_paths
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventTraceControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EventTraceControls.net_is_retained
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EscapeTransport
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.Escape.traceEquiv_record
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EscapeTransport
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Transport.Escape.traceEquiv_names
+
+behaviour.gsos — An admitted finite-branching set profile has qualified compositional behavior
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.GSOSBehaviour
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.GSOSProfile.observed_successors_eq
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.GSOSBehaviour
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.GSOSProfile.compositional_observation
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.GSOSBehaviour
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.GSOSProfile.context_preserves_bisimilarity
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.GSOSBehaviour
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.GSOSProfile.two_transform_futures
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.GSOSBehaviour
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.GSOSProfile.futures_not_bisimilar
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.GSOSBehaviour
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.GSOSProfile.set_observation_forgets_multiplicity
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.GSOSBehaviour
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.GSOSProfile.syntactic_inspection_requires_another_contract
+
+universality.principal — Principal-answer factorization remains scoped to its actual relation
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Dispatch
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Frames.Principal.factorsOn
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Dispatch
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Frames.Principal.unique
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Dispatch
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Translation.FrameMap.dispatch_admits_iff_decider
+
+hol.fibres — Raw inhabited carriers preserve empty valid fibres and preparations
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLFrameEncodingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLFrameEncoding.Controls.empty_frame_is_valid
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLFrameEncodingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLFrameEncoding.Controls.empty_frame_has_identity
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLFrameEncodingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLFrameEncoding.Controls.no_invented_map_to_empty
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLFrameEncodingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLFrameEncoding.Controls.false_guard_not_licensed_by_empty_terms
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPreparationEncodingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPreparationEncodingControls.empty_fibre
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPreparationEncodingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPreparationEncodingControls.preparation_choices_distinct
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPreparationEncodingControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPreparationEncodingControls.same_endpoints_distinct_packets
+
+hol.effects — Actual loaded semantic-effect and exactness definitions agree with the interface
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLSemanticEffectSpecialization
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLSemanticEffectSpecialization.semantic_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLSemanticEffectSpecialization
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLSemanticEffectSpecialization.constructed_agreement
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLExactSpecialization
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLExactSpecialization.effect_exact_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLExactSpecialization
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLExactSpecialization.constructed_agreement
+
+hol.events — Actual loaded admission agrees with complete native event packets
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLAdmissionEventSpecialization
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLAdmissionEventSpecialization.prepared_exists_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLAdmissionEventSpecialization
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLAdmissionEventSpecialization.native_event_equiv
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLAdmissionEventSpecialization
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLAdmissionEventSpecialization.native_event_firing
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationHOLAdmission
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Source.HOLAdmission.constructed_source_interpretation
+
+hol.runs — Loaded tc_path uses loaded tc_admitted_event in the same received model
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLRunAdmissionJoin
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLRunAdmissionJoin.Input.equations
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLRunAdmissionJoin
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLRunAdmissionJoin.Input.admitted_path_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationHOLRuns
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.HOLRuns.preserves
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationHOLRuns
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.HOLRuns.reflects
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationQuotedHOL
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.QuotedHOL.preserves_event_word
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationQuotedHOL
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.QuotedHOL.reflects_event_word
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationQuotedHOL
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.QuotedHOL.source_execution_iff_loaded
+
+hol.recording — Loaded continuation pullback agrees with dependent event recording in the admission model
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverEncoding
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverEncoding.valid_fibre_iff
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverEncoding
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverEncoding.update_event
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverEncoding
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverEncoding.evaluate_word
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverEncoding
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverEncoding.update_valid
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverEncoding
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverEncoding.update_refused
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverEncoding
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverEncoding.no_valid_initial_record
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverModel
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverModel.valueCarrier
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverModel
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverModel.record_eq_native
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverAdmission
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverAdmission.equations
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverAdmission
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverAdmission.admittedValue_eq_step
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverAdmission
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverAdmission.path_and_record
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverControls.loaded_order_retained
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverControls.state_index_retained
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLObserverControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLObserverControls.empty_fibre_not_inhabited
+
+hol.publications — Loaded observers retain prepared publications, transport prior names, record fresh success and refuse base success
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPublications
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPublications.preparedPayload
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPublications
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPublications.prepared_payload_valid
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPublications
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPublications.loaded_event_update
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPublications
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPublications.loaded_event_payload
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPublications
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPublications.Controls.inherited_publication_recorded
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPublications
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPublications.Controls.fresh_success_recorded
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPublications
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPublications.Controls.base_loaded_preparation_available
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPublications
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPublications.Controls.base_loaded_event_refused
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLPublications
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLPublications.Controls.base_prepared_payload_available
+
+controls.knowledge — Duplicate removal, strengthening and invalid weakening separate knowledge laws
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectStore
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectStoreControls.normalization_changes_syntax
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectStore
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectStoreControls.tell_not_exact
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectStore
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectStoreControls.tell_result_solvable
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EffectStore
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.EffectStoreControls.cannot_forget_constraint
+
+controls.admission — Knowledge refinement does not excuse a language-invariant violation
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Controls.refused_effect_still_refines
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.PresentationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Presentation.Controls.bypass_breaks_language_invariant
+
+controls.order — Distinct equal-endpoint events and noncommuting words remain distinct
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventAccountControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.AccountControls.same_endpoints_distinct_accounts
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventAccountControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.AccountControls.forgotten_label_not_recoverable
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLRunControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLRunControls.noncommuting_words
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.HOLRunControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.HOLRunControls.pullback_order
+
+controls.handlers — Enumeration/commitment and shared/isolated effects can change answers
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventEvaluationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Evaluation.Controls.enumeration_and_commitment_differ
+  Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.EventEvaluationControls
+    Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Step.Evaluation.HandlerControls.shared_and_isolated_change_answers
+
+Qualification
+-------------
+
+The declaration/axiom audit checks 241 selected declarations.
+Its only axioms are Classical.choice, Quot.sound, propext.
+Each theorem retains its own quantifiers and hypotheses; this list supplies
+none implicitly. The final rebuild covers the internal dependency closure.
+Version-bound HOL certificates, loaded-definition readback and native replay
+retain separate source hashes and trust statements.
+
+Consolidation qualification
+---------------------------
+
+consolidation-qualification.json records the checked source snapshot,
+original requirement evidence and the separately qualified HOL bundles.
+The internal dependency closure has 3323 source modules,
+including 1055 affected modules. Each has a current successful
+warning-as-error check; external libraries were reused.
+The 43 requirement rows select 241 declarations,
+whose only axioms are propext, Classical.choice and Quot.sound.
+The grammar, represented-state and GSOS correspondences retain their
+stated coverage, binding and observation hypotheses. Complete native
+implementation refinement and full rho/PeTTa factorization are separate.
+The qualification file records build evidence; mathematical guarantees
+are the propositions proved by the selected declarations.

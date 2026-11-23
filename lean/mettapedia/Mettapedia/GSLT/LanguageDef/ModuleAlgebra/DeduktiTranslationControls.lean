@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.GSLT.LanguageDef.ModuleAlgebra.DeduktiModuleInterpretations
 import Mettapedia.GSLT.LanguageDef.ModuleAlgebra.UpstreamTheoryQuotation
 import Mettapedia.GSLT.Dedukti.LeanMinusConversion
@@ -369,10 +370,8 @@ nonrecursive root-query realization cannot be assumed to cover this language. -/
 theorem full_dedukti_is_not_nonrecursive :
     ¬ ∀ rule ∈ (Language.dkLanguage ["Carrier", "seed", "mid", "alias"] [midRule, aliasRule]).rewrites,
       Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises rule.premises := by
-  intro nonrecursive
-  have premise := nonrecursive Language.appFunctionRule
-    (by simp [Language.dkLanguage, Language.fixedRules])
-  cases premise
+  rw [← Mettapedia.OSLF.MeTTaIL.ContextualStep.check_noncontextualRules_iff]
+  decide +kernel
 
 /-- The joined substitution may mention names outside both source modules. -/
 theorem foreign_arguments_preserved :
@@ -558,13 +557,8 @@ theorem unknown_notation_rejected :
 theorem equation_free : symbolic.toLanguageDef.isEquationFree = true := by decide
 
 theorem nonrecursive : ∀ rule ∈ symbolic.rewrites,
-    Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises rule.premises := by
-  have empty : symbolic.rewrites.all (fun rule => rule.premises.isEmpty) = true := by decide
-  intro rule member
-  have noPremises : rule.premises = [] :=
-    List.isEmpty_iff.mp ((List.all_eq_true.mp empty) rule member)
-  rw [noPremises]
-  exact .nil
+    Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises rule.premises :=
+  (Mettapedia.OSLF.MeTTaIL.ContextualStep.check_noncontextualRules_iff _).mp (by decide +kernel)
 
 def stage : Pattern := .apply "Functions" []
 

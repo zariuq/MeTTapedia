@@ -1,0 +1,6 @@
+!(bind! &q (new-space))
+!(bind! &out (new-space))
+!(let $ignored (add-atom &q (job a)) (empty))
+!(let $ignored (add-atom &q (job b)) (empty))
+!(let $ignored (add-atom &q (receiver alice)) (empty))
+!(let $ignored (add-atom &q (receiver bob)) (empty))

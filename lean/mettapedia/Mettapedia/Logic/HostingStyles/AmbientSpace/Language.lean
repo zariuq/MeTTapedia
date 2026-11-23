@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationBatch
 import Mettapedia.Logic.HostingStyles.AtomsReduce.Language
 
 /-!
@@ -140,25 +141,10 @@ theorem ambient_rewrites_checked :
 
 /-- **The presentation passes the declaration gate.** -/
 theorem ambient_validate : ambient.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
-  case htypes => decide +kernel
-  case hconstructors => decide +kernel
-  case hequations => decide +kernel
-  case hrewrites => decide +kernel
-  case hcategory => decide +kernel
-  case hparams => decide +kernel
-  case hsyntax => decide +kernel
-  case hequationValid =>
-    intro equation member
-    exact LanguageDef.validateEquation_eq_nil_of_plainEquationOk
-      (List.all_eq_true.mp
-        (by decide +kernel :
-          ambient.equations.all (LanguageDef.plainEquationOk ambient) = true)
-        equation member)
-  case hrewriteValid =>
-    intro rewrite member
-    exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check (by decide +kernel)
-      (ambient_rewrites_checked rewrite member)
+  exact RewriteValidationCertificate.validate_eq_nil_of_signature_and_checks
+    (RewriteValidationCertificate.validate_signature_of_plain_equations (lang := ambient)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel)
+      (by decide +kernel) (by decide +kernel) (by decide +kernel)) (by decide +kernel) ambient_rewrites_checked
 
 /-- The candidate with an ambient space, as a presentation. -/
 def ambientPresentation : ValidatedLanguageDef := ⟨ambient, ambient_validate⟩

@@ -1,0 +1,16 @@
+Nat : Type.
+Z : Nat.
+S : Nat -> Nat.
+Bool : Type.
+tt : Bool.
+ff : Bool.
+def plus : Nat -> Nat -> Nat.
+[m] plus Z m --> m.
+[n, m] plus (S n) m --> S (plus n m).
+Eq : Nat -> Nat -> Type.
+refl : x : Nat -> Eq x x.
+Vec : Nat -> Type.
+nil : Vec Z.
+G : Nat -> Type.
+
+def z : Nat -> Nat := x : Nat => tt.

@@ -1,0 +1,56 @@
+{
+  "format": "TransformParallelCoexistenceCertificateV1",
+  "scope": "Indexed configuration coexistence and resource framing",
+  "sources_sha256": {
+    "core.ml": "9e5503a2abcf32f3f38a5f8cba67cd649af437b89e45358c6d4eb3199a6a272d",
+    "parallel.ml": "1767602a56d553f0a03fd8b7306ef543f4b3943854f54a28d87c029ab70d2e20"
+  },
+  "certificate": "parallel.holr",
+  "certificate_sha256": "ca7075ae5d59ce859047b5b98e7f6a3bf86ea837723bca66aa0325b749988d1e",
+  "theorems": [
+    "TC_PAR_STORE_ASSOC",
+    "TC_PAR_STORE_UNIT",
+    "TC_PAR_STORE_COMM",
+    "TC_PAR_PRESENT_ASSOC",
+    "TC_PAR_PRESENT_UNIT",
+    "TC_PAR_PRESENT_COMM",
+    "TC_PAR_MODELS",
+    "TC_PAR_SOLVABLE_EXACT",
+    "TC_PAR_MAP_STORE",
+    "TC_PAR_ENABLED_EXACT",
+    "TC_PAR_FIRE_FRAME",
+    "TC_PAR_OCCURRENCE_ALIAS",
+    "TC_PAR_SHARED_READ",
+    "TC_PAR_CONTEXT_ALLOCATION_COLLISION",
+    "TC_PAR_TAKE_DESTROYS_CONTEXT"
+  ],
+  "replay_records": 72288,
+  "source_proof_nodes": 26383,
+  "standard_axiom_dependencies": 2,
+  "nonstandard_axioms": 0,
+  "certificate_negative_controls": 3,
+  "metta_proof_handle_consumer": true,
+  "lean_source_sha256": {
+    "HOLParallelDefinitionData.lean": "01430cd78a3b547baa415549bec4f94def0f73ede562093301fdf2a88b83b9fd",
+    "HOLParallelDefinitions.lean": "a61ae6c7c000067e17dd177d202f2ac245c09943e2185f44b2389eb14a8cc538",
+    "HOLParallelBodies.lean": "12e16a7ebbc87b613812da4b3128a0ab1ed56f6da3cad3f508e3aad014af3ecd",
+    "HOLParallelAgreement.lean": "da1cde2c097501f5a8b136accd99b8b4a311f4ff6d6437263827029b2e5f6923",
+    "HOLParallelControls.lean": "10acd45534ad851b4b9240a975d2dc9c350df6af17cd085d623cf17f972e4d28"
+  },
+  "lean_definition_inventory": {
+    "retained_original": 19,
+    "new_parallel": 2,
+    "combined": 21
+  },
+  "lean_interpretation": {
+    "exact_received_definition_readback": true,
+    "constructed_common_model": true,
+    "indexed_configuration_coexistence": true,
+    "solution_observation": true,
+    "empty_valid_fibres": true,
+    "definition_mutations_refused": true
+  },
+  "equation_observation": "Membership; list order and duplicate counts are not encoded by this predicate.",
+  "contextual_run_interchange_bridge": false,
+  "importer_sha256": "5573c0a85e94665ecfc3e9e6e8c5bbe50d16408e3ec6d64762e2b43f8828da7b"
+}

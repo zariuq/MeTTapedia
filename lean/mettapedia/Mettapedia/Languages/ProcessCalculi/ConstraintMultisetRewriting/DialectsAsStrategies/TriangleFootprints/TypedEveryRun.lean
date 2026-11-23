@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.CompletedInvocation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.DeclaredEveryRun
 
 /-!
@@ -337,93 +338,70 @@ theorem typed_source {results : List Result}
     intro result chosen
     rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom] at chosen
     exact typed_selection chosen
-  cases derived with
-  | delivered entered => cases Entry.functional entered entry
-  | cast entered => cases Entry.functional entered entry
-  | tuple _ shaped occurs _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      rw [Entry.Value.erase_ofAtom] at occurs
-      have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-        f_types.occurrences
-      simp [Atom.undefinedType] at same
-  | fallback _ shaped chosen _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      obtain ⟨_, _, _, impossible⟩ := outcome chosen
-      cases impossible
-  | selectionFailed _ shaped chosen _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      obtain ⟨_, _, _, impossible⟩ := outcome chosen
-      cases impossible
-  | function _ shaped chosen invoked priority =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, rfl⟩ := shaped
-      obtain ⟨signature, after, functionType, selected⟩ := outcome chosen
-      simp only [Completed.InvocationSelection.selected.injEq] at selected
-      obtain ⟨rfl, rfl⟩ := selected
+  obtain ⟨_, chosen, invocationResult⟩ :=
+    (Completed.AtomRel.iff_invocation entry shape (fun occurs => by
+        rw [Entry.Value.erase_ofAtom] at occurs
+        have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
+          f_types.occurrences
+        simp [Atom.undefinedType] at same)).mp derived
+  obtain ⟨signature, after, functionType, rfl⟩ := outcome chosen
+  cases invocationResult with
+  | selected invoked priority =>
       have projections := projections_of functionType
       have returnTypeOf : ∀ {s : SelectedTypePolicy}, s.returnType = sym "Number" →
           Completed.invocationReturnType s = sym "Number" := by
         intro s same
         simp [Completed.invocationReturnType, same, Atom.expressionType]
       have returnType := returnTypeOf projections.2
-      cases invoked with
-      | cons function calls rest =>
-          cases rest
-          cases function with
-          | evaluated _ operatorRel branches =>
-              rw [functionType] at operatorRel
-              obtain ⟨frF, rfl⟩ := typed_cast_source f_data
-                (symbol_cast_entry (by decide) (by decide) (by decide +kernel)) f_types
-                (fun frame => ⟨_, Completed.Frame.preserved_type_match policy frame
-                  (arrow_matches _)⟩) operatorRel
-              rw [projections.1] at branches
-              simp only [List.map_cons, List.map_nil, List.zip_cons_cons, List.zip_nil_right]
-                at branches
-              cases branches with
-              | stopped stopped _ =>
-                  rw [Entry.Value.erase_ofAtom] at stopped
-                  exact absurd stopped f_data.not_stopped
-              | continuing _ arguments restBranches =>
-                  cases restBranches
-                  cases arguments with
-                  | cons argumentRel argumentBranches =>
-                      obtain ⟨fr4, rfl⟩ := typed_cast_source four_data
-                        (.cast four_data.not_stopped (.grounded _) (by decide +kernel)
-                          (Or.inr (Or.inl ⟨_, rfl⟩)) (fun _ => Or.inr rfl)) four_types
-                        number_accepts argumentRel
-                      cases argumentBranches with
-                      | stopped stopped _ =>
-                          obtain ⟨stoppedFour, _⟩ := stopped
-                          rw [Entry.Value.erase_ofAtom] at stoppedFour
-                          exact absurd stoppedFour four_data.not_stopped
-                      | continuing _ packets restArguments =>
-                          cases restArguments
-                          cases packets
-                          rw [returnType] at calls
-                          simp only [List.map_cons, List.map_nil, List.append_nil,
-                            Completed.argumentPrepend_packet] at calls
-                          cases calls with
-                          | cons callRel restCalls =>
-                              cases restCalls
-                              have assembled : (Completed.functionAssemble
-                                  (Entry.Value.ofAtom (.symbol "f"))
-                                  (Entry.Value.argumentPacket [Entry.Value.ofAtom (.grounded (.int 4))],
-                                    fr4)).1.erase = typedCall := by
-                                simp [Completed.functionAssemble, Entry.Value.erase, typedCall, app]
-                              have answered := typed_call_source assembled callRel
-                              exact publish_answers (by simp only [List.append_nil]; exact answered)
-                                (fun a member => by
-                                  rw [List.mem_singleton] at member
-                                  subst member
-                                  exact answerable_of_data (.symbol (by decide) (by decide)))
-                                priority
+      obtain ⟨_, function, calls⟩ := Completed.InvocationsRel.singleton_iff.mp invoked
+      cases function with
+      | evaluated _ operatorRel branches =>
+          rw [functionType] at operatorRel
+          obtain ⟨frF, rfl⟩ := typed_cast_source f_data
+            (symbol_cast_entry (by decide) (by decide) (by decide +kernel)) f_types
+            (fun frame => ⟨_, Completed.Frame.preserved_type_match policy frame
+              (arrow_matches _)⟩) operatorRel
+          rw [projections.1] at branches
+          simp only [List.map_cons, List.map_nil, List.zip_cons_cons, List.zip_nil_right]
+            at branches
+          cases branches with
+          | stopped stopped _ =>
+              rw [Entry.Value.erase_ofAtom] at stopped
+              exact absurd stopped f_data.not_stopped
+          | continuing _ arguments restBranches =>
+              cases restBranches
+              cases arguments with
+              | cons argumentRel argumentBranches =>
+                  obtain ⟨fr4, rfl⟩ := typed_cast_source four_data
+                    (.cast four_data.not_stopped (.grounded _) (by decide +kernel)
+                      (Or.inr (Or.inl ⟨_, rfl⟩)) (fun _ => Or.inr rfl)) four_types
+                    number_accepts argumentRel
+                  cases argumentBranches with
+                  | stopped stopped _ =>
+                      obtain ⟨stoppedFour, _⟩ := stopped
+                      rw [Entry.Value.erase_ofAtom] at stoppedFour
+                      exact absurd stoppedFour four_data.not_stopped
+                  | continuing _ packets restArguments =>
+                      cases restArguments
+                      cases packets
+                      rw [returnType] at calls
+                      simp only [List.map_cons, List.map_nil, List.append_nil,
+                        Completed.argumentPrepend_packet] at calls
+                      cases calls with
+                      | cons callRel restCalls =>
+                          cases restCalls
+                          have assembled : (Completed.functionAssemble
+                              (Entry.Value.ofAtom (.symbol "f"))
+                              (Entry.Value.argumentPacket [Entry.Value.ofAtom (.grounded (.int 4))],
+                                fr4)).1.erase = typedCall := by
+                            simp [Completed.functionAssemble, Entry.Value.erase, typedCall, app]
+                          have answered := typed_call_source assembled callRel
+                          exact publish_answers (by simp only [List.append_nil]; exact answered)
+                            (fun a member => by
+                              rw [List.mem_singleton] at member
+                              subst member
+                              exact answerable_of_data (.symbol (by decide) (by decide)))
+                            priority
 
 /-! ## Every complete run -/
 

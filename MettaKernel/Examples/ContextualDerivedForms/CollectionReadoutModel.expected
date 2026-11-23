@@ -1,0 +1,9 @@
+raw-different: true
+source: ((pair $0 $0) (pair $2 $2))
+runtime: ((pair $0 $0) (pair $2 $2))
+each-bad-agrees: true
+joint-bad-agrees: false
+bad-caller-captures: true
+paused: markers=1 uses=1
+resumed: (((pair $0 $0) (pair $2 $2)))
+uses: 3

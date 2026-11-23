@@ -1,0 +1,643 @@
+{
+  "schema": "programmable-space-native-calibration-v1",
+  "classification": "calibration fixture",
+  "dialect": "prime",
+  "expectation_source": "Authored expected observations, independently specified before replay; runtime transcripts are not the oracle.",
+  "compiled_code_verification_claim": false,
+  "cases": [
+    {
+      "name": "one-shot-consumer-first",
+      "fixture": "one-shot-consumer-first.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(p a)",
+        "(p b)",
+        "(q a)"
+      ],
+      "expected_reading": [
+        "(p a)",
+        "(p b)",
+        "(q a)"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec (0 consumer) (, (p $x)) (O (+ (q $x))))",
+        "(exec (1 producer) (,) (O (+ (p b))))"
+      ],
+      "environment_counts": [
+        1,
+        1
+      ],
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "one-shot-producer-first",
+      "fixture": "one-shot-producer-first.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(p a)",
+        "(p b)",
+        "(q a)",
+        "(q b)"
+      ],
+      "expected_reading": [
+        "(p a)",
+        "(p b)",
+        "(q a)",
+        "(q b)"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec (0 producer) (,) (O (+ (p b))))",
+        "(exec (1 consumer) (, (p $x)) (O (+ (q $x))))"
+      ],
+      "environment_counts": [
+        1,
+        2
+      ],
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "output-local-unresolved",
+      "fixture": "output-local-unresolved.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(unresolved $outside)"
+      ],
+      "expected_reading": [
+        "(unresolved $outside)"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec first (,) (O (+ (unresolved $outside))))"
+      ],
+      "environment_counts": [
+        1
+      ],
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "generated-output-local",
+      "fixture": "generated-output-local.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(p a)",
+        "(q a)"
+      ],
+      "expected_reading": [
+        "(p a)",
+        "(q a)"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec first (,) (O (+ (exec second (, (p $outside)) (O (+ (q $outside)))))))",
+        "(exec second (, (p $outside)) (O (+ (q $outside))))"
+      ],
+      "environment_counts": [
+        1,
+        1
+      ],
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "captured-payload",
+      "fixture": "captured-payload.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(p a)",
+        "(payload (exec second (, (p $inner)) (O (+ (q $inner)))))",
+        "(q a)"
+      ],
+      "expected_reading": [
+        "(p a)",
+        "(payload (exec second (, (p $inner)) (O (+ (q $inner)))))",
+        "(q a)"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec first (, (payload $captured)) (O (+ $captured)))",
+        "(exec second (, (p $inner)) (O (+ (q $inner))))"
+      ],
+      "environment_counts": [
+        1,
+        1
+      ],
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "standing-records-alone-are-data",
+      "fixture": "standing-records-alone-are-data.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(p a)",
+        "(standing consumer (, (p $x)) (O (+ (q $x))))",
+        "(standing producer (,) (O (+ (p b))))",
+        "(next consumer producer)",
+        "(next producer consumer)",
+        "(turn consumer)"
+      ],
+      "expected_reading": [
+        "(p a)",
+        "(standing consumer (, (p $x)) (O (+ (q $x))))",
+        "(standing producer (,) (O (+ (p b))))",
+        "(next consumer producer)",
+        "(next producer consumer)",
+        "(turn consumer)"
+      ],
+      "readout": "all",
+      "receipt_sources": [],
+      "environment_counts": [],
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "standing-consumer-first",
+      "fixture": "standing-consumer-first.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(p a)",
+        "(standing consumer (, (p $x)) (O (+ (q $x))))",
+        "(standing producer (,) (O (+ (p b))))",
+        "(next consumer producer)",
+        "(next producer consumer)",
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(turn consumer)",
+        "(q a)",
+        "(p b)",
+        "(q b)"
+      ],
+      "expected_reading": [
+        "(p a)",
+        "(p b)",
+        "(q a)",
+        "(q b)"
+      ],
+      "readout": "pq-facts",
+      "receipt_sources": [
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(exec (0 instance) (, (p $x)) (O (+ (q $x))))",
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(exec (0 instance) (,) (O (+ (p b))))",
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(exec (0 instance) (, (p $x)) (O (+ (q $x))))",
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(exec (0 instance) (,) (O (+ (p b))))"
+      ],
+      "environment_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1
+      ],
+      "expected_observation": {
+        "closed": "False",
+        "satisfied": "True",
+        "status": "satisfied"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "standing-producer-first",
+      "fixture": "standing-producer-first.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(p a)",
+        "(standing consumer (, (p $x)) (O (+ (q $x))))",
+        "(standing producer (,) (O (+ (p b))))",
+        "(next consumer producer)",
+        "(next producer consumer)",
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(turn producer)",
+        "(q a)",
+        "(p b)",
+        "(q b)"
+      ],
+      "expected_reading": [
+        "(p a)",
+        "(p b)",
+        "(q a)",
+        "(q b)"
+      ],
+      "readout": "pq-facts",
+      "receipt_sources": [
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(exec (0 instance) (,) (O (+ (p b))))",
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(exec (0 instance) (, (p $x)) (O (+ (q $x))))",
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(exec (0 instance) (,) (O (+ (p b))))",
+        "(exec (1 dispatch) (, (turn $name) (next $name $next) (standing $name $input $output) (exec (1 dispatch) $selfinput $selfoutput)) (O (- (turn $name)) (+ (turn $next)) (+ (exec (0 instance) $input $output)) (+ (exec (1 dispatch) $selfinput $selfoutput))))",
+        "(exec (0 instance) (, (p $x)) (O (+ (q $x))))"
+      ],
+      "environment_counts": [
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        2
+      ],
+      "expected_observation": {
+        "closed": "False",
+        "satisfied": "True",
+        "status": "satisfied"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "priority-before-force",
+      "fixture": "priority-before-force.metta",
+      "kind": "demand",
+      "expected_values": [
+        [
+          "Candidate",
+          9,
+          "answer"
+        ]
+      ],
+      "expected_observation": {
+        "closed": "False",
+        "satisfied": "True",
+        "status": "satisfied"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "original-0004",
+      "fixture": "original-0004.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(selected (query A C))",
+        "(edge A B)",
+        "(edge B C)",
+        "(edge A D)",
+        "(edge D C)",
+        "(reachable A C)"
+      ],
+      "expected_reading": [
+        "(selected (query A C))",
+        "(edge A B)",
+        "(edge B C)",
+        "(edge A D)",
+        "(edge D C)",
+        "(reachable A C)"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec inference (, (selected (query $from $to)) (edge $from $middle) (edge $middle $to)) (O (+ (reachable $from $to))))"
+      ],
+      "environment_counts": [
+        2
+      ],
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": "",
+      "expected_work": 146,
+      "no_partial_publication": true,
+      "dependency_positions": {
+        "0": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            3,
+            4
+          ]
+        ]
+      }
+    },
+    {
+      "name": "original-0013",
+      "fixture": "original-0013.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(selected (query A C))",
+        "(edge A B)",
+        "(edge B C)",
+        "(edge A D)",
+        "(edge D C)",
+        "(edge C E)",
+        "(reachable A C)",
+        "(finished C)"
+      ],
+      "expected_reading": [
+        "(selected (query A C))",
+        "(edge A B)",
+        "(edge B C)",
+        "(edge A D)",
+        "(edge D C)",
+        "(edge C E)",
+        "(reachable A C)",
+        "(finished C)"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec first (, (selected (query $from $to)) (edge $from $middle) (edge $middle $to)) (O (+ (reachable $from $to)) (+ (exec second (, (reachable A $to) (edge $to E)) (O (+ (finished $to)))))))",
+        "(exec second (, (reachable A C) (edge C E)) (O (+ (finished C))))"
+      ],
+      "environment_counts": [
+        2,
+        1
+      ],
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": "",
+      "expected_work": 277,
+      "dependency_positions": {
+        "0": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            3,
+            4
+          ]
+        ],
+        "1": [
+          [
+            6,
+            5
+          ]
+        ]
+      }
+    },
+    {
+      "name": "identity",
+      "fixture": "identity.metta",
+      "kind": "ordinary",
+      "expected_stdout": "[7]\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "open-capture",
+      "fixture": "open-capture.metta",
+      "kind": "ordinary",
+      "expected_stdout": "[y]\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "two-calls",
+      "fixture": "two-calls.metta",
+      "kind": "ordinary",
+      "expected_stdout": "[(S (S 0))]\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "ordinary-equations",
+      "fixture": "ordinary-equations.metta",
+      "kind": "ordinary",
+      "expected_stdout": "[(Pair (g 1) (g 2))]\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "explicit-btm-resumed",
+      "fixture": "explicit-btm-resumed.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(selected (query A C))",
+        "(edge A B)",
+        "(edge B C)",
+        "(edge A D)",
+        "(edge D C)",
+        "(reachable A C)"
+      ],
+      "expected_reading": [
+        "(selected (query A C))",
+        "(edge A B)",
+        "(edge B C)",
+        "(edge A D)",
+        "(edge D C)",
+        "(reachable A C)"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec inference (I (BTM (selected (query $from $to))) (BTM (edge $from $middle)) (BTM (edge $middle $to))) (O (+ (reachable $from $to))))"
+      ],
+      "environment_counts": [
+        2
+      ],
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": "",
+      "no_partial_publication": true,
+      "dependency_positions": {
+        "0": [
+          [
+            0,
+            1,
+            2
+          ],
+          [
+            0,
+            3,
+            4
+          ]
+        ]
+      },
+      "dependency_rows": {
+        "0": [
+          [
+            "(read (selected (query $from $to)) 0 (selected (query A C)))",
+            "(read (edge A $middle) 1 (edge A B))",
+            "(read (edge B C) 2 (edge B C))"
+          ],
+          [
+            "(read (selected (query $from $to)) 0 (selected (query A C)))",
+            "(read (edge A $middle) 3 (edge A D))",
+            "(read (edge D C) 4 (edge D C))"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "malformed-btm-pending",
+      "fixture": "malformed-btm-pending.metta",
+      "kind": "mm2-pending",
+      "expected_support": [
+        "(p a)"
+      ],
+      "expected_reading": [
+        "(p a)"
+      ],
+      "readout": "all",
+      "receipt_sources": [],
+      "environment_counts": [],
+      "expected_observation": {
+        "closed": "False",
+        "satisfied": "False",
+        "status": "suspended"
+      },
+      "pending_source": "(exec malformed (I (BTM (p $x) (q $x))) (O (+ Wrong)))",
+      "expected_stderr": ""
+    },
+    {
+      "name": "row-major-conflicting-sinks",
+      "fixture": "row-major-conflicting-sinks.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(edge a b)",
+        "(edge b c)",
+        "a",
+        "b"
+      ],
+      "expected_reading": [
+        "(edge a b)",
+        "(edge b c)",
+        "a",
+        "b"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec (0 overlap) (, (edge $x $y)) (O (+ $x) (- $y)))"
+      ],
+      "environment_counts": [
+        2
+      ],
+      "dependency_positions": {
+        "0": [
+          [
+            0
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "dependency_rows": {
+        "0": [
+          [
+            "(read (edge $x $y) 0 (edge a b))"
+          ],
+          [
+            "(read (edge $x $y) 1 (edge b c))"
+          ]
+        ]
+      },
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": ""
+    },
+    {
+      "name": "pause-ownership-resumed",
+      "fixture": "pause-ownership-resumed.metta",
+      "kind": "mm2",
+      "expected_support": [
+        "(edge a b)",
+        "(edge b c)",
+        "a",
+        "b"
+      ],
+      "expected_reading": [
+        "(edge a b)",
+        "(edge b c)",
+        "a",
+        "b"
+      ],
+      "readout": "all",
+      "receipt_sources": [
+        "(exec (0 overlap) (, (edge $x $y)) (O (+ $x) (- $y)))"
+      ],
+      "environment_counts": [
+        2
+      ],
+      "dependency_positions": {
+        "0": [
+          [
+            0
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "dependency_rows": {
+        "0": [
+          [
+            "(read (edge $x $y) 0 (edge a b))"
+          ],
+          [
+            "(read (edge $x $y) 1 (edge b c))"
+          ]
+        ]
+      },
+      "expected_observation": {
+        "closed": "True",
+        "satisfied": "False",
+        "status": "closed"
+      },
+      "expected_stderr": "",
+      "pause_ownership": {
+        "phase": "Match",
+        "observation": {
+          "satisfied": "False",
+          "closed": "False",
+          "work": "10",
+          "status": "suspended"
+        },
+        "selected_source": "(exec (0 overlap) (, (edge $x $y)) (O (+ $x) (- $y)))",
+        "live_support": [
+          "(edge a b)",
+          "(edge b c)"
+        ],
+        "logical_support": [
+          "(edge a b)",
+          "(edge b c)",
+          "(exec (0 overlap) (, (edge $x $y)) (O (+ $x) (- $y)))"
+        ]
+      }
+    }
+  ]
+}

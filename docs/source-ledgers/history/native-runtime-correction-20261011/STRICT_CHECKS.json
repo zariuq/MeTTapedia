@@ -1,0 +1,74 @@
+[
+  {
+    "module": "Mettapedia.OSLF.Framework.Chapter19RhoConsumer",
+    "source": "Mettapedia/OSLF/Framework/Chapter19RhoConsumer.lean",
+    "source_sha256": "ea3b32e3ea8430a962e08bf7d744495397b9364e0eea9fe8d23a7066d04f828e",
+    "source_unchanged": true,
+    "exit_code": 0,
+    "log": "final-strict-Chapter19RhoConsumer.log"
+  },
+  {
+    "module": "Mettapedia.OSLF.Framework.Chapter19ModalQuerySearch",
+    "source": "Mettapedia/OSLF/Framework/Chapter19ModalQuerySearch.lean",
+    "source_sha256": "e0e5182276db8b6c3f0e08e7795cad6c3afe0e4c1ed0b9cb6b4397edf01de62d",
+    "source_unchanged": true,
+    "exit_code": 0,
+    "log": "final-strict-Chapter19ModalQuerySearch.log"
+  },
+  {
+    "module": "Mettapedia.OSLF.Framework.Chapter19ModalQuerySearchControls",
+    "source": "Mettapedia/OSLF/Framework/Chapter19ModalQuerySearchControls.lean",
+    "source_sha256": "e8273d4039546ebc12317dc9ccbda0c1311d7c5b47de0ed598b47472c70efc4b",
+    "source_unchanged": true,
+    "exit_code": 0,
+    "log": "final-strict-Chapter19ModalQuerySearchControls.log"
+  },
+  {
+    "module": "Mettapedia.OSLF.Framework.Chapter19RhoOperationalContexts",
+    "source": "Mettapedia/OSLF/Framework/Chapter19RhoOperationalContexts.lean",
+    "source_sha256": "a135837ed8ddf3d99522d71ff95be3ec79e9b823063abd191e890060e99e653e",
+    "source_unchanged": true,
+    "exit_code": 0,
+    "log": "final-strict-Chapter19RhoOperationalContexts.log"
+  },
+  {
+    "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputChecking",
+    "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputChecking.lean",
+    "source_sha256": "972fbdc18c0c371f2faa0552f4670e5df6ff231f3e3e5d8bfd145837a20413a5",
+    "source_unchanged": true,
+    "exit_code": 0,
+    "log": "final-strict-Chapter19NativeOutputChecking.log"
+  },
+  {
+    "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputDisplay",
+    "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputDisplay.lean",
+    "source_sha256": "82984d0e574e897fbab3d5d9f0f567997036f15e2d1411ac511be00af660188b",
+    "source_unchanged": true,
+    "exit_code": 0,
+    "log": "final-strict-Chapter19NativeOutputDisplay.log"
+  },
+  {
+    "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputControls",
+    "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputControls.lean",
+    "source_sha256": "e823b19998546d175629b437ccee3a7b36d79f9eed21e38d6ae17945ab736f4b",
+    "source_unchanged": true,
+    "exit_code": 0,
+    "log": "final-strict-Chapter19NativeOutputControls.log"
+  },
+  {
+    "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputDisplayExamples",
+    "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputDisplayExamples.lean",
+    "source_sha256": "4df2745d44ea11ed5645e2802eb0d11bc8599e060b4a163672d636534f86e0f7",
+    "source_unchanged": true,
+    "exit_code": 0,
+    "log": "final-strict-Chapter19NativeOutputDisplayExamples.log"
+  },
+  {
+    "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputs",
+    "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputs.lean",
+    "source_sha256": "b49eaeb27902a2f7f98bc0e13ad519ff8ad963ba4e55a7c852f5e980836769f2",
+    "source_unchanged": true,
+    "exit_code": 0,
+    "log": "final-strict-Chapter19NativeOutputs.log"
+  }
+]

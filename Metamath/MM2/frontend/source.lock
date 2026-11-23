@@ -1,0 +1,7 @@
+CETTA_URL := https://github.com/zariuq/CeTTa.git
+CETTA_REVISION := 6615a9a6b15e2b8644e921719b1f3b07ff374b33
+CETTA_CURSOR_SOURCE := langdef/metamath/generated/syntax_cursor_fold_v1.generated.c
+CETTA_CURSOR_PREFIX := metamath_syntax_cursor_fold_v1
+MM2_SOURCE_SCHEMA := mm2-source-data-v1
+MM2_SOURCE_PROFILE := zar
+MM2_TRANSLATOR_VERSION := 1

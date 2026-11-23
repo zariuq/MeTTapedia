@@ -1,0 +1,98 @@
+-- The strict-core rho calculus in CeTTa's mrho syntax (`cetta --lang rhocalc --syntax mrho`), as a
+-- GSLT presentation.
+--
+-- An mrho file is a sequence of processes written as MeTTa S-expressions; the reference runs each
+-- process to quiescence and prints its residual in the same syntax, one per line:
+--   (rho:par
+--     (rho:send (rho:quote rho:nil) rho:nil)
+--     (rho:recv (rho:quote rho:nil) $x (rho:drop $x)))
+--   (rho:recv (rho:quote rho:nil) $x_rho1 (rho:drop $x))
+-- A process is rho:nil, (rho:par P ...) with any number of components, (rho:send N P),
+-- (rho:recv N $x P) or (rho:drop N). A name is (rho:quote P) or a variable. The variable of a
+-- receive binds in its body, the innermost receive first; a quote seals its process: no binder
+-- outside a quote binds a variable inside it. A variable bound by no receive is a free name. Each
+-- row below is one case of the reference's strict-core check (rho_check_proc and rho_check_name
+-- in rhocalc_core.c), which every process passes before it runs.
+--
+-- The grammar is composed from pieces over one shared set of sorts:
+--   Sorts      token and phrase sorts, declared once;
+--   Names      quoted processes and variables;
+--   Processes  the five process forms; the components of a parallel composition, up to and
+--              including its closing parenthesis, so that every phrase sort but whole files is
+--              prefix-free: a phrase determines where it ends;
+--   Files      process sequences.
+-- `Grammar` joins them over one `let`-bound Sorts value.
+--
+-- `Tokens` is the lexical layer (TokenProfileV2), CeTTa's MeTTa reader on these files: the six
+-- C-locale space bytes separate tokens; `(` and `)` are tokens by themselves; `;` at the start of a
+-- token begins a comment that runs to the end of the line; a variable is `$` followed by at least
+-- one printable byte other than `"` and `;`. Every other spelling is a fixed spelling of a row.
+--
+-- `Scopes` names the binding structure as data: the variable of `proc_recv` binds in its body,
+-- `name_var` is an occurrence, and `name_quote` seals.
+Module MrhoSyntax {
+  Theory Sorts() {
+    Types {
+      var_tok;
+      rho_name; rho_proc; rho_procs; rho_item; mrho_file;
+    }
+  }
+  Theory Names(s: Sorts) {
+    s Terms {
+      name_quote . p:rho_proc |- "(" "rho:quote" p ")" : rho_name;
+      name_var . x:var_tok |- x : rho_name;
+    }
+  }
+  Theory Processes(s: Sorts) {
+    s Terms {
+      proc_nil . |- "rho:nil" : rho_proc;
+      proc_par . ps:rho_procs |- "(" "rho:par" ps : rho_proc;
+      proc_send . n:rho_name, p:rho_proc |- "(" "rho:send" n p ")" : rho_proc;
+      proc_recv . n:rho_name, x:var_tok, p:rho_proc |- "(" "rho:recv" n x p ")" : rho_proc;
+      proc_drop . n:rho_name |- "(" "rho:drop" n ")" : rho_proc;
+      procs_end . |- ")" : rho_procs;
+      procs_more . first:rho_proc, rest:rho_procs |- first rest : rho_procs;
+    }
+  }
+  Theory Files(s: Sorts) {
+    s Terms {
+      item_proc . p:rho_proc |- p : rho_item;
+      file_empty . |- : mrho_file;
+      file_more . first:rho_item, rest:mrho_file |- first rest : mrho_file;
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts() in (Names(s) \/ Processes(s) \/ Files(s))
+  }
+  Theory Tokens() {
+    Types { TokenProfileData; }
+    Terms {
+      GetTokenProfile . |- "token-profile" : TokenProfileData;
+    }
+    Rewrites {
+      ReturnTokenProfile : (GetTokenProfile) ~>
+        "TokenProfileV2"(
+          "Start"("mrho_file"),
+          "Admissible"("Range"("33", "126")),
+          "Separator"("Points"("32", "10", "9", "11", "12", "13")),
+          "Delimiters"("Points"("40", "41")),
+          "LineComment"(";"),
+          "Class2"("var_tok", "Points"("36"), "Minus"("Range"("33", "126"), "Points"("34", "40", "41", "59"))),
+          "Except"("var_tok", "$"));
+    }
+  }
+  Theory Scopes() {
+    Types { ScopeProfileData; }
+    Terms {
+      GetScopeProfile . |- "scope-profile" : ScopeProfileData;
+    }
+    Rewrites {
+      ReturnScopeProfile : (GetScopeProfile) ~>
+        "ScopeProfile"(
+          "Binder"("proc_recv", "x", "p"),
+          "Occurrence"("name_var", "x"),
+          "Seal"("name_quote"));
+    }
+  }
+  theory Grammar()
+}

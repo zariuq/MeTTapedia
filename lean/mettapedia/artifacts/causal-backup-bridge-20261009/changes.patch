@@ -1,0 +1,526 @@
+--- /dev/null
++++ b/Mettapedia/GSLT/Causality/ScriptedExecution.lean
+@@ -0,0 +1,429 @@
++import Mettapedia.GSLT.Causality.Hierarchy
++import Mettapedia.GSLT.Dynamics.ScriptedBackup
++import Mettapedia.GSLT.Contexts.TermsAlone
++
++/-!
++# Recorded execution under input and component contexts
++
++The evaluator and the player are both parts of the machine state. Contexts
++are finite command sequences: supply an input, or replace the evaluator while
++holding the player and its existing table fixed. Composition executes the
++inner sequence before the outer sequence.
++
++This instantiates the existing admissible-context causal hierarchy. A valid
++backup and a direct executor agree at every rung when contexts supply only
++inputs. Admitting evaluator replacement separates them even at the
++intervention rung. Thus agreement on every external input continuation is
++relative to an intervention class, rather than agreement under arbitrary
++component changes.
++
++The terms-alone hosting comparison is separate. Direct execution embeds
++faithfully into checked players. Projection to the represented state covers
++every input transition in both directions, but is not hosting for the raw
++static equations: it identifies distinct player configurations.
++
++These are abstract machines and declared component interventions. No physical
++realization or consciousness assignment is inferred from these results.
++-/
++
++set_option autoImplicit false
++
++namespace Mettapedia.GSLT.Causality.ScriptedExecution
++
++open Mettapedia.GSLT
++open Mettapedia.GSLT.ScriptedBackup
++open Mettapedia.GSLT.HennessyMilner
++open Mettapedia.GSLT.MinimalEnablingContext
++open Mettapedia.GSLT.AdmissibleContextCongruence
++
++variable {State Input : Type}
++
++/-- The transition component is retained so that replacing it is an actual
++operation on the carrier, including when the stored table becomes invalid. -/
++structure Machine (State Input : Type) where
++  evaluator : State → Input → State
++  player : Player State Input
++
++/-- Input supply and evaluator replacement are different context generators. -/
++inductive Command (State Input : Type) where
++  | feed (input : Input)
++  | replaceEvaluator (evaluator : State → Input → State)
++
++variable [DecidableEq Input]
++
++def tick (machine : Machine State Input) (input : Input) : Machine State Input :=
++  ⟨machine.evaluator, backupStep machine.evaluator machine.player input⟩
++
++def applyCommand : Command State Input → Machine State Input → Machine State Input
++  | .feed input, machine => tick machine input
++  | .replaceEvaluator evaluator, machine => ⟨evaluator, machine.player⟩
++
++def plug (commands : List (Command State Input)) (machine : Machine State Input) :
++    Machine State Input := commands.foldl (fun state command => applyCommand command state) machine
++
++/-- There is one authored firing per supplied input. The equations preserve
++the whole machine, rather than only its displayed state. -/
++def rules : ContextualRules (theory (tick (State := State) (Input := Input))) where
++  Context := List (Command State Input)
++  identity := []
++  compose outer inner := inner ++ outer
++  plug := plug
++  plug_identity _ := rfl
++  plug_compose outer inner machine := List.foldl_append
++  plug_resp := by intro commands left right equal; cases equal; rfl
++  Rule := Input
++  fires input source target := target = tick source input
++  fires_resp_left := by
++    intro input left right target equal event
++    cases equal
++    exact ⟨target, event, rfl⟩
++  fires_resp_right := by
++    intro input source target target' event equal
++    cases equal
++    exact event
++  fires_step := fun {input _ _} event => ⟨input, event⟩
++
++def observations : ContextualRules.Observations
++    (theory (tick (State := State) (Input := Input))) where
++  Atom := State
++  observes value machine := machine.player.current = value
++  observes_resp := by intro value left right equal; cases equal; exact Iff.rfl
++
++/-- No component replacement occurs anywhere in an input context. -/
++def InputsOnly : List (Command State Input) → Prop
++  | [] => True
++  | .feed _ :: rest => InputsOnly rest
++  | .replaceEvaluator _ :: _ => False
++
++omit [DecidableEq Input] in
++theorem inputsOnly_append {inner outer : List (Command State Input)}
++    (innerOnly : InputsOnly inner) (outerOnly : InputsOnly outer) :
++    InputsOnly (inner ++ outer) := by
++  induction inner with
++  | nil => exact outerOnly
++  | cons command rest ih =>
++      cases command with
++      | feed input => exact ih innerOnly
++      | replaceEvaluator evaluator => exact False.elim innerOnly
++
++def inputClass : AdmissibleClass (rules (State := State) (Input := Input)) where
++  Admissible := InputsOnly
++  identity_mem := trivial
++  compose_mem outerOnly innerOnly := inputsOnly_append innerOnly outerOnly
++
++/-- This class additionally permits finite evaluator-replacement contexts. -/
++def componentClass : AdmissibleClass (rules (State := State) (Input := Input)) := ⊤
++
++/-- Forgetting component contexts is the library's existing observer
++refinement, with the same carrier, steps, and retained input observations. -/
++def componentRefinement : ObserverRefinement
++    ((inputClass (State := State) (Input := Input)).saturated observations)
++    (componentClass.saturated observations) :=
++  AdmissibleClass.refinementOfLe observations (show inputClass ≤ componentClass from le_top)
++
++def direct (evaluator : State → Input → State) (source : State) : Machine State Input :=
++  ⟨evaluator, ⟨source, [], true⟩⟩
++
++def recorded (evaluator : State → Input → State) (source : State) (inputs : List Input) :
++    Machine State Input := ⟨evaluator, ⟨source, record evaluator source inputs, false⟩⟩
++
++/-- An earned invariant relates coherent machines running the same evaluator
++at the same represented state. Their tables and component-use modes may differ. -/
++def Aligned (left right : Machine State Input) : Prop :=
++  left.evaluator = right.evaluator ∧
++    Coherent left.evaluator left.player ∧ Coherent right.evaluator right.player ∧
++      left.player.current = right.player.current
++
++theorem aligned_tick {left right : Machine State Input} (related : Aligned left right)
++    (input : Input) : Aligned (tick left input) (tick right input) := by
++  refine ⟨related.1, advance_coherent _ related.2.1 input,
++    advance_coherent _ related.2.2.1 input, ?_⟩
++  change (backupStep left.evaluator left.player input).current =
++    (backupStep right.evaluator right.player input).current
++  rw [advance_current _ related.2.1, advance_current _ related.2.2.1,
++    related.1, related.2.2.2]
++
++theorem aligned_reduction_bisimulation :
++    IsReductionBisimulation (observations (State := State) (Input := Input)) Aligned := by
++  refine ⟨⟨?_, ?_⟩, ?_⟩
++  · intro left right related target event
++    obtain ⟨input, rfl⟩ := event
++    exact ⟨tick right input, ⟨input, rfl⟩, aligned_tick related input⟩
++  · intro left right related target event
++    obtain ⟨input, rfl⟩ := event
++    exact ⟨tick left input, ⟨input, rfl⟩, aligned_tick related input⟩
++  · intro left right related value
++    change left.player.current = value ↔ right.player.current = value
++    rw [related.2.2.2]
++
++theorem aligned_input_closed :
++    (inputClass (State := State) (Input := Input)).ClosedUnder Aligned := by
++  intro commands left right allowed related
++  change Aligned (plug commands left) (plug commands right)
++  induction commands generalizing left right with
++  | nil => exact related
++  | cons command rest ih =>
++      cases command with
++      | feed input => exact ih allowed (aligned_tick related input)
++      | replaceEvaluator evaluator => exact False.elim allowed
++
++omit [DecidableEq Input] in
++theorem direct_recorded_aligned (evaluator : State → Input → State)
++    (source : State) (inputs : List Input) :
++    Aligned (direct evaluator source) (recorded evaluator source inputs) :=
++  ⟨rfl, by simp [direct, Coherent], fun _ => record_valid evaluator source inputs, rfl⟩
++
++/-- Saturated agreement permits new input contexts after every reached state;
++it is stronger than agreement on the one recorded run. -/
++theorem direct_recorded_input_counterfactual (evaluator : State → Input → State)
++    (source : State) (inputs : List Input) :
++    Hierarchy.Agree inputClass observations .counterfactual
++      (direct evaluator source) (recorded evaluator source inputs) :=
++  inputClass.relEquiv_of_isReductionBisimulation observations aligned_reduction_bisimulation
++    aligned_input_closed (direct_recorded_aligned evaluator source inputs)
++
++theorem direct_recorded_input_all_rungs (evaluator : State → Input → State)
++    (source : State) (inputs : List Input) (rung : Hierarchy.Rung) :
++    Hierarchy.Agree inputClass observations rung
++      (direct evaluator source) (recorded evaluator source inputs) := by
++  apply Hierarchy.agree_of_le inputClass observations (upper := .counterfactual)
++  · cases rung <;> decide
++  · exact direct_recorded_input_counterfactual evaluator source inputs
++
++theorem plug_inputs (machine : Machine State Input) (inputs : List Input) :
++    plug (inputs.map Command.feed) machine =
++      ⟨machine.evaluator, inputs.foldl (backupStep machine.evaluator) machine.player⟩ := by
++  induction inputs generalizing machine with
++  | nil => rfl
++  | cons input rest ih => simpa [plug, tick, applyCommand] using ih (tick machine input)
++
++/-- Replacement changes only the evaluator. Rebuilding the table would be a
++different intervention on a different component. -/
++def replacementRun (evaluator : State → Input → State) (inputs : List Input) :
++    List (Command State Input) := .replaceEvaluator evaluator :: inputs.map Command.feed
++
++theorem replacement_recorded_result (baseline alternative : State → Input → State)
++    (source : State) (inputs : List Input) :
++    (plug (replacementRun alternative inputs) (recorded baseline source inputs)).player.current =
++      inputs.foldl baseline source := by
++  change (plug (inputs.map Command.feed)
++    ⟨alternative, ⟨source, record baseline source inputs, false⟩⟩).player.current = _
++  rw [plug_inputs, fixed_record_run]
++
++theorem live_run (evaluator : State → Input → State) (source : State) (inputs : List Input) :
++    inputs.foldl (backupStep evaluator) ⟨source, [], true⟩ =
++      ⟨inputs.foldl evaluator source, [], true⟩ := by
++  induction inputs generalizing source with
++  | nil => rfl
++  | cons input rest ih => simpa [backupStep, advance] using ih (evaluator source input)
++
++theorem replacement_direct_result (baseline alternative : State → Input → State)
++    (source : State) (inputs : List Input) :
++    (plug (replacementRun alternative inputs) (direct baseline source)).player.current =
++      inputs.foldl alternative source := by
++  change (plug (inputs.map Command.feed) ⟨alternative, ⟨source, [], true⟩⟩).player.current = _
++  rw [plug_inputs, live_run]
++
++theorem reduction_bisimilar_current {left right : Machine State Input}
++    (related : ReductionBisimilar observations left right) :
++    left.player.current = right.player.current := by
++  obtain ⟨relation, bisimulation, related⟩ := related
++  have agree := bisimulation.2 related left.player.current
++  exact (agree.mp rfl).symm
++
++/-- External-input agreement does not survive a component intervention whose
++independent execution changes the recorded run's result. -/
++theorem replacement_separates_intervention (baseline alternative : State → Input → State)
++    (source : State) (inputs : List Input)
++    (different : inputs.foldl alternative source ≠ inputs.foldl baseline source) :
++    ¬ Hierarchy.Agree componentClass observations .intervention
++      (direct baseline source) (recorded baseline source inputs) := by
++  intro related
++  have same := reduction_bisimilar_current
++    (related (context := replacementRun alternative inputs)
++      (AdmissibleClass.top_admissible _))
++  change (plug (replacementRun alternative inputs) (direct baseline source)).player.current =
++    (plug (replacementRun alternative inputs) (recorded baseline source inputs)).player.current at same
++  rw [replacement_direct_result, replacement_recorded_result] at same
++  exact different same
++
++theorem replacement_separates_counterfactual (baseline alternative : State → Input → State)
++    (source : State) (inputs : List Input)
++    (different : inputs.foldl alternative source ≠ inputs.foldl baseline source) :
++    ¬ Hierarchy.Agree componentClass observations .counterfactual
++      (direct baseline source) (recorded baseline source inputs) :=
++  fun related => replacement_separates_intervention baseline alternative source inputs different
++    (Hierarchy.agree_intervention_of_counterfactual componentClass observations related)
++
++/-! ## Terms-alone hosting at the declared static equations -/
++
++def directPlayer (evaluator : State → Input → State) (source : State) : CheckedPlayer evaluator :=
++  ⟨⟨source, [], true⟩, by simp [Coherent]⟩
++
++theorem checkedStep_direct (evaluator : State → Input → State) (source : State) (input : Input) :
++    checkedStep evaluator (directPlayer evaluator source) input =
++      directPlayer evaluator (evaluator source input) := by
++  apply Subtype.ext
++  rfl
++
++/-- Direct execution is a faithful subsystem of checked backup execution. -/
++def directMap (evaluator : State → Input → State) :
++    ContextMap (theory evaluator).termsAlone (theory (checkedStep evaluator)).termsAlone :=
++  ContextMap.ofTerms PUnit.unit (directPlayer evaluator)
++    (by intro first second equal; cases equal; rfl)
++
++theorem directMap_hosting (evaluator : State → Input → State) : (directMap evaluator).Hosting := by
++  apply (ContextMap.ofTerms_hosting_iff (source := theory evaluator)
++    (target := (theory (checkedStep evaluator)).termsAlone) PUnit.unit
++    (directPlayer evaluator) (by intro first second equal; cases equal; rfl)).mpr
++  refine ⟨?_, ?_, ?_⟩
++  · intro first second equal
++    exact congrArg (fun player => player.val.current) equal
++  · intro source target event
++    obtain ⟨input, rfl⟩ := event
++    exact ⟨input, (checkedStep_direct evaluator source input).symm⟩
++  · intro source target event
++    obtain ⟨input, rfl⟩ := event
++    exact ⟨evaluator source input, ⟨input, rfl⟩, checkedStep_direct evaluator source input⟩
++
++/-- Projection forgets the table and live/table-read mode. It retains exactly
++the external state and lifts every abstract input step. -/
++def currentMap (evaluator : State → Input → State) :
++    ContextMap (theory (checkedStep evaluator)).termsAlone (theory evaluator).termsAlone :=
++  ContextMap.ofTerms PUnit.unit (fun player => player.val.current)
++    (by intro first second equal; cases equal; rfl)
++
++theorem currentMap_preserves (evaluator : State → Input → State) :
++    (currentMap evaluator).PreservesTransitions := by
++  rw [(currentMap evaluator).preservesTransitions_iff_rewrites]
++  intro interface source target event
++  obtain ⟨input, rfl⟩ := event
++  exact ⟨input, advance_current evaluator source.property input⟩
++
++theorem currentMap_reflects (evaluator : State → Input → State) :
++    (currentMap evaluator).ReflectsTransitions := by
++  rw [(currentMap evaluator).reflectsTransitions_iff_rewrites]
++  intro interface source target event
++  obtain ⟨input, rfl⟩ := event
++  exact ⟨checkedStep evaluator source input, ⟨input, rfl⟩,
++    (advance_current evaluator source.property input).symm⟩
++
++/-- Even the exhausted non-live player is distinct from live execution at
++the raw static equality, although both have the same represented state. -/
++def exhaustedPlayer (evaluator : State → Input → State) (source : State) :
++    CheckedPlayer evaluator := ⟨⟨source, [], false⟩, fun _ => trivial⟩
++
++theorem currentMap_not_hosting (evaluator : State → Input → State) (source : State) :
++    ¬ (currentMap evaluator).Hosting := by
++  apply (currentMap evaluator).not_hosting_of_identifies
++    (origin := PUnit.unit)
++    (first := directPlayer evaluator source) (second := exhaustedPlayer evaluator source)
++  · intro equal
++    have impossible := congrArg (fun player => player.val.live) equal
++    cases impossible
++  · rfl
++
++theorem currentMap_direct (evaluator : State → Input → State) (source : State) :
++    (currentMap evaluator).term (origin := PUnit.unit)
++      ((directMap evaluator).term (origin := PUnit.unit) source) = source := rfl
++
++/-! ## Positive and negative controls in one existing hierarchy -/
++
++namespace Controls
++
++def write (_state input : Bool) : Bool := input
++
++def forceTrue (_state _input : Bool) : Bool := true
++
++def executor : Machine Bool Bool := direct write false
++
++def backup : Machine Bool Bool := recorded write false [false]
++
++theorem all_input_rungs_agree (rung : Hierarchy.Rung) :
++    Hierarchy.Agree inputClass observations rung executor backup :=
++  direct_recorded_input_all_rungs write false [false] rung
++
++theorem component_intervention_separates :
++    ¬ Hierarchy.Agree componentClass observations .intervention executor backup :=
++  replacement_separates_intervention write forceTrue false [false] (by decide)
++
++theorem component_counterfactual_separates :
++    ¬ Hierarchy.Agree componentClass observations .counterfactual executor backup :=
++  replacement_separates_counterfactual write forceTrue false [false] (by decide)
++
++/-- A concrete formula asks whether replacing the evaluator and supplying
++the recorded input yields `true`. It uses an actual admitted context. -/
++def replacementTrue : Formula (componentClass.saturated
++    (observations (State := Bool) (Input := Bool))).Atom
++    (componentClass.saturated (observations (State := Bool) (Input := Bool))).Label :=
++  .atom (true, ⟨replacementRun forceTrue [false], AdmissibleClass.top_admissible _⟩)
++
++theorem replacement_formula_separates :
++    (componentClass.saturated observations).sat replacementTrue executor ∧
++      ¬ (componentClass.saturated observations).sat replacementTrue backup := by
++  constructor
++  · rfl
++  · change ¬ (false = true)
++    decide
++
++/-- The association rung has the same passive observations for either class;
++allowing component contexts strictly refines the intervention comparison. -/
++theorem hierarchy_strictness :
++    Hierarchy.Agree componentClass observations .association executor backup ∧
++      ¬ Hierarchy.Agree componentClass observations .intervention executor backup ∧
++      Hierarchy.Agree inputClass observations .counterfactual executor backup :=
++  ⟨all_input_rungs_agree .association, component_intervention_separates,
++    all_input_rungs_agree .counterfactual⟩
++
++/-- Two distinct component-sensitive behavioral classes become one class
++when only input contexts are retained. -/
++theorem component_class_forgetting_not_injective :
++    ¬ Function.Injective (componentRefinement (State := Bool) (Input := Bool)).classMap := by
++  intro injective
++  exact component_counterfactual_separates
++    (componentRefinement.classMap_injective_iff_reflects_bisimilar.mp injective
++      executor backup (all_input_rungs_agree .counterfactual))
++
++/-- Some component-sensitive readouts cannot be reconstructed from input
++behavior, independently of any interpretation of those readouts as experience. -/
++theorem not_all_component_readouts_input_readouts :
++    ¬ (∀ (Value : Type) (readout : Machine Bool Bool → Value),
++      Mettapedia.GSLT.Core.NonFactorization.Factors
++          (componentClass.saturated observations).toBehavioralClass readout →
++        Mettapedia.GSLT.Core.NonFactorization.Factors
++          (inputClass.saturated observations).toBehavioralClass readout) := by
++  intro descends
++  exact component_class_forgetting_not_injective
++    (componentRefinement.classMap_injective_iff_all_readouts_descend.mpr descends)
++
++/-- This particular component observation, rather than just an unspecified
++separating readout, fails to descend to input behavioral classes. -/
++theorem replacement_readout_not_input_readout :
++    ¬ Mettapedia.GSLT.Core.NonFactorization.Factors
++      (inputClass.saturated observations).toBehavioralClass
++      (fun machine => (componentClass.saturated observations).sat replacementTrue machine) := by
++  intro descends
++  have coarse := ((inputClass.saturated observations).behavioralClass_eq_iff executor backup).mpr
++    (all_input_rungs_agree .counterfactual)
++  have same := descends.constantOnFibers executor backup coarse
++  exact replacement_formula_separates.2 (same ▸ replacement_formula_separates.1)
++
++/-- Component replacement becomes effective if the next input differs from
++the table, so the backup is not permanently inert. -/
++theorem changed_input_activates_replacement :
++    (plug [.replaceEvaluator forceTrue, .feed true] backup).player = ⟨true, [], true⟩ := by
++  decide
++
++theorem same_input_retains_old_table :
++    (plug [.replaceEvaluator forceTrue, .feed false] backup).player = ⟨false, [], false⟩ := by
++  decide
++
++theorem hosting_and_forgetting :
++    (directMap write).Hosting ∧ (currentMap write).PreservesTransitions ∧
++      (currentMap write).ReflectsTransitions ∧ ¬ (currentMap write).Hosting :=
++  ⟨directMap_hosting write, currentMap_preserves write, currentMap_reflects write,
++    currentMap_not_hosting write false⟩
++
++end Controls
++
++end Mettapedia.GSLT.Causality.ScriptedExecution
+--- a/Mettapedia/CognitiveArchitecture/Consciousness/TraceAndImplementation.lean
++++ b/Mettapedia/CognitiveArchitecture/Consciousness/TraceAndImplementation.lean
+@@ -3,7 +3,7 @@
+ import Mettapedia.GSLT.Causality.Hierarchy
+ import Mettapedia.CognitiveArchitecture.Consciousness.ArchitecturalIndicators
+ import Mettapedia.GSLT.Core.RelationPresentation
+-import Mettapedia.GSLT.Dynamics.ScriptedBackup
++import Mettapedia.GSLT.Causality.ScriptedExecution
+ import Mettapedia.CategoryTheory.LocalSections
+ 
+ /-!
+@@ -41,6 +41,12 @@
+ does not by itself give its carrier the described transitions. The latter
+ control uses a complete table and a host constrained to stuttering; it does
+ not rely on the description omitting counterfactual possibilities.
++
++The dormant-backup comparison is instantiated in the existing causal
++hierarchy by `Causality.ScriptedExecution`: input-only saturated contexts
++cannot distinguish the direct executor from a valid backup. Replacing the
++evaluator while holding the table fixed can distinguish them. The permitted
++context class is therefore part of the realization criterion.
+ -/
+ 
+ set_option autoImplicit false
+@@ -496,6 +502,7 @@
+ 
+ open Mettapedia.GSLT.ScriptedBackup
+ open Mettapedia.GSLT.PrivilegedView
++open Mettapedia.GSLT.Causality
+ 
+ /-- The all-input criterion and the evaluator-call record disagree on this
+ constructed backup. Neither is identified with physical causal realization. -/
+@@ -507,6 +514,20 @@
+       advance (fun _ _ => true) Controls.recordedFalse false ∧
+     Controls.write false false ≠ (fun (_ _ : Bool) => true) false false :=
+   Controls.dormant_backup_distinction
++
++/-- The stronger backup result lives in the existing causal hierarchy:
++agreement at every input-only rung leaves component response undetermined,
++and forgetting those component contexts actually merges behavioral classes. -/
++theorem all_input_contexts_do_not_determine_component_response :
++    (∀ rung, Agree ScriptedExecution.inputClass ScriptedExecution.observations rung
++      ScriptedExecution.Controls.executor ScriptedExecution.Controls.backup) ∧
++    ¬ Agree ScriptedExecution.componentClass ScriptedExecution.observations .intervention
++      ScriptedExecution.Controls.executor ScriptedExecution.Controls.backup ∧
++    ¬ Function.Injective
++      (ScriptedExecution.componentRefinement (State := Bool) (Input := Bool)).classMap :=
++  ⟨ScriptedExecution.Controls.all_input_rungs_agree,
++    ScriptedExecution.Controls.component_intervention_separates,
++    ScriptedExecution.Controls.component_class_forgetting_not_injective⟩
+ 
+ end DormantBackupControl
+ 
+--- a/Mettapedia/CognitiveArchitecture/README.md
++++ b/Mettapedia/CognitiveArchitecture/README.md
+@@ -127,11 +127,18 @@
+ while the resulting passive description still loses the intervention distinction.
+ The general constructions live in
+ [`GSLT/Dynamics/ScriptedBackup.lean`](../GSLT/Dynamics/ScriptedBackup.lean) and
++[`GSLT/Causality/ScriptedExecution.lean`](../GSLT/Causality/ScriptedExecution.lean),
++alongside
+ [`CategoryTheory/LocalSections.lean`](../CategoryTheory/LocalSections.lean):
+ 
+ - A validated recording with dormant backup machinery matches direct execution
+   for every external input continuation. Its table reads and evaluator calls
+   remain different, including under changes to the dormant evaluator.
++- Input-only contexts preserve agreement at every rung of the causal hierarchy.
++  Admitting evaluator replacement refines that comparison and separates the
++  constructed machines. The context-forgetting map loses behavioral distinctions;
++  neither full input behavior nor a state-projection cover implies static
++  faithfulness or physical causal realization.
+ - Compatible assignments over arbitrary covers have a constructed unique global
+   section. Additional constraints require their own gluing laws; locally uniform
+   descriptions on disconnected contexts can fail to have a uniform extension.
+--- a/Mettapedia/GSLT/README.md
++++ b/Mettapedia/GSLT/README.md
+@@ -177,6 +177,17 @@
+ the recording. These are abstract operational results with an explicit evaluator
+ boundary.
+ 
++[`Causality/ScriptedExecution.lean`](Causality/ScriptedExecution.lean) places this
++comparison in the existing admissible-context causal hierarchy. Finite contexts
++can supply inputs or replace the evaluator while keeping the table fixed. A
++direct executor and a valid backup agree at every rung for input-only contexts;
++evaluator replacement can separate them at the intervention rung. Forgetting
++component contexts merges behavioral classes, and a concrete separating formula
++cannot be reconstructed from input behavior. In the terms-alone category,
++direct execution embeds by a hosting map. Projection to the represented state
++preserves and reflects transitions but fails static faithfulness, so it is not
++hosting for these raw machine equations.
++
+ ## OSLF interface (how the rest of Mettapedia uses GSLT)
+ 
+ GSLT supplies the *spec* that OSLF turns into an executable modal type theory. The

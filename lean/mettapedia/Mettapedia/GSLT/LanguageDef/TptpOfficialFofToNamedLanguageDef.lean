@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationNameTraversal
 import Mettapedia.GSLT.LanguageDef.TptpOfficialFofElaboration
 import Mettapedia.GSLT.LanguageDef.RewriteValidationBatch
 import Mettapedia.GSLT.LanguageDef.ConstructorSignatureExtension
@@ -559,112 +560,39 @@ private theorem constructorLabels_nodup :
     LanguageDef.constructorLabels_nodup_of_validate_eq_nil syntaxLanguage
       syntaxLanguage_validate
 
-private def constructorLabelNamespaced (label : String) : Bool :=
-  label.startsWith "tptp92-ast:" ||
-    label.startsWith "tptp-fof-named:" ||
-      label.startsWith "tptp-fof-symbol:" ||
-        label.startsWith "tptp-fof-elab:" ||
-        label = "$true" || label = "$false"
+private def plainTerms : List RewriteRule := termRewrites.take 7
+private def literalTerms : List RewriteRule := (termRewrites.drop 7).take 4
+private def definedAndSystemTerms : List RewriteRule := (termRewrites.drop 11).take 4
+private def argumentRules : List RewriteRule := termRewrites.drop 15
 
-private theorem constructorLabels_namespaced :
-    (RewriteValidationCertificate.constructorLabels language).all
-      constructorLabelNamespaced = true := by
-  decide +kernel
+private theorem termRewrites_sections :
+    termRewrites = plainTerms ++ literalTerms ++ definedAndSystemTerms ++ argumentRules := rfl
 
-private theorem plainName_not_constructor (name : String)
-    (plain : constructorLabelNamespaced name = false) :
-    name ∉ RewriteValidationCertificate.constructorLabels language := by
-  intro membership
-  have colon := (List.all_eq_true.mp constructorLabels_namespaced)
-    name membership
-  simp [plain] at colon
+private theorem plainTerms_checked :
+    plainTerms.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
-private theorem lexeme_not_constructor :
-    "lexeme" ∉ RewriteValidationCertificate.constructorLabels language :=
-  plainName_not_constructor "lexeme" (by simp [constructorLabelNamespaced])
+private theorem literalTerms_checked :
+    literalTerms.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
-private theorem arguments_not_constructor :
-    "arguments" ∉ RewriteValidationCertificate.constructorLabels language :=
-  plainName_not_constructor "arguments" (by simp [constructorLabelNamespaced])
+private theorem definedAndSystemTerms_checked :
+    definedAndSystemTerms.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
-private theorem argumentsResult_not_constructor :
-    "argumentsResult" ∉
-      RewriteValidationCertificate.constructorLabels language :=
-  plainName_not_constructor "argumentsResult"
-    (by simp [constructorLabelNamespaced])
-
-private theorem term_not_constructor :
-    "term" ∉ RewriteValidationCertificate.constructorLabels language :=
-  plainName_not_constructor "term" (by simp [constructorLabelNamespaced])
-
-private theorem termResult_not_constructor :
-    "termResult" ∉ RewriteValidationCertificate.constructorLabels language :=
-  plainName_not_constructor "termResult" (by simp [constructorLabelNamespaced])
-
-local macro "certify_term_rows" : tactic =>
-  `(tactic|
-    (simp [-Bool.and_eq_true, RewriteValidationCertificate.check,
-      RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.premiseTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      variableRule, plainNullaryRule, plainAppliedRule, numberRule,
-      distinctRule, definedNullaryRule, definedAppliedRule,
-      systemNullaryRule, systemAppliedRule, argumentsOneRule,
-      argumentsMoreRule, mkRule, typed, congruence, translateTerm,
-      translateArguments, targetVariable, targetName, targetFunctionHead,
-      targetFunction,
-      targetTermsNil, targetTermsCons, sourcePlainTerm, sourceDefinedTerm,
-      sourceSystemTerm, sourceDefinedFunctor, sourceSystemFunctor,
-      sourceToken, sourceAtomicWord, a, v,
-      RewriteValidationCertificate.constructorSignatures,
-      Pattern.constructorRefs, Pattern.constructorRefsList,
-      Pattern.isWellScoped, Pattern.isWellScopedAt,
-      Pattern.isWellScopedListAt, Pattern.freeFvarNames,
-      LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-      LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
-      LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames,
-      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
-      lexeme_not_constructor, arguments_not_constructor,
-      argumentsResult_not_constructor, term_not_constructor,
-      termResult_not_constructor]; decide +kernel))
-
-/- Check the four grammar groups separately to bound the size of each reduction.
-The partition below uses the original order of the authored rows. -/
-private theorem variableAndPlainRewrites_checked :
-    (termRewrites.take 7).all (RewriteValidationCertificate.check language) = true := by
-  simp only [termRewrites, List.take_succ_cons, List.take_zero]
-  certify_term_rows
-
-private theorem literalTermRewrites_checked :
-    ((termRewrites.drop 7).take 4).all (RewriteValidationCertificate.check language) = true := by
-  simp only [termRewrites, List.drop_succ_cons, List.drop_zero, List.take_succ_cons, List.take_zero]
-  certify_term_rows
-
-private theorem builtinTermRewrites_checked :
-    (((termRewrites.drop 7).drop 4).take 4).all (RewriteValidationCertificate.check language) = true := by
-  simp only [termRewrites, List.drop_succ_cons, List.drop_zero, List.take_succ_cons, List.take_zero]
-  certify_term_rows
-
-private theorem argumentRewrites_checked :
-    (((termRewrites.drop 7).drop 4).drop 4).all (RewriteValidationCertificate.check language) = true := by
-  simp only [termRewrites, List.drop_succ_cons, List.drop_zero]
-  certify_term_rows
+private theorem argumentRules_checked :
+    argumentRules.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private theorem termRewrites_checked :
     termRewrites.all (RewriteValidationCertificate.check language) = true := by
-  have splitBuiltins := List.take_append_drop 4 ((termRewrites.drop 7).drop 4)
-  have splitLiterals := List.take_append_drop 4 (termRewrites.drop 7)
-  have splitVariablesAndPlain := List.take_append_drop 7 termRewrites
-  conv_lhs => rw [← splitVariablesAndPlain, ← splitLiterals, ← splitBuiltins]
-  simp only [List.all_append, variableAndPlainRewrites_checked, literalTermRewrites_checked,
-    builtinTermRewrites_checked, argumentRewrites_checked, Bool.and_self]
+  rw [termRewrites_sections]
+  simp only [List.all_append, plainTerms_checked, literalTerms_checked,
+    definedAndSystemTerms_checked, argumentRules_checked, Bool.and_self]
 
 /-- Every term-elaboration row remains valid for any later layer that retains
 this exact source/target constructor signature. -/

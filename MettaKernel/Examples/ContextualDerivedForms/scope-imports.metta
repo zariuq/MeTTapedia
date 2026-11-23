@@ -1,0 +1,5 @@
+!(let $x a (let $p (parse "$x#0") (let $p b $p)))
+!(add-atom &self (row $x#0))
+!(let $x a (let (row $p) (get-atoms &self) (let $p b $p)))
+!(let $_ (change-state! scope-cell (row $x))
+   (let $x a (let (row $p) (get-state scope-cell) (let $p b $p))))

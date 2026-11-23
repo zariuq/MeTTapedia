@@ -1,0 +1,34 @@
+import "Data.module" as data
+
+Module Interactions {
+  Theory Grammar() {
+    data.Grammar()
+    Types { DCode; DCodes; DCaseRow; DCases; }
+    Terms {
+      DProgram . a0:SrcTrivia, a1:DCode, a2:SrcTrivia |- a0 a1 a2 : SourceProgram;
+      DValue . a0:SrcSpacing, a1:DTerm |- "emit" a0 a1 : DCode;
+      DMatch . a0:SrcSpacing, a1:DTerm, a2:SrcSpacing, a3:SrcSpacing, a4:DTerm, a5:SrcSpacing, a6:SrcSpacing, a7:SrcSpacing, a8:DCode, a9:SrcSpacing |- "read" a0 a1 a2 ":" a3 a4 a5 "=>" a6 "{" a7 a8 a9 "}" : DCode;
+      DAdd . a0:SrcSpacing, a1:DTerm, a2:SrcSpacing, a3:SrcSpacing, a4:DTerm |- "put" a0 a1 a2 "->" a3 a4 : DCode;
+      DRemove . a0:SrcSpacing, a1:DTerm, a2:SrcSpacing, a3:SrcSpacing, a4:DTerm |- "erase" a0 a1 a2 ":" a3 a4 : DCode;
+      DTransform . a0:SrcSpacing, a1:DTerm, a2:SrcSpacing, a3:SrcSpacing, a4:DTerm, a5:SrcSpacing, a6:SrcSpacing, a7:SrcSpacing, a8:DTerm |- "fire" a0 a1 a2 "[" a3 a4 a5 "]" a6 "=>" a7 a8 : DCode;
+      DInto . a0:SrcSpacing, a1:DTerm, a2:SrcSpacing, a3:SrcSpacing, a4:DTerm, a5:SrcSpacing, a6:SrcSpacing, a7:SrcSpacing, a8:DTerm, a9:SrcSpacing, a10:SrcSpacing, a11:DTerm |- "fire" a0 a1 a2 "[" a3 a4 a5 "]" a6 "=>" a7 a8 a9 "->" a10 a11 : DCode;
+      DOnce . a0:SrcSpacing, a1:SrcSpacing, a2:DCode, a3:SrcSpacing |- "first" a0 "{" a1 a2 a3 "}" : DCode;
+      DCollapse . a0:SrcSpacing, a1:SrcSpacing, a2:DCode, a3:SrcSpacing |- "collect" a0 "{" a1 a2 a3 "}" : DCode;
+      DChoice . a0:SrcSpacing, a1:SrcSpacing, a2:DCodes, a3:SrcSpacing |- "choose" a0 "{" a1 a2 a3 "}" : DCode;
+      DEmptyChoice . a0:SrcSpacing |- "choose" a0 "{}" : DCode;
+      DLet . a0:SrcSpacing, a1:DTerm, a2:SrcSpacing, a3:SrcSpacing, a4:SrcSpacing, a5:DCode, a6:SrcSpacing, a7:SrcSpacing, a8:SrcSpacing, a9:SrcSpacing, a10:DCode, a11:SrcSpacing |- "bind" a0 a1 a2 "<-" a3 "{" a4 a5 a6 "}" a7 ";" a8 "{" a9 a10 a11 "}" : DCode;
+      DChain . a0:SrcSpacing, a1:DTerm, a2:SrcSpacing, a3:SrcSpacing, a4:SrcSpacing, a5:DCode, a6:SrcSpacing, a7:SrcSpacing, a8:SrcSpacing, a9:SrcSpacing, a10:DCode, a11:SrcSpacing |- "chain" a0 a1 a2 "<-" a3 "{" a4 a5 a6 "}" a7 ";" a8 "{" a9 a10 a11 "}" : DCode;
+      DCount . a0:SrcSpacing, a1:SrcSpacing, a2:DCode, a3:SrcSpacing |- "count" a0 "{" a1 a2 a3 "}" : DCode;
+      DFold . a0:SrcSpacing, a1:DTerm, a2:SrcSpacing, a3:SrcSpacing, a4:SrcSpacing, a5:DCode, a6:SrcSpacing, a7:SrcSpacing, a8:SrcSpacing, a9:SrcSpacing, a10:DCode, a11:SrcSpacing |- "fold" a0 a1 a2 "over" a3 "{" a4 a5 a6 "}" a7 "from" a8 "{" a9 a10 a11 "}" : DCode;
+      DCase . a0:SrcSpacing, a1:SrcSpacing, a2:DCode, a3:SrcSpacing, a4:SrcSpacing, a5:SrcSpacing, a6:SrcSpacing, a7:DCases, a8:SrcSpacing |- "case" a0 "{" a1 a2 a3 "}" a4 "of" a5 "{" a6 a7 a8 "}" : DCode;
+      DEmpty .  |- "fail" : DCode;
+      DCodesOne . a0:DCode |- a0 : DCodes;
+      DCodesMore . a0:DCode, a1:SrcSpacing, a2:SrcSpacing, a3:DCodes |- a0 a1 "|" a2 a3 : DCodes;
+      DCaseClause . a0:DTerm, a1:SrcSpacing, a2:SrcSpacing, a3:SrcSpacing, a4:DCode, a5:SrcSpacing |- a0 a1 "=>" a2 "{" a3 a4 a5 "}" : DCaseRow;
+      DCasesOne . a0:DCaseRow |- a0 : DCases;
+      DCasesMore . a0:DCaseRow, a1:SrcSpacing, a2:SrcSpacing, a3:DCases |- a0 a1 "|" a2 a3 : DCases;
+    }
+  }
+  Theory LexicalProfile() { data.LexicalProfile() }
+  theory Grammar()
+}

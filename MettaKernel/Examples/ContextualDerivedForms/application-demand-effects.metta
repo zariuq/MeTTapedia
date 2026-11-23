@@ -1,0 +1,11 @@
+; Calibration: argument demand, branch-local tails and earlier effects.
+(= (ctx-strict $x) strict-result)
+(: ctx-hold (-> Atom Atom))
+(= (ctx-hold $x) held-result)
+(= (ctx-pair $x $y) (pair-result $x))
+!(ctx-strict (println! strict-marker))
+!(ctx-hold (println! forbidden-marker))
+!(ctx-strict (let $r (collapse (println! nested-marker)) $r))
+!(collapse (ctx-pair (superpose (a b)) (println! branch-marker)))
+!(collapse (ctx-pair (let $ignored (println! earlier-marker) (empty)) (println! forbidden-tail)))
+!(case (let $ignored (println! case-marker) True) ((True chosen) ($_ wrong)))

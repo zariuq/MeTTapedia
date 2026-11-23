@@ -1,0 +1,14 @@
+Module QuotedVariables {
+  Theory Data() {
+    Types { E; }
+    Terms {
+      Pair . first:E, second:E |- "pair" first second : E;
+      "ml:environment" . |- "literal" : E;
+    }
+    Rewrites {
+      "ml-code:0" . |- "Pair"(? "ml:environment", ? "by") ~> ? "by";
+      "literal-name" . |- "ml:environment" ~> "Pair"("ml:environment", "ml:environment");
+    }
+  }
+  theory Data()
+}

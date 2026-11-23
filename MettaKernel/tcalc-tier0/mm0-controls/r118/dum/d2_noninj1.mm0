@@ -1,0 +1,7 @@
+delimiter $ ( ) $;
+provable sort wff;
+sort nat;
+term al {x: nat} (a: wff x): wff;
+term eq (a b: nat): wff;
+def two (.u: nat): wff = $ al u (al u (eq u u)) $;
+def one (.u: nat): wff = $ al u (eq u u) $;

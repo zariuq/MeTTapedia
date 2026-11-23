@@ -1,0 +1,30 @@
+import "Radix16.module" as hex
+
+Module ErlangData {
+  Theory Data() {
+    let words = hex.Words() in words
+      Types { ErValue; ErValues; ErSign; ErCode; ErCount; ErFunction; ErEnvironment; }
+      Terms {
+        ErNonnegative . |- "nonnegative" : ErSign;
+        ErNegative . |- "negative" : ErSign;
+        ErAtom . utf8:Vec(R16Nibble) |- "atom" utf8 : ErValue ![wrapped];
+        ErInteger . sign:ErSign, digits:Vec(R16Nibble) |- "integer" sign digits : ErValue;
+        ErPid . digits:Vec(R16Nibble) |- "pid" digits : ErValue ![wrapped];
+        ErNil . |- "nil" : ErValue;
+        ErCons . head:ErValue, tail:ErValue |- "cons" head tail : ErValue;
+        ErTuple . fields:ErValues |- "tuple" fields : ErValue;
+        ErValuesNil . |- "values-nil" : ErValues;
+        ErValuesCons . head:ErValue, tail:ErValues |- "values-cons" head tail : ErValues;
+        ErCodeNumber . digits:Vec(R16Nibble) |- "code" digits : ErCode ![wrapped];
+        ErZero . |- "zero" : ErCount;
+        ErSucc . count:ErCount |- "succ" count : ErCount;
+        ErLambdaFunction . code:ErCode |- "lambda-function" code : ErFunction;
+        ErRecursiveFunction . group:ErCode, slot:ErCount |- "recursive-function" group slot : ErFunction;
+        ErClosure . arity:ErCount, function:ErFunction, captured:ErEnvironment
+          |- "closure" arity function captured : ErValue;
+        ErEnvironmentNil . |- "environment-nil" : ErEnvironment;
+        ErEnvironmentCons . head:ErValue, tail:ErEnvironment |- "environment-cons" head tail : ErEnvironment;
+      }
+  }
+  theory Data()
+}

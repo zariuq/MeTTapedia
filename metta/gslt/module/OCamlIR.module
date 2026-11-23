@@ -1,0 +1,105 @@
+import "Radix16.module" as hex
+
+Module OCamlIR {
+  Theory Data() {
+    let words = hex.Words() in words
+      Types {
+        MlCode; MlPattern; MlTag; MlSign; MlByte;
+        MlValue; MlValues; MlEnvironment; MlFunction;
+        MlCodes; MlClauses; MlBuild; MlPrimitive; MlPrimitiveResult;
+        MlContinuation; MlFaultData; MlConfig;
+      }
+      Terms {
+        MlCodeNumber . digits:Vec(R16Nibble) |- "code" digits : MlCode ![wrapped];
+        MlPatternNumber . digits:Vec(R16Nibble) |- "pattern" digits : MlPattern ![wrapped];
+        MlTagNumber . typeDigits:Vec(R16Nibble), constructorDigits:Vec(R16Nibble)
+          |- "tag" typeDigits constructorDigits : MlTag;
+        MlNonnegative . |- "nonnegative" : MlSign;
+        MlNegative . |- "negative" : MlSign;
+        MlByteValue . high:R16Nibble, low:R16Nibble |- "byte" high low : MlByte;
+        MlInteger . sign:MlSign, digits:Vec(R16Nibble) |- "integer" sign digits : MlValue;
+        MlTrue . |- "true" : MlValue;
+        MlFalse . |- "false" : MlValue;
+        MlUnit . |- "unit" : MlValue;
+        MlNil . |- "nil" : MlValue;
+        MlString . bytes:Vec(MlByte) |- "string" bytes : MlValue ![wrapped];
+        MlTuple . fields:MlValues |- "tuple" fields : MlValue;
+        MlCons . head:MlValue, tail:MlValue |- "cons" head tail : MlValue;
+        MlVariant . tag:MlTag, fields:MlValues |- "variant" tag fields : MlValue;
+        MlClosure . function:MlFunction, captured:MlEnvironment |- "closure" function captured : MlValue;
+        MlLambdaFunction . code:MlCode |- "lambda-function" code : MlFunction;
+        MlRecursiveFunction . group:MlCode, slot:MlCode |- "recursive-function" group slot : MlFunction;
+        MlValueNil . |- "values-nil" : MlValues;
+        MlValueCons . head:MlValue, tail:MlValues |- "values-cons" head tail : MlValues;
+        MlEnvironmentNil . |- "environment-nil" : MlEnvironment;
+        MlEnvironmentCons . head:MlValue, tail:MlEnvironment |- "environment-cons" head tail : MlEnvironment;
+        MlCodeNil . |- "codes-nil" : MlCodes;
+        MlCodeCons . head:MlCode, tail:MlCodes |- "codes-cons" head tail : MlCodes;
+        MlClauseNil . |- "clauses-nil" : MlClauses;
+        MlClauseCons . pattern:MlPattern, body:MlCode, tail:MlClauses
+          |- "clauses-cons" pattern body tail : MlClauses;
+        MlBuildTuple . |- "build-tuple" : MlBuild;
+        MlBuildVariant . tag:MlTag |- "build-variant" tag : MlBuild;
+        MlBuildPrimitive . operator:MlPrimitive |- "build-primitive" operator : MlBuild;
+        MlAdd . |- "add" : MlPrimitive;
+        MlSubtract . |- "subtract" : MlPrimitive;
+        MlMultiply . |- "multiply" : MlPrimitive;
+        MlDivide . |- "divide" : MlPrimitive;
+        MlModulo . |- "modulo" : MlPrimitive;
+        MlNegate . |- "negate" : MlPrimitive;
+        MlEqual . |- "equal" : MlPrimitive;
+        MlDifferent . |- "different" : MlPrimitive;
+        MlLess . |- "less" : MlPrimitive;
+        MlLessEqual . |- "less-equal" : MlPrimitive;
+        MlGreater . |- "greater" : MlPrimitive;
+        MlGreaterEqual . |- "greater-equal" : MlPrimitive;
+        MlNotBool . |- "not-bool" : MlPrimitive;
+        MlPrimitiveValue . value:MlValue |- "primitive-value" value : MlPrimitiveResult;
+        MlPrimitiveFault . fault:MlFaultData |- "primitive-fault" fault : MlPrimitiveResult;
+        MlDivisionByZero . |- "division-by-zero" : MlFaultData;
+        MlMatchFailure . |- "match-failure" : MlFaultData;
+        MlFunctionalComparison . |- "functional-comparison" : MlFaultData;
+        MlKDone . |- "done" : MlContinuation;
+        MlKArgument . function:MlCode, environment:MlEnvironment, rest:MlContinuation
+          |- "argument" function environment rest : MlContinuation;
+        MlKFunction . argument:MlValue, rest:MlContinuation |- "function" argument rest : MlContinuation;
+        MlKLet . pattern:MlPattern, body:MlCode, environment:MlEnvironment, rest:MlContinuation
+          |- "let" pattern body environment rest : MlContinuation;
+        MlKBranch . yes:MlCode, no:MlCode, environment:MlEnvironment, rest:MlContinuation
+          |- "branch" yes no environment rest : MlContinuation;
+        MlKAnd . right:MlCode, environment:MlEnvironment, rest:MlContinuation
+          |- "and" right environment rest : MlContinuation;
+        MlKOr . right:MlCode, environment:MlEnvironment, rest:MlContinuation
+          |- "or" right environment rest : MlContinuation;
+        MlKBoolean . rest:MlContinuation |- "boolean" rest : MlContinuation;
+        MlKConsTail . head:MlCode, environment:MlEnvironment, rest:MlContinuation
+          |- "cons-tail" head environment rest : MlContinuation;
+        MlKConsHead . tail:MlValue, rest:MlContinuation |- "cons-head" tail rest : MlContinuation;
+        MlKBuild . kind:MlBuild, remaining:MlCodes, environment:MlEnvironment, suffix:MlValues, rest:MlContinuation
+          |- "build" kind remaining environment suffix rest : MlContinuation;
+        MlKMatch . clauses:MlClauses, environment:MlEnvironment, rest:MlContinuation
+          |- "match" clauses environment rest : MlContinuation;
+        MlEvaluate . code:MlCode, environment:MlEnvironment, continuation:MlContinuation
+          |- "evaluate" code environment continuation : MlConfig;
+        MlReturn . value:MlValue, continuation:MlContinuation |- "return" value continuation : MlConfig;
+        MlApply . function:MlValue, argument:MlValue, continuation:MlContinuation
+          |- "apply" function argument continuation : MlConfig;
+        MlMatchOne . pattern:MlPattern, value:MlValue, body:MlCode, environment:MlEnvironment, continuation:MlContinuation
+          |- "match-one" pattern value body environment continuation : MlConfig;
+        MlSelect . clauses:MlClauses, value:MlValue, environment:MlEnvironment, continuation:MlContinuation
+          |- "select" clauses value environment continuation : MlConfig;
+        MlTryClause . pattern:MlPattern, value:MlValue, body:MlCode, later:MlClauses,
+          environment:MlEnvironment, continuation:MlContinuation
+          |- "try-clause" pattern value body later environment continuation : MlConfig;
+        MlBuildConfig . kind:MlBuild, values:MlValues, continuation:MlContinuation
+          |- "build" kind values continuation : MlConfig;
+        MlPrimitiveRequest . operator:MlPrimitive, arguments:MlValues, continuation:MlContinuation
+          |- "primitive-request" operator arguments continuation : MlConfig;
+        MlPrimitiveReturned . result:MlPrimitiveResult, continuation:MlContinuation
+          |- "primitive-returned" result continuation : MlConfig;
+        MlDone . value:MlValue |- "result" value : MlConfig;
+        MlFault . fault:MlFaultData |- "fault" fault : MlConfig;
+      }
+  }
+  theory Data()
+}

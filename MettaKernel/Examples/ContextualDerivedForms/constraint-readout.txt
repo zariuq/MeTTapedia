@@ -1,0 +1,53 @@
+Canonical source readout and exact streaming caller re-entry
+
+The source equation solver and the maintained Lean streaming unifier can
+choose different most-general representatives. Equality of raw variable names
+is therefore too strong; comparing each value independently is too weak when
+values share variables.
+
+Logic/LP/MutualInstantiation proves the generic fact using the existing
+substitution types: mutual instances of finite terms differ only by variable
+renaming. The maps come from the actual substitutions. A retraction forces
+variable images on the observed support and proves their injectivity there;
+no global permutation or restriction on unused coordinates is assumed.
+For mutually general substitutions, one pair of maps serves every term.
+
+PeTTa/UnifyingConstraintReadout earns the runtime environment's most-general
+property from its actual first-lookup presentation. The independent source
+solver contributes its existing MGU theorem. Uniform variable maps connect
+their actual readouts, and the existing VariantReadout joint observer agrees
+on every finite observation bundle. This includes values, saved caller terms
+and other atoms observed under that branch's record, preserving their sharing.
+The result specializes to the source record and actual solved substitution
+after a successful literal result gate.
+
+This is one branch's binding/readout connection. Independent branch copies,
+scope allocation and entire effectful language execution require their own
+correspondence. The result selects neither a public variable-printing policy
+nor Prime syntax.
+
+StreamingAnswerTransport reuses AnswerReadout.BranchPacket. Each branch keeps
+its actual substitution and inverse basis. Re-entry restores the original
+values before the actual streaming caller runs. The entire re-entered state
+is recovered, including world, counters, private code, older alternatives and
+scope markers. Every subsequent runner budget and outcome therefore agrees.
+This optional interface is not a mandatory per-answer evaluator pass, and
+construction/transport cost is not asserted to vanish.
+
+Controls use the actual source solver on x=y and runtime unification of the
+equivalent y=x. Raw readouts differ, but their general joint observation law
+holds. A caller can distinguish executing display labels without their inverse
+basis, and can distinguish dropping a binding absent from the displayed value.
+These are changes to actual Streaming.run outcomes, not only to printed text.
+
+ConstraintReadoutModel executes six observations. It distinguishes the raw
+representatives, checks joint sharing, restores the caller's value, exercises
+both corruptions and runs an effectful caller. One earlier marker remains and
+one routed addition is performed. The mathematical all-budget result covers
+arbitrary saved frames and older jobs without assuming their termination.
+
+Whole source/compiler producer and control simulation, complete streaming
+binding/scope/region invariants, list-view patterns, typed/lambda/dynamic
+regions, HE recursive demand and both authored surfaces' full operational
+connection remain open. No C or machine-code correspondence or native speed
+claim is supplied by these Lean results.

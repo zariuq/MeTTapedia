@@ -1,0 +1,20 @@
+; A derived relation is itself an argument to the same rule.
+(store set)
+(step every)
+(holds mother alice bob (leaf l1 mother-proof report))
+(holds mother alice bob (leaf l2 mother-proof report))
+(holds father bob carol (leaf r1 father-proof certain))
+(holds father dana carol (leaf bad wrong-proof certain))
+(holds rail east hub (leaf l3 rail-proof timetable))
+(holds ferry hub west (leaf r2 ferry-proof schedule))
+(holds bus west pier (leaf r3 bus-proof schedule))
+(define (then mother father))
+(define (then rail ferry))
+(define (then (then rail ferry) bus))
+(define (then father mother))
+
+(rule compose
+  (read (define (then $r $s))
+        (holds $r $x $y $p)
+        (holds $s $y $z $q))
+  (make (holds (then $r $s) $x $z (via $y $p $q))))

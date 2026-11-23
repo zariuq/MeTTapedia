@@ -1,0 +1,10 @@
+ground: accepted
+sharing: accepted
+retained: accepted
+shadow: accepted
+literal-conflict: refused
+occurs: refused
+shared-conflict: refused
+retained-conflict: refused
+interruption: source-enabled
+gate: earlier=1 forbidden=0

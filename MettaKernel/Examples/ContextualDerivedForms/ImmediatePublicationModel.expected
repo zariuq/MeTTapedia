@@ -1,0 +1,8 @@
+replies agree=true
+store after later refusal=[3]
+recorded tickets=1; ordinary tickets=0
+recording refusal=Mettapedia.Machines.ImmediateStorePublication.Reply.preparationFailed
+  (Mettapedia.Machines.PreparedStoreProtocol.Preparation.allocationFailed)
+first-only survivors=[2, 1]
+all-equal survivors=[1]
+resumed charge=2; tickets=1

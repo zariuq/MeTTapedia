@@ -1,0 +1,179 @@
+-- The .module format: theories with parameters, joins, replacements, exports and imports.
+-- Rows are the rows of languageDef!: constructors in judgement form, equations and rewrites over
+-- patterns with binders (^x.p, anonymous ^.p with bound variables #0), substitutions ([z/#0]b),
+-- bags with rests ({p, ...rest}) and premises. Every LanguageDef has a spelling that reads back as itself.
+
+entrypoints ModuleFile ;
+
+comment "--" ;
+comment "{-" "-}" ;
+
+MFile . ModuleFile ::= [Import] "Module" Ident "{" [TheoryDecl] Entry "}" ;
+
+MImport . Import ::= "import" String "as" Ident ;
+terminator Import "" ;
+
+MTheory . TheoryDecl ::= "Theory" Ident "(" [Param] ")" "{" Expr "}" ;
+terminator TheoryDecl "" ;
+
+MParam . Param ::= Ident ":" Path ;
+separator Param "," ;
+
+MPathOne  . Path ::= Ident ;
+MPathMore . Path ::= Ident "." Path ;
+
+MEntry   . Entry ::= "theory" Path "(" [Expr] ")" ;
+MNoEntry . Entry ::= ;
+
+-- Theory expressions: a join is weakest, an extension binds tighter, atoms tightest.
+MLet    . Expr  ::= "let" Ident "=" Expr "in" Expr ;
+MJoin   . Expr  ::= Expr "\\/" Expr1 ;
+MExtend . Expr1 ::= Expr2 Block [Block] ;
+MBlocks . Expr1 ::= Block [Block] ;
+MRef    . Expr2 ::= Ident ;
+MApply  . Expr2 ::= Path "(" [Expr] ")" ;
+_ . Expr  ::= Expr1 ;
+_ . Expr1 ::= Expr2 ;
+_ . Expr2 ::= "{" Expr "}" ;
+_ . Expr2 ::= "(" Expr ")" ;
+separator Expr "," ;
+terminator Block "" ;
+
+BTypes        . Block ::= "Types" "{" [SortRow] "}" ;
+BExports      . Block ::= "Exports" "{" [ExportRow] "}" ;
+BTerms        . Block ::= "Terms" "{" [TermDecl] "}" ;
+BReplacements . Block ::= "Replacements" "{" [Replacement] "}" ;
+BEquations    . Block ::= "Equations" "{" [EquationRow] "}" ;
+BRewrites     . Block ::= "Rewrites" "{" [RewriteRow] "}" ;
+BInductives   . Block ::= "Inductives" "{" [InductiveFamily] "}" ;
+
+IFamily . InductiveFamily ::= Ident "parameters" "(" [InductiveBinder] ")"
+  "indices" "(" [InductiveBinder] ")" ":" InductiveTerm "{" [InductiveConstructor] "}" ;
+terminator InductiveFamily "" ;
+IBinder . InductiveBinder ::= Ident ":" InductiveTerm ;
+separator InductiveBinder "," ;
+IConstructor . InductiveConstructor ::= Ident "(" [InductiveBinder] ")" ":" InductiveTerm ";" ;
+terminator InductiveConstructor "" ;
+ITArrow . InductiveTerm ::= InductiveTerm1 "->" InductiveTerm ;
+ITApp . InductiveTerm1 ::= InductiveTerm1 InductiveTerm2 ;
+ITName . InductiveTerm2 ::= Ident ;
+_ . InductiveTerm ::= InductiveTerm1 ;
+_ . InductiveTerm1 ::= InductiveTerm2 ;
+_ . InductiveTerm2 ::= "(" InductiveTerm ")" ;
+
+SRow . SortRow ::= Ident ";" ;
+SCarrier . SortRow ::= Ident "=" Ident ";" ;
+terminator SortRow "" ;
+
+ERow    . ExportRow ::= Ident ";" ;
+ERename . ExportRow ::= Ident "=>" Ident ";" ;
+terminator ExportRow "" ;
+
+RRow . Replacement ::= Ident "=>" TermDecl ;
+terminator Replacement "" ;
+
+-- Constructors: Label . context |- syntax : Category ;
+TDecl . TermDecl ::= Ident "." [TermParam] "|-" [SyntaxItem] ":" Ident ";" ;
+TDeclCore . TermDecl ::= String "." [TermParam] "|-" [SyntaxItem] ":" Ident ";" ;
+TDeclWrapped . TermDecl ::= Ident "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" "wrapped" "]" ";" ;
+TDeclCoreWrapped . TermDecl ::= String "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" "wrapped" "]" ";" ;
+TDeclPolicy . TermDecl ::= Ident "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" EvalPolicy "]" ";" ;
+TDeclCorePolicy . TermDecl ::= String "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" EvalPolicy "]" ";" ;
+TDeclPolicyWrapped . TermDecl ::= Ident "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" EvalPolicy "]" "![" "wrapped" "]" ";" ;
+TDeclCorePolicyWrapped . TermDecl ::= String "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" EvalPolicy "]" "![" "wrapped" "]" ";" ;
+EPRewrite . EvalPolicy ::= "rewrite" ;
+EPFold . EvalPolicy ::= "fold" ;
+EPOracle . EvalPolicy ::= "oracle" ;
+-- A rule row, as in labelled BNF: its categories become the parameters argument:0, argument:1, ...
+-- A collection constructor's words: its algebra (`flatten`, `unit` with the unit's label last) and `bare`, its
+-- representation declared bare.
+TDeclMod . TermDecl ::= Ident "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" [Modifier] "]" ";" ;
+TDeclCoreMod . TermDecl ::= String "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" [Modifier] "]" ";" ;
+TDeclModUnit . TermDecl ::= Ident "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" [Modifier] String "]" ";" ;
+TDeclCoreModUnit . TermDecl ::= String "." [TermParam] "|-" [SyntaxItem] ":" Ident "![" [Modifier] String "]" ";" ;
+MWord . Modifier ::= Ident ;
+separator Modifier "," ;
+TRule . TermDecl ::= Ident "." Ident "::=" [RuleItem] ";" ;
+RITerminal . RuleItem ::= String ;
+RICategory . RuleItem ::= Ident ;
+terminator RuleItem "" ;
+terminator TermDecl "" ;
+
+TPSimple . TermParam ::= Ident ":" TypeExpr ;
+TPBinder . TermParam ::= "^" Ident "." Ident ":" "[" TypeExpr "]" ;
+TPAnon   . TermParam ::= "^" Ident ":" "[" TypeExpr "]" ;
+separator TermParam "," ;
+
+TyArrow . TypeExpr  ::= TypeExpr1 "->" TypeExpr ;
+TyColl  . TypeExpr1 ::= Ident "(" TypeExpr ")" ;
+TyBase  . TypeExpr1 ::= Ident ;
+_ . TypeExpr ::= TypeExpr1 ;
+
+SITerminal . SyntaxItem ::= String ;
+SIVariable . SyntaxItem ::= Ident ;
+SISep      . SyntaxItem ::= Ident ".*sep" "(" String ")" ;
+SISepItem  . SyntaxItem ::= "sep" "(" String ")" ;
+SIDelim    . SyntaxItem ::= Ident ".*delim" "(" String "," String ")" ;
+terminator SyntaxItem "" ;
+
+EqPlain . EquationRow ::= Pattern "==" Pattern ";" ;
+EqIf    . EquationRow ::= "if" [Premise] "then" Pattern "==" Pattern ";" ;
+-- The core rows of CeTTa's module format: a string label, a typed context, premises after `|`.
+EqCore   . EquationRow ::= String "." [Binding] "|-" Pattern "=" Pattern ";" ;
+EqCoreIf . EquationRow ::= String "." [Binding] "|" [Premise] "|-" Pattern "=" Pattern ";" ;
+EqNamedCore . EquationRow ::= Ident "." [Binding] "|-" Pattern "=" Pattern ";" ;
+EqNamedCoreIf . EquationRow ::= Ident "." [Binding] "|" [Premise] "|-" Pattern "=" Pattern ";" ;
+terminator EquationRow "" ;
+
+RwPlain . RewriteRow ::= Ident ":" Pattern "~>" Pattern ";" ;
+RwIf    . RewriteRow ::= Ident ":" "if" [Premise] "then" Pattern "~>" Pattern ";" ;
+RwCore   . RewriteRow ::= String "." [Binding] "|-" Pattern "~>" Pattern ";" ;
+RwCoreIf . RewriteRow ::= String "." [Binding] "|" [Premise] "|-" Pattern "~>" Pattern ";" ;
+RwNamedCore . RewriteRow ::= Ident "." [Binding] "|-" Pattern "~>" Pattern ";" ;
+RwNamedCoreIf . RewriteRow ::= Ident "." [Binding] "|" [Premise] "|-" Pattern "~>" Pattern ";" ;
+terminator RewriteRow "" ;
+
+PrFresh . Premise ::= Ident "#" Pattern ;
+PrStep  . Premise ::= Pattern "~>" Pattern ;
+PrQuery . Premise ::= String "(" [CallArg] ")" ;
+PrNamedQuery . Premise ::= Ident "(" [CallArg] ")" ;
+PrForAll . Premise ::= "forAll" "(" Ident "," Ident "," Premise ")" ;
+separator nonempty Premise "," ;
+
+-- Patterns: variables, applications (C a b) and (C), collections with an optional rest,
+-- binders ^x.p, and the application of an abstraction (subst body argument).
+PVar      . Pattern ::= Ident ;
+PQuotedVar . Pattern ::= "?" String ;
+PApp      . Pattern ::= "(" Ident [Argument] ")" ;
+PSubst    . Pattern ::= "(" "subst" Pattern Pattern ")" ;
+PBag      . Pattern ::= "{" [Element] "}" ;
+PBagRest  . Pattern ::= "{" [Element] "," "..." Ident "}" ;
+PRestOnly . Pattern ::= "{" "..." Ident "}" ;
+PEmpty    . Pattern ::= "{" "}" ;
+PVec      . Pattern ::= "[" [Element] "]" ;
+PVecRest  . Pattern ::= "[" [Element] "," "..." Ident "]" ;
+PVecRestOnly . Pattern ::= "[" "..." Ident "]" ;
+PVecEmpty . Pattern ::= "[" "]" ;
+PSet      . Pattern ::= "#{" [Element] "}" ;
+PSetRest  . Pattern ::= "#{" [Element] "," "..." Ident "}" ;
+PSetRestOnly . Pattern ::= "#{" "..." Ident "}" ;
+PSetEmpty . Pattern ::= "#{" "}" ;
+PBinder   . Pattern ::= "^" Ident "." Pattern ;
+-- An anonymous binder, its bound variable by index, and the substitution for an open body's bound variable.
+PBinderAnon . Pattern ::= "^" "." Pattern ;
+PIndex    . Pattern ::= "#" Integer ;
+PInstantiate . Pattern ::= "[" Pattern "/" "#" Integer "]" Pattern ;
+PCall     . Pattern ::= String "(" [CallArg] ")" ;
+PConst    . Pattern ::= String ;
+
+CBinding . Binding ::= Ident ":" TypeExpr ;
+separator Binding "," ;
+
+CArg . CallArg ::= Pattern ;
+separator CallArg "," ;
+
+AArg . Argument ::= Pattern ;
+terminator Argument "" ;
+
+EElem . Element ::= Pattern ;
+separator nonempty Element "," ;

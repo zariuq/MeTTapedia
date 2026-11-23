@@ -1,0 +1,21 @@
+Module Halting {
+  Theory Halting() {
+    Types {
+      Nat;
+      State;
+    }
+    Terms {
+      "Zero" .  |- "zero" : Nat;
+      "Succ" . n:Nat |- "succ" n : Nat;
+      "Counter" . n:Nat |- "counter" n : State;
+      "Halted" .  |- "halted" : State;
+    }
+    Equations {
+    }
+    Rewrites {
+      "Advance" . n:Nat |- "Counter"(n) ~> "Counter"("Succ"(n));
+      StopAtThree : "Counter"("Succ"("Succ"("Succ"("Zero")))) ~> "Halted";
+    }
+  }
+  theory Halting()
+}

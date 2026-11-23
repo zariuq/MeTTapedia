@@ -1,0 +1,18 @@
+; A pure dataflow program. Repeated Add rows are distinct work requests.
+; The dead_a/dead_b cycle is disconnected from every requested output.
+(Add "sum" "a" "b")
+(Add "double" "sum" "sum")
+(Add "out" "double" "bias")
+(Add "copy" "a" "b")
+(Add "copy" "a" "b")
+(Add "future" "dynamic" "a")
+(Add "dead_a" "dead_b" "a")
+(Add "dead_b" "dead_a" "b")
+(Input "dynamic")
+(Constant "a" 3)
+(Constant "b" 4)
+(Constant "bias" 1)
+(Output "out")
+(Output "future")
+(Output "copy")
+(Output "out")

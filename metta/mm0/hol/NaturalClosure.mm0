@@ -1,0 +1,20 @@
+import "../../../../repos/mm0/examples/hol.mm0";
+
+def naturalClosure (A: type) (z s n: term) {.p .k: term}: term =
+  $ !p: A -> bool. p @ z ==>
+      (!k: A. p @ k ==> p @ (s @ k)) ==> p @ n $;
+
+theorem naturalClosureZero (G: wff) (A: type) (z s: term):
+  $ G |- z: A $ > $ G |- s: A -> A $ >
+  $ G |- naturalClosure A z s z $;
+
+theorem naturalClosureSuccessor (G: wff) (A: type) (z s n: term):
+  $ G |- z: A $ > $ G |- s: A -> A $ > $ G |- n: A $ >
+  $ G |- naturalClosure A z s n $ >
+  $ G |- naturalClosure A z s (s @ n) $;
+
+theorem naturalClosureElimination (G: wff) (A: type) (z s n p: term) {k: term}:
+  $ G |- z: A $ > $ G |- s: A -> A $ > $ G |- n: A $ >
+  $ G |- p: A -> bool $ > $ G |- naturalClosure A z s n $ >
+  $ G |- p @ z $ > $ G |- !k: A. p @ k ==> p @ (s @ k) $ >
+  $ G |- p @ n $;

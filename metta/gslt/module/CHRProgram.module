@@ -1,0 +1,45 @@
+import "CHRIR.module" as ir
+
+Module CHRProgram {
+  Theory Programs(d: ir.Constraints) {
+    d
+      Types {
+        ChrIndex = Int; ChrTermData; ChrHeadData; ChrIntExpression; ChrComparison;
+        ChrGuardData; ChrGoalData; ChrRuleData; ChrDeclarationData; ChrProgramData;
+      }
+      Terms {
+        ChrLiteral . datum:ChrValue |- "literal" datum : ChrTermData;
+        ChrVariable . index:ChrIndex |- "variable" index : ChrTermData;
+        ChrTermTuple . fields:Vec(ChrTermData) |- "tuple-pattern" fields : ChrTermData ![wrapped];
+        ChrHead . atomText:ChrAtom, arguments:Vec(ChrTermData) |- "head" atomText arguments : ChrHeadData;
+        ChrNumber . datum:ChrInteger |- "number" datum : ChrIntExpression;
+        ChrIntVariable . index:ChrIndex |- "integer-variable" index : ChrIntExpression;
+        ChrAdd . left:ChrIntExpression, right:ChrIntExpression |- left "+" right : ChrIntExpression;
+        ChrSubtract . left:ChrIntExpression, right:ChrIntExpression |- left "-" right : ChrIntExpression;
+        ChrMultiply . left:ChrIntExpression, right:ChrIntExpression |- left "*" right : ChrIntExpression;
+        ChrQuotient . left:ChrIntExpression, right:ChrIntExpression |- left "//" right : ChrIntExpression;
+        ChrRemainder . left:ChrIntExpression, right:ChrIntExpression |- left "rem" right : ChrIntExpression;
+        ChrModulo . left:ChrIntExpression, right:ChrIntExpression |- left "mod" right : ChrIntExpression;
+        ChrEqual . |- "=:=" : ChrComparison;
+        ChrDifferent . |- "=\\=" : ChrComparison;
+        ChrLess . |- "<" : ChrComparison;
+        ChrLessEqual . |- "=<" : ChrComparison;
+        ChrGreater . |- ">" : ChrComparison;
+        ChrGreaterEqual . |- ">=" : ChrComparison;
+        ChrIdentical . left:ChrTermData, right:ChrTermData |- left "==" right : ChrGuardData;
+        ChrDistinct . left:ChrTermData, right:ChrTermData |- left "\\==" right : ChrGuardData;
+        ChrCompare . comparison:ChrComparison, left:ChrIntExpression, right:ChrIntExpression
+          |- "compare" comparison left right : ChrGuardData;
+        ChrTell . constraint:ChrHeadData |- "tell" constraint : ChrGoalData;
+        ChrAssign . index:ChrIndex, expression:ChrIntExpression |- "is" index expression : ChrGoalData;
+        ChrFail . |- "fail" : ChrGoalData;
+        ChrRule . ruleText:ChrAtom, kept:Vec(ChrHeadData), removed:Vec(ChrHeadData),
+          guards:Vec(ChrGuardData), goals:Vec(ChrGoalData)
+          |- "rule" ruleText kept removed guards goals : ChrRuleData;
+        ChrDeclare . atomText:ChrAtom, arity:ChrIndex |- "declare" atomText arity : ChrDeclarationData;
+        ChrProgram . declarations:Vec(ChrDeclarationData), rules:Vec(ChrRuleData)
+          |- "program" declarations rules : ChrProgramData;
+      }
+  }
+  theory Programs(ir.Constraints(ir.Data()))
+}

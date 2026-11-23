@@ -1,0 +1,84 @@
+{
+  "format": "transform-hol-recording-certificate-v1",
+  "sources_sha256": {
+    "core.ml": "9e5503a2abcf32f3f38a5f8cba67cd649af437b89e45358c6d4eb3199a6a272d",
+    "frames.ml": "aa434b16699bb64cca2a11a7b6e7cb78fcb89ecb635f38edb34b514cfd3619e2",
+    "prepared.ml": "659bde3a770e60eb7190bca0fe22198bb2ae82321b0f05917a6351cb0a016539",
+    "runs.ml": "c3d52daa29bc5a667f09e265804e64700ade18091978238438bc79176a50a43e",
+    "recording.ml": "375e4788b08d531c7627cdfd869944b558af071ce1fa8684d6b7de2615bff3f5"
+  },
+  "certificate": "recording.holr",
+  "certificate_sha256": "ab4eb0322e8cb1a596025725a369cc723d16951ead455f8543980346caf6ebd5",
+  "theorems": [
+    "TC_RECORD_CONTINUATION",
+    "TC_RECORD_NIL",
+    "TC_RECORD_CONS",
+    "TC_RECORD_APPEND",
+    "TC_RECORD_VALID_FIBRES",
+    "TC_RECORD_ERASURE",
+    "TC_RECORD_UNIQUE",
+    "TC_RECORD_ORDER_RETAINED",
+    "TC_RECORD_NO_VALID_INITIAL"
+  ],
+  "source_proof_nodes": 95135,
+  "replay_records": 276933,
+  "standard_axiom_dependencies": 3,
+  "nonstandard_axioms": 0,
+  "certificate_negative_controls": 3,
+  "metta_proof_handle_consumer": true,
+  "scoped_lean_interpretations": {
+    "loaded_pullback_continuation_fold": true,
+    "constructed_record_carrier": true,
+    "dependent_observer_agreement": true,
+    "shared_loaded_admission_and_path_model": true,
+    "empty_valid_fibres_retained": true,
+    "prepared_publications_and_success_receipts": true,
+    "base_preparation_with_refused_admission": true
+  },
+  "concrete_recording_roots_replayed": true,
+  "closed_kernel_reduction_of_complete_recording_replay": false,
+  "native_implementation_refinement_established": false,
+  "whole_goal_complete": true,
+  "run_model_receiver": {
+    "qualified": true,
+    "events": 93356,
+    "exact_roots": 7,
+    "earlier_definitions": 24,
+    "negative_controls": 12,
+    "checked_parameters": [
+      "S",
+      "E",
+      "V"
+    ],
+    "source_sha256": "3819ac69f90aa03ee03a0242b84a018e1badd2eb799c98de5f3d7e465e66283c",
+    "events_sha256": "9703f54c336bf3795ef65b7396657f19f36f251cdea7e9dd3a19f0c1649cd58b",
+    "receiver_sha256": "27c9d2fb90d9bfca4e714b601e736c92fd2a6d9717831b55bbc317f92c78f059",
+    "receiver_log_sha256": "0fde857c77bc0545c116104078c70bd91da02530780f21ad74be0c082874e66b",
+    "closed_kernel_reduction_of_complete_replay": false
+  },
+  "native_requalification": {
+    "bundles": 3,
+    "bundle_roots": [
+      28,
+      22,
+      9
+    ],
+    "negative_controls_per_bundle": 3,
+    "proof_images_unchanged": true,
+    "readable_views_regenerated": true,
+    "qualification_sha256": "b14684dde1c66b44ba25a900bbe30c6a8830df7d777373815de7dfdb7f3490c7"
+  },
+  "authored_presentation": {
+    "source": "metta/gslt/module/tcalc.module",
+    "source_sha256": "f02129d57a4597cf122bd53cc39dbbd87466267b36e12004d261d5b347623aae",
+    "current_module_ast_matches_checked": true,
+    "current_language_matches_checked": true,
+    "changed_permission_query_distinguished": true,
+    "qualification_sha256": "07a0724f6f3f6981076227cdcafcce57aa3f82899f0559b406cf19a54c74fef2"
+  },
+  "consolidation_qualification": {
+    "certificate": "consolidation-qualification.json",
+    "sha256": "fcbbf193d632e7adfeb227e25bf0f4ddfbbfdc605847b3d6e1b2b78c5b040a84",
+    "scope": "Consolidate transform calculus: syntax, effects, control and observation"
+  }
+}

@@ -1,0 +1,13 @@
+basic: output=[] answers=["5"]
+basic: output=[] answers=["(pair-value 10 20)"]
+basic: output=[] answers=["(pair-value (println! forbidden) 8)"]
+basic: output=[] answers=["(pair-value 7 8)"]
+basic: output=[] answers=["(missing 7)"]
+demand: output=[] answers=["(println! 9)"]
+demand: output=["9"] answers=["True"]
+recovery: output=[] answers=["(first)"]
+recovery: output=[] answers=["(present)"]
+pause marks=1
+retained answers=["first"]
+resumed marks=some 1
+restarted marks=some 2

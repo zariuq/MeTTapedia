@@ -1,0 +1,58 @@
+Source argument and continuation contexts
+========================================
+
+PeTTaApplicationContexts adds strict first-argument shells to the existing
+let/case/condition/collapse/match-space family. compile checks actual source
+call classification and argument demand, then records the real saved frames.
+run_context relates the source runner at arbitrary remaining fuel, with the
+exact entry cost: one step for the original shells, two for a call shell.
+compile_append and plug_append preserve nested continuation order.
+
+Held Atom arguments are not evaluating shells. raw_argument_run proves their
+three administrative source steps without evaluating the held expression.
+At any argument index, operand_then_arguments lifts the operand's actual source
+path above the retained caller and schedules each returned packet with its own
+substitution. A completed empty operand skips later argument work while
+preserving the operand's reached state and earlier effects.
+
+PeTTaContinuationContexts connects completed operands to actual case, condition
+and collection source steps. Case branches use their selected unifier. A
+collection restores the outer binding, copies the resolved answer occurrences
+and advances the freshness counter according to the source rule. Empty
+collection returns one empty-expression value after preserving effects. The
+final strict argument invokes the authored equations in the reached world;
+the original registry still controls invocation classification and arity.
+
+HEArgumentContexts uses the independent completed stateful source judgments.
+Argument and function alternatives preserve and reflect the existing ordered
+stateful flat-map relation. The stopped and continuing clauses retain exact
+frames, live scopes, answer multiplicity and reached worlds. Atom demand
+delivers arbitrary syntax, including callable-looking syntax, without a child
+evaluation. An unchanged error remains argument data; a changed error stops
+that argument branch. Error syntax at the function-head boundary stops there
+under its distinct source rule. Branch append laws do not permit reordering.
+
+These are not interchangeable evidence:
+- The Lean source theorems prove context/continuation laws at their stated
+  boundary, including exact PeTTa entry fuel and completed HE derivations.
+- SourceContextModel.lean executes the independent PeTTa source runner. Seven
+  observations check strict/held arguments, nesting, branch-local tails,
+  answerless effects, empty collection and case continuation.
+- application-demand-effects.metta calibrates equivalent behaviors in actual
+  CeTTa and SWI-PeTTa. The file runners print explicit effects while evaluating
+  and print collected query answers after loading the complete file. The
+  expected transcript follows that presentation order.
+
+The older unifying PeTTa machine lacks dynamic-head closure dispatch. Existing
+body-substitution fusion and partial-vector concatenation laws do not prove
+that dispatch. HE's completed argument correspondence does not supply streaming
+prefix completeness, interruption inside a leaf evaluator, or C conformance.
+These remain explicit goal obligations.
+
+Run the derived source consumer from the Lean project root:
+
+  lake env lean --run ../../MettaKernel/Examples/ContextualDerivedForms/SourceContextModel.lean
+
+Compare stdout with SourceContextModel.expected. Native calibration inputs and
+expectations are listed in cases.json; neither the source consumer nor runtime
+fixture supplies a C implementation proof or native performance qualification.

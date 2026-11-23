@@ -1,0 +1,32 @@
+Module PiCalc {
+  Theory PiCalc() {
+    Types {
+      Proc;
+      Name;
+    }
+    Terms {
+      "PiNil" .  |- "0" : Proc;
+      "PiPar" . ps:HashBag(Proc) |- "{" ps sep("|") "}" : Proc ![flatten, unit "PiNil"];
+      "PiInp" . x:Name, ^body:[Name -> Proc] |- x "(" "y" ")" "." body : Proc;
+      "PiOut" . x:Name, z:Name |- x "<" z ">" : Proc;
+      "PiNu" . ^body:[Name -> Proc] |- "ν" body : Proc;
+      "PiRep" . p:Proc |- "!" p : Proc;
+    }
+    Equations {
+      "RestrictionNil" .  |- "PiNu"(^."PiNil") = "PiNil";
+      "RestrictionExchange" . P:Proc |- "PiNu"(^x0."PiNu"(^x1.P)) = "PiNu"(^x1."PiNu"(^x0.P));
+      "ScopeExtrusion" . P:Proc, rest:HashBag(Proc) |- {"PiNu"(^x0.P), ...rest} = "PiNu"(^x0. {P, ...rest});
+      "ReplicationUnfold" . P:Proc |- "PiRep"(P) = {P, "PiRep"(P)};
+      "ReplicationNil" .  |- "PiRep"("PiNil") = "PiNil";
+      "ReplicationTwice" . P:Proc |- "PiRep"("PiRep"(P)) = "PiRep"(P);
+      "ReplicationPar" . P:Proc, Q:Proc |- "PiRep"({P, Q}) = {"PiRep"(P), "PiRep"(Q)};
+      "ReplicationIdempotent" . P:Proc |- {"PiRep"(P), "PiRep"(P)} = "PiRep"(P);
+    }
+    Rewrites {
+      "Comm" . x:Name, body:Proc, z:Name |- {"PiInp"(x, ^.body), "PiOut"(x, z), ...rest} ~> {[z/#0]body, ...rest};
+      ParCong : if S ~> T then {S, ...rest} ~> {T, ...rest};
+      ResCong : if S ~> T then "PiNu"(^.S) ~> "PiNu"(^.T);
+    }
+  }
+  theory PiCalc()
+}

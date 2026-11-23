@@ -1,0 +1,7 @@
+paused=true; earlier effects=[1, 2]
+resumed result=some (Except.error (12, "interrupted-test")); effects=[1, 2, 3]; charges=3
+restart repeats effects=[1, 2, 1, 2, 3]
+first selection=Except.ok ([], [7]); rechecked=Except.ok ([7], []); effects=2
+scoped selection=some (Except.ok ([2], [0, 1])); charges=3
+source survivors and uses=some (1, 11)
+source earlier output retained=some true

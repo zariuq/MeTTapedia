@@ -1,0 +1,795 @@
+core.ml — Definition tc_enabled
+|- forall taken read made present.
+       tc_enabled present taken read made <=>
+       (forall occ. taken occ ==> present occ) /\
+       (forall occ. read occ ==> present occ) /\
+       (forall occ. ~(taken occ /\ read occ)) /\
+       (forall occ. made occ ==> ~present occ)
+
+core.ml — Definition tc_fire
+|- forall present taken made occ.
+       tc_fire present taken made occ <=>
+       present occ /\ ~taken occ \/ made occ
+
+core.ml — Definition tc_models
+|- forall hom a store eq b act sigma.
+       tc_models hom eq act a b sigma store <=>
+       hom a b sigma /\
+       (forall x y. store x y ==> eq b (act sigma x) (act sigma y))
+
+core.ml — Definition tc_solvable
+|- forall hom eq act a store.
+       tc_solvable hom eq act a store <=>
+       (exists b sigma. tc_models hom eq act a b sigma store)
+
+core.ml — Definition tc_entails
+|- forall hom eq act a store holds.
+       tc_entails hom eq act a store holds <=>
+       (forall b sigma.
+            tc_models hom eq act a b sigma store ==> holds b sigma)
+
+core.ml — Definition tc_map_store
+|- forall store u v act e.
+       tc_map_store act e store u v <=>
+       (exists x y. store x y /\ u = act e x /\ v = act e y)
+
+core.ml — Definition tc_separates
+|- forall apart eq b act sigma.
+       tc_separates eq act b sigma apart <=>
+       (forall x y. apart x y ==> ~eq b (act sigma x) (act sigma y))
+
+core.ml — Definition tc_solution
+|- forall hom a store eq act b sigma apart.
+       tc_solution hom eq act a store apart b sigma <=>
+       tc_models hom eq act a b sigma store /\
+       tc_separates eq act b sigma apart
+
+core.ml — Definition tc_preparable
+|- forall ready solution.
+       tc_preparable ready solution <=> ready /\ (exists s. solution s)
+
+core.ml — Definition tc_admits
+|- forall ready solution holds.
+       tc_admits ready solution holds <=>
+       tc_preparable ready solution /\ (forall s. solution s ==> holds s)
+
+core.ml — Definition tc_faithful
+|- forall terms c act j eq b.
+       tc_faithful terms eq act b c j <=>
+       (forall x y.
+            terms b x /\ terms b y /\ eq c (act j x) (act j y) ==> eq b x y)
+
+core.ml — Definition tc_covers
+|- forall store hom r settled terms a eq act e.
+       tc_covers terms hom eq act a r e store settled <=>
+       (forall b sigma.
+            tc_models hom eq act a b sigma store
+            ==> (exists c j tau.
+                     hom b c j /\
+                     tc_faithful terms eq act b c j /\
+                     tc_models hom eq act r c tau settled /\
+                     (forall t.
+                          terms a t
+                          ==> eq c (act j (act sigma t)) (act tau (act e t)))))
+
+core.ml — Definition tc_same_target_covers
+|- forall store hom r settled terms a eq act e.
+       tc_same_target_covers terms hom eq act a r e store settled <=>
+       (forall b sigma.
+            tc_models hom eq act a b sigma store
+            ==> (exists tau.
+                     tc_models hom eq act r b tau settled /\
+                     (forall t.
+                          terms a t
+                          ==> eq b (act sigma t) (act tau (act e t)))))
+
+core.ml — Definition tc_covering_family
+|- forall source branch recovery.
+       tc_covering_family source branch recovery <=>
+       (forall i r. branch i r ==> (exists s. recovery s i r)) /\
+       (forall i r s. branch i r /\ recovery s i r ==> source s) /\
+       (forall s. source s ==> (exists i r. branch i r /\ recovery s i r))
+
+core.ml — Definition tc_prepares
+|- forall ready solution preparation.
+       tc_prepares ready solution preparation <=>
+       (forall f.
+            tc_preparable (ready f) (solution f)
+            ==> (exists p. preparation f p))
+
+core.ml — Definition tc_move
+|- forall ready solution holds preparation w result f.
+       tc_move ready solution holds preparation result f w <=>
+       tc_admits (ready f) (solution f) (holds f) /\
+       (exists p. preparation f p /\ w = result f p)
+
+core.ml — Definition tc_sound
+|- forall after before back.
+       tc_sound before after back <=> (forall r. after r ==> before (back r))
+
+core.ml — Theorem TC_SOUND_COMPOSE
+|- forall before middle after back earlier.
+       tc_sound before middle back /\ tc_sound middle after earlier
+       ==> tc_sound before after (\r. back (earlier r))
+
+core.ml — Theorem TC_COMMIT_IS_SOUND
+|- tc_sound (\s. true) (\s. ~s) (\s. s)
+
+core.ml — Theorem TC_READ_SURVIVES
+|- forall present taken read made occ.
+       tc_enabled present taken read made /\ read occ
+       ==> tc_fire present taken made occ
+
+core.ml — Theorem TC_TAKE_REMOVED
+|- forall present taken read made occ.
+       tc_enabled present taken read made /\ taken occ
+       ==> ~tc_fire present taken made occ
+
+core.ml — Theorem TC_MAKE_PRESENT
+|- forall present taken made occ. made occ ==> tc_fire present taken made occ
+
+core.ml — Theorem TC_READ_TAKE_CONFLICT
+|- forall present taken read made occ.
+       taken occ /\ read occ ==> ~tc_enabled present taken read made
+
+core.ml — Theorem TC_POSITIVE_FRAME
+|- forall present taken read made extra.
+       tc_enabled present taken read made /\
+       (forall occ. extra occ ==> ~made occ)
+       ==> tc_enabled (\occ. present occ \/ extra occ) taken read made
+
+core.ml — Theorem TC_FIRE_FRAME
+|- forall present taken made extra.
+       (forall occ. extra occ ==> ~taken occ)
+       ==> (forall occ.
+                tc_fire (\occ. present occ \/ extra occ) taken made occ <=>
+                tc_fire present taken made occ \/ extra occ)
+
+core.ml — Theorem TC_MODELS_CONJUNCTION
+|- forall hom eq act a b sigma one two.
+       tc_models hom eq act a b sigma (\x y. one x y \/ two x y) <=>
+       tc_models hom eq act a b sigma one /\
+       tc_models hom eq act a b sigma two
+
+core.ml — Theorem TC_MODELS_TRANSPORT
+|- forall hom eq act comp a r b e tau store.
+       hom a r e /\
+       hom r b tau /\
+       hom a b (comp tau e) /\
+       (forall t. act (comp tau e) t = act tau (act e t))
+       ==> (tc_models hom eq act r b tau (tc_map_store act e store) <=>
+            tc_models hom eq act a b (comp tau e) store)
+
+core.ml — Theorem TC_SETTLEMENT_SOUND
+|- forall hom eq act comp a r b e store.
+       hom a r e /\
+       (forall tau. hom r b tau ==> hom a b (comp tau e)) /\
+       (forall tau t. hom r b tau ==> act (comp tau e) t = act tau (act e t))
+       ==> tc_sound (\sigma. tc_models hom eq act a b sigma store)
+           (\tau. tc_models hom eq act r b tau (tc_map_store act e store))
+           (\tau. comp tau e)
+
+core.ml — Theorem TC_ADMISSION_CHARACTERIZATION
+|- forall ready solution holds.
+       tc_admits ready solution holds <=>
+       ready /\ (exists s. solution s) /\ (forall s. solution s ==> holds s)
+
+core.ml — Theorem TC_EMPTY_IS_NOT_ADMITTED
+|- forall ready holds. ~tc_admits ready (\s. false) holds
+
+core.ml — Theorem TC_RESTRICTED_GUARD
+|- forall ready solution restriction.
+       ready /\ (exists s. solution s /\ restriction s)
+       ==> tc_admits ready (\s. solution s /\ restriction s) restriction
+
+core.ml — Theorem TC_RESTRICTION_PREPARES
+|- forall ready solution restriction.
+       tc_preparable ready (\s. solution s /\ restriction s)
+       ==> tc_preparable ready solution
+
+core.ml — Theorem TC_GUARD_RESTRICTION_CONTROL
+|- ~tc_admits true (\s. true) (\s. s) /\
+   tc_admits true (\s. s) (\s. s) /\
+   tc_preparable true (\s. true)
+
+core.ml — Theorem TC_PREPARED_ADMISSION_HAS_RESULT
+|- forall ready solution holds preparation result f.
+       tc_prepares ready solution preparation
+       ==> (tc_admits (ready f) (solution f) (holds f) <=>
+            (exists w. tc_move ready solution holds preparation result f w))
+
+core.ml — Theorem TC_FAITHFUL_IDENTITY
+|- forall terms eq act b i.
+       (forall t. terms b t ==> act i t = t)
+       ==> tc_faithful terms eq act b b i
+
+core.ml — Theorem TC_FAITHFUL_COMPOSE
+|- forall terms eq act comp a b c j k.
+       tc_faithful terms eq act a b j /\
+       tc_faithful terms eq act b c k /\
+       (forall t. terms a t ==> terms b (act j t)) /\
+       (forall t. terms a t ==> act (comp k j) t = act k (act j t))
+       ==> tc_faithful terms eq act a c (comp k j)
+
+core.ml — Theorem TC_SAME_TARGET_IMPLIES_COVERS
+|- forall terms hom eq act identity a r e store settled.
+       tc_same_target_covers terms hom eq act a r e store settled /\
+       (forall b. hom b b (identity b)) /\
+       (forall b t. act (identity b) t = t)
+       ==> tc_covers terms hom eq act a r e store settled
+
+core.ml — Theorem TC_COVERAGE_PRESERVES_SOLVABILITY
+|- forall terms hom eq act a r e store settled.
+       tc_covers terms hom eq act a r e store settled /\
+       tc_solvable hom eq act a store
+       ==> tc_solvable hom eq act r settled
+
+core.ml — Theorem TC_FAMILY_WITNESS
+|- forall source branch recovery.
+       tc_covering_family source branch recovery /\ (exists s. source s)
+       ==> (exists i r. branch i r)
+
+core.ml — Theorem TC_FAMILY_NO_INVENTION
+|- forall source branch recovery s i r.
+       tc_covering_family source branch recovery /\
+       branch i r /\
+       recovery s i r
+       ==> source s
+
+core.ml — Theorem TC_TWO_BRANCHES_COVER
+|- tc_covering_family (\s. true) (\i r. r <=> i) (\s i r. s <=> r)
+
+core.ml — Theorem TC_ONE_BRANCH_LOSES_ANSWER
+|- ~tc_covering_family (\s. true) (\i r. ~i /\ ~r) (\s i r. s <=> r)
+
+core.ml — Theorem TC_UNRELATED_BRANCH_REJECTED
+|- ~tc_covering_family (\s. ~s) (\i r. r <=> i) (\s i r. ~i /\ (s <=> r))
+
+core.ml — Theorem TC_CAPACITY_IS_NOT_REFUTATION
+|- forall ready solution holds capacity.
+       tc_admits ready solution holds /\ ~capacity ==> (exists s. solution s)
+
+core.ml — Theorem TC_IDENTITY_COVERS
+|- forall terms hom eq act identity a store.
+       (forall b. hom b b (identity b)) /\
+       (forall b t. act (identity b) t = t) /\
+       (forall b t. eq b t t)
+       ==> tc_covers terms hom eq act a a (identity a) store store
+
+core.ml — Theorem TC_FALSE_SETTLEMENT_NOT_COVERING
+|- ~tc_covers (\a t. true) (\a b h. true) (\a x y. x <=> y) (\h t. h t) false
+    false
+    (\t. false)
+    (\x y. false)
+    (\x y. false)
+
+core.ml — Theorem TC_FALSE_SETTLEMENT_STAYS_SOLVABLE
+|- tc_solvable (\a b h. true) (\a x y. x <=> y) (\h t. h t) false
+   (\x y. false)
+
+core.ml — Theorem TC_FRESH_TARGET_COVERS
+|- tc_covers (\a t. a) (\a b h. a ==> b) (\a x y. x <=> y) (\h t. t) false
+   true
+   false
+   (\x y. false)
+   (\x y. false)
+
+core.ml — Theorem TC_FRESH_TARGET_NOT_SAME_TARGET
+|- ~tc_same_target_covers (\a t. a) (\a b h. a ==> b) (\a x y. x <=> y)
+    (\h t. t)
+    false
+    true
+    false
+    (\x y. false)
+    (\x y. false)
+
+frames.ml — Definition tc_frames
+|- forall objects identity comp hom terms eq act.
+       tc_frames objects terms hom eq act identity comp <=>
+       (forall a t. terms a t ==> objects a) /\
+       (forall a b f. hom a b f ==> objects a /\ objects b) /\
+       (forall a. objects a ==> hom a a (identity a)) /\
+       (forall a b c f g. hom a b f /\ hom b c g ==> hom a c (comp g f)) /\
+       (forall a b f t. hom a b f /\ terms a t ==> terms b (act f t)) /\
+       (forall a t. terms a t ==> act (identity a) t = t) /\
+       (forall a b c f g t.
+            hom a b f /\ hom b c g /\ terms a t
+            ==> act (comp g f) t = act g (act f t)) /\
+       (forall a t. terms a t ==> eq a t t) /\
+       (forall a x y. terms a x /\ terms a y /\ eq a x y ==> eq a y x) /\
+       (forall a x y z.
+            terms a x /\ terms a y /\ terms a z /\ eq a x y /\ eq a y z
+            ==> eq a x z) /\
+       (forall a b f x y.
+            hom a b f /\ terms a x /\ terms a y /\ eq a x y
+            ==> eq b (act f x) (act f y))
+
+frames.ml — Definition tc_store
+|- forall store terms a.
+       tc_store terms a store <=>
+       (forall x y. store x y ==> terms a x /\ terms a y)
+
+frames.ml — Theorem TC_FRAME_OBJECTS
+|- forall objects terms hom eq act identity comp a b f.
+       tc_frames objects terms hom eq act identity comp /\ hom a b f
+       ==> objects a /\ objects b
+
+frames.ml — Theorem TC_FRAME_ID
+|- forall objects terms hom eq act identity comp a.
+       tc_frames objects terms hom eq act identity comp /\ objects a
+       ==> hom a a (identity a)
+
+frames.ml — Theorem TC_FRAME_COMP
+|- forall objects terms hom eq act identity comp a b c f g.
+       tc_frames objects terms hom eq act identity comp /\
+       hom a b f /\
+       hom b c g
+       ==> hom a c (comp g f)
+
+frames.ml — Theorem TC_FRAME_ACT_TYPED
+|- forall objects terms hom eq act identity comp a b f t.
+       tc_frames objects terms hom eq act identity comp /\
+       hom a b f /\
+       terms a t
+       ==> terms b (act f t)
+
+frames.ml — Theorem TC_FRAME_ACT_ID
+|- forall objects terms hom eq act identity comp a t.
+       tc_frames objects terms hom eq act identity comp /\ terms a t
+       ==> act (identity a) t = t
+
+frames.ml — Theorem TC_FRAME_ACT_COMP
+|- forall objects terms hom eq act identity comp a b c f g t.
+       tc_frames objects terms hom eq act identity comp /\
+       hom a b f /\
+       hom b c g /\
+       terms a t
+       ==> act (comp g f) t = act g (act f t)
+
+frames.ml — Theorem TC_FRAME_PRESERVES
+|- forall objects terms hom eq act identity comp a b f x y.
+       tc_frames objects terms hom eq act identity comp /\
+       hom a b f /\
+       terms a x /\
+       terms a y /\
+       eq a x y
+       ==> eq b (act f x) (act f y)
+
+frames.ml — Theorem TC_STORE_MAP_TYPED
+|- forall objects terms hom eq act identity comp a b e store.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a store /\
+       hom a b e
+       ==> tc_store terms b (tc_map_store act e store)
+
+frames.ml — Theorem TC_MODELS_MAP_TYPED
+|- forall objects terms hom eq act identity comp a m b e tau store.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a store /\
+       hom a m e /\
+       hom m b tau
+       ==> (tc_models hom eq act m b tau (tc_map_store act e store) <=>
+            tc_models hom eq act a b (comp tau e) store)
+
+frames.ml — Theorem TC_MODELS_POSTCOMPOSE
+|- forall objects terms hom eq act identity comp a b c f g store.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_store terms a store /\
+       tc_models hom eq act a b f store /\
+       hom b c g
+       ==> tc_models hom eq act a c (comp g f) store
+
+frames.ml — Theorem TC_FRAME_ACT_ASSOC
+|- forall objects terms hom eq act identity comp a b c d f g h t.
+       tc_frames objects terms hom eq act identity comp /\
+       hom a b f /\
+       hom b c g /\
+       hom c d h /\
+       terms a t
+       ==> act (comp h (comp g f)) t = act (comp (comp h g) f) t
+
+frames.ml — Theorem TC_EMPTY_FIBRE_FRAME
+|- tc_frames (\a. true) (\a t. a) (\a b h. a ==> b) (\a x y. x <=> y)
+   (\h t. t)
+   (\a. false)
+   (\g f. false)
+
+frames.ml — Theorem TC_NO_PHANTOM_MORPHISM
+|- forall objects terms hom eq act identity comp a b f.
+       tc_frames objects terms hom eq act identity comp /\ ~objects b
+       ==> ~hom a b f
+
+frames.ml — Theorem TC_ACTION_WITHOUT_RAW_CATEGORY
+|- tc_frames (\a. true) (\a t. true) (\a b h. true) (\a x y. x <=> y)
+   (\h t. t)
+   (\a. false)
+   (\g f. false) /\
+   ~((\g f. false) ((\a. false) false) true <=> true)
+
+prepared.ml — Definition tc_prepared_effect
+|- forall read terms a hom m b old extension next act settle information after present taken made.
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after <=>
+       tc_store terms a old /\
+       tc_store terms m information /\
+       hom a m extension /\
+       hom m b settle /\
+       (forall x y.
+            old x y ==> information (act extension x) (act extension y)) /\
+       (forall x y. next x y <=> tc_map_store act settle information x y) /\
+       (forall occ. after occ <=> tc_fire present taken made occ)
+
+prepared.ml — Definition tc_admitted_effect
+|- forall terms a b extension settle old next after shapes present taken read made hom eq act m information holds.
+       tc_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds <=>
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after /\
+       shapes /\
+       tc_enabled present taken read made /\
+       tc_solvable hom eq act m information /\
+       tc_entails hom eq act m information holds
+
+prepared.ml — Theorem TC_PREPARED_RESULT_TYPED
+|- forall objects terms hom eq act identity comp a m b extension settle old information next present taken read made after.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       ==> tc_store terms b next
+
+prepared.ml — Theorem TC_PREPARED_INFO_BACK
+|- forall objects terms hom eq act identity comp a m b extension settle old information next present taken read made after c tau.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after /\
+       tc_models hom eq act b c tau next
+       ==> tc_models hom eq act m c (comp tau settle) information
+
+prepared.ml — Theorem TC_PREPARED_KNOWLEDGE_BACK
+|- forall objects terms hom eq act identity comp a m b extension settle old information next present taken read made after c sigma.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after /\
+       tc_models hom eq act m c sigma information
+       ==> tc_models hom eq act a c (comp sigma extension) old
+
+prepared.ml — Theorem TC_MODELS_ACTION_AGREEMENT
+|- forall terms hom eq act a b f g store.
+       tc_store terms a store /\
+       hom a b f /\
+       hom a b g /\
+       (forall t. terms a t ==> act f t = act g t)
+       ==> (tc_models hom eq act a b f store <=>
+            tc_models hom eq act a b g store)
+
+prepared.ml — Theorem TC_PREPARED_MODELS_ALONG
+|- forall objects terms hom eq act identity comp a m b extension settle old information next present taken read made after c tau.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after /\
+       tc_models hom eq act b c tau next
+       ==> tc_models hom eq act a c (comp tau (comp settle extension)) old
+
+prepared.ml — Theorem TC_ADMITTED_START_SOLVABLE
+|- forall objects terms hom eq act identity comp a m b extension settle old information next present taken read made after shapes holds.
+       tc_frames objects terms hom eq act identity comp /\
+       tc_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds
+       ==> tc_solvable hom eq act a old
+
+prepared.ml — Theorem TC_ADMITTED_READ_SURVIVES
+|- forall terms hom eq act a m b extension settle old information next present taken read made after shapes holds occ.
+       tc_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds /\
+       read occ
+       ==> after occ
+
+prepared.ml — Theorem TC_ADMITTED_TAKE_REMOVED
+|- forall terms hom eq act a m b extension settle old information next present taken read made after shapes holds occ.
+       tc_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       holds /\
+       taken occ
+       ==> ~after occ
+
+prepared.ml — Theorem TC_PREPARED_MAKE_PRESENT
+|- forall terms hom act a m b extension settle old information next present taken read made after occ.
+       tc_prepared_effect terms hom act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after /\
+       made occ
+       ==> after occ
+
+prepared.ml — Theorem TC_PREPARATION_IGNORES_GUARD
+|- forall terms hom eq act a m b extension settle old information next present taken read made after shapes guard other.
+       tc_admitted_effect terms hom eq act a m b extension settle old
+       information
+       next
+       present
+       taken
+       read
+       made
+       after
+       shapes
+       guard /\
+       tc_entails hom eq act m information other
+       ==> tc_admitted_effect terms hom eq act a m b extension settle old
+           information
+           next
+           present
+           taken
+           read
+           made
+           after
+           shapes
+           other
+
+prepared.ml — Theorem TC_CONSUMING_COMMIT_ADMITTED
+|- tc_admitted_effect (\a t. true) (\a b h. true) (\a x y. x <=> y)
+   (\h t. h t)
+   false
+   false
+   false
+   (\t. t)
+   (\t. false)
+   (\x y. false)
+   (\x y. false)
+   (\x y. false)
+   (\occ. ~occ)
+   (\occ. ~occ)
+   (\occ. false)
+   (\occ. occ)
+   (\occ. occ)
+   true
+   (\b h. true)
+
+prepared.ml — Theorem TC_WRONG_OCCURRENCE_RESULT_REJECTED
+|- forall terms hom act a m b extension settle old information next.
+       ~tc_prepared_effect terms hom act a m b extension settle old
+        information
+        next
+        (\occ. ~occ)
+        (\occ. ~occ)
+        (\occ. false)
+        (\occ. occ)
+        (\occ. ~occ)
+
+runs.ml — Definition tc_path
+|- (tc_path step [] s t <=> s = t) /\
+   (tc_path step (CONS event events) s t <=>
+    (exists u. step s event u /\ tc_path step events u t))
+
+runs.ml — Definition tc_pullback
+|- tc_pullback back [] value = value /\
+   tc_pullback back (CONS event events) value =
+   back event (tc_pullback back events value)
+
+runs.ml — Definition tc_observes
+|- forall step events s answer observe.
+       tc_observes step observe events s answer <=>
+       (exists t. tc_path step events s t /\ answer = observe t)
+
+runs.ml — Definition tc_simulates
+|- forall step target label encode.
+       tc_simulates step target encode label <=>
+       (forall s event t.
+            step s event t ==> target (encode s) (label event) (encode t))
+
+runs.ml — Definition tc_bisimulation
+|- forall target step relation.
+       tc_bisimulation step target relation <=>
+       (forall s u event t.
+            relation s u /\ step s event t
+            ==> (exists v. target u event v /\ relation t v)) /\
+       (forall s u event v.
+            relation s u /\ target u event v
+            ==> (exists t. step s event t /\ relation t v))
+
+runs.ml — Theorem TC_PATH_APPEND
+|- forall step first second s t.
+       tc_path step (APPEND first second) s t <=>
+       (exists u. tc_path step first s u /\ tc_path step second u t)
+
+runs.ml — Theorem TC_PATH_SINGLETON
+|- forall step event s t. tc_path step [event] s t <=> step s event t
+
+runs.ml — Theorem TC_PULLBACK_APPEND
+|- forall back first second value.
+       tc_pullback back (APPEND first second) value =
+       tc_pullback back first (tc_pullback back second value)
+
+runs.ml — Theorem TC_PATH_SOLUTIONS_BACK
+|- forall step valid back.
+       (forall s event t value.
+            step s event t /\ valid t value ==> valid s (back event value))
+       ==> (forall events s t value.
+                tc_path step events s t /\ valid t value
+                ==> valid s (tc_pullback back events value))
+
+runs.ml — Theorem TC_PREPARED_PATH_MODELS_START
+|- forall objects terms hom eq act identity comp step frame knowledge present target extension settle information taken read made c.
+       tc_frames objects terms hom eq act identity comp /\
+       (forall s event t.
+            step s event t
+            ==> tc_prepared_effect terms hom act (frame s) (target event)
+                (frame t)
+                (extension event)
+                (settle event)
+                (knowledge s)
+                (information event)
+                (knowledge t)
+                (present s)
+                (taken event)
+                (read event)
+                (made event)
+                (present t))
+       ==> (forall events s t tau.
+                tc_path step events s t /\
+                tc_models hom eq act (frame t) c tau (knowledge t)
+                ==> tc_models hom eq act (frame s) c
+                    (tc_pullback
+                     (\event sigma.
+                          comp sigma (comp (settle event) (extension event)))
+                     events
+                    tau)
+                    (knowledge s))
+
+runs.ml — Theorem TC_PATH_INVARIANT
+|- forall step invariant.
+       (forall s event t. step s event t /\ invariant s ==> invariant t)
+       ==> (forall events s t.
+                tc_path step events s t /\ invariant s ==> invariant t)
+
+runs.ml — Theorem TC_PATH_SIMULATION
+|- forall step target encode label.
+       tc_simulates step target encode label
+       ==> (forall events s t.
+                tc_path step events s t
+                ==> tc_path target (MAP label events) (encode s) (encode t))
+
+runs.ml — Theorem TC_BISIMULATION_SYMMETRIC
+|- forall step target relation.
+       tc_bisimulation step target relation
+       ==> tc_bisimulation target step (\u s. relation s u)
+
+runs.ml — Theorem TC_PATH_BISIMULATION
+|- forall step target relation.
+       tc_bisimulation step target relation
+       ==> (forall events s u t.
+                relation s u /\ tc_path step events s t
+                ==> (exists v. tc_path target events u v /\ relation t v))
+
+runs.ml — Theorem TC_PATH_BISIMULATION_BACK
+|- forall step target relation.
+       tc_bisimulation step target relation
+       ==> (forall events s u v.
+                relation s u /\ tc_path target events u v
+                ==> (exists t. tc_path step events s t /\ relation t v))
+
+runs.ml — Theorem TC_BISIMULATION_OBSERVATIONS
+|- forall step target relation left right.
+       tc_bisimulation step target relation /\
+       (forall s u. relation s u ==> left s = right u)
+       ==> (forall events s u answer.
+                relation s u
+                ==> (tc_observes step left events s answer <=>
+                     tc_observes target right events u answer))
+
+runs.ml — Theorem TC_PATH_SWAP
+|- forall step first second.
+       (forall s u t.
+            step s first u /\ step u second t
+            ==> (exists v. step s second v /\ step v first t))
+       ==> (forall rest s t.
+                tc_path step (CONS first (CONS second rest)) s t
+                ==> tc_path step (CONS second (CONS first rest)) s t)
+
+runs.ml — Theorem TC_POSITIVE_FOOTPRINT_DIAMOND
+|- forall present take1 read1 make1 take2 read2 make2.
+       tc_enabled present take1 read1 make1 /\
+       tc_enabled present take2 read2 make2 /\
+       (forall occ. take1 occ ==> ~take2 occ /\ ~read2 occ) /\
+       (forall occ. take2 occ ==> ~read1 occ) /\
+       (forall occ. make1 occ ==> ~make2 occ)
+       ==> tc_enabled (tc_fire present take1 make1) take2 read2 make2 /\
+           tc_enabled (tc_fire present take2 make2) take1 read1 make1 /\
+           (forall occ.
+                tc_fire (tc_fire present take1 make1) take2 make2 occ <=>
+                tc_fire (tc_fire present take2 make2) take1 make1 occ)
+
+runs.ml — Definition tc_absent
+|- forall present region.
+       tc_absent present region <=>
+       (forall occ. ~(present occ /\ region occ))
+
+runs.ml — Theorem TC_ABSENCE_NOT_FRAMED
+|- tc_absent (\occ. false) (\occ. true) /\
+   ~tc_absent (\occ. ~occ) (\occ. true)
+
+runs.ml — Theorem TC_NONTRIVIAL_TWO_EVENT_PATH
+|- tc_path (\s event t. t <=> (if event then ~s else s)) [false; true] false
+   true /\
+   ~tc_path (\s event t. t <=> (if event then ~s else s)) [false; true] false
+    false
+
+runs.ml — Theorem TC_FORWARD_SIMULATION_NOT_REFLECTION
+|- tc_simulates (\s event t. false) (\s event t. true) (\s. s) (\e. e) /\
+   tc_path (\s event t. true) [false] false true /\
+   ~tc_path (\s event t. false) [false] false true
+
+runs.ml — Theorem TC_OBSERVER_CAN_FORGET_ENDPOINT
+|- tc_observes (\s event t. true) (\s. false) [false] false false /\
+   tc_path (\s event t. true) [false] false false /\
+   tc_path (\s event t. true) [false] false true

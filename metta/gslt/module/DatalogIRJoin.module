@@ -1,0 +1,13 @@
+import "DatalogIRLookup.module" as lk
+import "DatalogIR.module" as ir
+
+Module DatalogIRJoin {
+  Theory Inference(d: lk.Lookup) {
+    d
+      Terms {
+        Infer . relations:Vec(DlRelation), literals:Vec(DlValue), facts:Vec(DlStatement)
+          |- "infer" relations literals facts : DlStatement;
+      }
+  }
+  theory Inference(lk.Lookup(ir.ProgramData(ir.Data())))
+}

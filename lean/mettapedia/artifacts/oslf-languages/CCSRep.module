@@ -1,0 +1,37 @@
+Module CCSRep {
+  Theory CCSRep() {
+    Types {
+      Proc;
+      Name;
+      Guard;
+    }
+    Terms {
+      "CNil" .  |- "0" : Proc;
+      "CPar" . ps:HashBag(Proc) |- "{" ps sep("|") "}" : Proc ![bare, flatten, unit "CNil"];
+      "CSum" . gs:HashBag(Guard) |- "[" gs sep("+") "]" : Proc ![wrapped];
+      "CNu" . ^body:[Name -> Proc] |- "ν" body : Proc;
+      "CAct" . a:Name, p:Proc |- a "." p : Guard;
+      "CCoAct" . a:Name, p:Proc |- "~" a "." p : Guard;
+      "CTau" . p:Proc |- "τ" "." p : Guard;
+      "CRep" . p:Proc |- "!" p : Proc;
+    }
+    Equations {
+      "RestrictionNil" .  |- "CNu"(^."CNil") = "CNil";
+      "RestrictionExchange" . P:Proc |- "CNu"(^x0."CNu"(^x1.P)) = "CNu"(^x1."CNu"(^x0.P));
+      "ScopeExtrusion" . P:Proc, rest:HashBag(Proc) |- {"CNu"(^x0.P), ...rest} = "CNu"(^x0. {P, ...rest});
+      "EmptyUnit" .  |- "CSum"({}) = "CNu"(^y0."CNil");
+      "ReplicationUnfold" . P:Proc |- "CRep"(P) = {P, "CRep"(P)};
+      "ReplicationNil" .  |- "CRep"("CNil") = "CNil";
+      "ReplicationTwice" . P:Proc |- "CRep"("CRep"(P)) = "CRep"(P);
+      "ReplicationPar" . P:Proc, Q:Proc |- "CRep"({P, Q}) = {"CRep"(P), "CRep"(Q)};
+      "ReplicationIdempotent" . P:Proc |- {"CRep"(P), "CRep"(P)} = "CRep"(P);
+    }
+    Rewrites {
+      "React" . a:Name, p:Proc, q:Proc |- {"CSum"({"CAct"(a, p), ...m}), "CSum"({"CCoAct"(a, q), ...n}), ...rest} ~> {p, q, ...rest};
+      "Tau" . p:Proc |- "CSum"({"CTau"(p), ...m}) ~> p;
+      ParCong : if S ~> T then {S, ...rest} ~> {T, ...rest};
+      ResCong : if S ~> T then "CNu"(^.S) ~> "CNu"(^.T);
+    }
+  }
+  theory CCSRep()
+}

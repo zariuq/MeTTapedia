@@ -1,0 +1,17 @@
+Module LambdaCalc {
+  Theory LambdaCalc() {
+    Types {
+      Term;
+    }
+    Terms {
+      "App" . f:Term, a:Term |- f a : Term;
+      "Lam" . ^body:[Term -> Term] |- "λ" "." body : Term;
+    }
+    Equations {
+    }
+    Rewrites {
+      "Beta" . body:Term, arg:Term |- "App"("Lam"(^.body), arg) ~> [arg/#0]body;
+    }
+  }
+  theory LambdaCalc()
+}

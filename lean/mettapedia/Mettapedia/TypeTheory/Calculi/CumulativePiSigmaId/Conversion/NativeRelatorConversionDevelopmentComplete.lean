@@ -156,19 +156,15 @@ theorem cofinal (source : Tower.Tm n) : Cofinal source := by
       | head _ => exact .head value
       | headRel equality => exact .headRel (LevelTower.headEq_symmetric.symm _ _ equality)
   | pi domain codomain first second =>
-      obtain ⟨dd, first⟩ := first
-      obtain ⟨dc, second⟩ := second
-      refine ⟨.pi dd dc, ?_⟩
-      intro target parallel
-      cases parallel with
-      | pi domainStep codomainStep => exact .pi (first _ domainStep) (second _ codomainStep)
+      exact Mettapedia.Logic.Relation.HasCompleteDevelopment.binary
+        (first := Par) (second := Par) (step := Par) Tm.pi first second Par.pi
+        (fun reduced => by cases reduced with
+          | pi left right => exact ⟨_, _, rfl, left, right⟩)
   | sigma domain codomain first second =>
-      obtain ⟨dd, first⟩ := first
-      obtain ⟨dc, second⟩ := second
-      refine ⟨.sigma dd dc, ?_⟩
-      intro target parallel
-      cases parallel with
-      | sigma domainStep codomainStep => exact .sigma (first _ domainStep) (second _ codomainStep)
+      exact Mettapedia.Logic.Relation.HasCompleteDevelopment.binary
+        (first := Par) (second := Par) (step := Par) Tm.sigma first second Par.sigma
+        (fun reduced => by cases reduced with
+          | sigma left right => exact ⟨_, _, rfl, left, right⟩)
   | id type left right first second third =>
       obtain ⟨dt, first⟩ := first
       obtain ⟨dl, second⟩ := second
@@ -185,12 +181,10 @@ theorem cofinal (source : Tower.Tm n) : Cofinal source := by
       | lam bodyStep => exact .lam (inner _ bodyStep)
   | app function argument first second => exact cofinal_app first second
   | pair first second firstDevelop secondDevelop =>
-      obtain ⟨df, firstDevelop⟩ := firstDevelop
-      obtain ⟨ds, secondDevelop⟩ := secondDevelop
-      refine ⟨.pair df ds, ?_⟩
-      intro target parallel
-      cases parallel with
-      | pair firstStep secondStep => exact .pair (firstDevelop _ firstStep) (secondDevelop _ secondStep)
+      exact Mettapedia.Logic.Relation.HasCompleteDevelopment.binary
+        (first := Par) (second := Par) (step := Par) Tm.pair firstDevelop secondDevelop Par.pair
+        (fun reduced => by cases reduced with
+          | pair left right => exact ⟨_, _, rfl, left, right⟩)
   | fst pair inner =>
       cases pair with
       | pair first second => exact cofinal_pair_fst inner

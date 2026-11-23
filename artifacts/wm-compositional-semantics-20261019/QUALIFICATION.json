@@ -1,0 +1,71 @@
+{
+  "scope": "Compositional finite WM semantics: typed evidence roles, scoped NARS revision, ProbLog/MLN factor readouts, and calibrated BN deduction certificates",
+  "date": "2026-10-19",
+  "build_jobs": 6296,
+  "strict_checks": 137,
+  "axiom_audit": {
+    "modules": 137,
+    "declarations": 7725,
+    "theorems": 4876,
+    "compiler_only": 2668
+  },
+  "allowed_axioms": [
+    "propext",
+    "Classical.choice",
+    "Quot.sound"
+  ],
+  "source_stability": true,
+  "local_dependency_sources": 1824,
+  "qualified_files": 143,
+  "source_hashes": "QUALIFIED_SOURCE_HASHES.json",
+  "object_hashes": "QUALIFIED_OBJECT_HASHES.json",
+  "imported_warnings": 1089,
+  "limitations": [
+    "Deterministic program interpretation uses least-model semantics and is not an executable general program compiler; the concrete finite-table compiler is executable once supplied a table.",
+    "Canonical Boolean table clauses can be exponential and use zero potentials; finite real log-weights alone do not express hard zeros.",
+    "Mixture table revision is distinct from factor multiplication and program union.",
+    "NARS interpretation uses core revision; the capped runtime formula has distinct count semantics.",
+    "Source-world accuracy is separate from within-model conditional dependence.",
+    "The balanced CMI certificate uses natural logarithms and positive source-query mass.",
+    "Native CPT multisets average conditional answers rather than conditioning a joint mixture; their certificate retains the nonlinear aggregation gap.",
+    "Averaged conditional readouts need not admit a joint realization; the new incompatibility counterexample uses finite joint tables, not an instantiated CPT witness.",
+    "Factor-entry indices are local to their supplied table; native abstract graph indexing is chosen noncomputably.",
+    "Operation counts describe the reference tree evaluator and do not qualify a CeTTa implementation or native runtime cost."
+  ],
+  "owned_stability": true,
+  "module_bytes": [
+    8784,
+    6673,
+    4637,
+    3242
+  ],
+  "evaluator": {
+    "polynomial": {
+      "values": [
+        16,
+        16
+      ],
+      "requests": [
+        3,
+        4
+      ],
+      "multiplications": [
+        1,
+        2
+      ]
+    },
+    "finite_factor": {
+      "value_numerator": 3,
+      "value_denominator": 4,
+      "requests": 6,
+      "additions": 3,
+      "multiplications": 6,
+      "checked_reordering_retains_value": true,
+      "checked_reordering_changes_request_order": true
+    }
+  },
+  "lean_toolchain": "leanprover/lean4:v4.33.1",
+  "qualification_kind": "Scoped build, strict module checks, actual module-data equality, evaluator controls, kernel axiom audit, and before/after source and owned-file snapshots",
+  "verification_scope": "Listed modules and owned files; the local dependency sources have a separate hash inventory.",
+  "local_dependency_hashes": "LOCAL_DEPENDENCY_HASHES.json"
+}

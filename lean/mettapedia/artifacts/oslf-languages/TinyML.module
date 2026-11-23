@@ -1,0 +1,31 @@
+Module TinyML {
+  Theory TinyML() {
+    Types {
+      Expr;
+      Val;
+    }
+    Terms {
+      "App" . f:Expr, a:Expr |- f a : Expr;
+      "If" . c:Expr, t:Expr, e:Expr |- "if" c "then" t "else" e : Expr;
+      "Fst" . e:Expr |- "fst" e : Expr;
+      "Snd" . e:Expr |- "snd" e : Expr;
+      "Inject" . v:Val |- v : Expr;
+      "BoolT" .  |- "true" : Val;
+      "BoolF" .  |- "false" : Val;
+      "Lam" . ^body:[Val -> Expr] |- "λ" "." body : Val;
+      "PairV" . a:Val, b:Val |- "(" a "," b ")" : Val;
+      "Thunk" . e:Expr |- "thunk" e : Val;
+    }
+    Equations {
+    }
+    Rewrites {
+      "Beta" . body:Expr, v:Val |- "App"("Inject"("Lam"(^.body)), "Inject"(v)) ~> [v/#0]body;
+      "Force" . e:Expr |- "Inject"("Thunk"(e)) ~> e;
+      "IfTrue" . t:Expr, e:Expr |- "If"("Inject"("BoolT"), t, e) ~> t;
+      "IfFalse" . t:Expr, e:Expr |- "If"("Inject"("BoolF"), t, e) ~> e;
+      "FstPair" . a:Val, b:Val |- "Fst"("Inject"("PairV"(a, b))) ~> "Inject"(a);
+      "SndPair" . a:Val, b:Val |- "Snd"("Inject"("PairV"(a, b))) ~> "Inject"(b);
+    }
+  }
+  theory TinyML()
+}

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.FirstSuccessContinuationPaths
 import Mettapedia.Languages.MeTTa.HE.FirstSuccessSourceExecution
 import Mettapedia.Languages.MeTTa.HE.ExecutableBoundary
 import Mettapedia.Languages.MeTTa.HE.Spec.Eval.Minimal
@@ -89,6 +90,7 @@ open Mettapedia.GSLT.Distinction.ProductiveBlocks
 open RecursiveTasks
 open FirstSuccessRecursiveExecution
 open FirstSuccessSourceExecution
+open FirstSuccessContinuationPaths (checkedOutput)
 open Spec.Eval
 open Spec.Type
 open Spec.Type.Presentation
@@ -121,21 +123,7 @@ theorem scoped_drain_returning (space : Space) (results emitted : ResultSet) (la
     (Checked.machine dispatch scopedTypes).run (results.length + 1 + later)
       ⟨space, .returning results, [], emitted⟩ =
       (results, .finished ⟨space, .returning [], [], emitted ++ results⟩) := by
-  induction results generalizing emitted with
-  | nil =>
-      have stepped : (Checked.machine dispatch scopedTypes).step
-          ⟨space, .returning [], [], emitted⟩ =
-          some (.finish ⟨space, .returning [], [], emitted⟩) := rfl
-      rw [show ([] : ResultSet).length + 1 + later = later + 1 by simp; omega]
-      simpa only [List.append_nil] using
-        (Checked.machine dispatch scopedTypes).run_succ_finish (fuel := later) stepped
-  | cons result results ih =>
-      have stepped : (Checked.machine dispatch scopedTypes).step
-          ⟨space, .returning (result :: results), [], emitted⟩ =
-            some (.publish [result] ⟨space, .returning results, [], emitted ++ [result]⟩) := rfl
-      rw [show (result :: results).length + 1 + later = (results.length + 1 + later) + 1 by simp; omega,
-        (Checked.machine dispatch scopedTypes).run_succ_publish stepped, ih]
-      simp only [List.singleton_append, List.append_assoc]
+  exact (checkedOutput space dispatch scopedTypes).drain results emitted later
 
 /-- Any task satisfying `ScopedRealizes` completes in `Checked.machine HE.GroundedDispatch.none scopedTypes`
 with its exact ordered result list and accumulated publication history. -/
@@ -145,13 +133,7 @@ theorem scoped_realizes_completed {space : Space} {task : Task} {results : Resul
       (Checked.machine HE.GroundedDispatch.none scopedTypes).run (budget + later)
         ⟨space, .work task, [], earned⟩ =
         (results, .finished ⟨space, .returning [], [], earned ++ results⟩) := by
-  obtain ⟨administrative, pathRun⟩ :=
-    (Checked.machine HE.GroundedDispatch.none scopedTypes).silent_run (realized [] earned)
-  refine ⟨administrative + results.length + 1, fun later => ?_⟩
-  rw [show administrative + results.length + 1 + later =
-    administrative + (results.length + 1 + later) by omega,
-    pathRun (results.length + 1 + later)]
-  exact scoped_drain_returning space results earned later
+  exact (checkedOutput space HE.GroundedDispatch.none scopedTypes).complete (realized [] earned)
 
 /-- Once a `ScopedRealizes` task reaches `.finished` at any budget, its emitted result
 list and final configuration are uniquely determined. -/
@@ -161,16 +143,8 @@ theorem scoped_realizes_completed_unique {space : Space} {task : Task} {results 
     (ran : (Checked.machine HE.GroundedDispatch.none scopedTypes).run budget
       ⟨space, .work task, [], earned⟩ = (actual, .finished finished)) :
     actual = results ∧ finished = ⟨space, .returning [], [], earned ++ results⟩ := by
-  obtain ⟨bound, complete⟩ := scoped_realizes_completed realized earned
-  have stable := (Checked.machine HE.GroundedDispatch.none scopedTypes).run_stable budget bound
-    ⟨space, .work task, [], earned⟩ (by
-      intro residual impossible
-      rw [ran] at impossible
-      cases impossible)
-  have same := complete budget
-  rw [Nat.add_comm bound budget, stable, ran] at same
-  have endpoints := Prod.mk.inj same
-  exact ⟨endpoints.1, Outcome.finished.inj endpoints.2⟩
+  obtain ⟨_, complete⟩ := scoped_realizes_completed realized earned
+  exact Machine.finished_unique ran complete
 
 /-- Any budget-exhausted intermediate state of a `ScopedRealizes` task resumes from
 the exact saved configuration to complete the remaining suffix of results. -/
@@ -184,13 +158,8 @@ theorem scoped_completes_saved {space : Space} {task : Task} {results : ResultSe
         (after, .finished ⟨space, .returning [], [], earned ++ results⟩) ∧
       before ++ after = results := by
   obtain ⟨budget, complete⟩ := scoped_realizes_completed realized earned
-  have resumed := (Checked.machine HE.GroundedDispatch.none scopedTypes).established_and_pending
-    first budget ⟨space, .work task, [], earned⟩ saved before paused
-  have whole := complete first
-  rw [Nat.add_comm budget first, resumed] at whole
-  refine ⟨budget, ((Checked.machine HE.GroundedDispatch.none scopedTypes).run budget saved).1, ?_, ?_⟩
-  · exact Prod.ext rfl (Prod.mk.inj whole).2
-  · exact (Prod.mk.inj whole).1
+  obtain ⟨after, resumed, events⟩ := Machine.finished_suffix paused complete
+  exact ⟨budget, after, resumed, events⟩
 
 /-! ### Closed Type Annotations and Policy Agreement -/
 
@@ -2481,51 +2450,15 @@ private theorem scoped_worker_symbol_cast_of_modelled_source_batch
   · intro r _
     exact ⟨Entry.Value.eraseEnvironment r.2.environment, r.2.certified⟩
 
-/-- General Finite-Cast Join (`scoped_worker_symbol_cast_enabling_bridge`):
-At any configuration `state` (with arbitrary retained `state.stack` and `state.emitted`),
-when `bindings` and `before.bindings` satisfy `BindingSourceAgreement` (without requiring
-literal `SourceBindingComparison.semantic.FrameRelated`) and `HEAssignmentsNonVariable`,
-`policy.matching = .finite`, `typeCastCovered` holds on the worker's scoped
-`invocationTypes state`, and the worker's output `workerOut` satisfies the native-side
-scoped finite `TypeCastBatchRel` (`nativeBatch`):
-1. `(Checked.machine dispatch scopedTypes).step state` advances in 1 checked step to
-   `.returning workerOut`, preserving `state.stack` and `state.emitted`,
-2. Increasing evaluator depth via `state.deepen extra` commutes with the step and produces
-   the identical `workerOut`,
-3. Without any source-side `raw`, `batch`, `models`, or `outRelated` oracle, constructs
-   both the source batch `sourceResults : ResultSet` (via `BindingSourceAgreement.typeCastBatch_scoped_finite`)
-   and the contextual output list `ctxResults : List Completed.Result` (via `Completed.CastResultRel.lift_finite_batch`),
-4. Every contextual output frame carries its earned `ReadoutCertificate` and satisfies
-   `Completed.CastResultRel`, `Completed.AtomRel`, `RecursiveMachine.Contextual.LocalStep.cast`,
-   and `RecursiveMachine.Contextual.Steps` under `Completed.scopedLookup`,
-5. Each pair `(w, c)` of `workerOut` and `ctxResults` satisfies `w.1 = c.1.erase`,
-   `BindingSourceAgreement w.2 c.2.bindings`, `BindingTheoryEquivAt callerScope w.2 c.2.bindings`,
-   and public readout equality
-   `observedTuples w.2 (callerScope.map Atom.var ++ [w.1]) = RecursiveExecution.Contextual.Protocol.resultTheory callerScope c`
-   on every `callerScope`. -/
-theorem scoped_worker_symbol_cast_enabling_bridge
+/-- The ordered results of a finite symbol cast, with the reached
+worker step, the contextual return, and the caller's binding readouts. -/
+abbrev ScopedFiniteSymbolCast
     (state : Configuration) (dispatch : HE.GroundedDispatch)
     (hostDispatch : Spec.Eval.GroundedDispatch) (policy : Policy)
     (operator : String) (expected : Atom) (bindings : Bindings)
-    (depth : Nat) (live : List Atom) (scope : List String)
-    (before : Completed.Frame)
+    (depth : Nat) (live : List Atom) (scope : List String) (before : Completed.Frame)
     (ctxStack : List RecursiveTasks.Contextual.Continuation)
-    (ctxEmitted : List Completed.Result)
-    (pending : state.control = .work (.atom (.symbol operator) expected bindings (depth + 1) live))
-    (clean : operator ≠ "Empty")
-    (notAtom : expected ≠ Atom.atomType)
-    (notSymbol : expected ≠ Atom.symbolType)
-    (agreed : BindingSourceAgreement bindings before.bindings)
-    (nativeShape : Spec.Match.SolutionTheory.HEAssignmentsNonVariable bindings)
-    (sourceShape : Spec.Match.SolutionTheory.HEAssignmentsNonVariable before.bindings)
-    (finite : policy.matching = .finite)
-    (covered : typeCastCovered (.symbol operator) expected state.space bindings depth
-      (invocationTypes state) = true)
-    (nativeBatch : TypeCastBatchRel state.space (.symbol operator) expected bindings
-      (typeCast (.symbol operator) expected state.space bindings depth (invocationTypes state))
-      (lookup := Completed.scopedLookup
-        (invocationTypeScope scope live (.symbol operator) expected bindings) state.space)
-      (matching := TypeMatchingPolicy.Rel .finite)) :
+    (ctxEmitted : List Completed.Result) : Prop :=
     let workerOut := typeCast (.symbol operator) expected state.space bindings depth
       (invocationTypes state)
     (∀ callerScope : List String, BindingTheoryEquivAt callerScope bindings before.bindings) ∧
@@ -2573,8 +2506,53 @@ theorem scoped_worker_symbol_cast_enabling_bridge
         (.returning ctxResults, ctxStack) ∧
       RecursiveMachine.Contextual.Steps hostDispatch Completed.scopedLookup policy
         ⟨state.space, .work (.atom live scope (.symbol operator) expected before), ctxStack, ctxEmitted⟩
-        ⟨state.space, .returning ctxResults, ctxStack, ctxEmitted⟩ := by
-  dsimp only
+        ⟨state.space, .returning ctxResults, ctxStack, ctxEmitted⟩
+
+private theorem cast_rows_agree_trans {first middle last : ResultSet}
+    (left : List.Forall₂
+      (fun a b : ResultPair => a.1 = b.1 ∧ BindingSourceAgreement a.2 b.2) first middle)
+    (right : List.Forall₂
+      (fun a b : ResultPair => a.1 = b.1 ∧ BindingSourceAgreement a.2 b.2) middle last) :
+    List.Forall₂ (fun a b : ResultPair => a.1 = b.1 ∧ BindingSourceAgreement a.2 b.2)
+      first last := by
+  refine List.forall₂_of_length_eq_of_get (left.length_eq.trans right.length_eq) ?_
+  intro index firstBound lastBound
+  have middleBound : index < middle.length := left.length_eq ▸ firstBound
+  have viaLeft := left.get firstBound middleBound
+  have viaRight := right.get middleBound lastBound
+  exact ⟨viaLeft.1.trans viaRight.1, viaLeft.2.trans viaRight.2⟩
+
+private theorem scoped_worker_symbol_cast_from_aligned_batch
+    (state : Configuration) (dispatch : HE.GroundedDispatch)
+    (hostDispatch : Spec.Eval.GroundedDispatch) (policy : Policy)
+    (operator : String) (expected : Atom) (bindings : Bindings)
+    (depth : Nat) (live : List Atom) (scope : List String)
+    (before : Completed.Frame)
+    (ctxStack : List RecursiveTasks.Contextual.Continuation)
+    (ctxEmitted : List Completed.Result)
+    (pending : state.control = .work (.atom (.symbol operator) expected bindings (depth + 1) live))
+    (clean : operator ≠ "Empty")
+    (notAtom : expected ≠ Atom.atomType)
+    (notSymbol : expected ≠ Atom.symbolType)
+    (agreed : BindingSourceAgreement bindings before.bindings)
+    (nativeShape : Spec.Match.SolutionTheory.HEAssignmentsNonVariable bindings)
+    (sourceShape : Spec.Match.SolutionTheory.HEAssignmentsNonVariable before.bindings)
+    (finite : policy.matching = .finite)
+    (covered : typeCastCovered (.symbol operator) expected state.space bindings depth
+      (invocationTypes state) = true)
+    (nativeResults : ResultSet)
+    (nativeBatch : TypeCastBatchRel state.space (.symbol operator) expected bindings nativeResults
+      (lookup := Completed.scopedLookup
+        (invocationTypeScope scope live (.symbol operator) expected bindings) state.space)
+      (matching := TypeMatchingPolicy.Rel .finite))
+    (workerNativeAgreed : List.Forall₂
+      (fun (worker native : ResultPair) =>
+        worker.1 = native.1 ∧ BindingSourceAgreement worker.2 native.2)
+      (typeCast (.symbol operator) expected state.space bindings depth (invocationTypes state))
+      nativeResults) :
+    ScopedFiniteSymbolCast state dispatch hostDispatch policy operator expected bindings
+      depth live scope before ctxStack ctxEmitted := by
+  dsimp only [ScopedFiniteSymbolCast]
   let workerOut := typeCast (.symbol operator) expected state.space bindings depth
     (invocationTypes state)
   have inEquiv : ∀ callerScope : List String,
@@ -2586,8 +2564,9 @@ theorem scoped_worker_symbol_cast_enabling_bridge
       ∀ name ∈ invocationTypeScope scope live (.symbol operator) expected before.bindings,
         name ∈ invocationTypeScope scope live (.symbol operator) expected bindings :=
     invocationTypeScope_included_of_agreement scope live (.symbol operator) expected agreed
-  obtain ⟨sourceResults, sourceBatchFinite, outAgreed, outShapes⟩ :=
+  obtain ⟨sourceResults, sourceBatchFinite, nativeSourceAgreed, outShapes⟩ :=
     agreed.typeCastBatch_scoped_finite nativeShape sourceShape scopeInc nativeBatch
+  have outAgreed := cast_rows_agree_trans workerNativeAgreed nativeSourceAgreed
   have sourceBatch :
       TypeCastBatchRel state.space (.symbol operator) expected before.bindings sourceResults
         (lookup := Completed.scopedLookup
@@ -2690,6 +2669,58 @@ theorem scoped_worker_symbol_cast_enabling_bridge
       rw [← readouts]
       exact List.mem_map_of_mem hMem
     exact outShapes (Completed.rawResult r) hRawMem
+
+/-- General Finite-Cast Join (`scoped_worker_symbol_cast_enabling_bridge`):
+At any configuration `state` (with arbitrary retained `state.stack` and `state.emitted`),
+when `bindings` and `before.bindings` satisfy `BindingSourceAgreement` (without requiring
+literal `SourceBindingComparison.semantic.FrameRelated`) and `HEAssignmentsNonVariable`,
+`policy.matching = .finite`, `typeCastCovered` holds on the worker's scoped
+`invocationTypes state`, and the worker's output `workerOut` satisfies the native-side
+scoped finite `TypeCastBatchRel` (`nativeBatch`):
+1. `(Checked.machine dispatch scopedTypes).step state` advances in 1 checked step to
+   `.returning workerOut`, preserving `state.stack` and `state.emitted`,
+2. Increasing evaluator depth via `state.deepen extra` commutes with the step and produces
+   the identical `workerOut`,
+3. Without any source-side `raw`, `batch`, `models`, or `outRelated` oracle, constructs
+   both the source batch `sourceResults : ResultSet` (via `BindingSourceAgreement.typeCastBatch_scoped_finite`)
+   and the contextual output list `ctxResults : List Completed.Result` (via `Completed.CastResultRel.lift_finite_batch`),
+4. Every contextual output frame carries its earned `ReadoutCertificate` and satisfies
+   `Completed.CastResultRel`, `Completed.AtomRel`, `RecursiveMachine.Contextual.LocalStep.cast`,
+   and `RecursiveMachine.Contextual.Steps` under `Completed.scopedLookup`,
+5. Each pair `(w, c)` of `workerOut` and `ctxResults` satisfies `w.1 = c.1.erase`,
+   `BindingSourceAgreement w.2 c.2.bindings`, `BindingTheoryEquivAt callerScope w.2 c.2.bindings`,
+   and public readout equality
+   `observedTuples w.2 (callerScope.map Atom.var ++ [w.1]) = RecursiveExecution.Contextual.Protocol.resultTheory callerScope c`
+   on every `callerScope`. -/
+theorem scoped_worker_symbol_cast_enabling_bridge
+    (state : Configuration) (dispatch : HE.GroundedDispatch)
+    (hostDispatch : Spec.Eval.GroundedDispatch) (policy : Policy)
+    (operator : String) (expected : Atom) (bindings : Bindings)
+    (depth : Nat) (live : List Atom) (scope : List String)
+    (before : Completed.Frame)
+    (ctxStack : List RecursiveTasks.Contextual.Continuation)
+    (ctxEmitted : List Completed.Result)
+    (pending : state.control = .work (.atom (.symbol operator) expected bindings (depth + 1) live))
+    (clean : operator ≠ "Empty")
+    (notAtom : expected ≠ Atom.atomType)
+    (notSymbol : expected ≠ Atom.symbolType)
+    (agreed : BindingSourceAgreement bindings before.bindings)
+    (nativeShape : Spec.Match.SolutionTheory.HEAssignmentsNonVariable bindings)
+    (sourceShape : Spec.Match.SolutionTheory.HEAssignmentsNonVariable before.bindings)
+    (finite : policy.matching = .finite)
+    (covered : typeCastCovered (.symbol operator) expected state.space bindings depth
+      (invocationTypes state) = true)
+    (nativeBatch : TypeCastBatchRel state.space (.symbol operator) expected bindings
+      (typeCast (.symbol operator) expected state.space bindings depth (invocationTypes state))
+      (lookup := Completed.scopedLookup
+        (invocationTypeScope scope live (.symbol operator) expected bindings) state.space)
+      (matching := TypeMatchingPolicy.Rel .finite)) :
+    ScopedFiniteSymbolCast state dispatch hostDispatch policy operator expected bindings
+      depth live scope before ctxStack ctxEmitted := by
+  exact scoped_worker_symbol_cast_from_aligned_batch
+    state dispatch hostDispatch policy operator expected bindings depth live scope before ctxStack ctxEmitted
+    pending clean notAtom notSymbol agreed nativeShape sourceShape finite covered _ nativeBatch
+    (List.forall₂_same.mpr fun row _ => ⟨rfl, BindingSourceAgreement.refl row.2⟩)
 
 /-- Covered Empty `matchTypes` Refutes Finite Source Type-Matching
 (`covered_matchTypes_empty_not_typeMatch_finite`):
@@ -3075,62 +3106,8 @@ theorem scoped_worker_symbol_cast_of_covered_selected_models
       (.symbol operator, out) ∈
         typeCast (.symbol operator) expected state.space bindings depth (invocationTypes state) →
       ∃ valuation : String → Atom, TypeBindingSatisfied valuation out) :
-    let workerOut := typeCast (.symbol operator) expected state.space bindings depth
-      (invocationTypes state)
-    (∀ callerScope : List String, BindingTheoryEquivAt callerScope bindings before.bindings) ∧
-    Checked.blocked dispatch state scopedTypes = none ∧
-    (Checked.machine dispatch scopedTypes).step state =
-      some (.silent { state with control := .returning workerOut }) ∧
-    (∀ extra : Nat,
-      typeCast (.symbol operator) expected state.space bindings (depth + extra)
-        (invocationTypes (state.deepen extra)) = workerOut) ∧
-    ∃ sourceResults : ResultSet,
-    ∃ ctxResults : List Completed.Result,
-      TypeCastBatchRel state.space (.symbol operator) expected before.bindings sourceResults
-        (lookup := Completed.scopedLookup
-          (invocationTypeScope scope live (.symbol operator) expected before.bindings) state.space)
-        (matching := policy.matching.Rel) ∧
-      ctxResults.map Completed.rawResult = sourceResults ∧
-      (∀ r ∈ ctxResults,
-        (∃ table, ReadoutCertificate r.2.bindings table) ∧
-        Spec.Match.SolutionTheory.HEAssignmentsNonVariable r.2.bindings) ∧
-      List.Forall₂
-        (fun (w : ResultPair) (s : ResultPair) =>
-          w.1 = s.1 ∧ BindingSourceAgreement w.2 s.2)
-        workerOut sourceResults ∧
-      List.Forall₂
-        (fun (w : ResultPair) (c : Completed.Result) =>
-          w.1 = c.1.erase ∧
-          BindingSourceAgreement w.2 c.2.bindings ∧
-          (∀ callerScope : List String,
-            BindingTheoryEquivAt callerScope w.2 c.2.bindings) ∧
-          (∀ callerScope : List String,
-            observedTuples w.2 (callerScope.map Atom.var ++ [w.1]) =
-              RecursiveExecution.Contextual.Protocol.resultTheory callerScope c))
-        workerOut ctxResults ∧
-      List.Forall₂
-        (Completed.CastResultRel policy
-          (Completed.scopedLookup
-            (invocationTypeScope scope live (.symbol operator) expected before.bindings) state.space)
-          before (.symbol operator) expected)
-        sourceResults ctxResults ∧
-      Completed.AtomRel state.space hostDispatch Completed.scopedLookup
-        live scope (.symbol operator) expected before ctxResults (policy := policy) ∧
-      RecursiveMachine.Contextual.LocalStep state.space hostDispatch
-        Completed.scopedLookup policy
-        (.work (.atom live scope (.symbol operator) expected before), ctxStack)
-        (.returning ctxResults, ctxStack) ∧
-      RecursiveMachine.Contextual.Steps hostDispatch Completed.scopedLookup policy
-        ⟨state.space, .work (.atom live scope (.symbol operator) expected before), ctxStack, ctxEmitted⟩
-        ⟨state.space, .returning ctxResults, ctxStack, ctxEmitted⟩ := by
-  dsimp only
-  let workerOut := typeCast (.symbol operator) expected state.space bindings depth
-    (invocationTypes state)
-  have inEquiv : ∀ callerScope : List String,
-      BindingTheoryEquivAt callerScope bindings before.bindings :=
-    fun callerScope => agreed.theoryEquivAt callerScope
-  obtain ⟨unblocked, stepped⟩ := scoped_worker_symbol_cast_step
-    state dispatch operator expected bindings depth live pending clean notAtom notSymbol covered
+    ScopedFiniteSymbolCast state dispatch hostDispatch policy operator expected bindings
+      depth live scope before ctxStack ctxEmitted := by
   have hSelfLookup :
       Completed.scopedLookup
         (invocationTypeScope scope live (.symbol operator) expected bindings)
@@ -3144,132 +3121,10 @@ theorem scoped_worker_symbol_cast_of_covered_selected_models
       (Completed.scopedLookup
         (invocationTypeScope scope live (.symbol operator) expected bindings) state.space)
       nativeShape hSelfLookup covered selectedSatisfiable
-  have scopeInc :
-      ∀ name ∈ invocationTypeScope scope live (.symbol operator) expected before.bindings,
-        name ∈ invocationTypeScope scope live (.symbol operator) expected bindings :=
-    invocationTypeScope_included_of_agreement scope live (.symbol operator) expected agreed
-  obtain ⟨sourceResults, sourceBatchFinite, nativeSourceAgreed, outShapes⟩ :=
-    agreed.typeCastBatch_scoped_finite nativeShape sourceShape scopeInc nativeBatch
-  have outAgreed :
-      List.Forall₂
-        (fun (w : ResultPair) (s : ResultPair) =>
-          w.1 = s.1 ∧ BindingSourceAgreement w.2 s.2)
-        workerOut sourceResults := by
-    change List.Forall₂ _
-      (typeCast (.symbol operator) expected state.space bindings depth (invocationTypes state))
-      sourceResults
-    clear *- workerNativeAgreed nativeSourceAgreed
-    generalize (typeCast (.symbol operator) expected state.space bindings depth (invocationTypes state)) = wList at workerNativeAgreed ⊢
-    induction workerNativeAgreed generalizing sourceResults with
-    | nil =>
-        cases nativeSourceAgreed
-        exact .nil
-    | @cons w n wRest nRest hWN _ ih =>
-        cases nativeSourceAgreed with
-        | @cons _ s _ sRest hNS hTail =>
-            exact .cons ⟨hWN.1.trans hNS.1, hWN.2.trans hNS.2⟩ (ih sRest hTail)
-  have sourceBatch :
-      TypeCastBatchRel state.space (.symbol operator) expected before.bindings sourceResults
-        (lookup := Completed.scopedLookup
-          (invocationTypeScope scope live (.symbol operator) expected before.bindings) state.space)
-        (matching := policy.matching.Rel) := by
-    rw [← finite] at sourceBatchFinite
-    exact sourceBatchFinite
-  have readSym : before.read policy (.symbol operator) = .symbol operator := by
-    cases hRebuild : policy.rebuilding <;>
-      simp [Completed.Frame.read, Entry.Value.substitute, hRebuild]
-  have entryCast :
-      Entry.Rel policy.reentry (before.read policy (.symbol operator)).status
-        (before.read policy (.symbol operator)).erase expected .cast := by
-    simp only [readSym, Entry.Value.status, Entry.Value.erase]
-    exact Spec.Eval.Entry.Rel.cast (policy := policy.reentry) (status := .active)
-      (by simpa [IsEmptyOrErrorRel, IsErrorRel, Atom.empty] using clean)
-      (.symbol operator)
-      (by
-        rintro (hAtom | hSym | hVar)
-        · exact notAtom hAtom
-        · exact notSymbol hSym
-        · exact absurd hVar (by decide))
-      (Or.inl ⟨operator, rfl⟩)
-      (fun _ => Or.inr rfl)
-  obtain ⟨ctxResults, paired⟩ :=
-    Completed.CastResultRel.lift_finite_batch
-      (space := state.space) (policy := policy)
-      (lookup := Completed.scopedLookup
-        (invocationTypeScope scope live (.symbol operator) expected before.bindings) state.space)
-      (before := before) (original := .symbol operator) (expected := expected)
-      (raw := sourceResults) finite (by simpa [Entry.Value.erase] using sourceBatch)
-  have readouts := Completed.CastResultRel.readouts paired
-  have pairedRead :
-      List.Forall₂
-        (Completed.CastResultRel policy
-          (Completed.scopedLookup
-            (invocationTypeScope scope live
-              (before.read policy (.symbol operator)).erase expected before.bindings) state.space)
-          before (before.read policy (.symbol operator)) expected)
-        sourceResults ctxResults := by
-    simpa only [readSym, Entry.Value.erase] using paired
-  have batchRead :
-      TypeCastBatchRel state.space (before.read policy (.symbol operator)).erase
-        expected before.bindings sourceResults
-        (lookup := Completed.scopedLookup
-          (invocationTypeScope scope live
-            (before.read policy (.symbol operator)).erase expected before.bindings) state.space)
-        (matching := policy.matching.Rel) := by
-    simpa only [readSym, Entry.Value.erase] using sourceBatch
-  have atomRel :
-      Completed.AtomRel state.space hostDispatch Completed.scopedLookup
-        live scope (.symbol operator) expected before ctxResults (policy := policy) :=
-    Completed.AtomRel.cast entryCast batchRead pairedRead
-  have localStep :
-      RecursiveMachine.Contextual.LocalStep state.space hostDispatch
-        Completed.scopedLookup policy
-        (.work (.atom live scope (.symbol operator) expected before), ctxStack)
-        (.returning ctxResults, ctxStack) :=
-    RecursiveMachine.Contextual.LocalStep.cast entryCast batchRead pairedRead
-  have steps :
-      RecursiveMachine.Contextual.Steps hostDispatch Completed.scopedLookup policy
-        ⟨state.space, .work (.atom live scope (.symbol operator) expected before), ctxStack, ctxEmitted⟩
-        ⟨state.space, .returning ctxResults, ctxStack, ctxEmitted⟩ :=
-    Relation.ReflTransGen.single (RecursiveMachine.Contextual.Step.internal localStep)
-  have outMap :
-      List.Forall₂
-        (fun (w : ResultPair) (s : ResultPair) =>
-          w.1 = s.1 ∧ BindingSourceAgreement w.2 s.2)
-        workerOut (ctxResults.map Completed.rawResult) := by
-    rw [readouts]
-    exact outAgreed
-  have rawPaired := List.forall₂_map_right_iff.mp outMap
-  have workerCtxAligned :
-      List.Forall₂
-        (fun (w : ResultPair) (c : Completed.Result) =>
-          w.1 = c.1.erase ∧
-          BindingSourceAgreement w.2 c.2.bindings ∧
-          (∀ callerScope : List String,
-            BindingTheoryEquivAt callerScope w.2 c.2.bindings) ∧
-          (∀ callerScope : List String,
-            observedTuples w.2 (callerScope.map Atom.var ++ [w.1]) =
-              RecursiveExecution.Contextual.Protocol.resultTheory callerScope c))
-        workerOut ctxResults := by
-    refine rawPaired.imp ?_
-    rintro ⟨wAtom, wBind⟩ ⟨cVal, cFrame⟩ ⟨hAtom, hAgree⟩
-    dsimp [Completed.rawResult] at hAtom hAgree
-    refine ⟨hAtom, hAgree, fun callerScope => hAgree.theoryEquivAt callerScope, fun callerScope => ?_⟩
-    rw [hAtom]
-    exact (hAgree.theoryEquivAt
-      (TypeSubst.typeVarsList (callerScope.map Atom.var ++ [cVal.erase]))).observedTuples_eq
-      (callerScope.map Atom.var ++ [cVal.erase]) (fun _ h => h)
-  refine ⟨inEquiv, unblocked, stepped, ?_, sourceResults, ctxResults, sourceBatch, readouts,
-    ?_, outAgreed, workerCtxAligned, paired, atomRel, localStep, steps⟩
-  · intro extra
-    rw [invocationTypes_deepen]
-    exact typeCastCovered_stable (.symbol operator) expected state.space bindings depth extra covered
-  · intro r hMem
-    refine ⟨⟨Entry.Value.eraseEnvironment r.2.environment, r.2.certified⟩, ?_⟩
-    have hRawMem : Completed.rawResult r ∈ sourceResults := by
-      rw [← readouts]
-      exact List.mem_map_of_mem hMem
-    exact outShapes (Completed.rawResult r) hRawMem
+  exact scoped_worker_symbol_cast_from_aligned_batch
+    state dispatch hostDispatch policy operator expected bindings depth live scope before ctxStack ctxEmitted
+    pending clean notAtom notSymbol agreed nativeShape sourceShape finite covered
+    nativeResults nativeBatch workerNativeAgreed
 
 /-- Executable Loop-Free Scoped Worker Symbol-Cast Bridge
 (`scoped_worker_symbol_cast_of_covered_selected_loopFree`):
@@ -3303,54 +3158,8 @@ theorem scoped_worker_symbol_cast_of_covered_selected_loopFree
       (.symbol operator, out) ∈
         typeCast (.symbol operator) expected state.space bindings depth (invocationTypes state) →
       out.hasLoop = false) :
-    let workerOut := typeCast (.symbol operator) expected state.space bindings depth
-      (invocationTypes state)
-    (∀ callerScope : List String, BindingTheoryEquivAt callerScope bindings before.bindings) ∧
-    Checked.blocked dispatch state scopedTypes = none ∧
-    (Checked.machine dispatch scopedTypes).step state =
-      some (.silent { state with control := .returning workerOut }) ∧
-    (∀ extra : Nat,
-      typeCast (.symbol operator) expected state.space bindings (depth + extra)
-        (invocationTypes (state.deepen extra)) = workerOut) ∧
-    ∃ sourceResults : ResultSet,
-    ∃ ctxResults : List Completed.Result,
-      TypeCastBatchRel state.space (.symbol operator) expected before.bindings sourceResults
-        (lookup := Completed.scopedLookup
-          (invocationTypeScope scope live (.symbol operator) expected before.bindings) state.space)
-        (matching := policy.matching.Rel) ∧
-      ctxResults.map Completed.rawResult = sourceResults ∧
-      (∀ r ∈ ctxResults,
-        (∃ table, ReadoutCertificate r.2.bindings table) ∧
-        Spec.Match.SolutionTheory.HEAssignmentsNonVariable r.2.bindings) ∧
-      List.Forall₂
-        (fun (w : ResultPair) (s : ResultPair) =>
-          w.1 = s.1 ∧ BindingSourceAgreement w.2 s.2)
-        workerOut sourceResults ∧
-      List.Forall₂
-        (fun (w : ResultPair) (c : Completed.Result) =>
-          w.1 = c.1.erase ∧
-          BindingSourceAgreement w.2 c.2.bindings ∧
-          (∀ callerScope : List String,
-            BindingTheoryEquivAt callerScope w.2 c.2.bindings) ∧
-          (∀ callerScope : List String,
-            observedTuples w.2 (callerScope.map Atom.var ++ [w.1]) =
-              RecursiveExecution.Contextual.Protocol.resultTheory callerScope c))
-        workerOut ctxResults ∧
-      List.Forall₂
-        (Completed.CastResultRel policy
-          (Completed.scopedLookup
-            (invocationTypeScope scope live (.symbol operator) expected before.bindings) state.space)
-          before (.symbol operator) expected)
-        sourceResults ctxResults ∧
-      Completed.AtomRel state.space hostDispatch Completed.scopedLookup
-        live scope (.symbol operator) expected before ctxResults (policy := policy) ∧
-      RecursiveMachine.Contextual.LocalStep state.space hostDispatch
-        Completed.scopedLookup policy
-        (.work (.atom live scope (.symbol operator) expected before), ctxStack)
-        (.returning ctxResults, ctxStack) ∧
-      RecursiveMachine.Contextual.Steps hostDispatch Completed.scopedLookup policy
-        ⟨state.space, .work (.atom live scope (.symbol operator) expected before), ctxStack, ctxEmitted⟩
-        ⟨state.space, .returning ctxResults, ctxStack, ctxEmitted⟩ := by
+    ScopedFiniteSymbolCast state dispatch hostDispatch policy operator expected bindings
+      depth live scope before ctxStack ctxEmitted := by
   have bSatisfiable : ∃ valuation : String → Atom, TypeBindingSatisfied valuation bindings := by
     obtain ⟨v0, hSatBefore⟩ := before.certified.satisfiable
     exact ⟨v0, (agreed.solutions v0).mpr hSatBefore⟩
@@ -3367,35 +3176,10 @@ theorem scoped_worker_symbol_cast_of_covered_selected_loopFree
       (Completed.scopedLookup
         (invocationTypeScope scope live (.symbol operator) expected bindings) state.space)
       coh bSatisfiable hSelfLookup covered selectedLoopFree
-  exact scoped_worker_symbol_cast_of_covered_selected_models
-    state dispatch hostDispatch policy operator expected bindings depth live scope
-    before ctxStack ctxEmitted pending clean notAtom notSymbol
-    agreed coh.1 sourceShape retained finite covered
-    (fun out hPairMem => by
-      have hEx : ∃ s ∈ nativeResults, s.1 = .symbol operator ∧ BindingSourceAgreement out s.2 := by
-        clear *- workerNativeAgreed hPairMem
-        generalize (typeCast (.symbol operator) expected state.space bindings depth (invocationTypes state)) = wList at workerNativeAgreed hPairMem
-        induction workerNativeAgreed with
-        | nil => cases hPairMem
-        | @cons w s wRest sRest hWS hTail ih =>
-            rcases List.mem_cons.mp hPairMem with rfl | hMemRest
-            · exact ⟨s, List.mem_cons_self, hWS.1.symm, hWS.2⟩
-            · obtain ⟨s', hMem', hFst, hAg⟩ := ih hMemRest
-              exact ⟨s', List.mem_cons_of_mem s hMem', hFst, hAg⟩
-      obtain ⟨⟨sAtom, sBind⟩, hSMem, hSFst, hSAg⟩ := hEx
-      dsimp only at hSFst hSAg
-      subst hSFst
-      cases nativeBatch with
-      | success _ _ _ hFinMatch =>
-          simp only [List.mem_singleton, Prod.mk.injEq] at hSMem
-          obtain ⟨_, rfl⟩ := hSMem
-          obtain ⟨v, hSatS⟩ := hFinMatch.2
-          exact ⟨v, (hSAg.solutions v).mpr hSatS⟩
-      | failure _ _ =>
-          obtain ⟨actual, _, hErrEq⟩ := List.mem_map.mp hSMem
-          have hNo : mkError (.symbol operator) (.badType expected actual) ≠ .symbol operator := by
-            simp [mkError, Atom.error]
-          exact (hNo (Prod.mk.inj hErrEq).1).elim)
+  exact scoped_worker_symbol_cast_from_aligned_batch
+    state dispatch hostDispatch policy operator expected bindings depth live scope before ctxStack ctxEmitted
+    pending clean notAtom notSymbol agreed coh.1 sourceShape finite covered
+    nativeResults nativeBatch workerNativeAgreed
 
 /-- Universal Schematic Variable-Expected Symbol Cast Local Square
 (`scoped_fresh_symbol_cast_local_square`):

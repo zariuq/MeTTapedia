@@ -1,0 +1,9 @@
+delimiter $ ( ) $;
+provable sort wff;
+term im (a b: wff): wff; infixr im: $->$ prec 25;
+term neg (a: wff): wff; prefix neg: $--$ prec 40;
+--| t a b is "not a implies b"
+def t (a b: wff): wff = $ -- a ->
+  b $;
+--| from (not a -> b) infer b
+theorem thm (a b: wff): $ t a b $ > $ b $;

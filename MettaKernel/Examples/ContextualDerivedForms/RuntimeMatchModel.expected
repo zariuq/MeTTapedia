@@ -1,0 +1,4 @@
+escaping: output=[] answers=["(pair a a)"]
+held: output=[] answers=["(println! 9)"]
+open-row: output=[] answers=["yes"]
+written: output=["9"] answers=["True"]

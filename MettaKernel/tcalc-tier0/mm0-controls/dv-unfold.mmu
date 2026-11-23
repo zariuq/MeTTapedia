@@ -1,0 +1,8 @@
+(sort wff provable)
+(sort nat)
+(term al ((x nat) (a wff (x))) (wff ()))
+(term eq ((a nat ()) (b nat ())) (wff ()))
+(def two_dum () (wff ()) ((d1 nat) (d2 nat)) (al d1 (al d2 (eq d1 d2))))
+(axiom ax2 ((x nat)) () (al x (al x (eq x x))))
+(theorem bad ((x nat)) () (two_dum) ()
+  (:conv (two_dum) (:unfold two_dum () (x x) (al x (al x (eq x x)))) (ax2 (x))))

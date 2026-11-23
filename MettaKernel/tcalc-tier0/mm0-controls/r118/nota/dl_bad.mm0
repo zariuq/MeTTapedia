@@ -1,0 +1,6 @@
+delimiter $ b $;
+provable sort wff;
+term b (x: wff): wff;
+axiom axb (a: wff): $ b a $;
+--| every formula `ba` is provable
+theorem th (ba a: wff): $ ba $;

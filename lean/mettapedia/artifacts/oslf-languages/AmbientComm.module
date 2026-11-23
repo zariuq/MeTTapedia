@@ -1,0 +1,56 @@
+Module MobileAmbientsComm {
+  Theory MobileAmbientsComm() {
+    Types {
+      Proc;
+      Name;
+      Cap;
+    }
+    Terms {
+      "AZero" .  |- "0" : Proc;
+      "APar" . ps:HashBag(Proc) |- "{" ps sep("|") "}" : Proc ![flatten, unit "AZero"];
+      "ANu" . ^body:[Name -> Proc] |- "ν" body : Proc;
+      "ARep" . p:Proc |- "!" p : Proc;
+      "AAmb" . n:Name, p:Proc |- n "[" p "]" : Proc;
+      "AIn" . n:Name, p:Proc |- "in" n "." p : Proc;
+      "AOut" . n:Name, p:Proc |- "out" n "." p : Proc;
+      "AOpen" . n:Name, p:Proc |- "open" n "." p : Proc;
+      "CapIn" . n:Name |- "in" n : Cap;
+      "CapOut" . n:Name |- "out" n : Cap;
+      "CapOpen" . n:Name |- "open" n : Cap;
+      "CapEps" .  |- "ε" : Cap;
+      "CapPath" . m:Cap, k:Cap |- m "." k : Cap;
+      "ACap" . m:Cap, p:Proc |- m ":" p : Proc;
+      "AInName" . ^body:[Name -> Proc] |- "(" "name" ")" body : Proc;
+      "AOutName" . n:Name |- "<" n ">" : Proc;
+      "AInCap" . ^body:[Cap -> Proc] |- "(" "cap" ")" body : Proc;
+      "AOutCap" . m:Cap |- "<<" m ">>" : Proc;
+    }
+    Equations {
+      "RestrictionNil" .  |- "ANu"(^."AZero") = "AZero";
+      "RestrictionExchange" . P:Proc |- "ANu"(^x0."ANu"(^x1.P)) = "ANu"(^x1."ANu"(^x0.P));
+      "ScopeExtrusion" . P:Proc, rest:HashBag(Proc) |- {"ANu"(^x0.P), ...rest} = "ANu"(^x0. {P, ...rest});
+      "ReplicationUnfold" . P:Proc |- "ARep"(P) = {P, "ARep"(P)};
+      "ReplicationNil" .  |- "ARep"("AZero") = "AZero";
+      "ReplicationTwice" . P:Proc |- "ARep"("ARep"(P)) = "ARep"(P);
+      "ReplicationPar" . P:Proc, Q:Proc |- "ARep"({P, Q}) = {"ARep"(P), "ARep"(Q)};
+      "ReplicationIdempotent" . P:Proc |- {"ARep"(P), "ARep"(P)} = "ARep"(P);
+      "AmbientBoundary" . m:Name, P:Proc |- "AAmb"(m, "ANu"(^x0.P)) = "ANu"(^x0."AAmb"(m, P));
+      "PathEps" . P:Proc |- "ACap"("CapEps", P) = P;
+      "PathDot" . M:Cap, K:Cap, P:Proc |- "ACap"("CapPath"(M, K), P) = "ACap"(M, "ACap"(K, P));
+      "CapInPrefix" . n:Name, P:Proc |- "ACap"("CapIn"(n), P) = "AIn"(n, P);
+      "CapOutPrefix" . n:Name, P:Proc |- "ACap"("CapOut"(n), P) = "AOut"(n, P);
+      "CapOpenPrefix" . n:Name, P:Proc |- "ACap"("CapOpen"(n), P) = "AOpen"(n, P);
+    }
+    Rewrites {
+      "In" . n:Name, m:Name, p:Proc, s:Proc |- {"AAmb"(n, {"AIn"(m, p), ...inner}), "AAmb"(m, s), ...rest} ~> {"AAmb"(m, {"AAmb"(n, {p, ...inner}), s}), ...rest};
+      "Out" . n:Name, m:Name, p:Proc |- "AAmb"(m, {"AAmb"(n, {"AOut"(m, p), ...inner}), ...rest}) ~> {"AAmb"(n, {p, ...inner}), "AAmb"(m, {...rest})};
+      "Open" . n:Name, p:Proc, q:Proc |- {"AOpen"(n, p), "AAmb"(n, q), ...rest} ~> {p, q, ...rest};
+      "CommName" . body:Proc, n:Name |- {"AInName"(^.body), "AOutName"(n), ...rest} ~> {[n/#0]body, ...rest};
+      "CommCap" . body:Proc, m:Cap |- {"AInCap"(^.body), "AOutCap"(m), ...rest} ~> {[m/#0]body, ...rest};
+      ParCong : if S ~> T then {S, ...rest} ~> {T, ...rest};
+      ResCong : if S ~> T then "ANu"(^.S) ~> "ANu"(^.T);
+      "AmbCong" . n:Name | S ~> T |- "AAmb"(n, S) ~> "AAmb"(n, T);
+    }
+  }
+  theory MobileAmbientsComm()
+}

@@ -1,0 +1,135 @@
+-- HOL Light's own record of its primitive inferences (ProofTrace, HOL Light's ProofTrace/proofs.ml
+-- over the patched kernel fusion.ml), as a GSLT presentation.
+--
+-- Three line-oriented files share one grammar. A proof record names one kernel inference and cites
+-- earlier records by number; a theorem record is the sequent HOL Light computed for a record; a
+-- name record gives a record a name:
+--   {"id": 4, "pr": ["MK_COMB", 3, 0]}
+--   {"id": 1, "pr": ["REFL", "A(v(p)(c[bool][]))(v(p)(c[bool][]))"]}
+--   {"id": 36, "pr": ["INST", 35, [["v(f)(c[fun][[c[bool][]][c[bool][]]])", "c(T)(c[bool][])"]]]}
+--   {"id": 7, "th": {"hy": [], "cc": "c(T)(c[bool][])"}}
+--   {"id": 18, "nm": "AND_DEF"}
+-- Terms are written in prefix form: v(NAME)(TYPE) a variable, c(NAME)(TYPE) a constant, C(F)(X) an
+-- application, A(v(NAME)(TYPE))(BODY) an abstraction (the bound part is always a variable); types
+-- are v[NAME] a type variable and c[NAME][[T1][T2]...] an operator applied to its arguments.
+-- Every inference of the kernel is one of thirteen steps: REFL TRANS MK_COMB ABS BETA ASSUME EQ_MP
+-- DEDUCT_ANTISYM_RULE INST INST_TYPE (the ten rules), AXIOM, DEFINITION, TYPE_DEFINITION. An INST
+-- pair is [variable, replacement]; an INST_TYPE pair is [type variable, replacement].
+--
+-- The grammar is composed from pieces over one shared set of sorts:
+--   Sorts      token and phrase sorts, declared once;
+--   HolTypes   HOL types;
+--   HolTerms   HOL terms, abstraction binding a variable;
+--   Texts      a term or a name inside a JSON string;
+--   Steps      the thirteen kernel steps, with their premise numbers and term arguments;
+--   Records    proof, theorem and name records;
+--   Files      record sequences.
+-- `Grammar` joins them over one `let`-bound Sorts value.
+--
+-- `Tokens` is the lexical layer (TokenProfileV2): only space and newline separate tokens;
+-- `{ } [ ] ( ) , : "` are tokens by themselves; a number is a run of digits; a name is any run of
+-- printable bytes but the double quote, so a name may also be a single delimiter (HOL Light's pair
+-- constant is called `,`) or a keyword (a variable may be called `v` or `REFL`): the grammar puts
+-- names only where no fixed spelling can stand. The double quote is the one-byte token sort
+-- `quote_tok` rather than a fixed spelling, because a fixed spelling in a `.module` row cannot
+-- contain a double quote; every JSON string is read with both its quotes.
+Module ProofTraceSyntax {
+  Theory Sorts() {
+    Types {
+      num_tok; name_tok; quote_tok;
+      hol_type; type_args; hol_term; term_text; name_text;
+      inst_list; inst_more; inst_pair; instt_list; instt_more; instt_pair;
+      step; hyp_list; hyp_more; sequent;
+      record; trace_file;
+    }
+  }
+  Theory HolTypes(s: Sorts) {
+    s Terms {
+      ty_var . n:name_tok |- "v" "[" n "]" : hol_type;
+      ty_app . n:name_tok, args:type_args |- "c" "[" n "]" "[" args "]" : hol_type;
+      args_empty . |- : type_args;
+      args_more . first:hol_type, rest:type_args |- "[" first "]" rest : type_args;
+    }
+  }
+  Theory HolTerms(s: Sorts) {
+    s Terms {
+      tm_var . n:name_tok, ty:hol_type |- "v" "(" n ")" "(" ty ")" : hol_term;
+      tm_const . n:name_tok, ty:hol_type |- "c" "(" n ")" "(" ty ")" : hol_term;
+      tm_comb . f:hol_term, x:hol_term |- "C" "(" f ")" "(" x ")" : hol_term;
+      tm_abs . n:name_tok, ty:hol_type, body:hol_term |- "A" "(" "v" "(" n ")" "(" ty ")" ")" "(" body ")" : hol_term;
+    }
+  }
+  Theory Texts(s: Sorts) {
+    s Terms {
+      term_quoted . q1:quote_tok, t:hol_term, q2:quote_tok |- q1 t q2 : term_text;
+      name_quoted . q1:quote_tok, n:name_tok, q2:quote_tok |- q1 n q2 : name_text;
+    }
+  }
+  Theory Steps(s: Sorts) {
+    s Terms {
+      step_refl . q1:quote_tok, q2:quote_tok, t:term_text |- q1 "REFL" q2 "," t : step;
+      step_trans . q1:quote_tok, q2:quote_tok, p:num_tok, r:num_tok |- q1 "TRANS" q2 "," p "," r : step;
+      step_mk_comb . q1:quote_tok, q2:quote_tok, p:num_tok, r:num_tok |- q1 "MK_COMB" q2 "," p "," r : step;
+      step_abs . q1:quote_tok, q2:quote_tok, p:num_tok, v:term_text |- q1 "ABS" q2 "," p "," v : step;
+      step_beta . q1:quote_tok, q2:quote_tok, t:term_text |- q1 "BETA" q2 "," t : step;
+      step_assume . q1:quote_tok, q2:quote_tok, t:term_text |- q1 "ASSUME" q2 "," t : step;
+      step_eq_mp . q1:quote_tok, q2:quote_tok, p:num_tok, r:num_tok |- q1 "EQ_MP" q2 "," p "," r : step;
+      step_deduct . q1:quote_tok, q2:quote_tok, p:num_tok, r:num_tok |- q1 "DEDUCT_ANTISYM_RULE" q2 "," p "," r : step;
+      step_inst . q1:quote_tok, q2:quote_tok, p:num_tok, pairs:inst_list |- q1 "INST" q2 "," p "," "[" pairs "]" : step;
+      step_inst_type . q1:quote_tok, q2:quote_tok, p:num_tok, pairs:instt_list |- q1 "INST_TYPE" q2 "," p "," "[" pairs "]" : step;
+      step_axiom . q1:quote_tok, q2:quote_tok, t:term_text |- q1 "AXIOM" q2 "," t : step;
+      step_definition . q1:quote_tok, q2:quote_tok, t:term_text, n:name_text |- q1 "DEFINITION" q2 "," t "," n : step;
+      step_type_definition . q1:quote_tok, q2:quote_tok, p:num_tok, t:term_text, n:name_text |- q1 "TYPE_DEFINITION" q2 "," p "," t "," n : step;
+      inst_none . |- : inst_list;
+      inst_some . first:inst_pair, rest:inst_more |- first rest : inst_list;
+      inst_end . |- : inst_more;
+      inst_next . first:inst_pair, rest:inst_more |- "," first rest : inst_more;
+      inst_maplet . x:term_text, t:term_text |- "[" x "," t "]" : inst_pair;
+      instt_none . |- : instt_list;
+      instt_some . first:instt_pair, rest:instt_more |- first rest : instt_list;
+      instt_end . |- : instt_more;
+      instt_next . first:instt_pair, rest:instt_more |- "," first rest : instt_more;
+      instt_maplet . q1:quote_tok, a:hol_type, q2:quote_tok, q3:quote_tok, t:hol_type, q4:quote_tok |- "[" q1 a q2 "," q3 t q4 "]" : instt_pair;
+    }
+  }
+  Theory Records(s: Sorts) {
+    s Terms {
+      hyps_none . |- : hyp_list;
+      hyps_some . first:term_text, rest:hyp_more |- first rest : hyp_list;
+      hyps_end . |- : hyp_more;
+      hyps_next . first:term_text, rest:hyp_more |- "," first rest : hyp_more;
+      sequent_of . q1:quote_tok, q2:quote_tok, hs:hyp_list, q3:quote_tok, q4:quote_tok, c:term_text |- "{" q1 "hy" q2 ":" "[" hs "]" "," q3 "cc" q4 ":" c "}" : sequent;
+      record_proof . q1:quote_tok, q2:quote_tok, idx:num_tok, q3:quote_tok, q4:quote_tok, st:step |- "{" q1 "id" q2 ":" idx "," q3 "pr" q4 ":" "[" st "]" "}" : record;
+      record_theorem . q1:quote_tok, q2:quote_tok, idx:num_tok, q3:quote_tok, q4:quote_tok, sq:sequent |- "{" q1 "id" q2 ":" idx "," q3 "th" q4 ":" sq "}" : record;
+      record_name . q1:quote_tok, q2:quote_tok, idx:num_tok, q3:quote_tok, q4:quote_tok, n:name_text |- "{" q1 "id" q2 ":" idx "," q3 "nm" q4 ":" n "}" : record;
+    }
+  }
+  Theory Files(s: Sorts) {
+    s Terms {
+      file_empty . |- : trace_file;
+      file_more . first:record, rest:trace_file |- first rest : trace_file;
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts() in (HolTypes(s) \/ HolTerms(s) \/ Texts(s) \/ Steps(s) \/ Records(s) \/ Files(s))
+  }
+  Theory Tokens() {
+    Types { TokenProfileData; }
+    Terms {
+      GetTokenProfile . |- "token-profile" : TokenProfileData;
+    }
+    Rewrites {
+      ReturnTokenProfile : (GetTokenProfile) ~>
+        "TokenProfileV2"(
+          "Start"("trace_file"),
+          "Admissible"("Range"("33", "126")),
+          "Separator"("Points"("32", "10")),
+          "Delimiters"("Points"("123", "125", "91", "93", "40", "41", "44", "58", "34")),
+          "Class2"("num_tok", "Range"("48", "57"), "Range"("48", "57")),
+          "Class2"("name_tok", "Minus"("Range"("33", "126"), "Points"("34")),
+                               "Minus"("Range"("33", "126"), "Points"("34"))),
+          "Class2"("quote_tok", "Points"("34"), "Minus"("Points"("34"), "Points"("34"))));
+    }
+  }
+  theory Grammar()
+}

@@ -1,0 +1,11 @@
+first survivors=[1, 4, 6]; predicates=2; cells=1
+prepared first same=true; price=14
+append cells=3; empty-take append cells=6
+stale raw IDs=true; guarded=false
+retired reference refused=true
+transferred ID=some 2; spelling=some "worker"
+colliding head=false
+transform public=true; native-helper=false
+lifecycle replies correct=true
+combined replies correct=true
+pause charge=3; resumed charge=5; incarnation=2

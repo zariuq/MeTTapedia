@@ -1,0 +1,74 @@
+(sort wff strict provable)
+
+(sort nat)
+
+(term im ((a wff ()) (b wff ())) (wff ()))
+
+(term neg ((a wff ())) (wff ()))
+
+(term al ((x nat) (a wff (x))) (wff ()))
+
+(term z () (nat ()))
+
+(term eq ((a nat ()) (b nat ())) (wff ()))
+
+(def an ((a wff ()) (b wff ())) (wff ())
+()
+(neg (im a (neg b))))
+
+(def ex ((x nat) (a wff (x))) (wff ())
+()
+(neg (al x (neg a))))
+
+(def tru () (wff ())
+((y nat))
+(al y (eq y y)))
+
+(def abs ((a wff ())) (wff ())
+()
+(im a a))
+
+(axiom mp ((a wff ()) (b wff ()))
+  ((im a b)
+   a)
+  b)
+
+(axiom ax1 ((a wff ()) (b wff ())) ()
+  (im a (im b a)))
+
+(axiom gen ((x nat) (a wff (x)))
+  (a)
+  (al x a))
+
+(axiom ax_eq ((x nat)) ()
+  (eq x x))
+
+(theorem a1i ((a wff ()) (b wff ()))
+  ((h a))
+  (im b a)
+()
+(mp (a (im b a))
+  (ax1 (a b))
+  h))
+
+(local theorem loc1 ((a wff ()) (b wff ()))
+  ((h a))
+  (im b a)
+()
+(mp (a (im b a))
+  (ax1 (a b))
+  h))
+
+(theorem gen2 ((x nat) (a wff (x)) (b wff ()))
+  ((h a)
+   (h2 b))
+  (al x a)
+()
+(gen (x a)
+  h))
+
+(theorem eqx ((y nat)) ()
+  (eq y y)
+()
+(ax_eq (y)))
+

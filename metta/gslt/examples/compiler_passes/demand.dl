@@ -1,0 +1,10 @@
+.decl Output(n:symbol)
+.decl Add(n:symbol,a:symbol,b:symbol)
+.decl Need(n:symbol)
+.input Output
+.input Add
+.output Need
+
+Need(N) :- Output(N).
+Need(A) :- Need(N), Add(N,A,B).
+Need(B) :- Need(N), Add(N,A,B).

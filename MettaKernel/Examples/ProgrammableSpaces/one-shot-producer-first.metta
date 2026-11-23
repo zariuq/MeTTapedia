@@ -1,0 +1,6 @@
+!(bind! &jobs (new-space))
+!(add-atom &jobs (p a))
+!(add-atom &jobs (exec (1 consumer) (, (p $x)) (O (+ (q $x)))))
+!(add-atom &jobs (exec (0 producer) (, ) (O (+ (p b)))))
+!(select 100 (search-policy (control FIFO (resources MM2) (budget 100000))) &jobs)
+!(collapse (get-atoms &jobs))

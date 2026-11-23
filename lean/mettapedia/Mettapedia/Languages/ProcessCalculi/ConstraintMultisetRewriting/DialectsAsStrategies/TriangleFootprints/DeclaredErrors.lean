@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.CompletedInvocation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.TypedEveryRun
 
 /-!
@@ -265,32 +266,19 @@ theorem error_source {atoms : List Atom} {g : String} {arrow returnType : Atom}
     exact selection_exhausted gTypes arrowShape lengths stored accepts badStored rejects chosen
   have errIsError : isErrorAtom err = true := by
     simp [errEq, Mettapedia.Languages.MeTTa.HE.mkError, Atom.error, isErrorAtom]
-  cases derived with
-  | delivered entered => cases Entry.functional entered entry
-  | cast entered => cases Entry.functional entered entry
-  | tuple _ shaped occurs _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      rw [Entry.Value.erase_ofAtom] at occurs
-      have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-        gTypes.occurrences
-      simp only [Multiset.coe_singleton, Multiset.singleton_inj] at same
-      exact absurd same.symm notUndefined
-  | function _ shaped chosen _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  obtain ⟨_, chosen, invocation⟩ :=
+    (Completed.AtomRel.iff_invocation entry shape (fun occurs => by
+        rw [Entry.Value.erase_ofAtom] at occurs
+        have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
+          gTypes.occurrences
+        simp only [Multiset.coe_singleton, Multiset.singleton_inj] at same
+        exact absurd same.symm notUndefined)).mp derived
+  cases invocation with
+  | selected _ _ =>
       cases outcome chosen
-  | fallback _ shaped chosen _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  | fallback _ _ _ =>
       cases outcome chosen
-  | selectionFailed _ shaped chosen selected =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  | failed selected =>
       have exhausted := outcome chosen
       simp only [Completed.InvocationSelection.exhausted.injEq] at exhausted
       obtain ⟨rfl, _⟩ := exhausted

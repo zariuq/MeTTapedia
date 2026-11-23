@@ -245,8 +245,7 @@ theorem certifiedCutFamilySeparatingWMReadouts_separates
 theorem formulaIndicatorPositiveThresholdCut_fragmentOrderTight
     {T : ClosedTheorySet (WithParams Const)}
     (formula : ClosedFormula (WithParams Const))
-    (hFormula0 : ∀ (σ : Ty Base) (k : Nat),
-      NoConstOccurrence (param σ k) formula)
+    (hFormula0 : ParameterFree formula)
     (threshold : ℝ)
     (hThresholdPos : 0 < threshold)
     (hThresholdLe : threshold ≤ 1) :

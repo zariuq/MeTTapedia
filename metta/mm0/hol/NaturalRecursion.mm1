@@ -1,0 +1,928 @@
+import "NaturalType.mm1";
+
+-- The least binary recursion graph uses result-first primitive-recursion methods.
+-- Every result below is derived from the existing HOL rules and natural subtype.
+def holRecursionGraph (A: type) (a f n v: term) =
+  $ !r: holNatural -> A -> bool. r @ holZero @ a ==>
+    (!k: holNatural. !w: A. r @ k @ w ==>
+      r @ (holSuccessor @ k) @ (f @ w @ k)) ==> r @ n @ v $;
+
+theorem holRecursionGraphT (G: wff) (A: type) (a f n v: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hn: $ G |- n: holNatural $)
+  (hv: $ G |- v: A $):
+  $ G |- holRecursionGraph A a f n v: bool $ =
+'(!! allcT r (impcT (appT (appT anr holZeroT) (anwl ha)) (impcT (!! allcT previousIndex (!! allcT previousValue
+  (impcT (appT (appT (anwl (anwl anr)) (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT holSuccessorT (anwl
+  anr))) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))) (appT (appT anr (anwl hn)) (anwl hv)))));
+
+theorem holRecursionGraphCong (G: wff) (A: type) (a f n m v w: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hnumber: $ G |- (=[holNatural] n = m) $)
+  (hvalue: $ G |- (=[A] v = w) $):
+  $ G |- (=[bool] holRecursionGraph A a f n v = holRecursionGraph A a f m w) $ =
+'(trans (mp (!! alleq r (bineq impT (refl (appT (appT anr holZeroT) (anwl (anwl ha)))) (bineq impT (refl (!! allcT
+  previousIndex (!! allcT previousValue (impcT (appT (appT (anwl (anwl anr)) (anwl anr)) anr) (appT (appT (anwl
+  (anwl anr)) (appT holSuccessorT (anwl anr))) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))))) (aeq
+  (aeq (refl anr) (anwl anr)) (refl (anwl (anwl (eqR1 hvalue)))))))) hnumber) (mp (!! alleq r (bineq impT (refl
+  (appT (appT anr holZeroT) (anwl (anwl ha)))) (bineq impT (refl (!! allcT previousIndex (!! allcT previousValue
+  (impcT (appT (appT (anwl (anwl anr)) (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT holSuccessorT (anwl
+  anr))) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))))) (aeq (refl (appT anr (anwl (anwl (eqR2
+  hnumber))))) (anwl anr))))) hvalue));
+
+pub theorem holRecursionGraphElimination (G: wff) (A: type) (a f n v r: term) {previousIndex previousValue: term}
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hn: $ G |- n: holNatural $)
+  (hv: $ G |- v: A $)
+  (hr: $ G |- r: (holNatural -> (A -> bool)) $)
+  (h: $ G |- holRecursionGraph A a f n v $)
+  (hzero: $ G |- ((r @ holZero) @ a) $)
+  (hstep: $ G |- (! previousIndex: holNatural. (! previousValue: A. (((r @ previousIndex) @ previousValue) ==> ((r @ (holSuccessor @ previousIndex)) @ ((f @ previousValue) @ previousIndex))))) $):
+  $ G |- ((r @ n) @ v) $ =
+'(MP (MP (MP (!! spec relation4 (impcT (appT (appT anr holZeroT) (anwl ha)) (impcT (!! allcT previousIndex (!! allcT
+  previousValue (impcT (appT (appT (anwl (anwl anr)) (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT
+  holSuccessorT (anwl anr))) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))) (appT (appT anr (anwl hn))
+  (anwl hv)))) hr (impcT (appT (appT hr holZeroT) ha) (impcT (!! allcT previousIndex (!! allcT previousValue (impcT
+  (appT (appT (anwl (anwl hr)) (anwl anr)) anr) (appT (appT (anwl (anwl hr)) (appT holSuccessorT (anwl anr))) (appT
+  (appT (anwl (anwl hf)) anr) (anwl anr)))))) (appT (appT hr hn) hv))) (bineq impT (aeq (aeq anr (refl holZeroT))
+  (refl (anwl ha))) (bineq impT (!! alleq previousIndex (!! alleq previousValue (bineq impT (aeq (aeq (anwl (anwl
+  anr)) (refl (anwl anr))) (refl anr)) (aeq (aeq (anwl (anwl anr)) (refl (appT holSuccessorT (anwl anr)))) (refl
+  (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr))))))) (aeq (aeq anr (refl (anwl hn))) (refl (anwl hv)))))) h)
+  hzero) hstep);
+
+pub theorem holRecursionGraphZero (G: wff) (A: type) (a f: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $):
+  $ G |- holRecursionGraph A a f holZero a $ =
+'(!! GEN r (DISCH (appT (appT anr holZeroT) (anwl ha)) (impcT (!! allcT previousIndex (!! allcT previousValue (impcT
+  (appT (appT (anwl (anwl anr)) (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT holSuccessorT (anwl anr)))
+  (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))) (appT (appT anr holZeroT) (anwl ha))) (DISCH (syl (ian
+  (anwl (anwl id)) (anwl anr)) (!! allcT previousIndex (!! allcT previousValue (impcT (appT (appT (anwl (anwl anr))
+  (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT holSuccessorT (anwl anr))) (appT (appT (anwl (anwl (anwl
+  hf))) anr) (anwl anr))))))) (syl (ian (anwl (anwl id)) (anwl anr)) (appT (appT anr holZeroT) (anwl ha))) (anwl
+  anr))));
+
+pub theorem holRecursionGraphSuccessor (G: wff) (A: type) (a f n v: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hn: $ G |- n: holNatural $)
+  (hv: $ G |- v: A $)
+  (h: $ G |- holRecursionGraph A a f n v $):
+  $ G |- holRecursionGraph A a f (holSuccessor @ n) ((f @ v) @ n) $ =
+'(!! GEN r (DISCH (appT (appT anr holZeroT) (anwl ha)) (impcT (!! allcT previousIndex (!! allcT previousValue (impcT
+  (appT (appT (anwl (anwl anr)) (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT holSuccessorT (anwl anr)))
+  (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))) (appT (appT anr (appT holSuccessorT (anwl hn))) (appT
+  (appT (anwl hf) (anwl hv)) (anwl hn)))) (DISCH (syl (ian (anwl (anwl id)) (anwl anr)) (!! allcT previousIndex (!!
+  allcT previousValue (impcT (appT (appT (anwl (anwl anr)) (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT
+  holSuccessorT (anwl anr))) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr))))))) (syl (ian (anwl (anwl id))
+  (anwl anr)) (appT (appT anr (appT holSuccessorT (anwl hn))) (appT (appT (anwl hf) (anwl hv)) (anwl hn)))) (MP (MP
+  (syl (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (!! spec bound2 (impcT (appT (appT (anwl anr) (anwl (anwl
+  hn))) anr) (appT (appT (anwl anr) (appT holSuccessorT (anwl (anwl hn)))) (appT (appT (anwl (anwl hf)) anr) (anwl
+  (anwl hn))))) (anwl hv) (impcT (appT (appT anr (anwl hn)) (anwl hv)) (appT (appT anr (appT holSuccessorT (anwl
+  hn))) (appT (appT (anwl hf) (anwl hv)) (anwl hn)))) (bineq impT (aeq (refl (appT (anwl anr) (anwl (anwl hn))))
+  anr) (aeq (refl (appT (anwl anr) (appT holSuccessorT (anwl (anwl hn))))) (aeq (aeq (refl (anwl (anwl hf))) anr)
+  (refl (anwl (anwl hn)))))))) (eqmp (syl (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (aeq2 allT (!! cbv
+  previousValue bound2 (impcT (appT (appT (anwl anr) (anwl (anwl hn))) anr) (appT (appT (anwl anr) (appT
+  holSuccessorT (anwl (anwl hn)))) (appT (appT (anwl (anwl hf)) anr) (anwl (anwl hn))))) (impcT (appT (appT (anwl
+  anr) (anwl (anwl hn))) anr) (appT (appT (anwl anr) (appT holSuccessorT (anwl (anwl hn)))) (appT (appT (anwl (anwl
+  hf)) anr) (anwl (anwl hn))))) (bineq impT (aeq (refl (appT (anwl anr) (anwl (anwl hn)))) anr) (aeq (refl (appT
+  (anwl anr) (appT holSuccessorT (anwl (anwl hn))))) (aeq (aeq (refl (anwl (anwl hf))) anr) (refl (anwl (anwl
+  hn))))))))) (MP (syl (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (!! spec bound1 (!! allcT previousValue
+  (impcT (appT (appT (anwl (anwl anr)) (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT holSuccessorT (anwl
+  anr))) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr))))) (anwl hn) (!! allcT previousValue (impcT (appT
+  (appT (anwl anr) (anwl (anwl hn))) anr) (appT (appT (anwl anr) (appT holSuccessorT (anwl (anwl hn)))) (appT (appT
+  (anwl (anwl hf)) anr) (anwl (anwl hn)))))) (!! alleq previousValue (bineq impT (aeq (aeq (refl (anwl (anwl anr)))
+  (anwl anr)) (refl anr)) (aeq (aeq (refl (anwl (anwl anr))) (aeq (refl holSuccessorT) (anwl anr))) (aeq (refl (appT
+  (anwl (anwl (anwl hf))) anr)) (anwl anr))))))) (eqmp (syl (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (aeq2
+  allT (!! cbv previousIndex bound1 (!! allcT previousValue (impcT (appT (appT (anwl (anwl anr)) (anwl anr)) anr)
+  (appT (appT (anwl (anwl anr)) (appT holSuccessorT (anwl anr))) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl
+  anr))))) (!! allcT previousValue (impcT (appT (appT (anwl (anwl anr)) (anwl anr)) anr) (appT (appT (anwl (anwl
+  anr)) (appT holSuccessorT (anwl anr))) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr))))) (!! alleq
+  previousValue (bineq impT (aeq (aeq (refl (anwl (anwl anr))) (anwl anr)) (refl anr)) (aeq (aeq (refl (anwl (anwl
+  anr))) (aeq (refl holSuccessorT) (anwl anr))) (aeq (refl (appT (anwl (anwl (anwl hf))) anr)) (anwl anr))))))))
+  anr)))) (MP (MP (MP (syl (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (!! spec relation3 (impcT (appT (appT anr
+  holZeroT) (anwl (anwl ha))) (impcT (!! allcT previousIndex (!! allcT previousValue (impcT (appT (appT (anwl (anwl
+  anr)) (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT holSuccessorT (anwl anr))) (appT (appT (anwl (anwl
+  (anwl (anwl hf)))) anr) (anwl anr)))))) (appT (appT anr (anwl (anwl hn))) (anwl (anwl hv))))) anr (impcT (appT
+  (appT anr holZeroT) (anwl ha)) (impcT (!! allcT previousIndex (!! allcT previousValue (impcT (appT (appT (anwl
+  (anwl anr)) (anwl anr)) anr) (appT (appT (anwl (anwl anr)) (appT holSuccessorT (anwl anr))) (appT (appT (anwl
+  (anwl (anwl hf))) anr) (anwl anr)))))) (appT (appT anr (anwl hn)) (anwl hv)))) (bineq impT (aeq (aeq anr (refl
+  holZeroT)) (refl (anwl (anwl ha)))) (bineq impT (!! alleq previousIndex (!! alleq previousValue (bineq impT (aeq
+  (aeq (anwl (anwl anr)) (refl (anwl anr))) (refl anr)) (aeq (aeq (anwl (anwl anr)) (refl (appT holSuccessorT (anwl
+  anr)))) (refl (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))))) (aeq (aeq anr (refl (anwl (anwl
+  hn)))) (refl (anwl (anwl hv)))))))) (anwl (anwl (anwl h)))) (anwl anr)) anr)))));
+
+pub theorem holRecursionGraphExists (G: wff) (A: type) (a f n: term) {value: term}
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hn: $ G |- n: holNatural $):
+  $ G |- (? value: A. holRecursionGraph A a f n value) $ =
+'(eqmp (trans (aeq1 (!! cbv number argument11 (!! excT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf))
+  (anwl anr) anr)) (!! excT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)) (!! exeq
+  value (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) (refl anr)))) hn) (!! betac argument11
+  (!! excT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)) hn (!! excT value
+  (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr)) (!! exeq value (holRecursionGraphCong (anwl (anwl ha))
+  (anwl (anwl hf)) (anwl anr) (refl anr))))) (!! holNaturalInduction j hn (!! lamT number (!! excT value
+  (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr))) (eqmpr (trans (aeq1 (!! cbv number
+  argument6 (!! excT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)) (!! excT value
+  (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)) (!! exeq value (holRecursionGraphCong (anwl
+  (anwl ha)) (anwl (anwl hf)) (anwl anr) (refl anr)))) holZeroT) (!! betac argument6 (!! excT value
+  (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)) holZeroT (!! excT value (holRecursionGraphT
+  (anwl ha) (anwl hf) holZeroT anr)) (!! exeq value (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl
+  anr) (refl anr))))) (eqmpr (aeq2 exT (!! cbv value witness5 (holRecursionGraphT (anwl ha) (anwl hf) holZeroT anr)
+  (holRecursionGraphT (anwl ha) (anwl hf) holZeroT anr) (holRecursionGraphCong (anwl ha) (anwl hf) (refl holZeroT)
+  anr))) (!! EXISTS witness5 (holRecursionGraphT (anwl ha) (anwl hf) holZeroT anr) ha (holRecursionGraphCong (anwl
+  ha) (anwl hf) (refl holZeroT) anr) (holRecursionGraphZero ha hf)))) (!! GEN j (DISCH (appT (!! lamT number (!!
+  excT value (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr))) anr) (appT (!!
+  lamT number (!! excT value (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr)))
+  (appT holSuccessorT anr)) (eqmpr (trans (aeq1 (syl (ian (anwl (anwl id)) (anwl anr)) (!! cbv number argument10 (!!
+  excT value (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr)) (!! excT value
+  (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr)) (!! exeq value
+  (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) (refl anr))))) (syl (ian (anwl
+  (anwl id)) (anwl anr)) (appT holSuccessorT anr))) (!! betac argument10 (syl (ian (ian (anwl (anwl (anwl id)))
+  (anwl (anwl anr))) anr) (!! excT value (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl
+  anr) anr))) (syl (ian (anwl (anwl id)) (anwl anr)) (appT holSuccessorT anr)) (syl (ian (anwl (anwl id)) (anwl
+  anr)) (!! excT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (appT holSuccessorT (anwl anr)) anr)))
+  (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) anr) (!! exeq value (holRecursionGraphCong (anwl (anwl
+  (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) (refl anr)))))) (eqmpr (syl (ian (anwl (anwl id)) (anwl anr)) (aeq2
+  exT (!! cbv value witness9 (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (appT holSuccessorT (anwl anr))
+  anr) (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (appT holSuccessorT (anwl anr)) anr)
+  (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (refl (appT holSuccessorT (anwl anr))) anr)))) (!! EXISTS
+  witness9 (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) anr) (holRecursionGraphT (anwl (anwl ha)) (anwl
+  (anwl hf)) (appT holSuccessorT (anwl anr)) anr)) (syl (ian (anwl (anwl id)) (anwl anr)) (appT (appT (anwl hf)
+  (appT selT (!! lamT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)))) anr)) (syl (ian
+  (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) anr) (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf))
+  (refl (appT holSuccessorT (anwl anr))) anr)) (holRecursionGraphSuccessor (syl (ian (anwl (anwl id)) (anwl anr))
+  (anwl ha)) (syl (ian (anwl (anwl id)) (anwl anr)) (anwl hf)) (syl (ian (anwl (anwl id)) (anwl anr)) anr) (syl (ian
+  (anwl (anwl id)) (anwl anr)) (appT selT (!! lamT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl
+  anr) anr)))) (eqmp (trans (aeq1 (syl (ian (anwl (anwl id)) (anwl anr)) (!! cbv value argument8 (holRecursionGraphT
+  (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr)
+  anr) (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (refl (anwl anr)) anr))) (syl (ian (anwl (anwl id))
+  (anwl anr)) (appT selT (!! lamT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)))))
+  (!! betac argument8 (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) anr) (holRecursionGraphT (anwl (anwl
+  ha)) (anwl (anwl hf)) (anwl anr) anr)) (syl (ian (anwl (anwl id)) (anwl anr)) (appT selT (!! lamT value
+  (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)))) (syl (ian (anwl (anwl id)) (anwl anr))
+  (holRecursionGraphT (anwl ha) (anwl hf) anr (appT selT (!! lamT value (holRecursionGraphT (anwl (anwl ha)) (anwl
+  (anwl hf)) (anwl anr) anr))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) anr)
+  (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (refl (anwl anr)) anr)))) (selectFromEx (syl (ian (anwl
+  (anwl id)) (anwl anr)) (!! lamT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)))
+  (eqmp (trans (aeq1 (syl (ian (anwl (anwl id)) (anwl anr)) (!! cbv number argument7 (!! excT value
+  (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr)) (!! excT value
+  (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr)) (!! exeq value
+  (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) (refl anr))))) (syl (ian (anwl
+  (anwl id)) (anwl anr)) anr)) (!! betac argument7 (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) anr)
+  (!! excT value (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr))) (syl (ian
+  (anwl (anwl id)) (anwl anr)) anr) (syl (ian (anwl (anwl id)) (anwl anr)) (!! excT value (holRecursionGraphT (anwl
+  (anwl ha)) (anwl (anwl hf)) (anwl anr) anr))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) anr) (!!
+  exeq value (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) (refl anr))))))
+  anr)))))))))));
+
+pub theorem holRecursionGraphZeroUnique (G: wff) (A: type) (a f v: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hv: $ G |- v: A $)
+  (h: $ G |- holRecursionGraph A a f holZero v $):
+  $ G |- (=[A] v = a) $ =
+'(MP (eqmp (trans (aeq1 (trans (aeq1 (!! cbv inputIndex argument16 (!! lamT inputValue (impcT (eqcT (anwl anr)
+  holZeroT) (eqcT anr (anwl (anwl ha))))) (!! lamT inputValue (impcT (eqcT (anwl anr) holZeroT) (eqcT anr (anwl
+  (anwl ha))))) (!! leq inputValue (bineq impT (bineq eqT (anwl anr) (refl holZeroT)) (refl (eqcT anr (anwl (anwl
+  ha))))))) holZeroT) (!! betac argument16 (!! lamT inputValue (impcT (eqcT (anwl anr) holZeroT) (eqcT anr (anwl
+  (anwl ha))))) holZeroT (!! lamT inputValue (impcT (eqcT holZeroT holZeroT) (eqcT anr (anwl ha)))) (!! leq
+  inputValue (bineq impT (bineq eqT (anwl anr) (refl holZeroT)) (refl (eqcT anr (anwl (anwl ha)))))))) hv) (trans
+  (aeq1 (!! cbv inputValue argument17 (impcT (eqcT holZeroT holZeroT) (eqcT anr (anwl ha))) (impcT (eqcT holZeroT
+  holZeroT) (eqcT anr (anwl ha))) (bineq impT (refl (eqcT holZeroT holZeroT)) (bineq eqT anr (refl (anwl ha))))) hv)
+  (!! betac argument17 (impcT (eqcT holZeroT holZeroT) (eqcT anr (anwl ha))) hv (impcT (eqcT holZeroT holZeroT)
+  (eqcT hv ha)) (bineq impT (refl (eqcT holZeroT holZeroT)) (bineq eqT anr (refl (anwl ha)))))))
+  (holRecursionGraphElimination ha hf holZeroT hv (!! lamT inputIndex (!! lamT inputValue (impcT (eqcT (anwl anr)
+  holZeroT) (eqcT anr (anwl (anwl ha)))))) h (eqmpr (trans (aeq1 (trans (aeq1 (!! cbv inputIndex argument12 (!! lamT
+  inputValue (impcT (eqcT (anwl anr) holZeroT) (eqcT anr (anwl (anwl ha))))) (!! lamT inputValue (impcT (eqcT (anwl
+  anr) holZeroT) (eqcT anr (anwl (anwl ha))))) (!! leq inputValue (bineq impT (bineq eqT (anwl anr) (refl holZeroT))
+  (refl (eqcT anr (anwl (anwl ha))))))) holZeroT) (!! betac argument12 (!! lamT inputValue (impcT (eqcT (anwl anr)
+  holZeroT) (eqcT anr (anwl (anwl ha))))) holZeroT (!! lamT inputValue (impcT (eqcT holZeroT holZeroT) (eqcT anr
+  (anwl ha)))) (!! leq inputValue (bineq impT (bineq eqT (anwl anr) (refl holZeroT)) (refl (eqcT anr (anwl (anwl
+  ha)))))))) ha) (trans (aeq1 (!! cbv inputValue argument13 (impcT (eqcT holZeroT holZeroT) (eqcT anr (anwl ha)))
+  (impcT (eqcT holZeroT holZeroT) (eqcT anr (anwl ha))) (bineq impT (refl (eqcT holZeroT holZeroT)) (bineq eqT anr
+  (refl (anwl ha))))) ha) (!! betac argument13 (impcT (eqcT holZeroT holZeroT) (eqcT anr (anwl ha))) ha (impcT (eqcT
+  holZeroT holZeroT) (eqcT ha ha)) (bineq impT (refl (eqcT holZeroT holZeroT)) (bineq eqT anr (refl (anwl ha)))))))
+  (DISCH (eqcT holZeroT holZeroT) (eqcT ha ha) (refl (syl (anwl id) ha)))) (!! GEN j (!! GEN u (DISCH (appT (appT
+  (!! lamT inputIndex (!! lamT inputValue (impcT (eqcT (anwl anr) holZeroT) (eqcT anr (anwl (anwl (anwl (anwl
+  ha)))))))) (anwl anr)) anr) (appT (appT (!! lamT inputIndex (!! lamT inputValue (impcT (eqcT (anwl anr) holZeroT)
+  (eqcT anr (anwl (anwl (anwl (anwl ha)))))))) (appT holSuccessorT (anwl anr))) (appT (appT (anwl (anwl hf)) anr)
+  (anwl anr))) (eqmpr (trans (aeq1 (trans (aeq1 (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl
+  anr)) (!! cbv inputIndex argument14 (!! lamT inputValue (impcT (eqcT (anwl anr) holZeroT) (eqcT anr (anwl (anwl
+  (anwl (anwl ha))))))) (!! lamT inputValue (impcT (eqcT (anwl anr) holZeroT) (eqcT anr (anwl (anwl (anwl (anwl
+  ha))))))) (!! leq inputValue (bineq impT (bineq eqT (anwl anr) (refl holZeroT)) (refl (eqcT anr (anwl (anwl (anwl
+  (anwl ha)))))))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (appT holSuccessorT (anwl
+  anr)))) (!! betac argument14 (syl (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl
+  (anwl anr))) anr) (!! lamT inputValue (impcT (eqcT (anwl anr) holZeroT) (eqcT anr (anwl (anwl (anwl (anwl
+  ha)))))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (appT holSuccessorT (anwl anr)))
+  (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!! lamT inputValue (impcT (eqcT (appT
+  holSuccessorT (anwl (anwl anr))) holZeroT) (eqcT anr (anwl (anwl (anwl ha))))))) (syl (ian (ian (ian (anwl (anwl
+  (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (!! leq inputValue (bineq impT (bineq eqT
+  (anwl anr) (refl holZeroT)) (refl (eqcT anr (anwl (anwl (anwl (anwl ha))))))))))) (syl (ian (ian (anwl (anwl (anwl
+  id))) (anwl (anwl anr))) (anwl anr)) (appT (appT (anwl (anwl hf)) anr) (anwl anr)))) (trans (aeq1 (syl (ian (ian
+  (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!! cbv inputValue argument15 (impcT (eqcT (appT
+  holSuccessorT (anwl (anwl anr))) holZeroT) (eqcT anr (anwl (anwl (anwl ha))))) (impcT (eqcT (appT holSuccessorT
+  (anwl (anwl anr))) holZeroT) (eqcT anr (anwl (anwl (anwl ha))))) (bineq impT (refl (eqcT (appT holSuccessorT (anwl
+  (anwl anr))) holZeroT)) (bineq eqT anr (refl (anwl (anwl (anwl ha)))))))) (syl (ian (ian (anwl (anwl (anwl id)))
+  (anwl (anwl anr))) (anwl anr)) (appT (appT (anwl (anwl hf)) anr) (anwl anr)))) (!! betac argument15 (syl (ian (ian
+  (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (impcT (eqcT (appT
+  holSuccessorT (anwl (anwl anr))) holZeroT) (eqcT anr (anwl (anwl (anwl ha)))))) (syl (ian (ian (anwl (anwl (anwl
+  id))) (anwl (anwl anr))) (anwl anr)) (appT (appT (anwl (anwl hf)) anr) (anwl anr))) (syl (ian (ian (anwl (anwl
+  (anwl id))) (anwl (anwl anr))) (anwl anr)) (impcT (eqcT (appT holSuccessorT (anwl anr)) holZeroT) (eqcT (appT
+  (appT (anwl (anwl hf)) anr) (anwl anr)) (anwl (anwl ha))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl id))))
+  (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (bineq impT (refl (eqcT (appT holSuccessorT (anwl (anwl anr)))
+  holZeroT)) (bineq eqT anr (refl (anwl (anwl (anwl ha)))))))))) (DISCH (syl (ian (ian (anwl (anwl (anwl id))) (anwl
+  (anwl anr))) (anwl anr)) (eqcT (appT holSuccessorT (anwl anr)) holZeroT)) (syl (ian (ian (anwl (anwl (anwl id)))
+  (anwl (anwl anr))) (anwl anr)) (eqcT (appT (appT (anwl (anwl hf)) anr) (anwl anr)) (anwl (anwl ha)))) (CONTR (syl
+  (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) (eqcT (appT (appT (anwl
+  (anwl hf)) anr) (anwl anr)) (anwl (anwl ha)))) (MP (NOT_ELIM (holZeroNotSuccessor (syl (ian (ian (anwl (anwl (anwl
+  (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) (anwl anr)))) (sym anr)))))))))) (refl holZeroT));
+
+pub theorem holRecursionGraphSuccessorInverse (G: wff) (A: type) (a f n v: term) {prior: term}
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hn: $ G |- n: holNatural $)
+  (hv: $ G |- v: A $)
+  (h: $ G |- holRecursionGraph A a f (holSuccessor @ n) v $):
+  $ G |- (? prior: A. (holRecursionGraph A a f n prior /\ (=[A] v = ((f @ prior) @ n)))) $ =
+'(MP (MP (!! spec bound31 (impcT (eqcT (appT holSuccessorT (anwl hn)) (appT holSuccessorT anr)) (!! excT prior
+  (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (eqcT (anwl (anwl hv)) (appT (appT
+  (anwl (anwl hf)) anr) (anwl anr)))))) hn (impcT (eqcT (appT holSuccessorT hn) (appT holSuccessorT hn)) (!! excT
+  prior (andcT (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr) (eqcT (anwl hv) (appT (appT (anwl hf) anr)
+  (anwl hn)))))) (bineq impT (bineq eqT (refl (appT holSuccessorT (anwl hn))) (aeq (refl holSuccessorT) anr)) (!!
+  exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) (refl anr)) (bineq eqT
+  (refl (anwl (anwl hv))) (aeq (refl (appT (anwl (anwl hf)) anr)) (anwl anr))))))) (eqmp (aeq2 allT (!! cbv
+  predecessor bound31 (impcT (eqcT (appT holSuccessorT (anwl hn)) (appT holSuccessorT anr)) (!! excT prior (andcT
+  (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (eqcT (anwl (anwl hv)) (appT (appT (anwl
+  (anwl hf)) anr) (anwl anr)))))) (impcT (eqcT (appT holSuccessorT (anwl hn)) (appT holSuccessorT anr)) (!! excT
+  prior (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (eqcT (anwl (anwl hv)) (appT
+  (appT (anwl (anwl hf)) anr) (anwl anr)))))) (bineq impT (bineq eqT (refl (appT holSuccessorT (anwl hn))) (aeq
+  (refl holSuccessorT) anr)) (!! exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf))
+  (anwl anr) (refl anr)) (bineq eqT (refl (anwl (anwl hv))) (aeq (refl (appT (anwl (anwl hf)) anr)) (anwl
+  anr)))))))) (CONJUNCT2 (eqmp (trans (aeq1 (trans (aeq1 (!! cbv inputIndex argument29 (!! lamT inputValue (andcT
+  (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT (anwl
+  (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha))))
+  (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl hf))))
+  anr) (anwl anr))))))))) (!! lamT inputValue (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl
+  anr) anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl
+  (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))))))) (!! leq inputValue (bineq andT
+  (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) (refl anr)) (!! alleq predecessor (bineq impT
+  (bineq eqT (anwl (anwl anr)) (refl (appT holSuccessorT anr))) (refl (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT
+  (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))))))))) (appT holSuccessorT hn)) (!! betac argument29 (!! lamT
+  inputValue (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (!! allcT predecessor
+  (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl
+  (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl
+  (anwl (anwl hf)))) anr) (anwl anr))))))))) (appT holSuccessorT hn) (!! lamT inputValue (andcT (holRecursionGraphT
+  (anwl ha) (anwl hf) (appT holSuccessorT (anwl hn)) anr) (!! allcT predecessor (impcT (eqcT (appT holSuccessorT
+  (anwl (anwl hn))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl ha)))
+  (anwl (anwl (anwl hf))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl
+  anr))))))))) (!! leq inputValue (bineq andT (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr)
+  (refl anr)) (!! alleq predecessor (bineq impT (bineq eqT (anwl (anwl anr)) (refl (appT holSuccessorT anr))) (refl
+  (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr)
+  anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr)))))))))))) hv) (trans
+  (aeq1 (!! cbv inputValue argument30 (andcT (holRecursionGraphT (anwl ha) (anwl hf) (appT holSuccessorT (anwl hn))
+  anr) (!! allcT predecessor (impcT (eqcT (appT holSuccessorT (anwl (anwl hn))) (appT holSuccessorT anr)) (!! excT
+  prior (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr) (eqcT (anwl (anwl
+  anr)) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))))) (andcT (holRecursionGraphT (anwl ha) (anwl hf)
+  (appT holSuccessorT (anwl hn)) anr) (!! allcT predecessor (impcT (eqcT (appT holSuccessorT (anwl (anwl hn))) (appT
+  holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf)))
+  (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))))) (bineq andT
+  (holRecursionGraphCong (anwl ha) (anwl hf) (refl (appT holSuccessorT (anwl hn))) anr) (!! alleq predecessor (bineq
+  impT (refl (eqcT (appT holSuccessorT (anwl (anwl hn))) (appT holSuccessorT anr))) (!! exeq prior (bineq andT
+  (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (refl (anwl anr)) (refl anr)) (bineq eqT
+  (anwl (anwl anr)) (refl (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))))))) hv) (!! betac argument30
+  (andcT (holRecursionGraphT (anwl ha) (anwl hf) (appT holSuccessorT (anwl hn)) anr) (!! allcT predecessor (impcT
+  (eqcT (appT holSuccessorT (anwl (anwl hn))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl
+  (anwl hf))) anr) (anwl anr)))))))) hv (andcT (holRecursionGraphT ha hf (appT holSuccessorT hn) hv) (!! allcT
+  predecessor (impcT (eqcT (appT holSuccessorT (anwl hn)) (appT holSuccessorT anr)) (!! excT prior (andcT
+  (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (eqcT (anwl (anwl hv)) (appT (appT (anwl
+  (anwl hf)) anr) (anwl anr)))))))) (bineq andT (holRecursionGraphCong (anwl ha) (anwl hf) (refl (appT holSuccessorT
+  (anwl hn))) anr) (!! alleq predecessor (bineq impT (refl (eqcT (appT holSuccessorT (anwl (anwl hn))) (appT
+  holSuccessorT anr))) (!! exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl
+  hf))) (refl (anwl anr)) (refl anr)) (bineq eqT (anwl (anwl anr)) (refl (appT (appT (anwl (anwl (anwl hf))) anr)
+  (anwl anr)))))))))))) (holRecursionGraphElimination ha hf (appT holSuccessorT hn) hv (!! lamT inputIndex (!! lamT
+  inputValue (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (!! allcT predecessor
+  (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl
+  (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl
+  (anwl (anwl hf)))) anr) (anwl anr)))))))))) h (eqmpr (trans (aeq1 (trans (aeq1 (!! cbv inputIndex argument19 (!!
+  lamT inputValue (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (!! allcT predecessor
+  (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl
+  (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl
+  (anwl (anwl hf)))) anr) (anwl anr))))))))) (!! lamT inputValue (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl
+  (anwl hf)) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT
+  prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr)
+  (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))))))) (!! leq inputValue
+  (bineq andT (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) (refl anr)) (!! alleq predecessor
+  (bineq impT (bineq eqT (anwl (anwl anr)) (refl (appT holSuccessorT anr))) (refl (!! excT prior (andcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl
+  (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))))))))) holZeroT) (!! betac argument19
+  (!! lamT inputValue (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (!! allcT
+  predecessor (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT
+  (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))))))) holZeroT (!! lamT inputValue (andcT (holRecursionGraphT
+  (anwl ha) (anwl hf) holZeroT anr) (!! allcT predecessor (impcT (eqcT holZeroT (appT holSuccessorT anr)) (!! excT
+  prior (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr) (eqcT (anwl (anwl
+  anr)) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr))))))))) (!! leq inputValue (bineq andT
+  (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) (refl anr)) (!! alleq predecessor (bineq impT
+  (bineq eqT (anwl (anwl anr)) (refl (appT holSuccessorT anr))) (refl (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT
+  (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr)))))))))))) ha) (trans (aeq1 (!! cbv inputValue argument20 (andcT
+  (holRecursionGraphT (anwl ha) (anwl hf) holZeroT anr) (!! allcT predecessor (impcT (eqcT holZeroT (appT
+  holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf)))
+  (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))))) (andcT
+  (holRecursionGraphT (anwl ha) (anwl hf) holZeroT anr) (!! allcT predecessor (impcT (eqcT holZeroT (appT
+  holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf)))
+  (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))))) (bineq andT
+  (holRecursionGraphCong (anwl ha) (anwl hf) (refl holZeroT) anr) (!! alleq predecessor (bineq impT (refl (eqcT
+  holZeroT (appT holSuccessorT anr))) (!! exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl (anwl ha)))
+  (anwl (anwl (anwl hf))) (refl (anwl anr)) (refl anr)) (bineq eqT (anwl (anwl anr)) (refl (appT (appT (anwl (anwl
+  (anwl hf))) anr) (anwl anr)))))))))) ha) (!! betac argument20 (andcT (holRecursionGraphT (anwl ha) (anwl hf)
+  holZeroT anr) (!! allcT predecessor (impcT (eqcT holZeroT (appT holSuccessorT anr)) (!! excT prior (andcT
+  (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT
+  (appT (anwl (anwl (anwl hf))) anr) (anwl anr)))))))) ha (andcT (holRecursionGraphT ha hf holZeroT ha) (!! allcT
+  predecessor (impcT (eqcT holZeroT (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl
+  ha)) (anwl (anwl hf)) (anwl anr) anr) (eqcT (anwl (anwl ha)) (appT (appT (anwl (anwl hf)) anr) (anwl anr))))))))
+  (bineq andT (holRecursionGraphCong (anwl ha) (anwl hf) (refl holZeroT) anr) (!! alleq predecessor (bineq impT
+  (refl (eqcT holZeroT (appT holSuccessorT anr))) (!! exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl
+  (anwl ha))) (anwl (anwl (anwl hf))) (refl (anwl anr)) (refl anr)) (bineq eqT (anwl (anwl anr)) (refl (appT (appT
+  (anwl (anwl (anwl hf))) anr) (anwl anr)))))))))))) (CONJ (holRecursionGraphZero ha hf) (eqmpr (aeq2 allT (!! cbv
+  predecessor quantified18 (impcT (eqcT holZeroT (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (eqcT (anwl (anwl ha)) (appT (appT (anwl (anwl hf)) anr) (anwl
+  anr)))))) (impcT (eqcT holZeroT (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl
+  ha)) (anwl (anwl hf)) (anwl anr) anr) (eqcT (anwl (anwl ha)) (appT (appT (anwl (anwl hf)) anr) (anwl anr))))))
+  (bineq impT (bineq eqT (refl holZeroT) (aeq (refl holSuccessorT) anr)) (!! exeq prior (bineq andT
+  (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) (refl anr)) (bineq eqT (refl (anwl (anwl ha)))
+  (aeq (refl (appT (anwl (anwl hf)) anr)) (anwl anr)))))))) (!! GEN quantified18 (DISCH (eqcT holZeroT (appT
+  holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr)
+  (eqcT (anwl (anwl ha)) (appT (appT (anwl (anwl hf)) anr) (anwl anr))))) (CONTR (syl (ian (anwl (anwl id)) (anwl
+  anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (eqcT (anwl
+  (anwl ha)) (appT (appT (anwl (anwl hf)) anr) (anwl anr)))))) (MP (NOT_ELIM (holZeroNotSuccessor (syl (ian (anwl
+  (anwl id)) (anwl anr)) anr))) anr))))))) (!! GEN j (!! GEN u (DISCH (appT (appT (!! lamT inputIndex (!! lamT
+  inputValue (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr)
+  anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf))))))
+  (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl
+  anr)))))))))) (anwl anr)) anr) (appT (appT (!! lamT inputIndex (!! lamT inputValue (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT
+  (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl
+  (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT
+  (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr)))))))))) (appT holSuccessorT (anwl anr))) (appT
+  (appT (anwl (anwl hf)) anr) (anwl anr))) (eqmpr (trans (aeq1 (trans (aeq1 (syl (ian (ian (anwl (anwl (anwl id)))
+  (anwl (anwl anr))) (anwl anr)) (!! cbv inputIndex argument27 (!! lamT inputValue (andcT (holRecursionGraphT (anwl
+  (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT (anwl
+  (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl
+  (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT
+  (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr))))))))) (!! lamT inputValue (andcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (!! allcT
+  predecessor (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT
+  (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr))))))))) (!! leq
+  inputValue (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl
+  anr) (refl anr)) (!! alleq predecessor (bineq impT (bineq eqT (anwl (anwl anr)) (refl (appT holSuccessorT anr)))
+  (refl (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl
+  (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl
+  hf)))))) anr) (anwl anr)))))))))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (appT
+  holSuccessorT (anwl anr)))) (!! betac argument27 (syl (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl
+  (anwl anr)))) (anwl (anwl anr))) anr) (!! lamT inputValue (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl
+  ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl anr)) (appT
+  holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl
+  (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl
+  (anwl (anwl hf)))))) anr) (anwl anr)))))))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl
+  anr)) (appT holSuccessorT (anwl anr))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!!
+  lamT inputValue (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (appT holSuccessorT
+  (anwl (anwl anr))) anr) (!! allcT predecessor (impcT (eqcT (appT holSuccessorT (anwl (anwl (anwl anr)))) (appT
+  holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl
+  (anwl (anwl (anwl hf))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl
+  hf))))) anr) (anwl anr)))))))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr))))
+  (anwl (anwl anr))) anr) (!! leq inputValue (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl
+  (anwl (anwl (anwl hf)))) (anwl anr) (refl anr)) (!! alleq predecessor (bineq impT (bineq eqT (anwl (anwl anr))
+  (refl (appT holSuccessorT anr))) (refl (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl
+  (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT
+  (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr))))))))))))) (syl (ian (ian (anwl (anwl (anwl id)))
+  (anwl (anwl anr))) (anwl anr)) (appT (appT (anwl (anwl hf)) anr) (anwl anr)))) (trans (aeq1 (syl (ian (ian (anwl
+  (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!! cbv inputValue argument28 (andcT (holRecursionGraphT (anwl
+  (anwl (anwl ha))) (anwl (anwl (anwl hf))) (appT holSuccessorT (anwl (anwl anr))) anr) (!! allcT predecessor (impcT
+  (eqcT (appT holSuccessorT (anwl (anwl (anwl anr)))) (appT holSuccessorT anr)) (!! excT prior (andcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl anr) anr)
+  (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr)))))))) (andcT
+  (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (appT holSuccessorT (anwl (anwl anr))) anr)
+  (!! allcT predecessor (impcT (eqcT (appT holSuccessorT (anwl (anwl (anwl anr)))) (appT holSuccessorT anr)) (!!
+  excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf)))))
+  (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr))))))))
+  (bineq andT (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (refl (appT holSuccessorT (anwl
+  (anwl anr)))) anr) (!! alleq predecessor (bineq impT (refl (eqcT (appT holSuccessorT (anwl (anwl (anwl anr))))
+  (appT holSuccessorT anr))) (!! exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl ha)))))
+  (anwl (anwl (anwl (anwl (anwl hf))))) (refl (anwl anr)) (refl anr)) (bineq eqT (anwl (anwl anr)) (refl (appT (appT
+  (anwl (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr))))))))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl
+  anr))) (anwl anr)) (appT (appT (anwl (anwl hf)) anr) (anwl anr)))) (!! betac argument28 (syl (ian (ian (ian (anwl
+  (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (andcT (holRecursionGraphT (anwl (anwl
+  (anwl ha))) (anwl (anwl (anwl hf))) (appT holSuccessorT (anwl (anwl anr))) anr) (!! allcT predecessor (impcT (eqcT
+  (appT holSuccessorT (anwl (anwl (anwl anr)))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl anr) anr) (eqcT (anwl (anwl
+  anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr))))))))) (syl (ian (ian (anwl (anwl (anwl
+  id))) (anwl (anwl anr))) (anwl anr)) (appT (appT (anwl (anwl hf)) anr) (anwl anr))) (syl (ian (ian (anwl (anwl
+  (anwl id))) (anwl (anwl anr))) (anwl anr)) (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (appT
+  holSuccessorT (anwl anr)) (appT (appT (anwl (anwl hf)) anr) (anwl anr))) (!! allcT predecessor (impcT (eqcT (appT
+  holSuccessorT (anwl (anwl anr))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl
+  (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (appT (appT (anwl (anwl (anwl (anwl hf))))
+  (anwl (anwl anr))) (anwl (anwl (anwl anr)))) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr)))))))))
+  (syl (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (bineq andT
+  (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (refl (appT holSuccessorT (anwl (anwl
+  anr)))) anr) (!! alleq predecessor (bineq impT (refl (eqcT (appT holSuccessorT (anwl (anwl (anwl anr)))) (appT
+  holSuccessorT anr))) (!! exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl ha))))) (anwl
+  (anwl (anwl (anwl (anwl hf))))) (refl (anwl anr)) (refl anr)) (bineq eqT (anwl (anwl anr)) (refl (appT (appT (anwl
+  (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr))))))))))))) (CONJ (holRecursionGraphSuccessor (syl (ian (ian (anwl
+  (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (anwl (anwl ha))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl
+  (anwl anr))) (anwl anr)) (anwl (anwl hf))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr))
+  (anwl anr)) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) anr) (CONJUNCT1 (eqmp (trans
+  (aeq1 (trans (aeq1 (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!! cbv inputIndex
+  argument21 (!! lamT inputValue (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl
+  hf)))) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT
+  prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl
+  hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr)
+  (anwl anr))))))))) (!! lamT inputValue (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl
+  (anwl hf)))) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!!
+  excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl
+  (anwl hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf))))))
+  anr) (anwl anr))))))))) (!! leq inputValue (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl
+  (anwl (anwl (anwl hf)))) (anwl anr) (refl anr)) (!! alleq predecessor (bineq impT (bineq eqT (anwl (anwl anr))
+  (refl (appT holSuccessorT anr))) (refl (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl
+  (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT
+  (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr)))))))))))) (syl (ian (ian (anwl (anwl (anwl id)))
+  (anwl (anwl anr))) (anwl anr)) (anwl anr))) (!! betac argument21 (syl (ian (ian (ian (anwl (anwl (anwl (anwl
+  id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (!! lamT inputValue (andcT (holRecursionGraphT (anwl
+  (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT (anwl
+  (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl
+  (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT
+  (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr)))))))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl
+  (anwl anr))) (anwl anr)) (anwl anr)) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!!
+  lamT inputValue (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) anr)
+  (!! allcT predecessor (impcT (eqcT (anwl (anwl (anwl anr))) (appT holSuccessorT anr)) (!! excT prior (andcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl anr) anr)
+  (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr)))))))))) (syl (ian (ian
+  (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (!! leq inputValue (bineq
+  andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) (refl anr))
+  (!! alleq predecessor (bineq impT (bineq eqT (anwl (anwl anr)) (refl (appT holSuccessorT anr))) (refl (!! excT
+  prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl
+  hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr)
+  (anwl anr))))))))))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) anr)) (trans (aeq1
+  (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!! cbv inputValue argument22 (andcT
+  (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) anr) (!! allcT predecessor
+  (impcT (eqcT (anwl (anwl (anwl anr))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl
+  (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl anr) anr) (eqcT (anwl (anwl anr))
+  (appT (appT (anwl (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr)))))))) (andcT (holRecursionGraphT (anwl (anwl
+  (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl (anwl
+  anr))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha)))))
+  (anwl (anwl (anwl (anwl (anwl hf))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl
+  (anwl hf))))) anr) (anwl anr)))))))) (bineq andT (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl
+  hf))) (refl (anwl (anwl anr))) anr) (!! alleq predecessor (bineq impT (refl (eqcT (anwl (anwl (anwl anr))) (appT
+  holSuccessorT anr))) (!! exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl ha))))) (anwl
+  (anwl (anwl (anwl (anwl hf))))) (refl (anwl anr)) (refl anr)) (bineq eqT (anwl (anwl anr)) (refl (appT (appT (anwl
+  (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr))))))))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl
+  anr))) (anwl anr)) anr)) (!! betac argument22 (syl (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl
+  anr)))) (anwl (anwl anr))) anr) (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl
+  (anwl anr)) anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl (anwl anr))) (appT holSuccessorT anr)) (!! excT
+  prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl
+  anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr))))))))) (syl
+  (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) anr) (syl (ian (ian (anwl (anwl (anwl id))) (anwl
+  (anwl anr))) (anwl anr)) (andcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr) (!! allcT
+  predecessor (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT
+  (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl
+  (anwl (anwl anr)))) (anwl (anwl anr))) anr) (bineq andT (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl
+  (anwl hf))) (refl (anwl (anwl anr))) anr) (!! alleq predecessor (bineq impT (refl (eqcT (anwl (anwl (anwl anr)))
+  (appT holSuccessorT anr))) (!! exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl ha)))))
+  (anwl (anwl (anwl (anwl (anwl hf))))) (refl (anwl anr)) (refl anr)) (bineq eqT (anwl (anwl anr)) (refl (appT (appT
+  (anwl (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr))))))))))))) anr))) (eqmpr (syl (ian (ian (anwl (anwl (anwl
+  id))) (anwl (anwl anr))) (anwl anr)) (aeq2 allT (!! cbv predecessor quantified23 (impcT (eqcT (appT holSuccessorT
+  (anwl (anwl anr))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl
+  ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (appT (appT (anwl (anwl (anwl (anwl hf)))) (anwl (anwl
+  anr))) (anwl (anwl (anwl anr)))) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr)))))) (impcT (eqcT
+  (appT holSuccessorT (anwl (anwl anr))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl
+  (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (appT (appT (anwl (anwl (anwl (anwl
+  hf)))) (anwl (anwl anr))) (anwl (anwl (anwl anr)))) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl
+  anr)))))) (bineq impT (bineq eqT (refl (appT holSuccessorT (anwl (anwl anr)))) (aeq (refl holSuccessorT) anr)) (!!
+  exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl
+  anr) (refl anr)) (bineq eqT (refl (appT (appT (anwl (anwl (anwl (anwl hf)))) (anwl (anwl anr))) (anwl (anwl (anwl
+  anr))))) (aeq (refl (appT (anwl (anwl (anwl (anwl hf)))) anr)) (anwl anr))))))))) (!! GEN quantified23 (DISCH (syl
+  (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (eqcT (appT
+  holSuccessorT (anwl (anwl anr))) (appT holSuccessorT anr))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl id))))
+  (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl
+  (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (appT (appT (anwl (anwl (anwl (anwl hf)))) (anwl
+  (anwl anr))) (anwl (anwl (anwl anr)))) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr)))))) (eqmpr (syl
+  (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr))))
+  (anwl anr)) (aeq2 exT (!! cbv prior witness26 (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl
+  (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (appT (appT (anwl (anwl (anwl (anwl hf)))) (anwl (anwl anr))) (anwl
+  (anwl (anwl anr)))) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr)))) (andcT (holRecursionGraphT (anwl
+  (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl anr) anr) (eqcT (appT (appT (anwl (anwl (anwl (anwl
+  hf)))) (anwl (anwl anr))) (anwl (anwl (anwl anr)))) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))
+  (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (refl (anwl anr))
+  anr) (bineq eqT (refl (appT (appT (anwl (anwl (anwl (anwl hf)))) (anwl (anwl anr))) (anwl (anwl (anwl anr)))))
+  (aeq (aeq (refl (anwl (anwl (anwl (anwl hf))))) anr) (refl (anwl anr)))))))) (!! EXISTS witness26 (syl (ian (ian
+  (ian (ian (anwl (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl
+  (anwl anr))))) (anwl (anwl anr))) anr) (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl
+  (anwl hf)))) (anwl anr) anr) (eqcT (appT (appT (anwl (anwl (anwl (anwl hf)))) (anwl (anwl anr))) (anwl (anwl (anwl
+  anr)))) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl anr))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl
+  (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl anr)) (syl (ian (ian
+  (ian (ian (anwl (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl
+  (anwl anr))))) (anwl (anwl anr))) anr) (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl
+  (anwl (anwl (anwl hf)))) (refl (anwl anr)) anr) (bineq eqT (refl (appT (appT (anwl (anwl (anwl (anwl hf)))) (anwl
+  (anwl anr))) (anwl (anwl (anwl anr))))) (aeq (aeq (refl (anwl (anwl (anwl (anwl hf))))) anr) (refl (anwl anr))))))
+  (CONJ (eqmp (holRecursionGraphCong (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl
+  (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl (anwl ha)))) (syl (ian (ian (ian (anwl (anwl
+  (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl (anwl
+  hf)))) (holSuccessorCancel (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl
+  anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl anr))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl
+  (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) anr) anr) (refl (syl (ian
+  (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl
+  anr)) (anwl anr)))) (CONJUNCT1 (eqmp (trans (aeq1 (trans (aeq1 (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl
+  id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! cbv inputIndex argument24 (!!
+  lamT inputValue (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl
+  hf))))) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT
+  prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl (anwl ha))))))) (anwl (anwl (anwl (anwl (anwl
+  (anwl (anwl hf))))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl
+  (anwl hf))))))) anr) (anwl anr))))))))) (!! lamT inputValue (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl
+  (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl anr) anr) (!! allcT predecessor (impcT (eqcT (anwl (anwl
+  anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl
+  (anwl ha))))))) (anwl (anwl (anwl (anwl (anwl (anwl (anwl hf))))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT
+  (appT (anwl (anwl (anwl (anwl (anwl (anwl (anwl hf))))))) anr) (anwl anr))))))))) (!! leq inputValue (bineq andT
+  (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl anr)
+  (refl anr)) (!! alleq predecessor (bineq impT (bineq eqT (anwl (anwl anr)) (refl (appT holSuccessorT anr))) (refl
+  (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl (anwl ha))))))) (anwl (anwl (anwl
+  (anwl (anwl (anwl (anwl hf))))))) (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl
+  (anwl (anwl (anwl hf))))))) anr) (anwl anr)))))))))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id)))))
+  (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl anr)))) (!! betac argument24
+  (syl (ian (ian (ian (ian (anwl (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr))))))
+  (anwl (anwl (anwl (anwl anr))))) (anwl (anwl anr))) anr) (!! lamT inputValue (andcT (holRecursionGraphT (anwl
+  (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl anr) anr) (!! allcT predecessor (impcT
+  (eqcT (anwl (anwl anr)) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl
+  (anwl (anwl (anwl (anwl ha))))))) (anwl (anwl (anwl (anwl (anwl (anwl (anwl hf))))))) (anwl anr) anr) (eqcT (anwl
+  (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl (anwl hf))))))) anr) (anwl anr)))))))))) (syl (ian
+  (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl
+  anr)) (anwl (anwl anr))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl
+  anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! lamT inputValue (andcT (holRecursionGraphT (anwl (anwl (anwl
+  (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (!! allcT predecessor (impcT (eqcT (anwl
+  (anwl (anwl (anwl anr)))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT (anwl (anwl (anwl
+  (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT (anwl (anwl anr))
+  (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr)))))))))) (syl (ian (ian (ian (ian (anwl
+  (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl (anwl anr)))))
+  (anwl (anwl anr))) anr) (!! leq inputValue (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl
+  ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl anr) (refl anr)) (!! alleq predecessor (bineq impT (bineq eqT
+  (anwl (anwl anr)) (refl (appT holSuccessorT anr))) (refl (!! excT prior (andcT (holRecursionGraphT (anwl (anwl
+  (anwl (anwl (anwl (anwl (anwl ha))))))) (anwl (anwl (anwl (anwl (anwl (anwl (anwl hf))))))) (anwl anr) anr) (eqcT
+  (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl (anwl hf))))))) anr) (anwl anr))))))))))))) (syl
+  (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr))))
+  (anwl anr)) (anwl anr))) (trans (aeq1 (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl
+  (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! cbv inputValue argument25 (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (!! allcT predecessor
+  (impcT (eqcT (anwl (anwl (anwl (anwl anr)))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT
+  (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr)))))))) (andcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr)
+  (!! allcT predecessor (impcT (eqcT (anwl (anwl (anwl (anwl anr)))) (appT holSuccessorT anr)) (!! excT prior (andcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf))))))
+  (anwl anr) anr) (eqcT (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl
+  anr)))))))) (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (refl
+  (anwl (anwl (anwl anr)))) anr) (!! alleq predecessor (bineq impT (refl (eqcT (anwl (anwl (anwl (anwl anr)))) (appT
+  holSuccessorT anr))) (!! exeq prior (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl (anwl
+  ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (refl (anwl anr)) (refl anr)) (bineq eqT (anwl (anwl anr))
+  (refl (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr))))))))))) (syl (ian (ian (ian (anwl
+  (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl
+  anr))) (!! betac argument25 (syl (ian (ian (ian (ian (anwl (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl
+  (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl anr))) anr) (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (!! allcT predecessor
+  (impcT (eqcT (anwl (anwl (anwl (anwl anr)))) (appT holSuccessorT anr)) (!! excT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl anr) anr) (eqcT
+  (anwl (anwl anr)) (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) anr) (anwl anr))))))))) (syl (ian (ian
+  (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr))
+  (anwl anr)) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl
+  (anwl anr)))) (anwl anr)) (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl
+  anr)) (anwl anr)) (!! allcT predecessor (impcT (eqcT (anwl (anwl (anwl anr))) (appT holSuccessorT anr)) (!! excT
+  prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl
+  anr) anr) (eqcT (anwl (anwl (anwl anr))) (appT (appT (anwl (anwl (anwl (anwl (anwl hf))))) anr) (anwl anr)))))))))
+  (syl (ian (ian (ian (ian (anwl (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr))))))
+  (anwl (anwl (anwl (anwl anr))))) (anwl (anwl anr))) anr) (bineq andT (holRecursionGraphCong (anwl (anwl (anwl
+  (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (refl (anwl (anwl (anwl anr)))) anr) (!! alleq predecessor (bineq impT
+  (refl (eqcT (anwl (anwl (anwl (anwl anr)))) (appT holSuccessorT anr))) (!! exeq prior (bineq andT
+  (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf))))))
+  (refl (anwl anr)) (refl anr)) (bineq eqT (anwl (anwl anr)) (refl (appT (appT (anwl (anwl (anwl (anwl (anwl (anwl
+  hf)))))) anr) (anwl anr))))))))))))) (anwl (anwl anr))))) (aeq2 (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl
+  id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (appT (anwl (anwl (anwl hf))) (anwl
+  anr))) (holSuccessorCancel (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl
+  anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl anr))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl
+  (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) anr) anr))))))))))))))))))
+  (refl (appT holSuccessorT hn)));
+
+pub theorem holRecursionGraphFunctional (G: wff) (A: type) (a f n v w: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hn: $ G |- n: holNatural $)
+  (hv: $ G |- v: A $)
+  (hw: $ G |- w: A $)
+  (hleft: $ G |- holRecursionGraph A a f n v $)
+  (hright: $ G |- holRecursionGraph A a f n w $):
+  $ G |- (=[A] v = w) $ =
+'(MP (MP (!! spec bound44 (impcT (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr) (eqcT (anwl hv) anr)) hw
+  (impcT (holRecursionGraphT ha hf hn hw) (eqcT hv hw)) (bineq impT (holRecursionGraphCong (anwl ha) (anwl hf) (refl
+  (anwl hn)) anr) (bineq eqT (refl (anwl hv)) anr))) (eqmp (aeq2 allT (!! cbv other bound44 (impcT
+  (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr) (eqcT (anwl hv) anr)) (impcT (holRecursionGraphT (anwl ha)
+  (anwl hf) (anwl hn) anr) (eqcT (anwl hv) anr)) (bineq impT (holRecursionGraphCong (anwl ha) (anwl hf) (refl (anwl
+  hn)) anr) (bineq eqT (refl (anwl hv)) anr)))) (eqmp (trans (aeq1 (trans (aeq1 (!! cbv inputIndex argument42 (!!
+  lamT inputValue (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl
+  (anwl anr)) anr) (eqcT (anwl anr) anr)))) (!! lamT inputValue (!! allcT other (impcT (holRecursionGraphT (anwl
+  (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) anr) (eqcT (anwl anr) anr)))) (!! leq inputValue (!!
+  alleq other (bineq impT (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr))
+  (refl anr)) (refl (eqcT (anwl anr) anr)))))) hn) (!! betac argument42 (!! lamT inputValue (!! allcT other (impcT
+  (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) anr) (eqcT (anwl anr)
+  anr)))) hn (!! lamT inputValue (!! allcT other (impcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl
+  (anwl hn)) anr) (eqcT (anwl anr) anr)))) (!! leq inputValue (!! alleq other (bineq impT (holRecursionGraphCong
+  (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) (refl anr)) (refl (eqcT (anwl anr) anr)))))))
+  hv) (trans (aeq1 (!! cbv inputValue argument43 (!! allcT other (impcT (holRecursionGraphT (anwl (anwl ha)) (anwl
+  (anwl hf)) (anwl (anwl hn)) anr) (eqcT (anwl anr) anr))) (!! allcT other (impcT (holRecursionGraphT (anwl (anwl
+  ha)) (anwl (anwl hf)) (anwl (anwl hn)) anr) (eqcT (anwl anr) anr))) (!! alleq other (bineq impT
+  (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (refl (anwl (anwl hn))) (refl anr)) (bineq eqT (anwl anr)
+  (refl anr))))) hv) (!! betac argument43 (!! allcT other (impcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl
+  hf)) (anwl (anwl hn)) anr) (eqcT (anwl anr) anr))) hv (!! allcT other (impcT (holRecursionGraphT (anwl ha) (anwl
+  hf) (anwl hn) anr) (eqcT (anwl hv) anr))) (!! alleq other (bineq impT (holRecursionGraphCong (anwl (anwl ha))
+  (anwl (anwl hf)) (refl (anwl (anwl hn))) (refl anr)) (bineq eqT (anwl anr) (refl anr)))))))
+  (holRecursionGraphElimination ha hf hn hv (!! lamT inputIndex (!! lamT inputValue (!! allcT other (impcT
+  (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) anr) (eqcT (anwl anr)
+  anr))))) hleft (eqmpr (trans (aeq1 (trans (aeq1 (!! cbv inputIndex argument33 (!! lamT inputValue (!! allcT other
+  (impcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) anr) (eqcT (anwl anr)
+  anr)))) (!! lamT inputValue (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl
+  hf))) (anwl (anwl anr)) anr) (eqcT (anwl anr) anr)))) (!! leq inputValue (!! alleq other (bineq impT
+  (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) (refl anr)) (refl (eqcT
+  (anwl anr) anr)))))) holZeroT) (!! betac argument33 (!! lamT inputValue (!! allcT other (impcT (holRecursionGraphT
+  (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) anr) (eqcT (anwl anr) anr)))) holZeroT (!! lamT
+  inputValue (!! allcT other (impcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) holZeroT anr) (eqcT (anwl
+  anr) anr)))) (!! leq inputValue (!! alleq other (bineq impT (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl
+  (anwl (anwl hf))) (anwl (anwl anr)) (refl anr)) (refl (eqcT (anwl anr) anr))))))) ha) (trans (aeq1 (!! cbv
+  inputValue argument34 (!! allcT other (impcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) holZeroT anr)
+  (eqcT (anwl anr) anr))) (!! allcT other (impcT (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) holZeroT anr)
+  (eqcT (anwl anr) anr))) (!! alleq other (bineq impT (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (refl
+  holZeroT) (refl anr)) (bineq eqT (anwl anr) (refl anr))))) ha) (!! betac argument34 (!! allcT other (impcT
+  (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) holZeroT anr) (eqcT (anwl anr) anr))) ha (!! allcT other
+  (impcT (holRecursionGraphT (anwl ha) (anwl hf) holZeroT anr) (eqcT (anwl ha) anr))) (!! alleq other (bineq impT
+  (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (refl holZeroT) (refl anr)) (bineq eqT (anwl anr) (refl
+  anr))))))) (eqmpr (aeq2 allT (!! cbv other quantified32 (impcT (holRecursionGraphT (anwl ha) (anwl hf) holZeroT
+  anr) (eqcT (anwl ha) anr)) (impcT (holRecursionGraphT (anwl ha) (anwl hf) holZeroT anr) (eqcT (anwl ha) anr))
+  (bineq impT (holRecursionGraphCong (anwl ha) (anwl hf) (refl holZeroT) anr) (bineq eqT (refl (anwl ha)) anr))))
+  (!! GEN quantified32 (DISCH (holRecursionGraphT (anwl ha) (anwl hf) holZeroT anr) (eqcT (anwl ha) anr) (sym
+  (holRecursionGraphZeroUnique (syl (ian (anwl (anwl id)) (anwl anr)) (anwl ha)) (syl (ian (anwl (anwl id)) (anwl
+  anr)) (anwl hf)) (syl (ian (anwl (anwl id)) (anwl anr)) anr) anr)))))) (!! GEN j (!! GEN u (DISCH (appT (appT (!!
+  lamT inputIndex (!! lamT inputValue (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl
+  ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl (anwl anr)) anr) (eqcT (anwl anr) anr))))) (anwl anr)) anr)
+  (appT (appT (!! lamT inputIndex (!! lamT inputValue (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl
+  (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl (anwl anr)) anr) (eqcT (anwl anr) anr))))) (appT
+  holSuccessorT (anwl anr))) (appT (appT (anwl (anwl hf)) anr) (anwl anr))) (eqmpr (trans (aeq1 (trans (aeq1 (syl
+  (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!! cbv inputIndex argument40 (!! lamT inputValue
+  (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl
+  hf))))) (anwl (anwl anr)) anr) (eqcT (anwl anr) anr)))) (!! lamT inputValue (!! allcT other (impcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl (anwl anr))
+  anr) (eqcT (anwl anr) anr)))) (!! leq inputValue (!! alleq other (bineq impT (holRecursionGraphCong (anwl (anwl
+  (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl (anwl anr)) (refl anr)) (refl (eqcT (anwl
+  anr) anr))))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (appT holSuccessorT (anwl
+  anr)))) (!! betac argument40 (syl (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl
+  (anwl anr))) anr) (!! lamT inputValue (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl
+  ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl (anwl anr)) anr) (eqcT (anwl anr) anr))))) (syl (ian (ian
+  (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (appT holSuccessorT (anwl anr))) (syl (ian (ian (anwl (anwl
+  (anwl id))) (anwl (anwl anr))) (anwl anr)) (!! lamT inputValue (!! allcT other (impcT (holRecursionGraphT (anwl
+  (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (appT holSuccessorT (anwl (anwl (anwl anr)))) anr) (eqcT
+  (anwl anr) anr))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl
+  anr))) anr) (!! leq inputValue (!! alleq other (bineq impT (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl
+  ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl (anwl anr)) (refl anr)) (refl (eqcT (anwl anr) anr))))))))
+  (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (appT (appT (anwl (anwl hf)) anr) (anwl
+  anr)))) (trans (aeq1 (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!! cbv inputValue
+  argument41 (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl
+  hf)))) (appT holSuccessorT (anwl (anwl (anwl anr)))) anr) (eqcT (anwl anr) anr))) (!! allcT other (impcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (appT holSuccessorT (anwl (anwl
+  (anwl anr)))) anr) (eqcT (anwl anr) anr))) (!! alleq other (bineq impT (holRecursionGraphCong (anwl (anwl (anwl
+  (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (refl (appT holSuccessorT (anwl (anwl (anwl anr))))) (refl anr))
+  (bineq eqT (anwl anr) (refl anr)))))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (appT
+  (appT (anwl (anwl hf)) anr) (anwl anr)))) (!! betac argument41 (syl (ian (ian (ian (anwl (anwl (anwl (anwl id))))
+  (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl
+  (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (appT holSuccessorT (anwl (anwl (anwl anr)))) anr) (eqcT (anwl anr)
+  anr)))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (appT (appT (anwl (anwl hf)) anr)
+  (anwl anr))) (syl (ian (ian (anwl (anwl (anwl id))) (anwl (anwl anr))) (anwl anr)) (!! allcT other (impcT
+  (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (appT holSuccessorT (anwl (anwl anr))) anr)
+  (eqcT (appT (appT (anwl (anwl (anwl hf))) (anwl anr)) (anwl (anwl anr))) anr)))) (syl (ian (ian (ian (anwl (anwl
+  (anwl (anwl id)))) (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (!! alleq other (bineq impT
+  (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (refl (appT holSuccessorT
+  (anwl (anwl (anwl anr))))) (refl anr)) (bineq eqT (anwl anr) (refl anr)))))))) (eqmpr (syl (ian (ian (anwl (anwl
+  (anwl id))) (anwl (anwl anr))) (anwl anr)) (aeq2 allT (!! cbv other quantified35 (impcT (holRecursionGraphT (anwl
+  (anwl (anwl ha))) (anwl (anwl (anwl hf))) (appT holSuccessorT (anwl (anwl anr))) anr) (eqcT (appT (appT (anwl
+  (anwl (anwl hf))) (anwl anr)) (anwl (anwl anr))) anr)) (impcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl
+  (anwl (anwl hf))) (appT holSuccessorT (anwl (anwl anr))) anr) (eqcT (appT (appT (anwl (anwl (anwl hf))) (anwl
+  anr)) (anwl (anwl anr))) anr)) (bineq impT (holRecursionGraphCong (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf)))
+  (refl (appT holSuccessorT (anwl (anwl anr)))) anr) (bineq eqT (refl (appT (appT (anwl (anwl (anwl hf))) (anwl
+  anr)) (anwl (anwl anr)))) anr))))) (!! GEN quantified35 (DISCH (syl (ian (ian (ian (anwl (anwl (anwl (anwl id))))
+  (anwl (anwl (anwl anr)))) (anwl (anwl anr))) anr) (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl
+  hf))) (appT holSuccessorT (anwl (anwl anr))) anr)) (syl (ian (ian (ian (anwl (anwl (anwl (anwl id)))) (anwl (anwl
+  (anwl anr)))) (anwl (anwl anr))) anr) (eqcT (appT (appT (anwl (anwl (anwl hf))) (anwl anr)) (anwl (anwl anr)))
+  anr)) (trans (aeq1 (aeq2 (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl
+  anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl (anwl hf)))) (MP (MP (syl (ian (ian (ian (anwl (anwl
+  (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! spec bound39
+  (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr)))
+  anr) (eqcT (anwl (anwl anr)) anr)) (appT selT (!! lamT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl
+  ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl
+  (anwl hf)))) anr) (anwl (anwl (anwl anr)))))))) (impcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl
+  (anwl hf))) (anwl (anwl anr)) (appT selT (!! lamT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha))))
+  (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl (anwl
+  hf)))) anr) (anwl (anwl (anwl anr))))))))) (eqcT (anwl anr) (appT selT (!! lamT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT
+  (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr)))))))))) (bineq impT (holRecursionGraphCong (anwl
+  (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (refl (anwl (anwl (anwl anr)))) anr) (bineq eqT (refl
+  (anwl (anwl anr))) anr)))) (eqmp (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl
+  anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (aeq2 allT (!! cbv other bound39 (impcT (holRecursionGraphT (anwl
+  (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl (anwl anr))
+  anr)) (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl
+  anr))) anr) (eqcT (anwl (anwl anr)) anr)) (bineq impT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl
+  (anwl (anwl (anwl hf)))) (refl (anwl (anwl (anwl anr)))) anr) (bineq eqT (refl (anwl (anwl anr))) anr))))) (eqmp
+  (trans (aeq1 (trans (aeq1 (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl
+  anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! cbv inputIndex argument37 (!! lamT inputValue (!! allcT other
+  (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl
+  hf)))))) (anwl (anwl anr)) anr) (eqcT (anwl anr) anr)))) (!! lamT inputValue (!! allcT other (impcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf))))))
+  (anwl (anwl anr)) anr) (eqcT (anwl anr) anr)))) (!! leq inputValue (!! alleq other (bineq impT
+  (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf))))))
+  (anwl (anwl anr)) (refl anr)) (refl (eqcT (anwl anr) anr))))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl
+  id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl anr)))) (!! betac
+  argument37 (syl (ian (ian (ian (ian (anwl (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl (anwl
+  anr)))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl anr))) anr) (!! lamT inputValue (!! allcT other (impcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf))))))
+  (anwl (anwl anr)) anr) (eqcT (anwl anr) anr))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl
+  (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl anr))) (syl (ian (ian (ian (anwl
+  (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! lamT
+  inputValue (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl
+  (anwl (anwl hf))))) (anwl (anwl (anwl (anwl anr)))) anr) (eqcT (anwl anr) anr))))) (syl (ian (ian (ian (ian (anwl
+  (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl (anwl anr)))))
+  (anwl (anwl anr))) anr) (!! leq inputValue (!! alleq other (bineq impT (holRecursionGraphCong (anwl (anwl (anwl
+  (anwl (anwl (anwl ha)))))) (anwl (anwl (anwl (anwl (anwl (anwl hf)))))) (anwl (anwl anr)) (refl anr)) (refl (eqcT
+  (anwl anr) anr)))))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr)))))
+  (anwl (anwl (anwl anr)))) (anwl anr)) (anwl anr))) (trans (aeq1 (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl
+  id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! cbv inputValue argument38 (!!
+  allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf)))))
+  (anwl (anwl (anwl (anwl anr)))) anr) (eqcT (anwl anr) anr))) (!! allcT other (impcT (holRecursionGraphT (anwl
+  (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl hf))))) (anwl (anwl (anwl (anwl anr)))) anr) (eqcT
+  (anwl anr) anr))) (!! alleq other (bineq impT (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl ha))))) (anwl
+  (anwl (anwl (anwl (anwl hf))))) (refl (anwl (anwl (anwl (anwl anr))))) (refl anr)) (bineq eqT (anwl anr) (refl
+  anr)))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl
+  (anwl anr)))) (anwl anr)) (anwl anr))) (!! betac argument38 (syl (ian (ian (ian (ian (anwl (anwl (anwl (anwl (anwl
+  (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl anr))) anr)
+  (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl (anwl
+  hf))))) (anwl (anwl (anwl (anwl anr)))) anr) (eqcT (anwl anr) anr)))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl
+  (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl anr)) (syl (ian (ian
+  (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr))
+  (!! allcT other (impcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl
+  (anwl (anwl anr))) anr) (eqcT (anwl (anwl anr)) anr)))) (syl (ian (ian (ian (ian (anwl (anwl (anwl (anwl (anwl
+  (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl anr))) anr)
+  (!! alleq other (bineq impT (holRecursionGraphCong (anwl (anwl (anwl (anwl (anwl ha))))) (anwl (anwl (anwl (anwl
+  (anwl hf))))) (refl (anwl (anwl (anwl (anwl anr))))) (refl anr)) (bineq eqT (anwl anr) (refl anr)))))))) (anwl
+  (anwl anr))))) (CONJUNCT1 (eqmp (trans (aeq1 (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl
+  (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! cbv prior argument36 (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT
+  (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr)))))) (andcT (holRecursionGraphT (anwl (anwl (anwl
+  (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl
+  (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr)))))) (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl
+  ha)))) (anwl (anwl (anwl (anwl hf)))) (refl (anwl (anwl (anwl anr)))) anr) (bineq eqT (refl (anwl anr)) (aeq (aeq
+  (refl (anwl (anwl (anwl (anwl hf))))) anr) (refl (anwl (anwl (anwl anr))))))))) (syl (ian (ian (ian (anwl (anwl
+  (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (appT selT (!!
+  lamT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl
+  (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr))))))))))
+  (!! betac argument36 (syl (ian (ian (ian (ian (anwl (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl
+  (anwl anr)))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl anr))) anr) (andcT (holRecursionGraphT (anwl (anwl
+  (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl
+  (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr))))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl
+  id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (appT selT (!! lamT prior (andcT
+  (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr)
+  (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr))))))))) (syl (ian (ian
+  (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr))
+  (andcT (holRecursionGraphT (anwl (anwl (anwl ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) (appT selT (!! lamT
+  prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl
+  anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr))))))))) (eqcT
+  anr (appT (appT (anwl (anwl (anwl hf))) (appT selT (!! lamT prior (andcT (holRecursionGraphT (anwl (anwl (anwl
+  (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl
+  (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr))))))))) (anwl (anwl anr)))))) (syl (ian (ian (ian (ian (anwl (anwl
+  (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl (anwl anr))))) (anwl
+  (anwl anr))) anr) (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf))))
+  (refl (anwl (anwl (anwl anr)))) anr) (bineq eqT (refl (anwl anr)) (aeq (aeq (refl (anwl (anwl (anwl (anwl hf)))))
+  anr) (refl (anwl (anwl (anwl anr)))))))))) (selectFromEx (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id)))))
+  (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! lamT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT
+  (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr)))))))) (holRecursionGraphSuccessorInverse (syl
+  (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr))))
+  (anwl anr)) (anwl (anwl (anwl ha)))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl
+  (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl (anwl hf)))) (syl (ian (ian (ian (anwl (anwl
+  (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl
+  anr))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl
+  (anwl anr)))) (anwl anr)) anr) anr)))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl
+  (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl anr)))) (sym (CONJUNCT2 (eqmp (trans (aeq1
+  (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl
+  anr)))) (anwl anr)) (!! cbv prior argument36 (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl
+  (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr)
+  (anwl (anwl (anwl anr)))))) (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl
+  hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl
+  (anwl anr)))))) (bineq andT (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf))))
+  (refl (anwl (anwl (anwl anr)))) anr) (bineq eqT (refl (anwl anr)) (aeq (aeq (refl (anwl (anwl (anwl (anwl hf)))))
+  anr) (refl (anwl (anwl (anwl anr))))))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl
+  (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (appT selT (!! lamT prior (andcT (holRecursionGraphT
+  (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT
+  (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr)))))))))) (!! betac argument36 (syl (ian (ian (ian
+  (ian (anwl (anwl (anwl (anwl (anwl (anwl id)))))) (anwl (anwl (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl (anwl
+  anr))))) (anwl (anwl anr))) anr) (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl
+  hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl
+  (anwl anr))))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl
+  (anwl (anwl anr)))) (anwl anr)) (appT selT (!! lamT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl
+  ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl
+  (anwl hf)))) anr) (anwl (anwl (anwl anr))))))))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl
+  (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (andcT (holRecursionGraphT (anwl (anwl (anwl
+  ha))) (anwl (anwl (anwl hf))) (anwl (anwl anr)) (appT selT (!! lamT prior (andcT (holRecursionGraphT (anwl (anwl
+  (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl
+  (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr))))))))) (eqcT anr (appT (appT (anwl (anwl (anwl hf))) (appT
+  selT (!! lamT prior (andcT (holRecursionGraphT (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl
+  (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl (anwl (anwl hf)))) anr) (anwl (anwl (anwl
+  anr))))))))) (anwl (anwl anr)))))) (syl (ian (ian (ian (ian (anwl (anwl (anwl (anwl (anwl (anwl id)))))) (anwl
+  (anwl (anwl (anwl (anwl anr)))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl anr))) anr) (bineq andT
+  (holRecursionGraphCong (anwl (anwl (anwl (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (refl (anwl (anwl (anwl
+  anr)))) anr) (bineq eqT (refl (anwl anr)) (aeq (aeq (refl (anwl (anwl (anwl (anwl hf))))) anr) (refl (anwl (anwl
+  (anwl anr)))))))))) (selectFromEx (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl
+  (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (!! lamT prior (andcT (holRecursionGraphT (anwl (anwl (anwl
+  (anwl ha)))) (anwl (anwl (anwl (anwl hf)))) (anwl (anwl (anwl anr))) anr) (eqcT (anwl anr) (appT (appT (anwl (anwl
+  (anwl (anwl hf)))) anr) (anwl (anwl (anwl anr)))))))) (holRecursionGraphSuccessorInverse (syl (ian (ian (ian (anwl
+  (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl
+  (anwl ha)))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl
+  (anwl (anwl anr)))) (anwl anr)) (anwl (anwl (anwl hf)))) (syl (ian (ian (ian (anwl (anwl (anwl (anwl (anwl id)))))
+  (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) (anwl (anwl anr))) (syl (ian (ian (ian
+  (anwl (anwl (anwl (anwl (anwl id))))) (anwl (anwl (anwl (anwl anr))))) (anwl (anwl (anwl anr)))) (anwl anr)) anr)
+  anr))))))))))))))))) hright);
+
+def holRecursor (A: type) (a f: term) =
+  $ (\ number: holNatural. ((sel A) @ (\ value: A. holRecursionGraph A a f number value))) $;
+
+pub theorem holRecursorT (G: wff) (A: type) (a f: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $):
+  $ G |- holRecursor A a f: (holNatural -> A) $ =
+'(!! lamT number (appT selT (!! lamT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) anr))));
+
+theorem holRecursorBeta (G: wff) (A: type) (a f n: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hn: $ G |- n: holNatural $):
+  $ G |- (=[A] (holRecursor A a f @ n) = ((sel A) @ (\ value: A. holRecursionGraph A a f n value))) $ =
+'(trans (aeq1 (!! cbv number argument45 (appT selT (!! lamT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl
+  hf)) (anwl anr) anr))) (appT selT (!! lamT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr)
+  anr))) (aeq (refl selT) (!! leq value (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) (refl
+  anr))))) hn) (!! betac argument45 (appT selT (!! lamT value (holRecursionGraphT (anwl (anwl ha)) (anwl (anwl hf))
+  (anwl anr) anr))) hn (appT selT (!! lamT value (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr))) (aeq (refl
+  selT) (!! leq value (holRecursionGraphCong (anwl (anwl ha)) (anwl (anwl hf)) (anwl anr) (refl anr))))));
+
+pub theorem holRecursorGraph (G: wff) (A: type) (a f n: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hn: $ G |- n: holNatural $):
+  $ G |- holRecursionGraph A a f n (holRecursor A a f @ n) $ =
+'(eqmp (holRecursionGraphCong ha hf (refl hn) (sym (holRecursorBeta ha hf hn))) (eqmp (trans (aeq1 (!! cbv value
+  argument46 (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr) (holRecursionGraphT (anwl ha) (anwl hf) (anwl
+  hn) anr) (holRecursionGraphCong (anwl ha) (anwl hf) (refl (anwl hn)) anr)) (appT selT (!! lamT value
+  (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr)))) (!! betac argument46 (holRecursionGraphT (anwl ha) (anwl
+  hf) (anwl hn) anr) (appT selT (!! lamT value (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr)))
+  (holRecursionGraphT ha hf hn (appT selT (!! lamT value (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr))))
+  (holRecursionGraphCong (anwl ha) (anwl hf) (refl (anwl hn)) anr))) (selectFromEx (!! lamT value
+  (holRecursionGraphT (anwl ha) (anwl hf) (anwl hn) anr)) (holRecursionGraphExists ha hf hn))));
+
+pub theorem holRecursorZero (G: wff) (A: type) (a f: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $):
+  $ G |- (=[A] (holRecursor A a f @ holZero) = a) $ =
+'(holRecursionGraphZeroUnique ha hf (appT (holRecursorT ha hf) holZeroT) (holRecursorGraph ha hf holZeroT));
+
+pub theorem holRecursorSuccessor (G: wff) (A: type) (a f n: term)
+  (ha: $ G |- a: A $)
+  (hf: $ G |- f: (A -> (holNatural -> A)) $)
+  (hn: $ G |- n: holNatural $):
+  $ G |- (=[A] (holRecursor A a f @ (holSuccessor @ n)) = ((f @ (holRecursor A a f @ n)) @ n)) $ =
+'(holRecursionGraphFunctional ha hf (appT holSuccessorT hn) (appT (holRecursorT ha hf) (appT holSuccessorT hn))
+  (appT (appT hf (appT (holRecursorT ha hf) hn)) hn) (holRecursorGraph ha hf (appT holSuccessorT hn))
+  (holRecursionGraphSuccessor ha hf hn (appT (holRecursorT ha hf) hn) (holRecursorGraph ha hf hn)));
+
+pub theorem holNaturalRecursion (G: wff) (A: type) {a f g n: term}:
+  $ G |- (! a: A. (! f: (A -> (holNatural -> A)). (? g: (holNatural -> A). ((=[A] (g @ holZero) = a) /\ (! n: holNatural. (=[A] (g @ (holSuccessor @ n)) = ((f @ (g @ n)) @ n))))))) $ =
+'(!! GEN a (!! GEN f (eqmpr (aeq2 exT (!! cbv g witness47 (andcT (eqcT (appT anr holZeroT) (anwl (anwl anr))) (!!
+  allcT n (eqcT (appT (anwl anr) (appT holSuccessorT anr)) (appT (appT (anwl (anwl anr)) (appT (anwl anr) anr))
+  anr)))) (andcT (eqcT (appT anr holZeroT) (anwl (anwl anr))) (!! allcT n (eqcT (appT (anwl anr) (appT holSuccessorT
+  anr)) (appT (appT (anwl (anwl anr)) (appT (anwl anr) anr)) anr)))) (bineq andT (bineq eqT (aeq anr (refl
+  holZeroT)) (refl (anwl (anwl anr)))) (!! alleq n (bineq eqT (aeq (anwl anr) (refl (appT holSuccessorT anr))) (aeq
+  (aeq (refl (anwl (anwl anr))) (aeq (anwl anr) (refl anr))) (refl anr))))))) (!! EXISTS witness47 (andcT (eqcT
+  (appT anr holZeroT) (anwl (anwl anr))) (!! allcT n (eqcT (appT (anwl anr) (appT holSuccessorT anr)) (appT (appT
+  (anwl (anwl anr)) (appT (anwl anr) anr)) anr)))) (holRecursorT (anwl anr) anr) (bineq andT (bineq eqT (aeq anr
+  (refl holZeroT)) (refl (anwl (anwl anr)))) (!! alleq n (bineq eqT (aeq (anwl anr) (refl (appT holSuccessorT anr)))
+  (aeq (aeq (refl (anwl (anwl anr))) (aeq (anwl anr) (refl anr))) (refl anr))))) (CONJ (holRecursorZero (anwl anr)
+  anr) (!! GEN n (holRecursorSuccessor (anwl (anwl anr)) (anwl anr) anr)))))));

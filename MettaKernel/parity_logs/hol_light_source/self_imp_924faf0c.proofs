@@ -1,0 +1,171 @@
+{"id": 0, "pr": ["DEFINITION", "C(C(c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(C(C(c(=)(c[fun][[c[fun][[c[bool][]][c[bool][]]]][c[fun][[c[fun][[c[bool][]][c[bool][]]]][c[bool][]]]]]))(A(v(p)(c[bool][]))(v(p)(c[bool][]))))(A(v(p)(c[bool][]))(v(p)(c[bool][]))))", "T"]}
+{"id": 1, "pr": ["REFL", "A(v(p)(c[bool][]))(v(p)(c[bool][]))"]}
+{"id": 2, "pr": ["REFL", "c(T)(c[bool][])"]}
+{"id": 3, "pr": ["REFL", "c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 4, "pr": ["MK_COMB", 3, 0]}
+{"id": 5, "pr": ["MK_COMB", 4, 2]}
+{"id": 6, "pr": ["EQ_MP", 5, 2]}
+{"id": 7, "pr": ["EQ_MP", 6, 1]}
+{"id": 8, "pr": ["ASSUME", "v(t)(c[bool][])"]}
+{"id": 9, "pr": ["DEDUCT_ANTISYM_RULE", 8, 7]}
+{"id": 10, "pr": ["ASSUME", "C(C(c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(t)(c[bool][])))(c(T)(c[bool][]))"]}
+{"id": 11, "pr": ["REFL", "v(t)(c[bool][])"]}
+{"id": 12, "pr": ["REFL", "c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 13, "pr": ["MK_COMB", 12, 10]}
+{"id": 14, "pr": ["MK_COMB", 13, 11]}
+{"id": 15, "pr": ["EQ_MP", 14, 11]}
+{"id": 16, "pr": ["EQ_MP", 15, 7]}
+{"id": 17, "pr": ["DEDUCT_ANTISYM_RULE", 16, 9]}
+{"id": 18, "pr": ["DEFINITION", "C(C(c(=)(c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]]]))(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])))(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[bool][]]]]]))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][])))))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(c(T)(c[bool][])))))))", "/\\"]}
+{"id": 19, "pr": ["REFL", "v(p)(c[bool][])"]}
+{"id": 20, "pr": ["MK_COMB", 18, 19]}
+{"id": 21, "pr": ["BETA", "C(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[bool][]]]]]))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][])))))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(c(T)(c[bool][])))))))(v(p)(c[bool][]))"]}
+{"id": 22, "pr": ["REFL", "C(c(=)(c[fun][[c[fun][[c[bool][]][c[bool][]]]][c[fun][[c[fun][[c[bool][]][c[bool][]]]][c[bool][]]]]]))(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))"]}
+{"id": 23, "pr": ["MK_COMB", 22, 21]}
+{"id": 24, "pr": ["EQ_MP", 23, 20]}
+{"id": 25, "pr": ["REFL", "v(q)(c[bool][])"]}
+{"id": 26, "pr": ["MK_COMB", 24, 25]}
+{"id": 27, "pr": ["BETA", "C(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[bool][]]]]]))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][])))))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(c(T)(c[bool][]))))))(v(q)(c[bool][]))"]}
+{"id": 28, "pr": ["REFL", "C(c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][])))"]}
+{"id": 29, "pr": ["MK_COMB", 28, 27]}
+{"id": 30, "pr": ["EQ_MP", 29, 26]}
+{"id": 31, "pr": ["ASSUME", "C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][]))"]}
+{"id": 32, "pr": ["EQ_MP", 30, 31]}
+{"id": 33, "pr": ["REFL", "A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(q)(c[bool][])))"]}
+{"id": 34, "pr": ["MK_COMB", 32, 33]}
+{"id": 35, "pr": ["BETA", "C(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][]))))(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))"]}
+{"id": 36, "pr": ["INST", 35, [["v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])", "A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(q)(c[bool][])))"]]]}
+{"id": 37, "pr": ["BETA", "C(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(q)(c[bool][]))))(v(p)(c[bool][]))"]}
+{"id": 38, "pr": ["REFL", "v(q)(c[bool][])"]}
+{"id": 39, "pr": ["MK_COMB", 37, 38]}
+{"id": 40, "pr": ["BETA", "C(A(v(q)(c[bool][]))(v(q)(c[bool][])))(v(q)(c[bool][]))"]}
+{"id": 41, "pr": ["TRANS", 39, 40]}
+{"id": 42, "pr": ["TRANS", 36, 41]}
+{"id": 43, "pr": ["REFL", "c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 44, "pr": ["MK_COMB", 43, 42]}
+{"id": 45, "pr": ["BETA", "C(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(c(T)(c[bool][]))))(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))"]}
+{"id": 46, "pr": ["INST", 45, [["v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])", "A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(q)(c[bool][])))"]]]}
+{"id": 47, "pr": ["BETA", "C(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(q)(c[bool][]))))(v(p)(c[bool][]))"]}
+{"id": 48, "pr": ["INST", 47, [["v(p)(c[bool][])", "c(T)(c[bool][])"]]]}
+{"id": 49, "pr": ["REFL", "c(T)(c[bool][])"]}
+{"id": 50, "pr": ["MK_COMB", 48, 49]}
+{"id": 51, "pr": ["BETA", "C(A(v(q)(c[bool][]))(v(q)(c[bool][])))(v(q)(c[bool][]))"]}
+{"id": 52, "pr": ["INST", 51, [["v(q)(c[bool][])", "c(T)(c[bool][])"]]]}
+{"id": 53, "pr": ["TRANS", 50, 52]}
+{"id": 54, "pr": ["TRANS", 46, 53]}
+{"id": 55, "pr": ["MK_COMB", 44, 54]}
+{"id": 56, "pr": ["EQ_MP", 55, 34]}
+{"id": 57, "pr": ["REFL", "v(q)(c[bool][])"]}
+{"id": 58, "pr": ["REFL", "c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 59, "pr": ["MK_COMB", 58, 56]}
+{"id": 60, "pr": ["MK_COMB", 59, 57]}
+{"id": 61, "pr": ["EQ_MP", 60, 57]}
+{"id": 62, "pr": ["EQ_MP", 61, 7]}
+{"id": 63, "pr": ["ASSUME", "v(p)(c[bool][])"]}
+{"id": 64, "pr": ["ASSUME", "v(q)(c[bool][])"]}
+{"id": 65, "pr": ["INST", 17, [["v(t)(c[bool][])", "v(q)(c[bool][])"]]]}
+{"id": 66, "pr": ["EQ_MP", 65, 64]}
+{"id": 67, "pr": ["INST", 17, [["v(t)(c[bool][])", "v(p)(c[bool][])"]]]}
+{"id": 68, "pr": ["EQ_MP", 67, 63]}
+{"id": 69, "pr": ["REFL", "v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 70, "pr": ["MK_COMB", 69, 68]}
+{"id": 71, "pr": ["MK_COMB", 70, 66]}
+{"id": 72, "pr": ["ABS", 71, "v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 73, "pr": ["REFL", "v(p)(c[bool][])"]}
+{"id": 74, "pr": ["MK_COMB", 18, 73]}
+{"id": 75, "pr": ["REFL", "v(q)(c[bool][])"]}
+{"id": 76, "pr": ["MK_COMB", 74, 75]}
+{"id": 77, "pr": ["BETA", "C(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[bool][]]]]]))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][])))))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(c(T)(c[bool][])))))))(v(p)(c[bool][]))"]}
+{"id": 78, "pr": ["REFL", "v(q)(c[bool][])"]}
+{"id": 79, "pr": ["MK_COMB", 77, 78]}
+{"id": 80, "pr": ["BETA", "C(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[bool][]]]]]))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][])))))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(c(T)(c[bool][]))))))(v(q)(c[bool][]))"]}
+{"id": 81, "pr": ["TRANS", 79, 80]}
+{"id": 82, "pr": ["REFL", "C(c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][])))"]}
+{"id": 83, "pr": ["MK_COMB", 82, 81]}
+{"id": 84, "pr": ["EQ_MP", 83, 76]}
+{"id": 85, "pr": ["REFL", "C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][]))"]}
+{"id": 86, "pr": ["REFL", "c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 87, "pr": ["MK_COMB", 86, 84]}
+{"id": 88, "pr": ["MK_COMB", 87, 85]}
+{"id": 89, "pr": ["EQ_MP", 88, 85]}
+{"id": 90, "pr": ["EQ_MP", 89, 72]}
+{"id": 91, "pr": ["DEDUCT_ANTISYM_RULE", 62, 90]}
+{"id": 92, "pr": ["REFL", "v(P)(c[bool][])"]}
+{"id": 93, "pr": ["MK_COMB", 18, 92]}
+{"id": 94, "pr": ["BETA", "C(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[bool][]]]]]))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][])))))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(c(T)(c[bool][])))))))(v(p)(c[bool][]))"]}
+{"id": 95, "pr": ["INST", 94, [["v(p)(c[bool][])", "v(P)(c[bool][])"]]]}
+{"id": 96, "pr": ["REFL", "C(c(=)(c[fun][[c[fun][[c[bool][]][c[bool][]]]][c[fun][[c[fun][[c[bool][]][c[bool][]]]][c[bool][]]]]]))(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(P)(c[bool][])))"]}
+{"id": 97, "pr": ["MK_COMB", 96, 95]}
+{"id": 98, "pr": ["EQ_MP", 97, 93]}
+{"id": 99, "pr": ["REFL", "v(Q)(c[bool][])"]}
+{"id": 100, "pr": ["MK_COMB", 98, 99]}
+{"id": 101, "pr": ["BETA", "C(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[fun][[c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]][c[bool][]]]]]))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(P)(c[bool][])))(v(q)(c[bool][])))))(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(c(T)(c[bool][]))))))(v(q)(c[bool][]))"]}
+{"id": 102, "pr": ["INST", 101, [["v(q)(c[bool][])", "v(Q)(c[bool][])"]]]}
+{"id": 103, "pr": ["REFL", "C(c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(P)(c[bool][])))(v(Q)(c[bool][])))"]}
+{"id": 104, "pr": ["MK_COMB", 103, 102]}
+{"id": 105, "pr": ["EQ_MP", 104, 100]}
+{"id": 106, "pr": ["ASSUME", "C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(P)(c[bool][])))(v(Q)(c[bool][]))"]}
+{"id": 107, "pr": ["EQ_MP", 105, 106]}
+{"id": 108, "pr": ["REFL", "A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(p)(c[bool][])))"]}
+{"id": 109, "pr": ["MK_COMB", 107, 108]}
+{"id": 110, "pr": ["BETA", "C(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(P)(c[bool][])))(v(Q)(c[bool][]))))(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))"]}
+{"id": 111, "pr": ["INST", 110, [["v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])", "A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(p)(c[bool][])))"]]]}
+{"id": 112, "pr": ["BETA", "C(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(p)(c[bool][]))))(v(p)(c[bool][]))"]}
+{"id": 113, "pr": ["INST", 112, [["v(p)(c[bool][])", "v(P)(c[bool][])"]]]}
+{"id": 114, "pr": ["REFL", "v(Q)(c[bool][])"]}
+{"id": 115, "pr": ["MK_COMB", 113, 114]}
+{"id": 116, "pr": ["BETA", "C(A(v(q)(c[bool][]))(v(P)(c[bool][])))(v(q)(c[bool][]))"]}
+{"id": 117, "pr": ["INST", 116, [["v(q)(c[bool][])", "v(Q)(c[bool][])"]]]}
+{"id": 118, "pr": ["TRANS", 115, 117]}
+{"id": 119, "pr": ["TRANS", 111, 118]}
+{"id": 120, "pr": ["REFL", "c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 121, "pr": ["MK_COMB", 120, 119]}
+{"id": 122, "pr": ["BETA", "C(A(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(c(T)(c[bool][])))(c(T)(c[bool][]))))(v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))"]}
+{"id": 123, "pr": ["INST", 122, [["v(f)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])", "A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(p)(c[bool][])))"]]]}
+{"id": 124, "pr": ["BETA", "C(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(v(p)(c[bool][]))))(v(p)(c[bool][]))"]}
+{"id": 125, "pr": ["INST", 124, [["v(p)(c[bool][])", "c(T)(c[bool][])"]]]}
+{"id": 126, "pr": ["REFL", "c(T)(c[bool][])"]}
+{"id": 127, "pr": ["MK_COMB", 125, 126]}
+{"id": 128, "pr": ["BETA", "C(A(v(q)(c[bool][]))(c(T)(c[bool][])))(v(q)(c[bool][]))"]}
+{"id": 129, "pr": ["INST", 128, [["v(q)(c[bool][])", "c(T)(c[bool][])"]]]}
+{"id": 130, "pr": ["TRANS", 127, 129]}
+{"id": 131, "pr": ["TRANS", 123, 130]}
+{"id": 132, "pr": ["MK_COMB", 121, 131]}
+{"id": 133, "pr": ["EQ_MP", 132, 109]}
+{"id": 134, "pr": ["REFL", "v(P)(c[bool][])"]}
+{"id": 135, "pr": ["REFL", "c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 136, "pr": ["MK_COMB", 135, 133]}
+{"id": 137, "pr": ["MK_COMB", 136, 134]}
+{"id": 138, "pr": ["EQ_MP", 137, 134]}
+{"id": 139, "pr": ["EQ_MP", 138, 7]}
+{"id": 188, "pr": ["DEFINITION", "C(C(c(=)(c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[fun][[c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]][c[bool][]]]]]))(c(==>)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])))(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][]))))(v(p)(c[bool][])))))", "==>"]}
+{"id": 243, "pr": ["REFL", "v(p)(c[bool][])"]}
+{"id": 244, "pr": ["MK_COMB", 188, 243]}
+{"id": 245, "pr": ["REFL", "v(q)(c[bool][])"]}
+{"id": 246, "pr": ["MK_COMB", 244, 245]}
+{"id": 247, "pr": ["BETA", "C(A(v(p)(c[bool][]))(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][]))))(v(p)(c[bool][])))))(v(p)(c[bool][]))"]}
+{"id": 248, "pr": ["REFL", "v(q)(c[bool][])"]}
+{"id": 249, "pr": ["MK_COMB", 247, 248]}
+{"id": 250, "pr": ["BETA", "C(A(v(q)(c[bool][]))(C(C(c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][]))))(v(p)(c[bool][]))))(v(q)(c[bool][]))"]}
+{"id": 251, "pr": ["TRANS", 249, 250]}
+{"id": 252, "pr": ["REFL", "C(c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(C(C(c(==>)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][])))"]}
+{"id": 253, "pr": ["MK_COMB", 252, 251]}
+{"id": 254, "pr": ["EQ_MP", 253, 246]}
+{"id": 255, "pr": ["REFL", "C(C(c(==>)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(q)(c[bool][]))"]}
+{"id": 256, "pr": ["REFL", "c(=)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]])"]}
+{"id": 257, "pr": ["MK_COMB", 256, 254]}
+{"id": 258, "pr": ["MK_COMB", 257, 255]}
+{"id": 259, "pr": ["EQ_MP", 258, 255]}
+{"id": 14476213, "pr": ["ASSUME", "v(p)(c[bool][])"]}
+{"id": 14476214, "pr": ["ASSUME", "v(p)(c[bool][])"]}
+{"id": 14476215, "pr": ["INST", 91, [["v(p)(c[bool][])", "v(p)(c[bool][])"], ["v(q)(c[bool][])", "v(p)(c[bool][])"]]]}
+{"id": 14476216, "pr": ["DEDUCT_ANTISYM_RULE", 14476214, 14476215]}
+{"id": 14476217, "pr": ["EQ_MP", 14476216, 14476214]}
+{"id": 14476218, "pr": ["EQ_MP", 14476217, 14476213]}
+{"id": 14476219, "pr": ["ASSUME", "C(C(c(/\\)(c[fun][[c[bool][]][c[fun][[c[bool][]][c[bool][]]]]]))(v(p)(c[bool][])))(v(p)(c[bool][]))"]}
+{"id": 14476220, "pr": ["INST", 139, [["v(P)(c[bool][])", "v(p)(c[bool][])"], ["v(Q)(c[bool][])", "v(p)(c[bool][])"]]]}
+{"id": 14476221, "pr": ["DEDUCT_ANTISYM_RULE", 14476219, 14476220]}
+{"id": 14476222, "pr": ["EQ_MP", 14476221, 14476219]}
+{"id": 14476223, "pr": ["DEDUCT_ANTISYM_RULE", 14476218, 14476222]}
+{"id": 14476224, "pr": ["INST", 259, [["v(p)(c[bool][])", "v(p)(c[bool][])"], ["v(q)(c[bool][])", "v(p)(c[bool][])"]]]}
+{"id": 14476225, "pr": ["EQ_MP", 14476224, 14476223]}

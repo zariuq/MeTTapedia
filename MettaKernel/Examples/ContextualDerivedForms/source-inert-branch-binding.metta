@@ -1,0 +1,10 @@
+(= (plain-choice $x $y) (superpose ($x $y)))
+(= (wrapped-choice $x $y)
+   (superpose ((let $unused1 True $x) (let $unused2 True $y))))
+!(collapse (plain-choice a b))
+!(collapse (wrapped-choice a b))
+!(collapse (wrapped-choice a a))
+!(collapse (let $result (superpose ($x $y)) (== $x $y)))
+!(collapse (let $result
+    (superpose ((let $unused3 True $x) (let $unused4 True $y)))
+    (== $x $y)))

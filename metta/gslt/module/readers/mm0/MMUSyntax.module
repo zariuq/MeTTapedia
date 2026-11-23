@@ -1,0 +1,129 @@
+-- MM0's proof file format, `.mmu`, as a GSLT presentation.
+--
+-- An `.mmu` file is a list of S-expressions, one per statement; every term is written in prefix
+-- form, so no notation is involved:
+--   (sort wff strict provable)
+--   (term im ((p wff ()) (q wff ())) (wff ()))
+--   (def an ((a wff ()) (b wff ())) (wff ()) () (not (im a (not b))))
+--   (axiom ax_mp ((a wff ()) (b wff ())) ((im a b) a) b)
+--   (local theorem a1i ((a wff ()) (b wff ())) ((h b)) (im a b) () (ax_mp (b (im a b)) (ax_1 (b a)) h))
+-- A binder is bound, (x nat), or regular with its dependencies, (p wff (x)); its name may be the
+-- blank `_`, which is no identifier (a sort named `_` is refused). A proof step is a
+-- hypothesis name, a theorem applied to its arguments and subproofs, (:conv E C P), or
+-- (:let H P Q); a conversion is a variable, a term applied to conversions, (:sym C), or
+-- (:unfold T (ARGS) (DUMMIES) C).
+--
+-- The grammar is composed from pieces over one shared set of sorts, as MetamathSyntax.module is:
+--   Sorts       token and phrase sorts, declared once;
+--   Exprs       expressions and expression lists;
+--   Binders     binders, dependency lists, dummy lists, hypothesis lists;
+--   Proofs      proof steps and conversions;
+--   Statements  sort (modifiers in MM0's fixed order), term, axiom, def, theorem, input, output;
+--   Files       statement sequences.
+-- `Grammar` joins them over one `let`-bound Sorts value, so the sorts are shared, not copied.
+--
+-- `Tokens` is the lexical layer as data (TokenProfileV2): only space and newline separate tokens,
+-- `(` and `)` are tokens by themselves, `--` starts a comment that runs to the end of the line,
+-- and an identifier is a letter or `_` followed by letters, digits and `_`, but not `_` alone.
+-- The proof keywords (:conv, :let, :sym, :unfold) are fixed spellings of the rows that use them.
+Module MMUSyntax {
+  Theory Sorts() {
+    Types {
+      id_tok;
+      ids; expr; exprs; binder; binders; dummies; hyps;
+      mod_pure; mod_strict; mod_provable; mod_free; visibility;
+      proof; proofs; conv; convs;
+      statement; mmu_file;
+    }
+  }
+  Theory Exprs(s: Sorts) {
+    s Terms {
+      expr_var . label:id_tok |- label : expr;
+      expr_app . head:id_tok, args:exprs |- "(" head args ")" : expr;
+      exprs_empty . |- : exprs;
+      exprs_more . first:expr, rest:exprs |- first rest : exprs;
+    }
+  }
+  Theory Binders(s: Sorts) {
+    s Terms {
+      ids_empty . |- : ids;
+      ids_more . first:id_tok, rest:ids |- first rest : ids;
+      binder_bound . label:id_tok, srt:id_tok |- "(" label srt ")" : binder;
+      binder_regular . label:id_tok, srt:id_tok, deps:ids |- "(" label srt "(" deps ")" ")" : binder;
+      binder_bound_blank . srt:id_tok |- "(" "_" srt ")" : binder;
+      binder_regular_blank . srt:id_tok, deps:ids |- "(" "_" srt "(" deps ")" ")" : binder;
+      binders_empty . |- : binders;
+      binders_more . first:binder, rest:binders |- first rest : binders;
+      dummies_empty . |- : dummies;
+      dummies_more . label:id_tok, srt:id_tok, rest:dummies |- "(" label srt ")" rest : dummies;
+      hyps_empty . |- : hyps;
+      hyps_more . label:id_tok, formula:expr, rest:hyps |- "(" label formula ")" rest : hyps;
+    }
+  }
+  Theory Proofs(s: Sorts) {
+    s Terms {
+      proof_hyp . label:id_tok |- label : proof;
+      proof_thm . head:id_tok, args:exprs, subproofs:proofs |- "(" head "(" args ")" subproofs ")" : proof;
+      proof_conv . target:expr, conversion:conv, inner:proof |- "(" ":conv" target conversion inner ")" : proof;
+      proof_let . label:id_tok, shared:proof, body:proof |- "(" ":let" label shared body ")" : proof;
+      proofs_empty . |- : proofs;
+      proofs_more . first:proof, rest:proofs |- first rest : proofs;
+      conv_var . label:id_tok |- label : conv;
+      conv_app . head:id_tok, args:convs |- "(" head args ")" : conv;
+      conv_sym . inner:conv |- "(" ":sym" inner ")" : conv;
+      conv_unfold . head:id_tok, args:exprs, dummies:ids, inner:conv |- "(" ":unfold" head "(" args ")" "(" dummies ")" inner ")" : conv;
+      convs_empty . |- : convs;
+      convs_more . first:conv, rest:convs |- first rest : convs;
+    }
+  }
+  Theory Statements(s: Sorts) {
+    s Terms {
+      pure_no . |- : mod_pure;
+      pure_yes . |- "pure" : mod_pure;
+      strict_no . |- : mod_strict;
+      strict_yes . |- "strict" : mod_strict;
+      provable_no . |- : mod_provable;
+      provable_yes . |- "provable" : mod_provable;
+      free_no . |- : mod_free;
+      free_yes . |- "free" : mod_free;
+      visibility_default . |- : visibility;
+      visibility_local . |- "local" : visibility;
+      visibility_pub . |- "pub" : visibility;
+      statement_sort . label:id_tok, mpure:mod_pure, mstrict:mod_strict, mprov:mod_provable, mfree:mod_free |- "(" "sort" label mpure mstrict mprov mfree ")" : statement;
+      statement_term . label:id_tok, args:binders, ret:id_tok, deps:ids |- "(" "term" label "(" args ")" "(" ret "(" deps ")" ")" ")" : statement;
+      statement_axiom . label:id_tok, args:binders, hypotheses:exprs, conclusion:expr |- "(" "axiom" label "(" args ")" "(" hypotheses ")" conclusion ")" : statement;
+      statement_def . vis:visibility, label:id_tok, args:binders, ret:id_tok, deps:ids, locals:dummies, value:expr |- "(" vis "def" label "(" args ")" "(" ret "(" deps ")" ")" "(" locals ")" value ")" : statement;
+      statement_theorem . vis:visibility, label:id_tok, args:binders, hypotheses:hyps, conclusion:expr, locals:dummies, body:proof |- "(" vis "theorem" label "(" args ")" "(" hypotheses ")" conclusion "(" locals ")" body ")" : statement;
+      statement_input . kind:id_tok |- "(" "input" kind ")" : statement;
+      statement_output . kind:id_tok |- "(" "output" kind ")" : statement;
+    }
+  }
+  Theory Files(s: Sorts) {
+    s Terms {
+      file_empty . |- : mmu_file;
+      file_more . first:statement, rest:mmu_file |- first rest : mmu_file;
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts() in (Exprs(s) \/ Binders(s) \/ Proofs(s) \/ Statements(s) \/ Files(s))
+  }
+  Theory Tokens() {
+    Types { TokenProfileData; }
+    Terms {
+      GetTokenProfile . |- "token-profile" : TokenProfileData;
+    }
+    Rewrites {
+      ReturnTokenProfile : (GetTokenProfile) ~>
+        "TokenProfileV2"(
+          "Start"("mmu_file"),
+          "Admissible"("Range"("33", "126")),
+          "Separator"("Points"("32", "10")),
+          "Delimiters"("Points"("40", "41")),
+          "LineComment"("--"),
+          "Class2"("id_tok", "Union"("Range"("65", "90"), "Range"("97", "122"), "Points"("95")),
+                             "Union"("Range"("65", "90"), "Range"("97", "122"), "Range"("48", "57"), "Points"("95"))),
+          "Except"("id_tok", "_"));
+    }
+  }
+  theory Grammar()
+}

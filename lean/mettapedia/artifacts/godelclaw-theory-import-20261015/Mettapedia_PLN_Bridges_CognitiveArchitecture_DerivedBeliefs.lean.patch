@@ -1,0 +1,58 @@
+--- pinned-namespace-adapted
++++ Mettapedia/PLN/Bridges/CognitiveArchitecture/DerivedBeliefs.lean
+@@ -40,16 +40,18 @@
+   and can exceed `P(C | A)` otherwise. `product_le_independence` shows that it
+   never exceeds PLN's independence-based deduction strength.
+ * `abduction_overstates`, `induction_overstates` and
+-  `analogy_conflicts_with_premise`: the other rules have no such condition. The
+-  abduction and induction strengths can reach `1` while the probability they
+-  estimate is small, and the analogy rule contradicts its own premise.
++  `analogy_conflicts_with_premise`: abduction can reach `1` while `P(A | B)`
++  is small. The induction expression labeled `Similarity(B, C)` is contrasted
++  numerically with `P(C | B)`; no semantics of Similarity is formalized here.
++  The analogy rule conflicts with its own premise under the supplied checker.
+ * `default_deduction_constant`: on the live branch an item without a stored
+   truth value gets `(stv 0.8 0.5)`, so every deduction over such items yields
+   the same truth value.
+-* `conclude_holds_iff`, `holds_erase_iff` and `holds_restore`: a conclusion
+-  that carries its support, the set of base facts it depends on, holds exactly
+-  when all its premises hold. Retracting a base fact withdraws exactly the
+-  conclusions that depend on it; restoring the fact restores them.
++* `conclude_holds_iff`, `holds_erase_iff` and `holds_restore`: the union of
++  premise supports is contained in the live base exactly when each premise
++  support is contained in it. Retracting a base entry invalidates exactly the
++  supports that contain it; restoring the entry restores availability. These
++  are support-availability laws, not logical truth or inference-soundness laws.
+   `orphan_survives_upstream` shows the upstream gap: a derived item outlives
+   the premise it was derived from.
+ 
+@@ -116,8 +118,8 @@
+   omega
+ 
+ /-- On the master branch every relation is exclusive, so three compatible
+-`has` facts about one subject form a conflict of severity `0.9`, enough for
+-eviction. -/
++`has` facts about one subject are reported as a conflict. This theorem does
++not assert eviction; `three_objects_only_penalize` gives that separate control. -/
+ theorem master_flags_consistent_has :
+     let T : List (Triple ℕ Rel) := [⟨0, .has, 1⟩, ⟨0, .has, 2⟩, ⟨0, .has, 3⟩]
+     Conflict T .has 0 := ⟨1, 2, by simp, by simp, by decide⟩
+@@ -280,7 +282,8 @@
+ /-- The support of a conclusion: the union of its premises' supports. -/
+ def conclude (ps : List (Finset B)) : Finset B := ps.foldr (· ∪ ·) ∅
+ 
+-/-- A conclusion holds exactly when every premise holds. -/
++/-- A conclusion's union support is available exactly when each premise's
++support is available. Logical truth and rule soundness are not modeled here. -/
+ theorem conclude_holds_iff (live : Finset B) (ps : List (Finset B)) :
+     conclude ps ⊆ live ↔ ∀ p ∈ ps, p ⊆ live := by
+   induction ps with
+@@ -301,7 +304,7 @@
+   · rintro ⟨h, hb⟩ x hx
+     exact Finset.mem_erase.mpr ⟨fun hxb => hb (hxb ▸ hx), h hx⟩
+ 
+-/-- Restoring the fact restores exactly the conclusions that held before. -/
++/-- Restoring the base entry restores exactly the supports available before. -/
+ theorem holds_restore (live : Finset B) (b : B) (hb : b ∈ live) (s : Finset B) :
+     s ⊆ insert b (live.erase b) ↔ s ⊆ live := by
+   rw [Finset.insert_erase hb]

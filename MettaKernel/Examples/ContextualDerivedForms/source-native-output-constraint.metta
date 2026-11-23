@@ -1,0 +1,12 @@
+!(collapse (let False (add-atom &self (event forbidden)) chosen))
+!(collapse (match &self (event $x) $x))
+!(collapse (let False
+    (add-atom (let $ignored (add-atom &self (event argument)) &self) (event forbidden2))
+    chosen))
+!(collapse (match &self (event $x) $x))
+!(collapse (let False (add-atom invalid-space (event forbidden3)) chosen))
+!(collapse (match &self (event $x) $x))
+!(collapse (let True (add-atom &self (event accepted)) chosen))
+!(collapse (match &self (event $x) $x))
+!(let $result (add-atom &self (flag $result)) $result)
+!(collapse (match &self (flag $value) $value))

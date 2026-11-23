@@ -1,0 +1,9 @@
+fused: predicates=3 comparisons=0 cells=1 price=4
+prepared: predicates=6 comparisons=6 cells=5 price=17
+same result=true
+changed selection refused=true
+pause charge=4; resumed charge=5
+prepared pause charge=17; resumed charge=23
+mixed refused=true; remaining-seven=2
+dense-first refused=true; remaining-seven=1
+mixed accepted=2; remaining-eight=1

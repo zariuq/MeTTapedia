@@ -1,0 +1,5 @@
+(= (even Z) True)
+(= (even (S $n)) (odd $n))
+(= (odd Z) False)
+(= (odd (S $n)) (even $n))
+!(odd (S (S (S Z))))

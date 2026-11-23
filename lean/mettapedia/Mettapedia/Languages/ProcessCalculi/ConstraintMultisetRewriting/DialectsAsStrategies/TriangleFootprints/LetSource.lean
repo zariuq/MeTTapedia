@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.CompletedInvocation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.LetPlain
 
 /-!
@@ -552,135 +553,120 @@ theorem unify_atom_source {atoms : List Atom} (program : LetProgram atoms) {x : 
         rcases member with rfl | rfl | rfl | rfl <;> exact Or.inr rfl)
       chosen
   have clean := instance'.clean
-  cases derived with
-  | delivered entered => cases Entry.functional entered entry
-  | cast entered => cases Entry.functional entered entry
-  | tuple _ shaped occurs _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      rw [Entry.Value.erase_ofAtom] at occurs
-      have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-        program.unifyTypes.occurrences
-      simp [Atom.undefinedType] at same
-  | fallback _ shaped chosen _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  obtain ⟨_, chosen, invocation⟩ :=
+    (Completed.AtomRel.iff_invocation entry shape (fun occurs => by
+        rw [Entry.Value.erase_ofAtom] at occurs
+        have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
+          program.unifyTypes.occurrences
+        simp [Atom.undefinedType] at same)).mp derived
+  cases invocation with
+  | fallback _ _ _ =>
       obtain ⟨_, _, _, impossible, _⟩ := selection chosen
       cases impossible
-  | selectionFailed _ shaped chosen _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  | failed _ =>
       obtain ⟨_, _, _, impossible, _⟩ := selection chosen
       cases impossible
-  | function _ shaped chosen invoked priority =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, rfl⟩ := shaped
+  | selected invoked priority =>
       obtain ⟨signature, after, functionType, selected, afterBindings, afterPlain⟩ := selection chosen
       simp only [Completed.InvocationSelection.selected.injEq] at selected
       obtain ⟨rfl, rfl⟩ := selected
       have projections := LetPlain.unify_projections functionType
-      cases invoked with
-      | cons function calls rest =>
-          cases rest
-          cases function with
-          | evaluated _ operatorRel branches =>
-              rw [functionType] at operatorRel
-              obtain ⟨frU, rfl, frUBindings, frUPlain⟩ := cast_keeps unify_data
-                (arrow_cast_entry (by decide) (by decide) ⟨_, rfl⟩) program.unifyTypes
-                LetPlain.Controls.unifyArrow_closed unifyArrow_keeps
-                (fun frame => ⟨_, Completed.Frame.preserved_type_match policy frame
-                  (LetPlain.unifyArrow_matches _)⟩) operatorRel
-              have plainU : PlainEnv frU.environment := frUPlain (afterPlain work.plain)
-              have bindingsU : frU.bindings = G.bindings := by rw [frUBindings, afterBindings]
-              have frModel : TypeBindingSatisfied m frU.bindings := by rw [bindingsU]; exact mModel
-              have notStoppedA : ¬ IsEmptyOrErrorRel (frU.read policy wA).erase :=
-                not_stopped_of_apply (m := m) (c := d)
-                  (by rw [LetFrontier.read_sound policy frU _ frModel]; exact (seesR m mModel).1)
-                  call.data.not_stopped
-              have notStoppedP : ¬ IsEmptyOrErrorRel (frU.read policy wP).erase :=
-                not_stopped_of_apply (m := m) (c := .var x)
-                  (by rw [LetFrontier.read_sound policy frU _ frModel, (seesR m mModel).2.1, mx])
-                  (var_not_stopped x)
-              have notStoppedT : ¬ IsEmptyOrErrorRel (frU.read policy wT).erase :=
-                not_stopped_of_apply (m := m) (c := b)
-                  (by rw [LetFrontier.read_sound policy frU _ frModel, (seesR m mModel).2.2,
-                    fixed_of_model call.onlyX mx])
-                  notStoppedB
-              rw [projections.1] at branches
-              simp only [List.zip_cons_cons, List.zip_nil_right] at branches
-              cases branches with
-              | stopped stopped _ =>
-                  rw [Entry.Value.erase_ofAtom] at stopped
-                  exact absurd stopped unify_data.not_stopped
-              | continuing _ arguments restBranches =>
-                  cases restBranches
-                  cases arguments with
-                  | cons argA branchesA =>
-                      rw [AtomDemands.atom_demand_source argA] at branchesA
-                      cases branchesA with
-                      | stopped stopped _ => exact absurd stopped.1 notStoppedA
-                      | continuing _ argsP restA =>
-                          cases restA
-                          cases argsP with
-                          | cons argP branchesP =>
-                              rw [AtomDemands.atom_demand_source argP] at branchesP
-                              cases branchesP with
-                              | stopped stopped _ => exact absurd stopped.1 notStoppedP
-                              | continuing _ argsT restP =>
-                                  cases restP
-                                  cases argsT with
-                                  | cons argT branchesT =>
-                                      rw [AtomDemands.atom_demand_source argT] at branchesT
-                                      cases branchesT with
-                                      | stopped stopped _ => exact absurd stopped.1 notStoppedT
-                                      | continuing _ argsE restT =>
-                                          cases restT
-                                          cases argsE with
-                                          | cons argE branchesE =>
-                                              rw [AtomDemands.atom_demand_source argE] at branchesE
-                                              cases branchesE with
-                                              | stopped stopped _ =>
-                                                  exact (stopped.2 (by simp [read_symbol])).elim
-                                              | continuing _ argsNil restE =>
-                                                  cases restE
-                                                  cases argsNil
-                                                  rw [LetPlain.returnType_undefined projections.2]
-                                                    at calls
-                                                  simp only [List.map_cons, List.map_nil,
-                                                    List.append_nil, Completed.argumentPrepend_packet,
-                                                    Completed.functionAssemble,
-                                                    Entry.Value.unpackArguments_packet] at calls
-                                                  cases calls with
-                                                  | cons callRel restCalls =>
-                                                      cases restCalls
-                                                      simp only [Entry.Value.ofAtom, read_symbol]
-                                                        at callRel
-                                                      have answered := unify_call_source
-                                                        call.onlyX instance' plainU
-                                                        (LetPlain.read_plain policy frU plainU plainA)
-                                                        (LetPlain.read_plain policy frU plainU plainP)
-                                                        (LetPlain.read_plain policy frU plainU plainT)
-                                                        (fun v model => by
-                                                          have gModel : TypeBindingSatisfied v
-                                                              G.bindings := by
-                                                            rw [← bindingsU]; exact model
-                                                          obtain ⟨isA, isP, isT⟩ := seesR v gModel
-                                                          refine ⟨?_, ?_, ?_⟩
-                                                          · rw [LetFrontier.read_sound policy frU _
-                                                              model, isA]
-                                                          · rw [LetFrontier.read_sound policy frU _
-                                                              model, isP]
-                                                          · rw [LetFrontier.read_sound policy frU _
-                                                              model, isT])
-                                                        (by rw [bindingsU]; exact work.solvable)
-                                                        callRel
-                                                      simp only [List.append_nil] at priority
-                                                      exact TypedEveryRun.publish_answers answered
-                                                        clean priority
+      obtain ⟨_, function, calls⟩ := Completed.InvocationsRel.singleton_iff.mp invoked
+      cases function with
+      | evaluated _ operatorRel branches =>
+          rw [functionType] at operatorRel
+          obtain ⟨frU, rfl, frUBindings, frUPlain⟩ := cast_keeps unify_data
+            (arrow_cast_entry (by decide) (by decide) ⟨_, rfl⟩) program.unifyTypes
+            LetPlain.Controls.unifyArrow_closed unifyArrow_keeps
+            (fun frame => ⟨_, Completed.Frame.preserved_type_match policy frame
+              (LetPlain.unifyArrow_matches _)⟩) operatorRel
+          have plainU : PlainEnv frU.environment := frUPlain (afterPlain work.plain)
+          have bindingsU : frU.bindings = G.bindings := by rw [frUBindings, afterBindings]
+          have frModel : TypeBindingSatisfied m frU.bindings := by rw [bindingsU]; exact mModel
+          have notStoppedA : ¬ IsEmptyOrErrorRel (frU.read policy wA).erase :=
+            not_stopped_of_apply (m := m) (c := d)
+              (by rw [LetFrontier.read_sound policy frU _ frModel]; exact (seesR m mModel).1)
+              call.data.not_stopped
+          have notStoppedP : ¬ IsEmptyOrErrorRel (frU.read policy wP).erase :=
+            not_stopped_of_apply (m := m) (c := .var x)
+              (by rw [LetFrontier.read_sound policy frU _ frModel, (seesR m mModel).2.1, mx])
+              (var_not_stopped x)
+          have notStoppedT : ¬ IsEmptyOrErrorRel (frU.read policy wT).erase :=
+            not_stopped_of_apply (m := m) (c := b)
+              (by rw [LetFrontier.read_sound policy frU _ frModel, (seesR m mModel).2.2,
+                fixed_of_model call.onlyX mx])
+              notStoppedB
+          rw [projections.1] at branches
+          simp only [List.zip_cons_cons, List.zip_nil_right] at branches
+          cases branches with
+          | stopped stopped _ =>
+              rw [Entry.Value.erase_ofAtom] at stopped
+              exact absurd stopped unify_data.not_stopped
+          | continuing _ arguments restBranches =>
+              cases restBranches
+              cases arguments with
+              | cons argA branchesA =>
+                  rw [AtomDemands.atom_demand_source argA] at branchesA
+                  cases branchesA with
+                  | stopped stopped _ => exact absurd stopped.1 notStoppedA
+                  | continuing _ argsP restA =>
+                      cases restA
+                      cases argsP with
+                      | cons argP branchesP =>
+                          rw [AtomDemands.atom_demand_source argP] at branchesP
+                          cases branchesP with
+                          | stopped stopped _ => exact absurd stopped.1 notStoppedP
+                          | continuing _ argsT restP =>
+                              cases restP
+                              cases argsT with
+                              | cons argT branchesT =>
+                                  rw [AtomDemands.atom_demand_source argT] at branchesT
+                                  cases branchesT with
+                                  | stopped stopped _ => exact absurd stopped.1 notStoppedT
+                                  | continuing _ argsE restT =>
+                                      cases restT
+                                      cases argsE with
+                                      | cons argE branchesE =>
+                                          rw [AtomDemands.atom_demand_source argE] at branchesE
+                                          cases branchesE with
+                                          | stopped stopped _ =>
+                                              exact (stopped.2 (by simp [read_symbol])).elim
+                                          | continuing _ argsNil restE =>
+                                              cases restE
+                                              cases argsNil
+                                              rw [LetPlain.returnType_undefined projections.2]
+                                                at calls
+                                              simp only [List.map_cons, List.map_nil,
+                                                List.append_nil, Completed.argumentPrepend_packet,
+                                                Completed.functionAssemble,
+                                                Entry.Value.unpackArguments_packet] at calls
+                                              cases calls with
+                                              | cons callRel restCalls =>
+                                                  cases restCalls
+                                                  simp only [Entry.Value.ofAtom, read_symbol]
+                                                    at callRel
+                                                  have answered := unify_call_source
+                                                    call.onlyX instance' plainU
+                                                    (LetPlain.read_plain policy frU plainU plainA)
+                                                    (LetPlain.read_plain policy frU plainU plainP)
+                                                    (LetPlain.read_plain policy frU plainU plainT)
+                                                    (fun v model => by
+                                                      have gModel : TypeBindingSatisfied v
+                                                          G.bindings := by
+                                                        rw [← bindingsU]; exact model
+                                                      obtain ⟨isA, isP, isT⟩ := seesR v gModel
+                                                      refine ⟨?_, ?_, ?_⟩
+                                                      · rw [LetFrontier.read_sound policy frU _
+                                                          model, isA]
+                                                      · rw [LetFrontier.read_sound policy frU _
+                                                          model, isP]
+                                                      · rw [LetFrontier.read_sound policy frU _
+                                                          model, isT])
+                                                    (by rw [bindingsU]; exact work.solvable)
+                                                    callRel
+                                                  simp only [List.append_nil] at priority
+                                                  exact TypedEveryRun.publish_answers answered
+                                                    clean priority
 
 /-! ## The query of `let`'s row -/
 
@@ -914,123 +900,108 @@ theorem let_source {atoms : List Atom} (program : LetProgram atoms) {x : String}
   have notStoppedB : ¬ IsEmptyOrErrorRel b :=
     not_stopped_of_apply (m := fun y => if y = x then d else .var y) (c := inst x d b) rfl
       instance'.facts.notStopped
-  cases derived with
-  | delivered entered => cases Entry.functional entered entry
-  | cast entered => cases Entry.functional entered entry
-  | tuple _ shaped occurs _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      rw [Entry.Value.erase_ofAtom] at occurs
-      have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-        program.letTypes.occurrences
-      simp [Atom.undefinedType] at same
-  | fallback _ shaped chosen _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  obtain ⟨_, chosen, invocation⟩ :=
+    (Completed.AtomRel.iff_invocation entry shape (fun occurs => by
+        rw [Entry.Value.erase_ofAtom] at occurs
+        have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
+          program.letTypes.occurrences
+        simp [Atom.undefinedType] at same)).mp derived
+  cases invocation with
+  | fallback _ _ _ =>
       obtain ⟨_, _, _, impossible, _⟩ := selection chosen
       cases impossible
-  | selectionFailed _ shaped chosen _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  | failed _ =>
       obtain ⟨_, _, _, impossible, _⟩ := selection chosen
       cases impossible
-  | function _ shaped chosen invoked priority =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, rfl⟩ := shaped
+  | selected invoked priority =>
       obtain ⟨signature, after, functionType, selected, afterBindings, afterPlain⟩ := selection chosen
       simp only [Completed.InvocationSelection.selected.injEq] at selected
       obtain ⟨rfl, rfl⟩ := selected
       have projections := LetPlain.let_projections functionType
-      cases invoked with
-      | cons function calls rest =>
-          cases rest
-          cases function with
-          | evaluated _ operatorRel branches =>
-              rw [functionType] at operatorRel
-              obtain ⟨frF, rfl, frFBindings, frFPlain⟩ := cast_keeps let_data
-                (arrow_cast_entry (by decide) (by decide) ⟨_, rfl⟩) program.letTypes
-                LetPlain.Controls.letArrow_closed letArrow_keeps
-                (fun frame => ⟨_, Completed.Frame.preserved_type_match policy frame
-                  (LetPlain.letArrow_matches _)⟩) operatorRel
-              have emptyFF : frF.bindings = Bindings.empty := by
-                rw [frFBindings, afterBindings, emptyF]
-              have plainFF : PlainEnv frF.environment := frFPlain (afterPlain plainF)
-              have notStoppedX : ¬ IsEmptyOrErrorRel
-                  (frF.read policy (Entry.Value.ofAtom (.var x))).erase := by
-                rw [read_ofAtom_of_empty policy frF emptyFF plainFF, Entry.Value.erase_ofAtom]
-                exact var_not_stopped x
-              rw [projections.1] at branches
-              simp only [List.map_cons, List.map_nil, List.zip_cons_cons, List.zip_nil_right]
-                at branches
-              cases branches with
-              | stopped stopped _ =>
-                  rw [Entry.Value.erase_ofAtom] at stopped
-                  exact absurd stopped let_data.not_stopped
-              | continuing _ arguments restBranches =>
-                  cases restBranches
-                  cases arguments with
-                  | cons argX branchesX =>
-                      rw [AtomDemands.atom_demand_source argX] at branchesX
-                      cases branchesX with
-                      | stopped stopped _ => exact absurd stopped.1 notStoppedX
-                      | continuing _ argsD restX =>
-                          cases restX
-                          cases argsD with
-                          | cons argD branchesD =>
-                              obtain ⟨frD, rfl, frDBindings, frDPlain⟩ := cast_keeps call.data
-                                (call.data.entry _) typesD closedD
-                                (fun matched => matched.undefined_output)
-                                (fun frame => TypedEveryRun.undefined_accepts Td frame) argD
-                              have emptyFD : frD.bindings = Bindings.empty := by
-                                rw [frDBindings, emptyFF]
-                              have plainFD : PlainEnv frD.environment := frDPlain plainFF
-                              have notStoppedD : ¬ IsEmptyOrErrorRel (Entry.Value.ofAtom d).erase := by
-                                rw [Entry.Value.erase_ofAtom]
-                                exact call.data.not_stopped
-                              cases branchesD with
-                              | stopped stopped _ => exact absurd stopped.1 notStoppedD
-                              | continuing _ argsB restD =>
-                                  cases restD
-                                  cases argsB with
-                                  | cons argB branchesB =>
-                                      rw [AtomDemands.atom_demand_source argB] at branchesB
-                                      cases branchesB with
-                                      | stopped stopped _ =>
-                                          have readB := read_ofAtom_of_empty policy frD emptyFD
-                                            plainFD b
-                                          have stoppedB := stopped.1
-                                          simp only [readB, Entry.Value.erase_ofAtom] at stoppedB
-                                          exact absurd stoppedB notStoppedB
-                                      | continuing _ argsNil restB =>
-                                          cases restB
-                                          cases argsNil
-                                          rw [LetPlain.returnType_undefined projections.2] at calls
-                                          simp only [List.map_cons, List.map_nil, List.append_nil,
-                                            Completed.argumentPrepend_packet,
-                                            Completed.functionAssemble,
-                                            Entry.Value.unpackArguments_packet] at calls
-                                          cases calls with
-                                          | cons callRel restCalls =>
-                                              cases restCalls
-                                              simp only [read_ofAtom_of_empty policy frF emptyFF
-                                                plainFF, read_ofAtom_of_empty policy frD emptyFD
-                                                plainFD] at callRel
-                                              have valueEq : (Entry.Value.expression .active
-                                                  [Entry.Value.ofAtom (.symbol "let"),
-                                                    Entry.Value.ofAtom (.var x), Entry.Value.ofAtom d,
-                                                    Entry.Value.ofAtom b]) =
-                                                  Entry.Value.ofAtom (letCall x d b) := by
-                                                simp [letCall, Entry.Value.ofAtom]
-                                              rw [valueEq] at callRel
-                                              have answered := let_query_source program
-                                                (call := call) instance' emptyFD plainFD callRel
-                                              simp only [List.append_nil] at priority
-                                              exact TypedEveryRun.publish_answers answered
-                                                instance'.clean priority
+      obtain ⟨_, function, calls⟩ := Completed.InvocationsRel.singleton_iff.mp invoked
+      cases function with
+      | evaluated _ operatorRel branches =>
+          rw [functionType] at operatorRel
+          obtain ⟨frF, rfl, frFBindings, frFPlain⟩ := cast_keeps let_data
+            (arrow_cast_entry (by decide) (by decide) ⟨_, rfl⟩) program.letTypes
+            LetPlain.Controls.letArrow_closed letArrow_keeps
+            (fun frame => ⟨_, Completed.Frame.preserved_type_match policy frame
+              (LetPlain.letArrow_matches _)⟩) operatorRel
+          have emptyFF : frF.bindings = Bindings.empty := by
+            rw [frFBindings, afterBindings, emptyF]
+          have plainFF : PlainEnv frF.environment := frFPlain (afterPlain plainF)
+          have notStoppedX : ¬ IsEmptyOrErrorRel
+              (frF.read policy (Entry.Value.ofAtom (.var x))).erase := by
+            rw [read_ofAtom_of_empty policy frF emptyFF plainFF, Entry.Value.erase_ofAtom]
+            exact var_not_stopped x
+          rw [projections.1] at branches
+          simp only [List.map_cons, List.map_nil, List.zip_cons_cons, List.zip_nil_right]
+            at branches
+          cases branches with
+          | stopped stopped _ =>
+              rw [Entry.Value.erase_ofAtom] at stopped
+              exact absurd stopped let_data.not_stopped
+          | continuing _ arguments restBranches =>
+              cases restBranches
+              cases arguments with
+              | cons argX branchesX =>
+                  rw [AtomDemands.atom_demand_source argX] at branchesX
+                  cases branchesX with
+                  | stopped stopped _ => exact absurd stopped.1 notStoppedX
+                  | continuing _ argsD restX =>
+                      cases restX
+                      cases argsD with
+                      | cons argD branchesD =>
+                          obtain ⟨frD, rfl, frDBindings, frDPlain⟩ := cast_keeps call.data
+                            (call.data.entry _) typesD closedD
+                            (fun matched => matched.undefined_output)
+                            (fun frame => TypedEveryRun.undefined_accepts Td frame) argD
+                          have emptyFD : frD.bindings = Bindings.empty := by
+                            rw [frDBindings, emptyFF]
+                          have plainFD : PlainEnv frD.environment := frDPlain plainFF
+                          have notStoppedD : ¬ IsEmptyOrErrorRel (Entry.Value.ofAtom d).erase := by
+                            rw [Entry.Value.erase_ofAtom]
+                            exact call.data.not_stopped
+                          cases branchesD with
+                          | stopped stopped _ => exact absurd stopped.1 notStoppedD
+                          | continuing _ argsB restD =>
+                              cases restD
+                              cases argsB with
+                              | cons argB branchesB =>
+                                  rw [AtomDemands.atom_demand_source argB] at branchesB
+                                  cases branchesB with
+                                  | stopped stopped _ =>
+                                      have readB := read_ofAtom_of_empty policy frD emptyFD
+                                        plainFD b
+                                      have stoppedB := stopped.1
+                                      simp only [readB, Entry.Value.erase_ofAtom] at stoppedB
+                                      exact absurd stoppedB notStoppedB
+                                  | continuing _ argsNil restB =>
+                                      cases restB
+                                      cases argsNil
+                                      rw [LetPlain.returnType_undefined projections.2] at calls
+                                      simp only [List.map_cons, List.map_nil, List.append_nil,
+                                        Completed.argumentPrepend_packet,
+                                        Completed.functionAssemble,
+                                        Entry.Value.unpackArguments_packet] at calls
+                                      cases calls with
+                                      | cons callRel restCalls =>
+                                          cases restCalls
+                                          simp only [read_ofAtom_of_empty policy frF emptyFF
+                                            plainFF, read_ofAtom_of_empty policy frD emptyFD
+                                            plainFD] at callRel
+                                          have valueEq : (Entry.Value.expression .active
+                                              [Entry.Value.ofAtom (.symbol "let"),
+                                                Entry.Value.ofAtom (.var x), Entry.Value.ofAtom d,
+                                                Entry.Value.ofAtom b]) =
+                                              Entry.Value.ofAtom (letCall x d b) := by
+                                            simp [letCall, Entry.Value.ofAtom]
+                                          rw [valueEq] at callRel
+                                          have answered := let_query_source program
+                                            (call := call) instance' emptyFD plainFD callRel
+                                          simp only [List.append_nil] at priority
+                                          exact TypedEveryRun.publish_answers answered
+                                            instance'.clean priority
 
 /-- **At HE's entry**: every derivation for `(let $x d b)` publishes the instance's answers. -/
 theorem let_entry_source {atoms : List Atom} (program : LetProgram atoms) {x : String} {d b : Atom}

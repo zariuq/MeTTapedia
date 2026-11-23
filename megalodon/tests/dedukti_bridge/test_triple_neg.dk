@@ -18,11 +18,11 @@ cons : (Prop -> (prop_clause -> prop_clause)).
 clause : Type.
 cl : (prop_clause -> clause).
 
-Prf_prop_clause : (prop_clause -> Type).
+def Prf_prop_clause : (prop_clause -> Type).
 [] Prf_prop_clause ec --> (Prf false).
 [p, c] Prf_prop_clause (cons p c) --> ((Prf p -> Prf false) -> (Prf_prop_clause c)).
 
-Prf_clause : (clause -> Type).
+def Prf_clause : (clause -> Type).
 [c] Prf_clause (cl c) --> (Prf_prop_clause c).
 
 deduction46 : (v0 : Set) -> (v1 : Set) -> (v2 : Set) ->

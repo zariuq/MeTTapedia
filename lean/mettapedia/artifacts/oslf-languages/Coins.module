@@ -1,0 +1,25 @@
+Module Coins {
+  Theory Coins() {
+    Types {
+      Side;
+      Coin;
+      Nat;
+    }
+    Terms {
+      "H" .  |-  : Side;
+      "T" .  |-  : Side;
+      "Toss" .  |-  : Coin;
+      "Show" . s:Side |-  : Coin;
+      "Z" .  |-  : Nat;
+      "S" . n:Nat |-  : Nat;
+    }
+    Equations {
+    }
+    Rewrites {
+      TossH : "Toss" ~> "H";
+      TossT : "Toss" ~> "T";
+      "Reveal" . s:Side |- "Show"(s) ~> s;
+    }
+  }
+  theory Coins()
+}

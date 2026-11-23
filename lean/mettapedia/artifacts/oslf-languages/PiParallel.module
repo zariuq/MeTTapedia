@@ -1,0 +1,24 @@
+Module PiParallelFragment {
+  Theory PiParallelFragment() {
+    Types {
+      Proc;
+      Name;
+    }
+    Terms {
+      "PiNil" .  |- "0" : Proc;
+      "PiPar" . ps:HashBag(Proc) |- "{" ps sep("|") "}" : Proc ![flatten, unit "PiNil"];
+      "PiInp" . x:Name, ^body:[Name -> Proc] |- x "(" "y" ")" "." body : Proc;
+      "PiOut" . x:Name, z:Name |- x "<" z ">" : Proc;
+      "PiNu" . ^body:[Name -> Proc] |- "ν" body : Proc;
+      "PiRep" . p:Proc |- "!" p : Proc;
+    }
+    Equations {
+    }
+    Rewrites {
+      "Comm" . x:Name, body:Proc, z:Name |- {"PiInp"(x, ^.body), "PiOut"(x, z), ...rest} ~> {[z/#0]body, ...rest};
+      ParCong : if S ~> T then {S, ...rest} ~> {T, ...rest};
+      ResCong : if S ~> T then "PiNu"(^.S) ~> "PiNu"(^.T);
+    }
+  }
+  theory PiParallelFragment()
+}

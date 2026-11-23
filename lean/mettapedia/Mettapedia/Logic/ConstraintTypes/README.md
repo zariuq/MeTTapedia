@@ -118,6 +118,22 @@ declared nominal type, or the structural tuple of its elements), so in any PeTTa
 model containing these facts an unshared parameter imposes no check on a ground
 argument (`waive_entry_iff_on_ground`, `waive_joint_iff_on_ground`).
 
+`RuntimeTyping.UnclassifiedWitnesses` compares two witnesses for a symbol
+without a proper declaration: one `UnclassifiedSymbol` for every such symbol
+(`merged`), or a separate witness for a callable symbol, which `get-metatype`
+reports as `Grounded` (`split`). Contracts read a value through the metatype
+patterns, the primitive tests, host types and declared types; the concepts of
+the resulting apartness (the distinction calculus's `Exclusion.IsConcept`) are
+the classes no reading splits. The split witness of an undeclared symbol is
+exactly the class of values no reading tells apart from it
+(`split_extent_eq_conceptOf`) and fixes the metatype of its members
+(`split_metatype_of_witness`). The merged witness is a concept but not the class
+of any member, and no table from witnesses to metatypes exists for it
+(`merged_extent_ne_conceptOf`, `merged_no_metatype_table`). Coverage and the
+waiver hold under both policies; the split policy refuses exactly the merged
+sharings between undeclared symbols of different metatypes (`share_split_iff`),
+and its witness changes exactly when the metatype does (`split_witness_eq_iff`).
+
 `CheckCost` counts element checks for a structural element-wise check.
 Re-checking every known element after each arrival costs `n (n + 1) / 2` checks
 for `n` arrivals (`revalidation_quadratic`). Checking each arrival once costs `n`

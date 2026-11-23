@@ -15,6 +15,7 @@ open Mettapedia.GSLT.LanguageDef.ModuleSource.Commands
 #module_file "../module/godelclaw/StreamEvents.module"
 #module_file "../module/godelclaw/ToolCalls.module"
 #module_file "../module/godelclaw/ComponentAPI.module"
+#module_file "../module/godelclaw/AccessPolicy.module"
 #module_file "../../../lean/mettapedia/artifacts/oslf-languages/Aliased.module"
 #module_file "../../../lean/mettapedia/artifacts/oslf-languages/AmbientComm.module"
 #module_file "../../../lean/mettapedia/artifacts/oslf-languages/AmbientNu.module"
@@ -45,7 +46,7 @@ open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 def readings : List (String × ModuleData) := [("UnivAlg", UnivAlg.module), ("Rholang", Rholang.module),
     ("RegexCore", RegexCore.module), ("RetryWake", GodelClawRetryWake.module),
     ("StreamEvents", StreamEvents.module), ("ToolCalls", ToolCalls.module),
-    ("ComponentAPI", ComponentAPI.module),
+    ("ComponentAPI", ComponentAPI.module), ("AccessPolicy", GodelClawAccessPolicy.module),
     ("Aliased", AliasedAsWritten.module),
     ("AmbientComm", MobileAmbientsComm.module),
     ("AmbientNu", MobileAmbientsNu.module),

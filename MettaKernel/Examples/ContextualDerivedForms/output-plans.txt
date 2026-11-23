@@ -1,0 +1,79 @@
+Output plans, early constraints and explicit branch policies
+
+The source-facing streaming controller now consumes a static output-plan
+compilation component. Each plan separates a literal result term from its
+producing goals. Procedures receive an extra result argument and meet the
+exposed result with that argument before running their goals. The formal is a
+variable, so a result constructor named cons is not interpreted as an
+equation-head list view. Original equations remain public source data;
+generated procedures live in private code and avoid authored equation and
+declaration heads.
+
+This lowers to existing quote, let, superpose, once, collapse, if, case and
+match controls in PeTTa/Streaming. It adds no evaluator. The consumer exercises
+nested bindings, literal data, static complete-arity calls, recursion, passive
+argument patterns and a selected native ABI. Unknown constructors retain data
+meaning. Unsupported dynamic/control/partial regions decline compiler
+admission instead of becoming source-language empty answers. The structural
+compiler allowance is separate from evaluator fuel.
+
+source-initializer-constraint.metta now passes through this component. A
+constrained call excludes the rejected clause's effects; an unconstrained call
+retains both clauses. The old direct-streaming frontend's post-return binding
+is still a distinct, unqualified profile for this fixture. Its expected output
+has not changed.
+
+OutputPlanGate characterizes the actual literal gate above arbitrary caller
+frames and older jobs. Successful unification reaches the body with its
+bindings. A clash retains the reached world and enters no body goal. An
+unserved unifier retains its waiting frame instead of becoming exhaustion.
+The reference lowering has four entry transitions. This is not a requirement
+for four native instructions, a validation pass, or any C overhead.
+
+Native argument roles hold Atom payloads once rather than double quoting
+them. The selected source ABI's true result meets its destination after
+argument computation and before the write. Result/payload sharing can
+therefore change the stored atom. The native-output fixture checks rejected
+and accepted calls, an invalid location, required earlier argument effects
+and result/payload sharing.
+
+SWI's compiler has an observable branch policy: for nontrivial goals returning
+a variable, it may alias that variable with the shared result during
+compilation. Two inert let wrappers can merge formal inputs or change a later
+joint equality observation. Pure value branches instead get runtime equations.
+The inert and branch-effect fixtures retain this source evidence.
+
+The compiler exposes swiAliases and runtimeConstraints separately. The latter
+emits an equation within each branch and never creates compile-time aliases.
+OutputPlanPolicy proves that invariant for every successful term compilation,
+and proves that compiled procedures retain their original input patterns,
+followed by the fresh result formal. OutputPlanNames proves fresh/distinct
+reserved targets relative to supplied support and exact interface order.
+Neither policy is selected as a Prime default. The finite inert control is not
+a universal binding-erasure theorem.
+
+OutputPlanModel consumes seven fixtures and checks 49 observations: 39 under
+swiAliases and ten policy comparisons under runtimeConstraints. It uses the
+actual reader, compiler and streaming controller, rejecting unsupported
+admission and suspended/faulted runs explicitly. Recursive procedures compile
+once and retain earlier writes when a later result constraint fails. The
+constructor frontier preserves left,suffix,right,suffix.
+
+The four new independent SWI fixtures have 25 observations. A captured
+corrected-stable native executable agrees on the recursive fixture but differs
+on native-output constraints and SWI branch aliasing. The branch difference
+preserves useful inert-wrapper behavior in the native examples; it is not
+automatically a defect. The native output/effect ABI requires dialect-contract
+review. Calibration establishes neither source-to-binary correspondence nor
+a regression's introduction point. No C source was changed here.
+
+Whole compiler preservation/reflection, complete streaming scope/regions,
+compiler-local readout, dynamic authority, static computed heads, lambda/eta/
+native partials, overloaded typed alternatives and the remaining native modes
+are open. This static component does not restrict the ambient language.
+
+The compiler/rule formation connection is now checked in
+OutputPlanFormationCorrect and OutputPlanProgramFormation. The executable
+consumer carries an actual formation derivation. See output-plan-formation.txt
+for its exact scope. This is distinct from the still-open operational
+preservation/reflection theorem.

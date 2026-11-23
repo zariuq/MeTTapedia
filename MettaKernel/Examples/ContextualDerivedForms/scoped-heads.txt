@@ -1,0 +1,76 @@
+Scoped symbol recognition and publication specialization
+=======================================================
+
+The table model owns distinct immutable spellings and assigns positive IDs;
+zero is invalid. Compiling a finite family resolves its names once. Warm
+classification compares those IDs, retaining arity and question policy. If
+compilation is incomplete, the reference observation remains available.
+
+An address alone cannot identify a table lifetime. SymbolTableHeadCache uses
+an address/incarnation pair. Inserting names preserves old IDs; recreating the
+table changes the incarnation. A raw query addresses the current table. A
+retained reference additionally carries its owner and cannot silently change
+meaning when the same numeric ID is assigned another spelling.
+
+Transport copies the old spelling into the destination and returns that
+table's ID. transport_result proves validity, spelling preservation and the
+destination prefix property from the actual interning operation. The old table
+must still be readable; rejecting a retired ID is not a substitute for retaining
+or copying a value that source semantics requires to survive.
+
+SymbolHeadMemo uses the existing bounded admission-cache implementation with
+16 banks and one resident per bank. A bank collision is not a key match.
+Entries record family indices, not a Boolean answer to one arity question:
+failure at arity three cannot poison later recognition at arity two.
+
+SymbolHeadService combines the table cache and memo. cold_valid, inspect_valid
+and step_valid establish and maintain its representation and capacity invariant.
+service_square connects each operation to the independent spelling-based
+service. adaptive_exact, prefix_exact and resume_exact preserve ordered replies,
+the reached table, residual control and declared command charges. No previous
+interning or recreation is replayed on resume. These are protocol-inspection
+and declared-tariff results, not a measured native cache cost theorem.
+
+The lifecycle control first warms both caches, recreates the same address with
+reordered names, then queries the reused and relocated IDs. Carrying the old
+memo into the newly compiled family gives the wrong answer even when the family
+cache itself has been updated. The implemented rebuild resets that memo.
+
+TransformHeadRecognition instantiates the runtime's seven spellings. Recognition
+does not imply native admission or source callability. Its source adapters retain
+PeTTa's actual call, unknown-head and quote rules. transported_call_run connects
+actual head transfer to the independent source runner under any existing context
+and inspection budget, using the same live registry. Arguments here are source
+atoms; recursive native graph transport and changing registry authority are
+separate questions.
+
+The same derived consumer exercises append and first-removal work. On [1,2,4,6],
+first even removal returns [1,4,6], performs two predicate calls and constructs
+one prefix cell. Prepared selection plus rechecking/contraction has the same
+result for unique occurrence IDs and no smaller nonnegative weighted work.
+Identical payloads [7,7] demonstrate why payload equality cannot replace physical
+occurrence identity. Appending to a three-cell immutable list constructs three
+cells; first contracting an empty take set constructs another three. This last
+comparison is an abstract algorithm example, not CeTTa's scalar-add profile.
+
+Implementation obligations informed by the laws
+----------------------------------------------
+- Warm head detection: retain table-scoped IDs, preserve the complete key on a
+  memo hit, and invalidate both cache layers when their interpretation changes.
+- Live execution: apply current source/native admission after family recognition;
+  a recognized name does not freeze definitions, types, answers or authority.
+- Retained values: maintain real ownership or transport their representation.
+  Natural model incarnations do not resolve finite-counter exhaustion or prove
+  validity of C pointers, arenas, callbacks or concurrent writers.
+- Immediate removal: reuse completed selection only within its proved scope;
+  pure first-match deletion is not outer once over answerless effectful firings.
+- Immediate append: the semantic publication may specialize directly; these list
+  counts do not certify removal of a native record or absence of runtime loss.
+
+Run from the Lean project root:
+
+  lake env lean --run ../../MettaKernel/Examples/ContextualDerivedForms/ScopedHeadModel.lean
+
+Compare stdout with ScopedHeadModel.expected. All controls are derived from
+checked definitions. This consumer is not a native runtime qualification or
+a C-to-Lean correspondence proof.

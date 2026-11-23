@@ -1,0 +1,123 @@
+import "NaturalInduction.mm1";
+
+-- Concrete zero and successor from the existing HOL infinity and choice rules.
+-- The natural closure proofs above remain independent of those assumptions.
+theorem selectFromEx (G: wff) (A: type) (P: term)
+  (hp: $ G |- P: A -> bool $) (he: $ G |- ex A @ P $):
+  $ G |- P @ (sel A @ P) $ =
+'(!! CHOOSE x (appT hp (appT selT hp))
+  (eqmpr (aeq2 exT (!! eta x hp)) he)
+  (ax_sel (anwll hp) anr));
+
+def infiniteInjection =
+  $ \ f: ind -> ind. one_one ind ind @ f /\ ~(onto ind ind @ f) $;
+
+theorem infiniteInjectionT (G: wff):
+  $ G |- infiniteInjection: (ind -> ind) -> bool $ =
+'(!! lamT f @ andcT (appT one_one_T anr) (notcT (appT onto_T anr)));
+
+theorem infiniteInjectionBeta (G: wff) (f: term)
+  (hf: $ G |- f: ind -> ind $):
+  $ G |- infiniteInjection @ f <=>
+    one_one ind ind @ f /\ ~(onto ind ind @ f) $ =
+'(!! betac k (andcT (appT one_one_T anr) (notcT (appT onto_T anr))) hf
+  (andcT (appT one_one_T hf) (notcT (appT onto_T hf))) @
+  bineq andT (aeq2 one_one_T anr) (aeq2 notT (aeq2 onto_T anr)));
+
+def infiniteSuccessor = $ sel (ind -> ind) @ infiniteInjection $;
+
+pub theorem infiniteSuccessorT (G: wff):
+  $ G |- infiniteSuccessor: ind -> ind $ =
+'(appT selT infiniteInjectionT);
+
+theorem infiniteSuccessorFacts (G: wff):
+  $ G |- one_one ind ind @ infiniteSuccessor /\
+    ~(onto ind ind @ infiniteSuccessor) $ =
+'(eqmp (infiniteInjectionBeta infiniteSuccessorT) @
+  selectFromEx infiniteInjectionT (!! inf f));
+
+pub theorem infiniteSuccessorInjective (G: wff):
+  $ G |- one_one ind ind @ infiniteSuccessor $ =
+'(CONJUNCT1 infiniteSuccessorFacts);
+
+pub theorem infiniteSuccessorNotOnto (G: wff):
+  $ G |- ~(onto ind ind @ infiniteSuccessor) $ =
+'(CONJUNCT2 infiniteSuccessorFacts);
+
+def negativePredicate (A: type) (P: term) = $ \ x: A. ~(P @ x) $;
+
+theorem negativePredicateT (G: wff) (A: type) (P: term)
+  (hp: $ G |- P: A -> bool $):
+  $ G |- negativePredicate A P: A -> bool $ =
+'(!! lamT x @ notcT (appT (anwl hp) anr));
+
+theorem negativePredicateBeta (G: wff) (A: type) (P t: term)
+  (hp: $ G |- P: A -> bool $) (ht: $ G |- t: A $):
+  $ G |- negativePredicate A P @ t <=> ~(P @ t) $ =
+'(!! betac x (notcT (appT (anwl hp) anr)) ht (notcT (appT hp ht)) @
+  aeq2 notT (aeq2 (anwl hp) anr));
+
+-- If the selected counterexample satisfies P, then every element satisfies P.
+theorem selectedNegativeAll (G: wff) (A: type) (P: term) {x: term}
+  (hp: $ G |- P: A -> bool $)
+  (h: $ G |- P @ (sel A @ negativePredicate A P) $):
+  $ G |- !x: A. P @ x $ =
+'(!! GEN x @ CCONTR (appT (anwl hp) anr) @
+  MP (NOT_ELIM @ eqmp
+    (negativePredicateBeta (anwll hp) (appT selT (negativePredicateT (anwll hp)))) @
+    ax_sel (negativePredicateT (anwll hp)) @
+      eqmpr (negativePredicateBeta (anwll hp) anlr) anr)
+    (anwll h));
+
+theorem selectedCounterexample (G: wff) (A: type) (P: term) {x: term}
+  (hp: $ G |- P: A -> bool $) (h: $ G |- ~(!x: A. P @ x) $):
+  $ G |- ~(P @ (sel A @ negativePredicate A P)) $ =
+'(NOT_INTRO @ DISCH (appT hp (appT selT (negativePredicateT hp))) FT @
+  MP (NOT_ELIM (anwl h)) (!! selectedNegativeAll x (anwl hp) anr));
+
+def rangePredicate (A: type) (s: term) =
+  $ \ y: A. ?x: A. =[A] y = s @ x $;
+
+theorem rangePredicateT (G: wff) (A: type) (s: term)
+  (hs: $ G |- s: A -> A $):
+  $ G |- rangePredicate A s: A -> bool $ =
+'(!! lamT y @ !! excT x @ eqcT anlr (appT (anwll hs) anr));
+
+theorem rangePredicateBeta (G: wff) (A: type) (s y: term) {x: term}
+  (hs: $ G |- s: A -> A $) (hy: $ G |- y: A $):
+  $ G |- rangePredicate A s @ y <=> (?x: A. =[A] y = s @ x) $ =
+'(!! betac k (!! excT x @ eqcT anlr (appT (anwll hs) anr)) hy
+  (!! excT x @ eqcT (anwl hy) (appT (anwl hs) anr)) @
+  !! exeq x @ bineq1 eqT anlr (appT (anwll hs) anr));
+
+theorem notOntoSelectedCounterexample (G: wff) (A: type) (s: term)
+  (hs: $ G |- s: A -> A $) (h: $ G |- ~(onto A A @ s) $):
+  $ G |- ~(rangePredicate A s @ (sel A @ negativePredicate A (rangePredicate A s))) $ =
+'(!! selectedCounterexample y (rangePredicateT hs) @
+  eqmp (aeq2 notT @ trans (!! ONTO x y hs) @
+    sym @ !! alleq y @ !! rangePredicateBeta x (anwl hs) anr) h);
+
+def infiniteZero =
+  $ sel ind @ negativePredicate ind (rangePredicate ind infiniteSuccessor) $;
+
+pub theorem infiniteZeroT (G: wff): $ G |- infiniteZero: ind $ =
+'(appT selT (negativePredicateT (rangePredicateT infiniteSuccessorT)));
+
+pub theorem infiniteZeroNoPreimage (G: wff) {x: term}:
+  $ G |- ~(?x: ind. =[ind] infiniteZero = infiniteSuccessor @ x) $ =
+'(eqmp (aeq2 notT (!! rangePredicateBeta x infiniteSuccessorT infiniteZeroT)) @
+  notOntoSelectedCounterexample infiniteSuccessorT infiniteSuccessorNotOnto);
+
+theorem rangeWitness (G: wff) (A: type) (z s n: term) {x: term}
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $) (hn: $ G |- n: A $)
+  (h: $ G |- =[A] z = s @ n $):
+  $ G |- ?x: A. =[A] z = s @ x $ =
+'(!! EXISTS x (eqcT (anwl hz) (appT (anwl hs) anr)) hn
+  (bineq2 eqT (anwl hz) (aeq2 (anwl hs) anr)) h);
+
+pub theorem infiniteZeroNotSuccessor (G: wff) (n: term)
+  (hn: $ G |- n: ind $):
+  $ G |- ~(=[ind] infiniteZero = infiniteSuccessor @ n) $ =
+'(NOT_INTRO @ DISCH (eqcT infiniteZeroT (appT infiniteSuccessorT hn)) FT @
+  MP (NOT_ELIM (!! infiniteZeroNoPreimage x)) @
+    !! rangeWitness x infiniteZeroT infiniteSuccessorT (anwl hn) anr);

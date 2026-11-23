@@ -1,0 +1,89 @@
+import "NaturalType.mm0";
+
+def holRecursionGraph (A: type) (a f n v: term) {.r .k .w: term}: term =
+  $ !r: holNatural -> A -> bool. r @ holZero @ a ==>
+    (!k: holNatural. !w: A. r @ k @ w ==>
+      r @ (holSuccessor @ k) @ (f @ w @ k)) ==> r @ n @ v $;
+
+theorem holRecursionGraphElimination (G: wff) (A: type) (a f n v r: term) {previousIndex previousValue: term}:
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- n: holNatural $ >
+  $ G |- v: A $ >
+  $ G |- r: (holNatural -> (A -> bool)) $ >
+  $ G |- holRecursionGraph A a f n v $ >
+  $ G |- ((r @ holZero) @ a) $ >
+  $ G |- (! previousIndex: holNatural. (! previousValue: A. (((r @ previousIndex) @ previousValue) ==> ((r @ (holSuccessor @ previousIndex)) @ ((f @ previousValue) @ previousIndex))))) $ >
+  $ G |- ((r @ n) @ v) $;
+
+theorem holRecursionGraphZero (G: wff) (A: type) (a f: term):
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- holRecursionGraph A a f holZero a $;
+
+theorem holRecursionGraphSuccessor (G: wff) (A: type) (a f n v: term):
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- n: holNatural $ >
+  $ G |- v: A $ >
+  $ G |- holRecursionGraph A a f n v $ >
+  $ G |- holRecursionGraph A a f (holSuccessor @ n) ((f @ v) @ n) $;
+
+theorem holRecursionGraphExists (G: wff) (A: type) (a f n: term) {value: term}:
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- n: holNatural $ >
+  $ G |- (? value: A. holRecursionGraph A a f n value) $;
+
+theorem holRecursionGraphZeroUnique (G: wff) (A: type) (a f v: term):
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- v: A $ >
+  $ G |- holRecursionGraph A a f holZero v $ >
+  $ G |- (=[A] v = a) $;
+
+theorem holRecursionGraphSuccessorInverse (G: wff) (A: type) (a f n v: term) {prior: term}:
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- n: holNatural $ >
+  $ G |- v: A $ >
+  $ G |- holRecursionGraph A a f (holSuccessor @ n) v $ >
+  $ G |- (? prior: A. (holRecursionGraph A a f n prior /\ (=[A] v = ((f @ prior) @ n)))) $;
+
+theorem holRecursionGraphFunctional (G: wff) (A: type) (a f n v w: term):
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- n: holNatural $ >
+  $ G |- v: A $ >
+  $ G |- w: A $ >
+  $ G |- holRecursionGraph A a f n v $ >
+  $ G |- holRecursionGraph A a f n w $ >
+  $ G |- (=[A] v = w) $;
+
+def holRecursor (A: type) (a f: term) {.number .value: term}: term =
+  $ (\ number: holNatural. ((sel A) @ (\ value: A. holRecursionGraph A a f number value))) $;
+
+theorem holRecursorT (G: wff) (A: type) (a f: term):
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- holRecursor A a f: (holNatural -> A) $;
+
+theorem holRecursorGraph (G: wff) (A: type) (a f n: term):
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- n: holNatural $ >
+  $ G |- holRecursionGraph A a f n (holRecursor A a f @ n) $;
+
+theorem holRecursorZero (G: wff) (A: type) (a f: term):
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- (=[A] (holRecursor A a f @ holZero) = a) $;
+
+theorem holRecursorSuccessor (G: wff) (A: type) (a f n: term):
+  $ G |- a: A $ >
+  $ G |- f: (A -> (holNatural -> A)) $ >
+  $ G |- n: holNatural $ >
+  $ G |- (=[A] (holRecursor A a f @ (holSuccessor @ n)) = ((f @ (holRecursor A a f @ n)) @ n)) $;
+
+theorem holNaturalRecursion (G: wff) (A: type) {a f g n: term}:
+  $ G |- (! a: A. (! f: (A -> (holNatural -> A)). (? g: (holNatural -> A). ((=[A] (g @ holZero) = a) /\ (! n: holNatural. (=[A] (g @ (holSuccessor @ n)) = ((f @ (g @ n)) @ n))))))) $;

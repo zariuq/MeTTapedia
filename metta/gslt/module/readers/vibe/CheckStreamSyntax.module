@@ -1,0 +1,144 @@
+-- Vibe-ITP's checker input (the instruction stream `check.c` replays), as a GSLT presentation.
+--
+-- A checker file is a stream of instructions with no header and no end marker. Each instruction is
+-- one opcode byte followed by its operands; `check.c` turns each one into exactly one call of the
+-- kernel (`logic.c`), and no theorem statement is ever written: the kernel computes every result.
+--   00 01 0d             FVAR_NEW: a free variable of arity 1 in symbol slot 13
+--   05 02 68 69 07       TERM_NEW_LITERAL: the two bytes "hi" as a literal in term slot 7
+--   06 0d 01 07 08       TERM_NEW_APP: symbol 13 applied to term 7, in term slot 8
+--   1a 02 03 0d 0e 07 08 09
+--                        THM_INSTANTIATE_N: theorem 3 with symbols 13, 14 replaced by terms 7, 8
+--                        at once, in theorem slot 9
+-- An integer operand is a word: a byte 0..247 is its own value; a byte 247+k (1 <= k <= 8) is
+-- followed by the value's k little-endian bytes, and k is the fewest bytes that hold the value, as
+-- every encoder writes it (`write_uint` in check.c, `writeUint` in binary_export.cpp). A count
+-- word tells how many operands, or how many raw bytes, follow later in the same instruction; one
+-- count may govern two lists (THM_INSTANTIATE_N gives the count, then the theorem, then the symbols
+-- and the values). Each row below is one case of `process_file` in check.c, its operands in the
+-- order the step reads them, typed as binary_spec.md names them.
+--
+-- The grammar is composed from pieces over one shared set of sorts:
+--   Sorts          token and phrase sorts, declared once;
+--   SymbolOps      symbols: new free variables and constants, swap, free;
+--   TermOps        terms: bound variables, literals, applications, swap, free;
+--   TheoremOps     theorem slots: exchange, swap, free;
+--   ChallengeOps   registering a challenge;
+--   DefinitionOps  defining a constant by a closed term;
+--   SetupOps       what only a file before `--proofs` may do: add an axiom;
+--   ProofOps       what only a file after `--proofs` may do: satisfy a challenge, modus ponens,
+--                  instantiation of one or several free variables, the literal theorems, THM_JIT;
+--   Files          a setup file and a proof file.
+-- `Grammar` joins them over one `let`-bound Sorts value. A file read before `--proofs` is read
+-- from `setup_file`, a file after it from `proof_file`: the stage rules of check.c are which
+-- instructions each kind of file may hold.
+--
+-- `Tokens` is the lexical layer (BinaryTokens): words in the code above with 247 as the largest
+-- one-byte value; each opcode is a token sort of one byte; the operands are words of their role
+-- (a source slot of the symbol, term, theorem or challenge space; a destination slot; a plain
+-- value; a count); a list sort is as many words, and `bytes` as many raw bytes, as the nearest
+-- count to its left in the same row says.
+Module CheckStreamSyntax {
+  Theory Sorts() {
+    Types {
+      op0; op1; op2; op3; op4; op5; op6; op7; op8; op9; op10; op11; op12; op13;
+      op14; op15; op16; op17; op18; op19; op20; op21; op22; op23; op24; op25; op26;
+      u_nat; u_count; u_sym; u_term; u_thm; u_chal; u_dst_sym; u_dst_term; u_dst_thm; u_dst_chal;
+      u_nats; u_syms; u_terms; u_bytes;
+      instr; setup_instr; proof_instr; setup_file; proof_file;
+    }
+  }
+  Theory SymbolOps(s: Sorts) {
+    s Terms {
+      fvar_new . o:op0, arity:u_nat, d:u_dst_sym |- o arity d : instr;
+      const_new . o:op1, n:u_count, bs:u_nats, d:u_dst_sym |- o n bs d : instr;
+      symbol_swap . o:op2, i:u_sym, j:u_sym |- o i j : instr;
+      symbol_free . o:op3, i:u_sym |- o i : instr;
+    }
+  }
+  Theory TermOps(s: Sorts) {
+    s Terms {
+      term_new_bvar . o:op4, k:u_nat, d:u_dst_term |- o k d : instr;
+      term_new_literal . o:op5, n:u_count, bs:u_bytes, d:u_dst_term |- o n bs d : instr;
+      term_new_app . o:op6, f:u_sym, n:u_count, args:u_terms, d:u_dst_term |- o f n args d : instr;
+      term_swap . o:op7, i:u_term, j:u_term |- o i j : instr;
+      term_free . o:op8, i:u_term |- o i : instr;
+    }
+  }
+  Theory TheoremOps(s: Sorts) {
+    s Terms {
+      thm_exchange . o:op10, h:u_thm, t:u_term |- o h t : instr;
+      thm_free . o:op11, i:u_thm |- o i : instr;
+      thm_swap . o:op12, i:u_thm, j:u_thm |- o i j : instr;
+    }
+  }
+  Theory ChallengeOps(s: Sorts) {
+    s Terms {
+      challenge_add . o:op13, t:u_term, d:u_dst_chal |- o t d : instr;
+    }
+  }
+  Theory DefinitionOps(s: Sorts) {
+    s Terms {
+      define_const . o:op17, nf:u_count, fs:u_syms, nh:u_count, hs:u_nats, v:u_term, ds:u_dst_sym, dt:u_dst_thm |- o nf fs nh hs v ds dt : instr;
+    }
+  }
+  Theory SetupOps(s: Sorts) {
+    s Terms {
+      add_axiom . o:op9, t:u_term, d:u_dst_thm |- o t d : setup_instr;
+    }
+  }
+  Theory ProofOps(s: Sorts) {
+    s Terms {
+      challenge_satisfy . o:op14, c:u_chal, h:u_thm |- o c h : proof_instr;
+      modus_ponens . o:op15, a:u_thm, b:u_thm, d:u_dst_thm |- o a b d : proof_instr;
+      thm_instantiate . o:op16, h:u_thm, f:u_sym, v:u_term, d:u_dst_thm |- o h f v d : proof_instr;
+      thm_lit_is_nat . o:op18, n:u_nat, d:u_dst_thm |- o n d : proof_instr;
+      thm_lit_lt . o:op19, a:u_nat, b:u_nat, d:u_dst_thm |- o a b d : proof_instr;
+      thm_lit_add . o:op20, a:u_nat, b:u_nat, d:u_dst_thm |- o a b d : proof_instr;
+      thm_lit_mul . o:op21, a:u_nat, b:u_nat, d:u_dst_thm |- o a b d : proof_instr;
+      thm_lit_div . o:op22, a:u_nat, b:u_nat, d:u_dst_thm |- o a b d : proof_instr;
+      thm_lit_length . o:op23, t:u_term, d:u_dst_thm |- o t d : proof_instr;
+      thm_lit_get . o:op24, t:u_term, k:u_nat, d:u_dst_thm |- o t k d : proof_instr;
+      thm_jit . o:op25, h:u_thm, d:u_dst_thm, out:u_dst_term |- o h d out : proof_instr;
+      thm_instantiate_n . o:op26, n:u_count, h:u_thm, fs:u_syms, vs:u_terms, d:u_dst_thm |- o n h fs vs d : proof_instr;
+    }
+  }
+  Theory Files(s: Sorts) {
+    s Terms {
+      setup_end . |- : setup_file;
+      setup_common . first:instr, rest:setup_file |- first rest : setup_file;
+      setup_only . first:setup_instr, rest:setup_file |- first rest : setup_file;
+      proof_end . |- : proof_file;
+      proof_common . first:instr, rest:proof_file |- first rest : proof_file;
+      proof_only . first:proof_instr, rest:proof_file |- first rest : proof_file;
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts() in (SymbolOps(s) \/ TermOps(s) \/ TheoremOps(s) \/ ChallengeOps(s) \/ DefinitionOps(s) \/ SetupOps(s) \/ ProofOps(s) \/ Files(s))
+  }
+  Theory Tokens() {
+    Types { TokenProfileData; }
+    Terms {
+      GetTokenProfile . |- "token-profile" : TokenProfileData;
+    }
+    Rewrites {
+      ReturnTokenProfile : (GetTokenProfile) ~>
+        "BinaryTokenProfile"(
+          "Start"("proof_file"),
+          "VarUint"("247"),
+          "Byte"("op0", "Points"("0")), "Byte"("op1", "Points"("1")), "Byte"("op2", "Points"("2")),
+          "Byte"("op3", "Points"("3")), "Byte"("op4", "Points"("4")), "Byte"("op5", "Points"("5")),
+          "Byte"("op6", "Points"("6")), "Byte"("op7", "Points"("7")), "Byte"("op8", "Points"("8")),
+          "Byte"("op9", "Points"("9")), "Byte"("op10", "Points"("10")), "Byte"("op11", "Points"("11")),
+          "Byte"("op12", "Points"("12")), "Byte"("op13", "Points"("13")), "Byte"("op14", "Points"("14")),
+          "Byte"("op15", "Points"("15")), "Byte"("op16", "Points"("16")), "Byte"("op17", "Points"("17")),
+          "Byte"("op18", "Points"("18")), "Byte"("op19", "Points"("19")), "Byte"("op20", "Points"("20")),
+          "Byte"("op21", "Points"("21")), "Byte"("op22", "Points"("22")), "Byte"("op23", "Points"("23")),
+          "Byte"("op24", "Points"("24")), "Byte"("op25", "Points"("25")), "Byte"("op26", "Points"("26")),
+          "Word"("u_nat"), "Count"("u_count"),
+          "Word"("u_sym"), "Word"("u_term"), "Word"("u_thm"), "Word"("u_chal"),
+          "Word"("u_dst_sym"), "Word"("u_dst_term"), "Word"("u_dst_thm"), "Word"("u_dst_chal"),
+          "Words"("u_nats"), "Words"("u_syms"), "Words"("u_terms"), "Bytes"("u_bytes"));
+    }
+  }
+  theory Grammar()
+}

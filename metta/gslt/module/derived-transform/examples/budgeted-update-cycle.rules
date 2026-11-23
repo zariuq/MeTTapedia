@@ -1,0 +1,1 @@
+bind $counts <- { collect { fire &q [ (, (take (job $j)) (take (credit $credit))) ] => (done $j) -> &out } } ; { emit $counts }

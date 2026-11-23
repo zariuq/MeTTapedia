@@ -1,0 +1,15 @@
+; Import petta_chainer before running this query.
+!(compileadd chainKb (: report (Seen report) (STV 0.5 1.0)))
+!(compileadd chainKb (: l1 (Implication (Seen report) (Edge mother alice bob l1 report)) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
+!(compileadd chainKb (: l2 (Implication (Seen report) (Edge mother alice bob l2 report)) (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
+!(compileadd chainKb (: certain (Edge father bob carol r1 certain) (STV 1.0 1.0)))
+!(compileadd chainKb (: compose-rule
+  (Implication (And (Edge $r $x $y $i $a) (Edge $s $y $z $j $b))
+               (Chain $r $s $x $y $z $i $j $a $b))
+  (CTV (STV 1.0 1.0) (STV 0.0 1.0))))
+(= (ask-chain) (collapse (query 60 chainKb (: $p (Chain mother father alice $m carol $i $j $a $b) $tv))))
+!(println! (original (ask-chain)))
+!(println! (replay (ask-chain)))
+!(println! (stored (collapse (match &kb ((Seen report) $k $p $v) ($k $p $v)))))
+!(remove-atom &kb ((Seen report) (chainKb MAIN Nil) report (STV 0.5 1.0)))
+!(println! (retracted (ask-chain)))

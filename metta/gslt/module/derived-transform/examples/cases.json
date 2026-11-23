@@ -1,0 +1,48 @@
+{
+  "schema": "derived-transform-surface-examples-v1",
+  "cases": [
+    {
+      "name": "duplicate-join"
+    },
+    {
+      "name": "claim-and-reply"
+    },
+    {
+      "name": "absence-update"
+    },
+    {
+      "name": "independent-removal"
+    },
+    {
+      "name": "first-agent-cycle"
+    },
+    {
+      "name": "open-stored-term"
+    },
+    {
+      "name": "choice-multiplicity"
+    },
+    {
+      "name": "count-choice"
+    },
+    {
+      "name": "fold-choice"
+    },
+    {
+      "name": "case-choice"
+    },
+    {
+      "name": "chain-binding"
+    },
+    {
+      "name": "held-code"
+    },
+    {
+      "name": "string-escape"
+    },
+    {
+      "name": "budgeted-update-cycle",
+      "budget_kind": "Consumable update credits. This is not evaluator fuel or a bound on candidate-enumeration work."
+    }
+  ]
+}

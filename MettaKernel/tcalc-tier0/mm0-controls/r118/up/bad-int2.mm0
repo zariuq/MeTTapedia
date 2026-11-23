@@ -1,0 +1,5 @@
+sort s;
+term p: s;
+term plus: s;
+--                   V--  not an int
+prefix p : $+$ prec 1.0;

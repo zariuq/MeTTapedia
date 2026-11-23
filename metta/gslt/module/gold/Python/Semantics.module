@@ -1,0 +1,231 @@
+Module PythonSemanticsGSLT {
+  Theory StateLayers() {
+    Types {
+      ObjRef;
+      LocalVar;
+      AttrName;
+      DictKey;
+      PyVal;
+      DictEntry;
+      DictTable;
+      AttrEntry;
+      AttrTable;
+      PyObject;
+      HeapCell;
+      Heap;
+      FrameCell;
+      Frame;
+      ValueStack;
+      RefSet;
+      VarSet;
+      PyFootprint;
+      LookupOutcome;
+      RelJoinOutcome;
+      PyExpr;
+      PyStmt;
+      PyContinuation;
+      PyState;
+    }
+    Terms {
+      ObjRefId . addr:ObjRef |- "obj-ref" addr : ObjRef;
+      LocalVarId . varId:LocalVar |- "local-var" varId : LocalVar;
+      AttrNameId . attrId:AttrName |- "attr-name" attrId : AttrName;
+      DictKeyRef . ref:ObjRef |- "dict-key-ref" ref : DictKey;
+      DictKeyAttr . attrId:AttrName |- "dict-key-attr" attrId : DictKey;
+      PyValRef . ref:ObjRef |- "PyValRef" ref : PyVal;
+      PyValInt . tag:AttrName |- "PyValInt" tag : PyVal;
+      PyValBoolTrue . |- "PyValBoolTrue" : PyVal;
+      PyValBoolFalse . |- "PyValBoolFalse" : PyVal;
+      PyValNone . |- "PyValNone" : PyVal;
+      DictPair . key:DictKey, val:PyVal |- "dict-pair" key val : DictEntry;
+      DictMap . entries:HashBag(DictEntry) |- "dict-map" entries : DictTable ![wrapped];
+      AttrPair . attr:AttrName, val:PyVal |- "attr-pair" attr val : AttrEntry;
+      AttrMap . entries:HashBag(AttrEntry) |- "attr-map" entries : AttrTable ![wrapped];
+      PyObjectData . attrs:AttrTable, dict:DictTable |- "PyObject" attrs dict : PyObject;
+      HeapBinding . ref:ObjRef, obj:PyObject |- "heap-binding" ref obj : HeapCell;
+      HeapStore . cells:HashBag(HeapCell) |- "Heap" cells : Heap ![wrapped];
+      FrameBinding . varName:LocalVar, val:PyVal |- "frame-binding" varName val : FrameCell;
+      FrameStore . bindings:HashBag(FrameCell) |- "Frame" bindings : Frame ![wrapped];
+      StackEmpty . |- "StackEmpty" : ValueStack;
+      StackPush . top:PyVal, rest:ValueStack |- "StackPush" top rest : ValueStack;
+      RefFootprintSet . refs:HashSet(ObjRef) |- "ref-set" refs : RefSet ![wrapped];
+      VarFootprintSet . vars:HashSet(LocalVar) |- "var-set" vars : VarSet ![wrapped];
+      Footprint . readHeap:RefSet, writeHeap:RefSet, readFrame:VarSet, writeFrame:VarSet
+        |- "Footprint" readHeap writeHeap readFrame writeFrame : PyFootprint;
+      PyDictLookup . heap:Heap, ref:ObjRef, key:DictKey |- "PyDictLookup" heap ref key : LookupOutcome;
+      PyAttrLookup . heap:Heap, ref:ObjRef, attr:AttrName |- "PyAttrLookup" heap ref attr : LookupOutcome;
+      LookupHit . val:PyVal |- "LookupHit" val : LookupOutcome;
+      PyRelJoin . heap:Heap, leftRef:ObjRef, rightRef:ObjRef, key:DictKey
+        |- "PyRelJoin" heap leftRef rightRef key : RelJoinOutcome;
+      RelJoinHit . key:DictKey, leftVal:PyVal, rightVal:PyVal
+        |- "RelJoinHit" key leftVal rightVal : RelJoinOutcome;
+      PyVar . varName:LocalVar |- "PyVar" varName : PyExpr;
+      PyInt . tag:AttrName |- "PyInt" tag : PyExpr;
+      PyBool . flag:PyVal |- "PyBool" flag : PyExpr;
+      PyNone . |- "PyNone" : PyExpr;
+      PyAttr . obj:PyExpr, attr:AttrName |- "PyAttr" obj attr : PyExpr;
+      PySubscript . coll:PyExpr, key:DictKey |- "PySubscript" coll key : PyExpr;
+      PyAssign . target:LocalVar, expr:PyExpr |- "PyAssign" target expr : PyStmt;
+      PySetAttr . targetVar:LocalVar, attr:AttrName, expr:PyExpr |- "PySetAttr" targetVar attr expr : PyStmt;
+      PySetSubscript . targetVar:LocalVar, key:DictKey, expr:PyExpr |- "PySetSubscript" targetVar key expr : PyStmt;
+      PySeq . first:PyStmt, second:PyStmt |- "PySeq" first second : PyStmt;
+      KDone . |- "KDone" : PyContinuation;
+      KEvalExpr . expr:PyExpr, next:PyContinuation |- "KEvalExpr" expr next : PyContinuation;
+      KExecStmt . stmt:PyStmt, next:PyContinuation |- "KExecStmt" stmt next : PyContinuation;
+      KBindVar . target:LocalVar, next:PyContinuation |- "KBindVar" target next : PyContinuation;
+      KReadAttr . attr:AttrName, next:PyContinuation |- "KReadAttr" attr next : PyContinuation;
+      KReadSubscript . key:DictKey, next:PyContinuation |- "KReadSubscript" key next : PyContinuation;
+      KWriteAttr . targetVar:LocalVar, attr:AttrName, next:PyContinuation
+        |- "KWriteAttr" targetVar attr next : PyContinuation;
+      KWriteSubscript . targetVar:LocalVar, key:DictKey, next:PyContinuation
+        |- "KWriteSubscript" targetVar key next : PyContinuation;
+      PyStateConfig . heap:Heap, frame:Frame, stack:ValueStack, cont:PyContinuation, fp:PyFootprint
+        |- "PyState" heap frame stack cont fp : PyState;
+    }
+  }
+  Theory OperationalRewrites(s: StateLayers) {
+    s
+    Rewrites {
+      DictLookupHit . ref:ObjRef, key:DictKey, val:PyVal, attrs:AttrTable,
+        restDict:HashBag(DictEntry), restHeap:HashBag(HeapCell)
+        |- (PyDictLookup (HeapStore {(HeapBinding ref (PyObjectData attrs (DictMap {(DictPair key val), ...restDict}))), ...restHeap}) ref key)
+        ~> (LookupHit val);
+      AttrLookupHit . ref:ObjRef, attr:AttrName, val:PyVal, dict:DictTable,
+        restAttrs:HashBag(AttrEntry), restHeap:HashBag(HeapCell)
+        |- (PyAttrLookup (HeapStore {(HeapBinding ref (PyObjectData (AttrMap {(AttrPair attr val), ...restAttrs}) dict)), ...restHeap}) ref attr)
+        ~> (LookupHit val);
+      RelJoinMatch . leftRef:ObjRef, rightRef:ObjRef, key:DictKey, leftVal:PyVal, rightVal:PyVal,
+        leftAttrs:AttrTable, rightAttrs:AttrTable,
+        restLeftDict:HashBag(DictEntry), restRightDict:HashBag(DictEntry), restHeap:HashBag(HeapCell)
+        |- (PyRelJoin
+            (HeapStore {
+              (HeapBinding leftRef (PyObjectData leftAttrs (DictMap {(DictPair key leftVal), ...restLeftDict}))),
+              (HeapBinding rightRef (PyObjectData rightAttrs (DictMap {(DictPair key rightVal), ...restRightDict}))),
+              ...restHeap})
+            leftRef rightRef key)
+        ~> (RelJoinHit key leftVal rightVal);
+      StepEvalVar . heap:Heap, varName:LocalVar, val:PyVal, restFrame:HashBag(FrameCell),
+        stack:ValueStack, next:PyContinuation,
+        rH:HashSet(ObjRef), wH:HashSet(ObjRef), rF:HashSet(LocalVar), wF:HashSet(LocalVar)
+        |- (PyStateConfig
+            heap
+            (FrameStore {(FrameBinding varName val), ...restFrame})
+            stack
+            (KEvalExpr (PyVar varName) next)
+            (Footprint (RefFootprintSet rH) (RefFootprintSet wH) (VarFootprintSet rF) (VarFootprintSet wF)))
+        ~> (PyStateConfig
+            heap
+            (FrameStore {(FrameBinding varName val), ...restFrame})
+            (StackPush val stack)
+            next
+            (Footprint (RefFootprintSet rH) (RefFootprintSet wH) (VarFootprintSet #{varName, ...rF}) (VarFootprintSet wF)));
+      StepEvalInt . heap:Heap, frame:Frame, stack:ValueStack, tag:AttrName, next:PyContinuation, fp:PyFootprint
+        |- (PyStateConfig heap frame stack (KEvalExpr (PyInt tag) next) fp)
+        ~> (PyStateConfig heap frame (StackPush (PyValInt tag) stack) next fp);
+      StepEvalNone . heap:Heap, frame:Frame, stack:ValueStack, next:PyContinuation, fp:PyFootprint
+        |- (PyStateConfig heap frame stack (KEvalExpr "PyNone" next) fp)
+        ~> (PyStateConfig heap frame (StackPush "PyValNone" stack) next fp);
+      StepEvalAttrPlan . heap:Heap, frame:Frame, stack:ValueStack, obj:PyExpr, attr:AttrName, next:PyContinuation, fp:PyFootprint
+        |- (PyStateConfig heap frame stack (KEvalExpr (PyAttr obj attr) next) fp)
+        ~> (PyStateConfig heap frame stack (KEvalExpr obj (KReadAttr attr next)) fp);
+      StepReadAttrHit . ref:ObjRef, attr:AttrName, val:PyVal, dict:DictTable,
+        restAttrs:HashBag(AttrEntry), restHeap:HashBag(HeapCell),
+        frame:Frame, stack:ValueStack, next:PyContinuation,
+        rH:HashSet(ObjRef), wH:HashSet(ObjRef), rF:HashSet(LocalVar), wF:HashSet(LocalVar)
+        |- (PyStateConfig
+            (HeapStore {(HeapBinding ref (PyObjectData (AttrMap {(AttrPair attr val), ...restAttrs}) dict)), ...restHeap})
+            frame
+            (StackPush (PyValRef ref) stack)
+            (KReadAttr attr next)
+            (Footprint (RefFootprintSet rH) (RefFootprintSet wH) (VarFootprintSet rF) (VarFootprintSet wF)))
+        ~> (PyStateConfig
+            (HeapStore {(HeapBinding ref (PyObjectData (AttrMap {(AttrPair attr val), ...restAttrs}) dict)), ...restHeap})
+            frame
+            (StackPush val stack)
+            next
+            (Footprint (RefFootprintSet #{ref, ...rH}) (RefFootprintSet wH) (VarFootprintSet rF) (VarFootprintSet wF)));
+      StepEvalSubscriptPlan . heap:Heap, frame:Frame, stack:ValueStack, coll:PyExpr, key:DictKey, next:PyContinuation, fp:PyFootprint
+        |- (PyStateConfig heap frame stack (KEvalExpr (PySubscript coll key) next) fp)
+        ~> (PyStateConfig heap frame stack (KEvalExpr coll (KReadSubscript key next)) fp);
+      StepReadSubscriptHit . ref:ObjRef, key:DictKey, val:PyVal, attrs:AttrTable,
+        restDict:HashBag(DictEntry), restHeap:HashBag(HeapCell),
+        frame:Frame, stack:ValueStack, next:PyContinuation,
+        rH:HashSet(ObjRef), wH:HashSet(ObjRef), rF:HashSet(LocalVar), wF:HashSet(LocalVar)
+        |- (PyStateConfig
+            (HeapStore {(HeapBinding ref (PyObjectData attrs (DictMap {(DictPair key val), ...restDict}))), ...restHeap})
+            frame
+            (StackPush (PyValRef ref) stack)
+            (KReadSubscript key next)
+            (Footprint (RefFootprintSet rH) (RefFootprintSet wH) (VarFootprintSet rF) (VarFootprintSet wF)))
+        ~> (PyStateConfig
+            (HeapStore {(HeapBinding ref (PyObjectData attrs (DictMap {(DictPair key val), ...restDict}))), ...restHeap})
+            frame
+            (StackPush val stack)
+            next
+            (Footprint (RefFootprintSet #{ref, ...rH}) (RefFootprintSet wH) (VarFootprintSet rF) (VarFootprintSet wF)));
+      StepAssignPlan . heap:Heap, frame:Frame, stack:ValueStack, target:LocalVar, expr:PyExpr, next:PyContinuation, fp:PyFootprint
+        |- (PyStateConfig heap frame stack (KExecStmt (PyAssign target expr) next) fp)
+        ~> (PyStateConfig heap frame stack (KEvalExpr expr (KBindVar target next)) fp);
+      StepBindVarUpdate . heap:Heap, target:LocalVar, oldVal:PyVal, newVal:PyVal,
+        restFrame:HashBag(FrameCell), stack:ValueStack, next:PyContinuation,
+        rH:HashSet(ObjRef), wH:HashSet(ObjRef), rF:HashSet(LocalVar), wF:HashSet(LocalVar)
+        |- (PyStateConfig
+            heap
+            (FrameStore {(FrameBinding target oldVal), ...restFrame})
+            (StackPush newVal stack)
+            (KBindVar target next)
+            (Footprint (RefFootprintSet rH) (RefFootprintSet wH) (VarFootprintSet rF) (VarFootprintSet wF)))
+        ~> (PyStateConfig
+            heap
+            (FrameStore {(FrameBinding target newVal), ...restFrame})
+            stack
+            next
+            (Footprint (RefFootprintSet rH) (RefFootprintSet wH) (VarFootprintSet rF) (VarFootprintSet #{target, ...wF})));
+      StepSetAttrPlan . heap:Heap, frame:Frame, stack:ValueStack, targetVar:LocalVar, attr:AttrName, expr:PyExpr, next:PyContinuation, fp:PyFootprint
+        |- (PyStateConfig heap frame stack (KExecStmt (PySetAttr targetVar attr expr) next) fp)
+        ~> (PyStateConfig heap frame stack (KEvalExpr expr (KWriteAttr targetVar attr next)) fp);
+      StepWriteAttrMutate . ref:ObjRef, targetVar:LocalVar, attr:AttrName, oldVal:PyVal, newVal:PyVal,
+        dict:DictTable, restAttrs:HashBag(AttrEntry), restHeap:HashBag(HeapCell),
+        restFrame:HashBag(FrameCell), stack:ValueStack, next:PyContinuation,
+        rH:HashSet(ObjRef), wH:HashSet(ObjRef), rF:HashSet(LocalVar), wF:HashSet(LocalVar)
+        |- (PyStateConfig
+            (HeapStore {(HeapBinding ref (PyObjectData (AttrMap {(AttrPair attr oldVal), ...restAttrs}) dict)), ...restHeap})
+            (FrameStore {(FrameBinding targetVar (PyValRef ref)), ...restFrame})
+            (StackPush newVal stack)
+            (KWriteAttr targetVar attr next)
+            (Footprint (RefFootprintSet rH) (RefFootprintSet wH) (VarFootprintSet rF) (VarFootprintSet wF)))
+        ~> (PyStateConfig
+            (HeapStore {(HeapBinding ref (PyObjectData (AttrMap {(AttrPair attr newVal), ...restAttrs}) dict)), ...restHeap})
+            (FrameStore {(FrameBinding targetVar (PyValRef ref)), ...restFrame})
+            stack
+            next
+            (Footprint (RefFootprintSet rH) (RefFootprintSet #{ref, ...wH}) (VarFootprintSet #{targetVar, ...rF}) (VarFootprintSet wF)));
+      StepSetSubscriptPlan . heap:Heap, frame:Frame, stack:ValueStack, targetVar:LocalVar, key:DictKey, expr:PyExpr, next:PyContinuation, fp:PyFootprint
+        |- (PyStateConfig heap frame stack (KExecStmt (PySetSubscript targetVar key expr) next) fp)
+        ~> (PyStateConfig heap frame stack (KEvalExpr expr (KWriteSubscript targetVar key next)) fp);
+      StepWriteSubscriptMutate . ref:ObjRef, targetVar:LocalVar, key:DictKey, oldVal:PyVal, newVal:PyVal,
+        attrs:AttrTable, restDict:HashBag(DictEntry), restHeap:HashBag(HeapCell),
+        restFrame:HashBag(FrameCell), stack:ValueStack, next:PyContinuation,
+        rH:HashSet(ObjRef), wH:HashSet(ObjRef), rF:HashSet(LocalVar), wF:HashSet(LocalVar)
+        |- (PyStateConfig
+            (HeapStore {(HeapBinding ref (PyObjectData attrs (DictMap {(DictPair key oldVal), ...restDict}))), ...restHeap})
+            (FrameStore {(FrameBinding targetVar (PyValRef ref)), ...restFrame})
+            (StackPush newVal stack)
+            (KWriteSubscript targetVar key next)
+            (Footprint (RefFootprintSet rH) (RefFootprintSet wH) (VarFootprintSet rF) (VarFootprintSet wF)))
+        ~> (PyStateConfig
+            (HeapStore {(HeapBinding ref (PyObjectData attrs (DictMap {(DictPair key newVal), ...restDict}))), ...restHeap})
+            (FrameStore {(FrameBinding targetVar (PyValRef ref)), ...restFrame})
+            stack
+            next
+            (Footprint (RefFootprintSet rH) (RefFootprintSet #{ref, ...wH}) (VarFootprintSet #{targetVar, ...rF}) (VarFootprintSet wF)));
+      StepSeq . heap:Heap, frame:Frame, stack:ValueStack, first:PyStmt, second:PyStmt, next:PyContinuation, fp:PyFootprint
+        |- (PyStateConfig heap frame stack (KExecStmt (PySeq first second) next) fp)
+        ~> (PyStateConfig heap frame stack (KExecStmt first (KExecStmt second next)) fp);
+    }
+  }
+  Theory Machine() {
+    OperationalRewrites(StateLayers())
+  }
+  theory Machine()
+}

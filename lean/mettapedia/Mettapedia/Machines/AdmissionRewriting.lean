@@ -9,6 +9,8 @@ import Mettapedia.Machines.AdmissionRewriting.Observation
 import Mettapedia.Machines.AdmissionRewriting.TierNormalForms
 import Mettapedia.Machines.AdmissionRewriting.MinMaxSWI
 import Mettapedia.Machines.AdmissionRewriting.MinMaxSelection
+import Mettapedia.Machines.AdmissionRewriting.SortBySelection
+import Mettapedia.Machines.AdmissionRewriting.Binary64Order
 import Mettapedia.Machines.AdmissionRewriting.BuiltinOwnership
 
 /-!
@@ -46,7 +48,25 @@ accepts, nor for code a run never reaches.
   `c_select_operands`, `int_paths`, `Controls.big_double_exact`), where comparing a big
   integer beside a double as doubles breaks commutativity and associativity
   (`Controls.big_double_inexact`); SWI's rule and the earlier test rule are no stable sort
-  (`Controls.swi_breaks_sort`, `Controls.le_rule_breaks_sort`).
+  (`Controls.swi_breaks_sort`, `Controls.le_rule_breaks_sort`). Off NaN the selection is
+  Lean's `min` and `max` over the order of values (`selMin_eq_minOfLe`), and a chain of
+  value-reading arithmetic through it has its exact value, whichever tied operand is
+  answered (`chain_any_tie_rule`); monotone operations commute with it
+  (`min_through_monotone`).
+* `SortBySelection`: selection sort by `min` or by `max` and insertion sort by
+  compare-exchange are the stable sort by value off NaN (`selSort_eq`, `selSortTop_eq`,
+  `ceSort_eq`), and put NaN first, last, or everywhere (`selSort_nan`, `selSortTop_nan`,
+  `ceSort_nan`); networks of neighbouring comparators are stable and a sorting network need
+  not be (`runNet_blocks`, `Controls.networks_differ`); no term order comes out of the rule
+  (`no_order_from_rule`); a term order answers the rule's pairs exactly when it is
+  value-consistent (`pairsByRule_iff`), which leaves the tie-break and NaN's place free;
+  ISO's order is not value-consistent (`iso_disagrees`), and SWI's tie-break is ISO's order
+  as the second key, the only one that follows ISO wherever value leaves a pair free
+  (`swiLT_iff`, `swi_unique_of_zeros`).
+* `Binary64Order`: binary64 patterns as numbers; SourceTermOrder's comparison of the heap's
+  number constants is SWI's order of numbers (`compareConstants_eq_swiCompare`), and SWI's
+  order of floats is IEEE 754's `totalOrder` except on a positive NaN against a number
+  (`compareFloatBits_eq_totalKey_iff`).
 * `BuiltinOwnership`: a space that authors equations for a builtin head answers its
   calls by them outside `&self`; the machine's refusal of such heads answers as the
   canonical evaluator on every call (`machine_eq_canon`).

@@ -1,0 +1,2 @@
+((record a x) (record b x))
+(left suffix right suffix)

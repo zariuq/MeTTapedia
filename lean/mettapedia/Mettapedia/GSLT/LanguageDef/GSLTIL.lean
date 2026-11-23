@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.GSLT.Core.IndexedOperational
 import Mettapedia.GSLT.LanguageDef.ExtendedLanguageDef
 import Mettapedia.GSLT.LanguageDef.LogicExtension
@@ -293,13 +294,8 @@ def totalTheory (catalog : Catalog) : GSLT :=
 
 private theorem rules_noncontextual :
     ∀ rule, rule ∈ language.rewrites →
-      NoncontextualPremises rule.premises := by
-  intro rule ruleMember
-  change rule ∈
-    [fibreAtRewrite, fibreUnderViaRewrite, applyViaRewrite] at ruleMember
-  simp only [List.mem_cons, List.mem_nil_iff, or_false] at ruleMember
-  rcases ruleMember with rfl | rfl | rfl
-  all_goals exact .relationQuery .nil
+      NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 /-- The authored total GSLT and the generic root executor expose the same
 one-step relation. -/

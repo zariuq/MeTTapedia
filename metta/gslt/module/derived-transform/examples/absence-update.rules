@@ -1,0 +1,1 @@
+bind $n <- { fire &q [ (, (take (job $j)) (absent (claimed $j))) ] => (claimed $j) -> &q } ; { collect { read &q : (claimed $seen) => { emit $seen } } }

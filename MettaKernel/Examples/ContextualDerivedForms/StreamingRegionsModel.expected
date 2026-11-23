@@ -1,0 +1,8 @@
+entry: pending=4 markers=3 answers=0 uses=0
+cut: pending=2 markers=1 answers=0 uses=0
+bank: pending=1 markers=1 answers=0 uses=0
+close: pending=1 markers=0 answers=0 uses=1
+done: pending=0 markers=0 answers=1 uses=1
+resumed: ((a))
+returned: (a)
+nested: (((a a) (b b)))

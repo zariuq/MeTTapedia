@@ -1,6 +1,6 @@
 import Mettapedia.Languages.OpenTheory.Definitions
 import Mettapedia.Languages.OpenTheory.Substitution
-import Mettapedia.Languages.OpenTheory.ExtensionalHOLInterpretation
+import Mettapedia.Languages.OpenTheory.CanonicalTyping
 
 /-!
 # Signature formation for shared HOL source terms

@@ -1,0 +1,60 @@
+{
+  "status": "pass",
+  "recorded_utc": "2026-10-11T16:03:56.277107+00:00",
+  "scope": "Authored collection-context admission and evidence-stopping native modal queries",
+  "aggregate": "Mettapedia.OSLF.Framework.Chapter19NativeOutputs",
+  "new_modules": 3,
+  "new_source_lines": 761,
+  "strict_affected_modules": 9,
+  "module_runtime_guards": 49,
+  "additional_corrected_query_probe_guards": 6,
+  "kernel_declarations": 615,
+  "theorems": 237,
+  "separate_runtime_implementations": 4,
+  "separate_compiler_only_declarations": 740,
+  "transitive_axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+  ],
+  "independent_inventory_agreement": true,
+  "aggregate_build": {
+    "exit_code": 0,
+    "jobs": 4593,
+    "log_sha256": "8c8332325bcbd9bf4f2da7bd84150916cdf3a92789c9105da45652cad2e65379"
+  },
+  "root_import_reachability": {
+    "all_owned_reached": true,
+    "fresh_root_build": false
+  },
+  "admitted_rho_profile": {
+    "language": "Scoped literal-channel COMM companion",
+    "context_authority": "Authored rhoCalc ParCong collection remainder frame",
+    "selected_equations": 0,
+    "canonical_name_comparison": false
+  },
+  "query_regressions": {
+    "requested_budget": 100000,
+    "root_work": 29,
+    "parallel_work": 45,
+    "universal_counterexample_work": 29,
+    "complete": false
+  },
+  "source_credit_updates": 0,
+  "remaining_boundaries": [
+    "Complete negative-possibility and positive-universal coverage still uses the expensive term universe.",
+    "Admission and equivalence for unmodified rhoCalc, canonical names and equations remain open.",
+    "Full dependent-family inference, automatic free-extension comparison and compiler contract transport remain separate joins."
+  ],
+  "verification_logs": {
+    "declaration_audit_sha256": "963eca696871814e74139cb982d77c807a36d17d1de892fe09a2f085e1db1a3d",
+    "runtime_probe_sha256": "ddb189e7f623ea2189da9c05fd6d0d05e3963dc718fbb5ae6317070d5c1863c1"
+  },
+  "artifact_hashes": {
+    "STRICT_CHECKS.json": "9e2508ac021dff9f3d24bd71add6a23898b15b6be2c05174d0c26adf977a9bf7",
+    "SOURCE_GATE.json": "c9491be7bde8443b09c852eb997b82d15f76545e8db0ff257b16bb59ae936809",
+    "INVENTORY_GATE.json": "cc6011d590758c1436644ef15541cfc2eb9a471172af3c8adcb41e58ed331784",
+    "DISPLAY_OUTPUT.txt": "f8514dd5103295ed53f75fad8b453518497650fe410d98e73b7a14b59d24cded",
+    "CORRECTED_QUERY_PROBE.txt": "bcddc870cf7dc9b5cba5effc535a0faf7432215f3da9757cd0245a0bef1a2955"
+  }
+}

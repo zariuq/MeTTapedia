@@ -1,0 +1,7 @@
+fmod GOLD-COMPOUND-UNIT is
+  sort Element .
+  op zero : -> Element [ctor] .
+  op unit : Element -> Element [ctor] .
+  op combine : Element Element -> Element [assoc comm id: unit(zero)] .
+endfm
+red combine(unit(zero), zero) .

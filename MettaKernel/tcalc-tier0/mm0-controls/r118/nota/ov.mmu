@@ -1,0 +1,13 @@
+(sort wff provable)
+
+(term im ((a wff ()) (b wff ())) (wff ()))
+
+(term neg ((a wff ())) (wff ()))
+
+(term top () (wff ()))
+
+(term bad ((a wff ())) (wff ()))
+
+(axiom ax_top () ()
+  (bad (top)))
+

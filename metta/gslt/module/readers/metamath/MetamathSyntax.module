@@ -1,0 +1,85 @@
+-- Metamath's database syntax (the Metamath book, Appendix E) as a GSLT presentation.
+--
+-- The grammar is composed from three pieces over one shared set of sorts:
+--   Sorts       the token sorts and the phrase sorts, declared once;
+--   Lists       symbol lists, disjoint-variable lists, normal proofs, compressed proof parts;
+--   Statements  $c $v $d $f $e $a $p (normal and compressed) $[ $] ${ $};
+--   Databases   statement sequences, inner (inside ${ $}) and outer ($c and $[ $] allowed).
+-- `Grammar` joins the three pieces over one `let`-bound Sorts value, so the sorts are shared,
+-- not copied.
+--
+-- `Tokens` is the lexical layer as data, read by a message: which bytes separate tokens, which
+-- bytes may occur in a token, the bytes of each token sort, and the comment brackets.
+-- A token sort (label_tok, symbol_tok, ...) has no grammar row: a token of that sort is a
+-- nonempty run of the sort's bytes, and the row that consumes it fixes its role.
+Module MetamathSyntax {
+  Theory Sorts() {
+    Types {
+      label_tok; symbol_tok; proof_label_tok; compressed_word_tok; include_path_tok;
+      symbol_list; disjoint_symbol_list; proof_list; proof_header_list; compressed_word_list;
+      statement; database; outer_statement; outer_database;
+    }
+  }
+  Theory Lists(s: Sorts) {
+    s Terms {
+      symbols_one . symbol:symbol_tok |- symbol : symbol_list;
+      symbols_more . symbol:symbol_tok, rest:symbol_list |- symbol rest : symbol_list;
+      disjoint_symbols_two . first:symbol_tok, second:symbol_tok |- first second : disjoint_symbol_list;
+      disjoint_symbols_more . first:symbol_tok, rest:disjoint_symbol_list |- first rest : disjoint_symbol_list;
+      proof_one . label:proof_label_tok |- label : proof_list;
+      proof_more . label:proof_label_tok, rest:proof_list |- label rest : proof_list;
+      proof_unknown_one . |- "?" : proof_list;
+      proof_unknown_more . rest:proof_list |- "?" rest : proof_list;
+      header_empty . |- : proof_header_list;
+      header_more . label:proof_label_tok, rest:proof_header_list |- label rest : proof_header_list;
+      compressed_one . word:compressed_word_tok |- word : compressed_word_list;
+      compressed_more . word:compressed_word_tok, rest:compressed_word_list |- word rest : compressed_word_list;
+    }
+  }
+  Theory Statements(s: Sorts) {
+    s Terms {
+      statement_const . symbols:symbol_list |- "$c" symbols "$." : outer_statement;
+      statement_var . symbols:symbol_list |- "$v" symbols "$." : statement;
+      statement_disjoint . symbols:disjoint_symbol_list |- "$d" symbols "$." : statement;
+      statement_float . label:label_tok, typecode:symbol_tok, var:symbol_tok |- label "$f" typecode var "$." : statement;
+      statement_essential . label:label_tok, formula:symbol_list |- label "$e" formula "$." : statement;
+      statement_axiom . label:label_tok, formula:symbol_list |- label "$a" formula "$." : statement;
+      statement_theorem_normal . label:label_tok, formula:symbol_list, proof:proof_list |- label "$p" formula "$=" proof "$." : statement;
+      statement_theorem_compressed . label:label_tok, formula:symbol_list, header:proof_header_list, body:compressed_word_list |- label "$p" formula "$=" "(" header ")" body "$." : statement;
+      statement_include . path:include_path_tok |- "$[" path "$]" : outer_statement;
+      statement_block . inside:database |- "${" inside "$}" : statement;
+    }
+  }
+  Theory Databases(s: Sorts) {
+    s Terms {
+      database_empty . |- : database;
+      database_more . statement:statement, rest:database |- statement rest : database;
+      outer_statement_inner . statement:statement |- statement : outer_statement;
+      outer_database_empty . |- : outer_database;
+      outer_database_more . statement:outer_statement, rest:outer_database |- statement rest : outer_database;
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts() in (Lists(s) \/ Statements(s) \/ Databases(s))
+  }
+  Theory Tokens() {
+    Types { TokenProfileData; }
+    Terms {
+      GetTokenProfile . |- "token-profile" : TokenProfileData;
+    }
+    Rewrites {
+      ReturnTokenProfile : (GetTokenProfile) ~>
+        "TokenProfileV1"(
+          "Start"("outer_database"),
+          "Admissible"("Range"("33", "126")),
+          "Separator"("Points"("32", "9", "13", "10", "12")),
+          "Class"("label_tok", "Union"("Range"("65", "90"), "Range"("97", "122"), "Range"("48", "57"), "Points"("46", "45", "95"))),
+          "Class"("symbol_tok", "Minus"("Range"("33", "126"), "Points"("36"))),
+          "Class"("proof_label_tok", "Union"("Range"("65", "90"), "Range"("97", "122"), "Range"("48", "57"), "Points"("46", "45", "95"))),
+          "Class"("compressed_word_tok", "Union"("Range"("65", "90"), "Points"("63"))),
+          "Class"("include_path_tok", "Minus"("Range"("33", "126"), "Points"("36"))),
+          "Comment"("$(", "$)"));
+    }
+  }
+  theory Grammar()
+}

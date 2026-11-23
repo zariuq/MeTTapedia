@@ -1,0 +1,3 @@
+(sort wff strict provable)
+(sort nat)
+(term q ((p wff)) (wff ()))

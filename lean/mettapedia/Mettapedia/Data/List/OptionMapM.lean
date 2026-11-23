@@ -69,17 +69,27 @@ theorem option_mapM_origin {α : Type u} {β : Type v} (emit : α → Option β)
       · obtain ⟨input, present, result⟩ := ih later
         exact ⟨input, List.mem_cons_of_mem first present, result⟩
 
-theorem option_mapM_projection {α : Type u} {β : Type v} {γ : Type w}
+/-- A projection law on the actual input occurrences lifts through every successful traversal. -/
+theorem option_mapM_projection_on {α : Type u} {β : Type v} {γ : Type w}
     (emit : α → Option β) (inputs : List α) (outputs : List β)
     (inputKey : α → γ) (outputKey : β → γ) (read : inputs.mapM emit = some outputs)
-    (preserved : ∀ input output, emit input = some output → outputKey output = inputKey input) :
+    (preserved : ∀ input ∈ inputs, ∀ output, emit input = some output → outputKey output = inputKey input) :
     outputs.map outputKey = inputs.map inputKey := by
   have graph := option_mapM_forall₂ emit inputs outputs read
   clear read
   induction graph with
   | nil => rfl
   | @cons first head rest tail computed graph ih =>
-      simp only [List.map_cons, preserved first head computed, ih]
+      rw [List.map_cons, List.map_cons, preserved first List.mem_cons_self head computed]
+      rw [ih (fun input member => preserved input (List.mem_cons_of_mem first member))]
+
+theorem option_mapM_projection {α : Type u} {β : Type v} {γ : Type w}
+    (emit : α → Option β) (inputs : List α) (outputs : List β)
+    (inputKey : α → γ) (outputKey : β → γ) (read : inputs.mapM emit = some outputs)
+    (preserved : ∀ input output, emit input = some output → outputKey output = inputKey input) :
+    outputs.map outputKey = inputs.map inputKey :=
+  option_mapM_projection_on emit inputs outputs inputKey outputKey read
+    (fun input _ output computed => preserved input output computed)
 
 theorem option_mapM_exists {α : Type u} {β : Type v} (emit : α → Option β) (inputs : List α)
     (each : ∀ input ∈ inputs, ∃ output, emit input = some output) :
@@ -95,6 +105,7 @@ theorem option_mapM_exists {α : Type u} {β : Type v} (emit : α → Option β)
 #print axioms option_mapM_getElem?
 #print axioms option_mapM_input
 #print axioms option_mapM_origin
+#print axioms option_mapM_projection_on
 #print axioms option_mapM_projection
 #print axioms option_mapM_exists
 

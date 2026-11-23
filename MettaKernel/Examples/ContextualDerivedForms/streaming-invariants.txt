@@ -1,0 +1,60 @@
+Complete streaming binding refinement and allocated-variable support
+
+The actual streaming controller now preserves two whole-frontier invariants.
+They include the active task, every pending alternative, saved source frames,
+collection markers and answer banks, and completed root answers. The variable
+support invariant additionally includes retained cells and printed output.
+Marker association is separate from both predicates.
+
+StreamingBindingInvariant and StreamingBindingPreservation reuse the existing
+actual Unifying transition-refinement theorem. Source phases, delivery,
+placement, alternative expansion, collection closure, first demand and caught
+faults preserve idempotent branch substitutions refining the original record.
+The proof does not restrict itself to the currently selected answer.
+
+StreamingBindingReachability derives the property for actual entry, arbitrary
+finite paths and every bounded endpoint. Every returned answer and pending
+evaluation therefore earns idempotence. The source/runtime readout theorem can
+consume a reached answer without taking idempotence as an extra caller-supplied
+fact. enterRefined and advanceRefined carry the propositions with the actual
+state; execution performs no validation scan.
+
+StreamingScopeInvariant and StreamingScopePreservation transfer the existing
+source allocation-support mathematics to all streaming transitions. Untouched
+payloads weaken under the actual monotone allocation supply. Collected answer
+copies earn support below the actual increased counter. Retained cells and
+output come from the source phase's proved reached world. Public rows, private
+clauses and unread input remain templates copied at their existing boundaries;
+no global template scan or reserved source spelling is introduced.
+
+StreamingScopeReachability proves actual entry, loaded-program prefixes,
+subsequent entry hygiene and freshness against retained cells and returned
+binding/value records. A genuinely unused activation is required for the
+apartness result. A mere post-entry upper bound would permit an old cell to
+share the newly chosen identity. These hygiene facts do not authorize dropping
+a paid residual agenda or replacing an unfinished request with a new one.
+
+The generic first-selected suffix/update invariant laws are owned by
+Data/List/FirstSelectionInvariant. Both binding and support proofs use those
+same list operations. Missing markers still interrupt rather than yielding a
+fabricated successful suffix or update.
+
+Negative controls cover invalid bindings hidden in alternatives, a source
+frame, a collection marker and completed answers. Support controls include a
+future identity hidden in a bank or caller, and a cell that satisfies the
+post-entry counter but aliases a reused activation. These are proofs about
+construction invariants, not extra runtime rejection rules for programmers.
+
+OutputPlanModel now retains proof-carrying world support between directives
+and binding refinement through its actual bounded execution. It consumes the
+same compiler, state and controller as before; its original 49 observations
+remain unchanged. The later collection fixture adds eight more. The propositions
+are erased rather than implemented by another
+matcher, solver or runtime validity pass.
+
+Region-marker uniqueness/association is now checked separately in
+streaming-regions.txt. Cross-branch source collection correspondence remains
+open, as do whole compiler/control simulation,
+list-view/typed/lambda/dynamic regions, recursive HE demand, richer transform
+authority and the original authored-surface obligations. These Lean invariants
+do not supply C/machine-code correspondence or native performance evidence.

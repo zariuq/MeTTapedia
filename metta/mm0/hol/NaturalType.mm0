@@ -1,0 +1,25 @@
+import "NaturalCarrier.mm0";
+
+def holNaturalPredicate {.n: term}: term =
+  $ \ n: ind. naturalClosure ind infiniteZero infiniteSuccessor n $;
+def holNatural: type = $ tydef holNaturalPredicate $;
+def holZero: term = $ abs holNaturalPredicate @ infiniteZero $;
+def holSuccessor {.n: term}: term = $ \ n: holNatural.
+  abs holNaturalPredicate @ (infiniteSuccessor @ (rep holNaturalPredicate @ n)) $;
+def holPullback (p: term) {.n: term}: term =
+  $ \ n: ind. p @ (abs holNaturalPredicate @ n) $;
+
+theorem holZeroT (G: wff): $ G |- holZero: holNatural $;
+theorem holSuccessorT (G: wff): $ G |- holSuccessor: holNatural -> holNatural $;
+theorem holZeroNotSuccessor (G: wff) (n: term):
+  $ G |- n: holNatural $ > $ G |- ~(=[holNatural] holZero = holSuccessor @ n) $;
+theorem holSuccessorInjective (G: wff) (m n: term):
+  $ G |- m: holNatural $ > $ G |- n: holNatural $ >
+  $ G |- (=[holNatural] holSuccessor @ m = holSuccessor @ n) <=>
+    (=[holNatural] m = n) $;
+theorem holNaturalInduction (G: wff) (n p: term) {k: term}:
+  $ G |- n: holNatural $ > $ G |- p: holNatural -> bool $ > $ G |- p @ holZero $ >
+  $ G |- !k: holNatural. p @ k ==> p @ (holSuccessor @ k) $ > $ G |- p @ n $;
+theorem holNaturalInfinity (G: wff) {f: term}:
+  $ G |- ?f: holNatural -> holNatural.
+    one_one holNatural holNatural @ f /\ ~(onto holNatural holNatural @ f) $;

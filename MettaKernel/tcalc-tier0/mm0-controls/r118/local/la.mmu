@@ -1,0 +1,6 @@
+(sort wff provable)
+(term unit () (wff ()))
+(term empty () (wff ()))
+(axiom proof_of_unit () () (unit))
+(local axiom cheat () () (empty))
+(theorem proof_of_empty () () (empty) () (cheat ()))

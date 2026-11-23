@@ -1,0 +1,823 @@
+{
+  "schema": "store-demand-contract-fixtures-v1",
+  "cases": [
+    {
+      "name": "add-one",
+      "source": "add-one.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.add_length",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.add_is_make",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.add_occurrence_projection"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "add-one.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "add-one.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "add-comma-is-one-atom",
+      "source": "add-comma-is-one-atom.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.add_length"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "add-comma-is-one-atom.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "add-comma-is-one-atom.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "remove-multiplicity",
+      "source": "remove-multiplicity.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.removeAll_retains_iff",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.removeOne_keeps_later_copy",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.removeOne_occurrence_projection"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "remove-multiplicity.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "remove-multiplicity.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "remove-miss",
+      "source": "remove-miss.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.removeAll_false_iff_unchanged",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.removeOne_length"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "remove-miss.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "remove-miss.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "remove-independent-bindings",
+      "source": "remove-independent-bindings.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.PeTTaSelection.Controls.independent_bindings_remove_both",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.PeTTaSelection.survivors_selection"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "remove-independent-bindings.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "remove-open-row",
+      "source": "remove-open-row.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.PeTTaSelection.Controls.open_stored_row_can_match"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "remove-open-row.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "double-refused",
+      "source": "double-refused.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.double_take_iff"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "double-refused.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "double-refused.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "double-accepted",
+      "source": "double-accepted.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.double_take_iff",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.take_count_conservation"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "double-accepted.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "double-accepted.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "read-take-refused",
+      "source": "read-take-refused.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.read_take_iff"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "read-take-refused.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "read-take-refused.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "read-take-accepted",
+      "source": "read-take-accepted.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.read_take_iff",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.take_count_conservation"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "read-take-accepted.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "read-take-accepted.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "destination-count",
+      "source": "destination-count.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.route_count_is_growth",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.route_composes",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.route_occurrence_projection"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "destination-count.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "destination-count.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "destination-empty",
+      "source": "destination-empty.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.StoreEffects.route_count_is_growth"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "destination-empty.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "destination-empty.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "routing-error-retains-take",
+      "source": "routing-error-retains-take.metta",
+      "classification": "calibration fixture",
+      "kind": "dialect-error-boundary",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.Controls.earlier_publication_survives_refusal"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "routing-error-retains-take.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "source-error-retains-earlier-effect",
+      "source": "source-error-retains-earlier-effect.metta",
+      "classification": "calibration fixture",
+      "kind": "dialect-error-boundary",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.silent_branch_continues_from_reached_world"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "source-error-retains-earlier-effect.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "answerless-firing-prefix",
+      "source": "answerless-firing-prefix.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.Controls.first_answer_is_not_first_candidate",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.Controls.collapse_once_retains_earlier_effects"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "answerless-firing-prefix.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "answerless-firing-prefix.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "once-stops-later-firing",
+      "source": "once-stops-later-firing.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.once_ignores_suffix",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.collapse_once"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "once-stops-later-firing.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "once-stops-later-firing.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "disjoint-takes-absence-interference",
+      "source": "disjoint-takes-absence-interference.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.Controls.disjoint_takes_do_not_establish_independence"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "disjoint-takes-absence-interference.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "disjoint-takes-absence-interference.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "independent-writers-both-fire",
+      "source": "independent-writers-both-fire.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.independent_pair_direct",
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.Controls.whole_store_validation_rejects_independent"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "independent-writers-both-fire.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "independent-writers-both-fire.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "unrelated-write-preserves-enabling",
+      "source": "unrelated-write-preserves-enabling.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.Controls.unrelated_growth_reuses_preparation"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "unrelated-write-preserves-enabling.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "unrelated-write-preserves-enabling.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "sequential-adds",
+      "source": "sequential-adds.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.adjacent_fusion"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "sequential-adds.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "sequential-adds.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "fused-makes",
+      "source": "fused-makes.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.adjacent_fusion"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "fused-makes.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "fused-makes.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "record-absent",
+      "source": "record-absent.metta",
+      "classification": "calibration fixture",
+      "kind": "record-observation-witness",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.RunReceipts.erase_unobserved_receipts"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "record-absent.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "record-absent.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "record-unobserved",
+      "source": "record-unobserved.metta",
+      "classification": "calibration fixture",
+      "kind": "record-observation-witness",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.RunReceipts.erase_unobserved_receipts"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "record-unobserved.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "record-unobserved.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "record-observed",
+      "source": "record-observed.metta",
+      "classification": "calibration fixture",
+      "kind": "record-observation-witness",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.RunReceipts.observed_receipts_cannot_be_erased"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "record-observed.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "record-observed.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "record-disabled-observed",
+      "source": "record-disabled-observed.metta",
+      "classification": "calibration fixture",
+      "kind": "record-observation-witness",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.RunReceipts.observed_receipts_cannot_be_erased"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "record-disabled-observed.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "record-disabled-observed.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "once-order-forward",
+      "source": "once-order-forward.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.Controls.bag_equality_does_not_preserve_first"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "once-order-forward.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "once-order-forward.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "once-order-reverse",
+      "source": "once-order-reverse.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.Controls.bag_equality_does_not_preserve_first"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "once-order-reverse.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "once-order-reverse.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "collapse-keeps-duplicates",
+      "source": "collapse-keeps-duplicates.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.pure_complete_bag"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "collapse-keeps-duplicates.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "collapse-keeps-duplicates.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "operand-evaluation-boundary",
+      "source": "operand-evaluation-boundary.metta",
+      "classification": "calibration fixture",
+      "kind": "evaluation-policy-boundary",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.preparation_effects_precede_first"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "operand-evaluation-boundary.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "operand-evaluation-boundary.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "he-errors-are-values",
+      "source": "he-errors-are-values.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.he_all_errors_keep_multiplicity"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "he-errors-are-values.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "he-success-displaces-error",
+      "source": "he-success-displaces-error.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.he_later_success_displaces_error"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "he-success-displaces-error.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "petta-raise-stops-tail",
+      "source": "petta-raise-stops-tail.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.petta_raise_stops_sequence"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "petta-raise-stops-tail.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "answer-survives-producer-scope",
+      "source": "answer-survives-producer-scope.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.publish_then_close"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "answer-survives-producer-scope.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "answer-survives-producer-scope.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "generation-effect-invalidates-first",
+      "source": "generation-effect-invalidates-first.metta",
+      "classification": "calibration fixture",
+      "kind": "dialect-source-evaluation-boundary",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.preparation_effects_precede_first"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "generation-effect-invalidates-first.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "generation-effect-invalidates-first.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "lost-keep-stops-later-firing",
+      "source": "lost-keep-stops-later-firing.metta",
+      "classification": "calibration fixture",
+      "kind": "stability-negative",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.Agreement.preserves_enabled"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "lost-keep-stops-later-firing.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "lost-keep-stops-later-firing.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "uniqueness-spoiled-by-addition",
+      "source": "uniqueness-spoiled-by-addition.metta",
+      "classification": "calibration fixture",
+      "kind": "stability-negative",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.Agreement.enabled_iff"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "uniqueness-spoiled-by-addition.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "uniqueness-spoiled-by-addition.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "empty-first-producer",
+      "source": "empty-first-producer.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.collapse_once"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "empty-first-producer.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "empty-first-producer.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "ordered-effects-forward",
+      "source": "ordered-effects-forward.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.Controls.complete_bag_does_not_preserve_effects"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "ordered-effects-forward.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "ordered-effects-forward.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "ordered-effects-reverse",
+      "source": "ordered-effects-reverse.metta",
+      "classification": "calibration fixture",
+      "kind": "observation",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.Demand.Controls.complete_bag_does_not_preserve_effects"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "ordered-effects-reverse.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "ordered-effects-reverse.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "selected-value-invalidated-before-first",
+      "source": "selected-value-invalidated-before-first.metta",
+      "classification": "calibration fixture",
+      "kind": "stability-negative",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.StoreAndDemand.ValidationReuse.direct_after_preparation"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "selected-value-invalidated-before-first.petta.expected"
+        },
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "selected-value-invalidated-before-first.he.expected"
+        }
+      ]
+    }
+  ]
+}

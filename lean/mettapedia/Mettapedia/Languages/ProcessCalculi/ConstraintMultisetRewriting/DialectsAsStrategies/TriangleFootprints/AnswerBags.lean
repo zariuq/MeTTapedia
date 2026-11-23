@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.EquationFrontierFrames
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.CompleteRun
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.RegionsWithVariables
 import Mettapedia.Languages.MeTTa.PeTTa.StreamingPrefixes
@@ -1344,14 +1345,7 @@ theorem he_query_equations {atoms : List Atom}
       value.erase activation.bindings works := by
     rw [erased]
     exact frontier
-  obtain ⟨environments, paired⟩ := Entry.Value.UnifyRel.equation_frontier
-    (policy := policy.rebuilding) activation.certified frontier'
-  have unifiers : ∀ w ∈ works, ∃ output : Frame, output.bindings = w.bindings ∧
-      Entry.Value.UnifyRel policy.rebuilding activation.environment value
-        (Entry.Value.ofAtom w.pattern) output.environment := by
-    intro w member
-    obtain ⟨after, unified, certificate⟩ := forall₂_left_exists paired w member
-    exact ⟨⟨w.bindings, after, certificate⟩, rfl, unified⟩
+  have unifiers := activation.equationFrontier_unifiers (policy := policy) (query := value) frontier'
   have related : List.Forall₂ (fun w L => HEEvaluates dispatch lookup policy atoms w.body L ∧
       BodyFacts w.body) works Ls := by
     have onWorks := bodies

@@ -1,0 +1,11 @@
+import "NaturalClosure.mm0";
+
+def naturalStrengthening (A: type) (z s p: term) {.n: term}: term =
+  $ \ n: A. naturalClosure A z s n /\ p @ n $;
+
+theorem naturalClosureInduction (G: wff) (A: type) (z s n p: term) {k: term}:
+  $ G |- z: A $ > $ G |- s: A -> A $ > $ G |- n: A $ >
+  $ G |- p: A -> bool $ > $ G |- naturalClosure A z s n $ >
+  $ G |- p @ z $ >
+  $ G |- !k: A. naturalClosure A z s k ==> p @ k ==> p @ (s @ k) $ >
+  $ G |- p @ n $;

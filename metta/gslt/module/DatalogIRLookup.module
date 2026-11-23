@@ -1,0 +1,18 @@
+import "DatalogIR.module" as ir
+
+Module DatalogIRLookup {
+  Theory Lookup(d: ir.ProgramData) {
+    d
+      Terms {
+        LookupFact . facts:Vec(DlStatement) |- "lookup-fact" facts : DlStatement;
+      }
+      Rewrites {
+        Here . fact:DlStatement, rest:Vec(DlStatement)
+          |- (LookupFact [fact, ...rest]) ~> fact;
+        Later . fact:DlStatement, rest:Vec(DlStatement), result:DlStatement
+          | (LookupFact rest) ~> result
+          |- (LookupFact [fact, ...rest]) ~> result;
+      }
+  }
+  theory Lookup(ir.ProgramData(ir.Data()))
+}

@@ -1,0 +1,61 @@
+Authored transform traces under cursor demand
+============================================
+
+PeTTaTransformDemand connects the independent LibTransform source model to the
+existing common cursor. encode and decode translate retained answer traces in
+both directions. Their inverse laws include the residual function at every
+future store; observe_encode preserves both ordered answers and the final
+store. This is stronger than completed bag equality.
+
+The source select operation recursively consumes a quota of answers. The
+target uses ScopedCommitCursor.execute and NativeControlBoundedCursor's
+existing reversed accumulator and retained packet. selection_exact and
+execute_exact establish the complete source/target observation equation.
+execute_iff reflects target claims back to the independent source selection.
+
+first_is_once and execute_once connect one-answer demand to the library's
+Search.once. An answerless firing is not a failed firing: it can change the
+store before the search reaches an answer. transform_once preserves that
+behavior. transform_resume_drain recovers the existing library theorem whose
+complete observation is the ordered proposal/firing fold.
+
+budgeted_exact separately relates poll budget and answer quota. The selected
+source quota is their minimum for this nonsuspending trace provider. Each pull
+can perform several firings or substantial matching work before an answer or
+exhaustion becomes visible. Poll counts are not native fuel, rule counts or
+CPU work. A budget pause does not certify that no further answer exists.
+budgeted_split uses the actual retained cursor, original quota and accumulated
+poll account; it does not construct a new transform at resumption.
+
+The control begins with a,b,c. Its source takes a but deliberately routes no
+answer for a. One-answer demand therefore answers b and leaves c. The target
+result is derived from the source result and the generic cursor law.
+Resuming with outside,c consumes only c and leaves outside. Restarting with
+a,c consumes a again, while the original residual leaves that newly inserted
+a alone. This distinguishes retained entry candidates from a fresh invocation.
+
+Contention uses two jobs and two receivers. The original ordered proposals
+produce a/alice and b/bob; stale overlapping proposals cannot consume a taken
+resource again. An empty comma template consumes its jobs while answering
+nothing. Another control pauses at one pull with a two-answer quota, then
+resumes to b,c under that original quota. Limit and exhaustion remain distinct.
+
+transform-answerless-first.metta calibrates the first-answer behavior in native
+CeTTa. For SWI reference execution, the complete lib_transform_swi.metta must
+be loaded before the fixture; an unknown transform head is data and is not a
+reference implementation. The recorded reference run concatenates the exact
+library and fixture and pins both inputs and the generated program. Its
+expected transcript includes the three successful add-atom replies.
+
+Scope remains the existing source model's: finite first-order matching, one
+source space, and its declared caller/self-destination or supplied route.
+These theorems do not silently add scoped two-way unification, named spaces,
+evaluated let conjuncts, dialect error behavior or suspension inside a pull.
+They also do not supply a native eager/lazy work bound or C correspondence.
+
+Run the model consumer from the Lean project root:
+
+  lake env lean --run ../../MettaKernel/Examples/ContextualDerivedForms/TransformDemandModel.lean
+
+Compare stdout with TransformDemandModel.expected. The calibration fixture is
+listed in cases.json. Native performance qualification remains a separate gate.

@@ -1,0 +1,449 @@
+--- Mettapedia/GSLT/Logic/ObserverRefinement.lean before
++++ Mettapedia/GSLT/Logic/ObserverRefinement.lean after
+@@ -1,4 +1,5 @@
+ import Mettapedia.GSLT.Logic.HennessyMilnerTransport
++import Mettapedia.GSLT.Core.NonFactorization
+ import Mathlib.CategoryTheory.Opposites
+ 
+ /-!
+@@ -30,7 +31,7 @@
+ open Mettapedia.GSLT
+ open scoped CategoryTheory
+ 
+-universe uS uAtomCoarse uLabelCoarse uAtomMiddle uLabelMiddle
++universe uS uValue uAtomCoarse uLabelCoarse uAtomMiddle uLabelMiddle
+   uAtomFine uLabelFine
+ 
+ variable {S : GSLT.{uS}}
+@@ -58,6 +59,25 @@
+     (left right : S.Term) :
+     M.toBehavioralClass left = M.toBehavioralClass right ↔ M.Bisimilar left right :=
+   Quotient.eq
++
++/-- Every behavioral class has a representative operational state. -/
++theorem toBehavioralClass_surjective (M : System.{uAtomCoarse, uLabelCoarse} S) :
++    Function.Surjective M.toBehavioralClass := by
++  intro stateClass
++  induction stateClass using Quotient.inductionOn with
++  | _ term => exact ⟨term, rfl⟩
++
++/-- A value-valued readout descends to behavioral classes exactly when it
++cannot separate bisimilar states. No interpretation of the values as physical
++or phenomenal quantities is supplied by this mathematical criterion. -/
++theorem factors_behavioralClass_iff (M : System.{uAtomCoarse, uLabelCoarse} S)
++    {Value : Type uValue} (readout : S.Term → Value) :
++    Mettapedia.GSLT.Core.NonFactorization.Factors M.toBehavioralClass readout ↔
++      ∀ left right, M.Bisimilar left right → readout left = readout right := by
++  rw [Mettapedia.GSLT.Core.NonFactorization.factors_iff_constantOnFibers
++    M.toBehavioralClass_surjective]
++  simp only [Mettapedia.GSLT.Core.NonFactorization.ConstantOnFibers,
++    M.behavioralClass_eq_iff]
+ 
+ end System
+ 
+@@ -164,6 +184,77 @@
+     refinement.classMap (fine.toBehavioralClass term) =
+       coarse.toBehavioralClass term :=
+   rfl
++
++/-- Forgetting distinctions reaches every coarse class, even when it merges
++several finer classes. Surjectivity is not a no-information-loss guarantee. -/
++theorem classMap_surjective (refinement : ObserverRefinement coarse fine) :
++    Function.Surjective refinement.classMap := by
++  intro stateClass
++  induction stateClass using Quotient.inductionOn with
++  | _ term => exact ⟨fine.toBehavioralClass term, rfl⟩
++
++/-- The forgetting map is injective precisely when coarse behavioral identity
++already implies fine behavioral identity. -/
++theorem classMap_injective_iff_reflects_bisimilar
++    (refinement : ObserverRefinement coarse fine) :
++    Function.Injective refinement.classMap ↔
++      ∀ left right, coarse.Bisimilar left right → fine.Bisimilar left right := by
++  constructor
++  · intro injective left right related
++    apply (fine.behavioralClass_eq_iff left right).mp
++    apply injective
++    exact (coarse.behavioralClass_eq_iff left right).mpr related
++  · intro reflects first second equalImages
++    induction first using Quotient.inductionOn with
++    | _ left =>
++        induction second using Quotient.inductionOn with
++        | _ right =>
++            exact (fine.behavioralClass_eq_iff left right).mpr
++              (reflects left right
++                ((coarse.behavioralClass_eq_iff left right).mp equalImages))
++
++/-- A coarse behavioral readout is also a fine behavioral readout, by the
++shared factorization law for coarsening. -/
++theorem readout_factors_fine (refinement : ObserverRefinement coarse fine)
++    {Value : Type uValue} {readout : S.Term → Value}
++    (factors : Mettapedia.GSLT.Core.NonFactorization.Factors
++      coarse.toBehavioralClass readout) :
++    Mettapedia.GSLT.Core.NonFactorization.Factors fine.toBehavioralClass readout :=
++  factors.of_coarsening (fun term => (refinement.classMap_toBehavioralClass term).symm)
++
++/-- If no fine classes are merged, every fine-invariant readout descends to
++the coarse boundary, for an arbitrary value type. -/
++theorem readout_descends (refinement : ObserverRefinement coarse fine)
++    (injective : Function.Injective refinement.classMap)
++    {Value : Type uValue} {readout : S.Term → Value}
++    (factors : Mettapedia.GSLT.Core.NonFactorization.Factors
++      fine.toBehavioralClass readout) :
++    Mettapedia.GSLT.Core.NonFactorization.Factors coarse.toBehavioralClass readout := by
++  apply (coarse.factors_behavioralClass_iff readout).mpr
++  intro left right related
++  exact (fine.factors_behavioralClass_iff readout).mp factors left right
++    ((refinement.classMap_injective_iff_reflects_bisimilar.mp injective) left right related)
++
++/-- Preserving every fine behavioral readout is exactly the injectivity of
++the forgetting map. State-universe readouts already suffice for the converse:
++the fine class itself is a separating readout when information is lost. -/
++theorem classMap_injective_iff_all_readouts_descend
++    (refinement : ObserverRefinement coarse fine) :
++    Function.Injective refinement.classMap ↔
++      ∀ (Value : Type uS) (readout : S.Term → Value),
++        Mettapedia.GSLT.Core.NonFactorization.Factors fine.toBehavioralClass readout →
++        Mettapedia.GSLT.Core.NonFactorization.Factors coarse.toBehavioralClass readout := by
++  constructor
++  · intro injective Value readout factors
++    exact refinement.readout_descends injective factors
++  · intro descends
++    obtain ⟨recover, recovers⟩ := descends fine.BehavioralClass fine.toBehavioralClass
++      ⟨_root_.id, fun _ => rfl⟩
++    apply refinement.classMap_injective_iff_reflects_bisimilar.mpr
++    intro left right related
++    apply (fine.behavioralClass_eq_iff left right).mp
++    rw [← recovers left, ← recovers right,
++      (coarse.behavioralClass_eq_iff left right).mpr related]
+ 
+ /-- Identity refinement has the identity quotient map. -/
+ theorem classMap_id (M : System.{uAtomCoarse, uLabelCoarse} S) :
+@@ -203,15 +294,10 @@
+     (atomSurjective : Function.Surjective refinement.mapAtom)
+     (labelSurjective : Function.Surjective refinement.mapLabel) :
+     Function.Injective refinement.classMap := by
+-  intro first second equalImages
+-  induction first using Quotient.inductionOn with
+-  | _ left =>
+-      induction second using Quotient.inductionOn with
+-      | _ right =>
+-          apply Quotient.sound
+-          apply (refinement.bisimilar_iff_of_surjective
+-            atomSurjective labelSurjective left right).2
+-          exact Quotient.exact equalImages
++  apply refinement.classMap_injective_iff_reflects_bisimilar.mpr
++  intro left right related
++  exact (refinement.bisimilar_iff_of_surjective
++    atomSurjective labelSurjective left right).mpr related
+ 
+ end ObserverRefinement
+ 
+@@ -338,6 +424,11 @@
+ #print axioms ObserverRefinement.bisimilar_iff_of_surjective
+ #print axioms ObserverRefinement.classMap_comp
+ #print axioms ObserverRefinement.classMap_injective_of_surjective
++#print axioms System.factors_behavioralClass_iff
++#print axioms ObserverRefinement.classMap_surjective
++#print axioms ObserverRefinement.classMap_injective_iff_reflects_bisimilar
++#print axioms ObserverRefinement.readout_descends
++#print axioms ObserverRefinement.classMap_injective_iff_all_readouts_descend
+ #print axioms ObserverObject.behavioralClasses
+ #print axioms ObserverRefinementCanary.coarse_identifies
+ #print axioms ObserverRefinementCanary.fine_distinguishes
+--- Mettapedia/GSLT/Core/SemanticImplementation.lean before
++++ Mettapedia/GSLT/Core/SemanticImplementation.lean after
+@@ -448,6 +448,75 @@
+   · rintro ⟨next, step, equivalent⟩
+     exact theory.rewrites_resp_right (implementation.sound step) equivalent
+ 
++/-! ## Observation contracts on an independently justified implementation -/
++
++/-- Observe a small host machine through its encoding. Its transitions are
++the supplied host transitions, not a transition relation fabricated from the
++abstract observation table. -/
++def observedSystem {theory : GSLT}
++    (implementation : OperationalImplementation.{0, 0} theory)
++    (observed : ObservedGSLT.{uAtom} theory) :
++    System.{uAtom, 0} implementation.asGSLT where
++  Atom := observed.Atom
++  observes atom state := observed.observes atom (implementation.encode state)
++  observes_resp := by
++    intro atom first second equal
++    cases equal
++    exact Iff.rfl
++  Label := Unit
++  act _ := implementation.step
++  act_resp_left := by
++    intro label first second target equal step
++    cases equal
++    exact ⟨target, step, rfl⟩
++  act_resp_right := by
++    intro label source target target' step equal
++    cases equal
++    exact step
++
++/-- Soundness and outgoing completeness supply the modal cover. The only
++additional obligation is that the selected abstract observations respect
++the authored equations. -/
++def observedCover {theory : GSLT}
++    (implementation : OperationalImplementation.{0, 0} theory)
++    (observed : ObservedGSLT.{uAtom} theory)
++    (response : ∀ (atom : observed.Atom) {first second : theory.Term},
++      theory.Equiv first second →
++        (observed.observes atom first ↔ observed.observes atom second)) :
++    SystemCover (implementation.observedSystem observed)
++      (System.ofObserved observed response) where
++  mapTerm := implementation.encode
++  mapAtom := _root_.id
++  mapLabel := _root_.id
++  mapEquiv := implementation.semanticCover.mapEquiv
++  observes_iff := fun _ _ => Iff.rfl
++  mapAct := implementation.sound
++  liftAct := implementation.complete
++
++/-- Every formula about the declared host observations and interactions has
++the same truth value at its encoded abstract state. This is a software-level
++realization contract, not evidence that an arbitrary material implements it. -/
++theorem observedSystem_sat_iff {theory : GSLT}
++    (implementation : OperationalImplementation.{0, 0} theory)
++    (observed : ObservedGSLT.{uAtom} theory)
++    (response : ∀ (atom : observed.Atom) {first second : theory.Term},
++      theory.Equiv first second →
++        (observed.observes atom first ↔ observed.observes atom second))
++    (formula : Formula observed.Atom Unit) (state : implementation.State) :
++    (System.ofObserved observed response).sat formula (implementation.encode state) ↔
++      (implementation.observedSystem observed).sat formula state := by
++  have same := (implementation.observedCover observed response).sat_map formula state
++  change (System.ofObserved observed response).sat
++    (Formula.map _root_.id _root_.id formula) (implementation.encode state) ↔
++      (implementation.observedSystem observed).sat formula state at same
++  have identityMap :
++      Formula.map _root_.id _root_.id formula = formula :=
++    Mettapedia.GSLT.HennessyMilner.Formula.map_id formula
++  exact (Iff.of_eq (congrArg
++    (fun mapped : Formula observed.Atom Unit =>
++      (System.ofObserved observed response).sat mapped (implementation.encode state))
++    identityMap.symm)).trans same
++
+ /-! ## Positive and negative controls -/
+ 
+ namespace Canary
+@@ -539,6 +608,8 @@
+ #print axioms EquationClassEscapingStep.not_semanticCoveredTranslation
+ #print axioms OperationalImplementation.semanticCover
+ #print axioms OperationalImplementation.semanticStep_iff_exists_implementationStep
++#print axioms OperationalImplementation.observedCover
++#print axioms OperationalImplementation.observedSystem_sat_iff
+ #print axioms OperationalImplementation.Canary.positive_step_maps
+ #print axioms OperationalImplementation.Canary.no_semantic_cover_with_some_encoding
+ 
+--- Mettapedia/OSLF/Framework/HennessyMilnerNativeTypes.lean before
++++ Mettapedia/OSLF/Framework/HennessyMilnerNativeTypes.lean after
+@@ -1,4 +1,5 @@
+ import Mettapedia.GSLT.Logic.HennessyMilnerAdequacy
++import Mettapedia.GSLT.Logic.HennessyMilnerTransport
+ import Mettapedia.GSLT.Logic.HigherOrderHML
+ import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+ 
+@@ -28,7 +29,7 @@
+ open Mettapedia.OSLF.Framework
+ open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+ 
+-universe uAtom uLabel uInterface uState
++universe uAtom uLabel uAtom' uLabel' uInterface uState
+ 
+ variable {S : GSLT} (M : System.{uAtom, uLabel} S)
+ 
+@@ -54,6 +55,17 @@
+     (gsltOSLF S).satisfies (S := ()) term (formulaNativeType M formula).pred ↔
+       M.sat formula term :=
+   Iff.rfl
++
++/-- A checked operational cover transports the formula-generated native
++types exactly. This concerns the declared atoms and interactions, not every
++predicate in the ambient native-type frame. -/
++theorem systemCover_formulaNativeType_iff {T : GSLT}
++    {N : System.{uAtom', uLabel'} T} (cover : SystemCover M N)
++    (formula : Formula M.Atom M.Label) (term : S.Term) :
++    (gsltOSLF T).satisfies (S := ()) (cover.mapTerm term)
++        (formulaNativeType N (formula.map cover.mapAtom cover.mapLabel)).pred ↔
++      (gsltOSLF S).satisfies (S := ()) term (formulaNativeType M formula).pred :=
++  cover.sat_map formula term
+ 
+ /-- Hennessy--Milner adequacy stated directly through the generated OSLF
+ native types. -/
+@@ -154,6 +166,17 @@
+         (positiveFormulaNativeType M formula).pred ↔
+       M.psat formula term :=
+   Iff.rfl
++
++/-- The same implementation boundary is exact for the positive fragment. -/
++theorem systemCover_positiveFormulaNativeType_iff {T : GSLT}
++    {N : System.{uAtom', uLabel'} T} (cover : SystemCover M N)
++    (formula : PosFormula M.Atom M.Label) (term : S.Term) :
++    (gsltOSLF T).satisfies (S := ()) (cover.mapTerm term)
++        (positiveFormulaNativeType N
++          (formula.map cover.mapAtom cover.mapLabel)).pred ↔
++      (gsltOSLF S).satisfies (S := ()) term
++        (positiveFormulaNativeType M formula).pred :=
++  cover.psat_map formula term
+ 
+ /-- Positive generated native predicates recover the simulation preorder
+ under finite behavioral covers, without changing the authored equations. -/
+@@ -230,6 +253,8 @@
+ #print axioms satisfies_formulaNativeType_iff
+ #print axioms formulaNativeTypes_equivalent_iff_bisimilar
+ #print axioms satisfies_positiveFormulaNativeType_iff
++#print axioms systemCover_formulaNativeType_iff
++#print axioms systemCover_positiveFormulaNativeType_iff
+ #print axioms positiveFormulaNativeTypes_preorder_iff_similar
+ #print axioms allNativeTypes_equivalent_iff_equiv
+ #print axioms bisimilar_not_equiv_not_allNativeTypes_equivalent
+--- Mettapedia/CognitiveArchitecture/Consciousness/TraceAndImplementation.lean before
++++ Mettapedia/CognitiveArchitecture/Consciousness/TraceAndImplementation.lean after
+@@ -228,6 +228,66 @@
+         Canary.target.Equiv (some (signalEncoding next)) target :=
+   signalImplementation.semanticStep_iff_exists_implementationStep source target
+ 
++/-- The observation asks for the actual encoded Boolean state. -/
++def signalObservation : ObservedGSLT Canary.target where
++  Atom := Bool
++  observes expected actual := actual = some expected
++
++theorem signalObservation_resp (atom : signalObservation.Atom)
++    {first second : Canary.target.Term} (equal : Canary.target.Equiv first second) :
++    signalObservation.observes atom first ↔ signalObservation.observes atom second := by
++  cases equal
++  exact Iff.rfl
++
++/-- The modal host uses the already justified implementation transitions. -/
++def signalHost : System signalImplementation.asGSLT :=
++  signalImplementation.observedSystem signalObservation
++
++/-- The abstract observer uses the source GSLT transitions independently. -/
++def signalAbstract : System Canary.target :=
++  System.ofObserved signalObservation signalObservation_resp
++
++/-- A realization transports every formula-generated native type across
++the distinct host and abstract carriers. It does not identify their entire
++presheaf topoi or supply a physical consciousness-transfer premise. -/
++theorem signal_formulaNativeType_iff (formula : Formula Bool Unit) (state : Signal) :
++    (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.gsltOSLF Canary.target).satisfies
++        (S := ()) (signalImplementation.encode state)
++        (Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes.formulaNativeType
++          signalAbstract formula).pred ↔
++      (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.gsltOSLF
++        signalImplementation.asGSLT).satisfies (S := ()) state
++        (Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes.formulaNativeType
++          signalHost formula).pred := by
++  have same := Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes.systemCover_formulaNativeType_iff signalHost
++      (signalImplementation.observedCover signalObservation signalObservation_resp)
++      formula state
++  change (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.gsltOSLF Canary.target).satisfies
++      (S := ()) (signalImplementation.encode state)
++      (Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes.formulaNativeType
++        signalAbstract (Formula.map _root_.id _root_.id formula)).pred ↔ _ at same
++  have identityMap : Formula.map _root_.id _root_.id formula = formula :=
++    Mettapedia.GSLT.HennessyMilner.Formula.map_id formula
++  exact (Iff.of_eq (congrArg
++    (fun mapped : Formula Bool Unit =>
++      (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.gsltOSLF Canary.target).satisfies
++        (S := ()) (signalImplementation.encode state)
++        (Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes.formulaNativeType
++          signalAbstract mapped).pred) identityMap.symm)).trans same
++
++/-- The host actually advances to a state satisfying the high observation. -/
++theorem signal_low_reaches_high :
++    signalHost.sat (.dia () (.atom true)) .low :=
++  ⟨.high, signal_advances, rfl⟩
++
++/-- The same formula fails at the terminal state; the observer contract does
++not manufacture a transition merely because the postcondition already holds. -/
++theorem signal_high_cannot_advance :
++    ¬ signalHost.sat (.dia () (.atom true)) .high := by
++  rintro ⟨target, step, _⟩
++  change signalEncoding .high = false ∧ signalEncoding target = true at step
++  cases (show true = false from step.1)
++
+ end CompleteDescriptionControl
+ 
+ namespace WorkspaceControl
+@@ -261,6 +321,18 @@
+     passiveModal.toBehavioralClass (initial .shadow)
+   exact (passiveModal.behavioralClass_eq_iff _ _).mpr passive_modes_bisimilar
+ 
++/-- The constructed workspace obstruction refutes universal descent of
++intervention-invariant readouts to passive classes. Values are arbitrary
++mathematical data; interpreting any such readout as experience is a separate
++hypothesis rather than a consequence of the observer construction. -/
++theorem not_all_intervention_readouts_passive :
++    ¬ (∀ (Value : Type) (readout : State → Value),
++      Factors modal.toBehavioralClass readout →
++        Factors passiveModal.toBehavioralClass readout) := by
++  intro descends
++  exact intervention_class_forgetting_not_injective
++    (interventionRefinement.classMap_injective_iff_all_readouts_descend.mpr descends)
++
+ end WorkspaceControl
+ 
+ #print axioms all_intervention_invariants_passive_iff
+@@ -271,7 +343,11 @@
+ #print axioms CompleteDescriptionControl.no_stuttering_implementation
+ #print axioms CompleteDescriptionControl.signalImplementation
+ #print axioms CompleteDescriptionControl.signal_reflects_all_semantic_steps
++#print axioms CompleteDescriptionControl.signal_formulaNativeType_iff
++#print axioms CompleteDescriptionControl.signal_low_reaches_high
++#print axioms CompleteDescriptionControl.signal_high_cannot_advance
+ #print axioms WorkspaceControl.passive_record_cannot_support_broadcast_assignment
+ #print axioms WorkspaceControl.intervention_class_forgetting_not_injective
++#print axioms WorkspaceControl.not_all_intervention_readouts_passive
+ 
+ end Mettapedia.CognitiveArchitecture.Consciousness.TraceAndImplementation
+--- Mettapedia/GSLT/Weighting/QuantumJump.lean before
++++ Mettapedia/GSLT/Weighting/QuantumJump.lean after
+@@ -1,4 +1,5 @@
+ import Mettapedia.GSLT.Weighting.RateGenerator
++import Mettapedia.GSLT.Core.NonFactorization
+ 
+ /-!
+ # Quantum jumps over rate channels (Section 13.6, corrected)
+@@ -810,6 +811,38 @@
+   rw [sqNorm_noJump_sourceJump rate_nonneg θ t 0]
+   simp [totalRate, rateKernel, rate]
+ 
++/-- The population observer cannot recover the population derivative for
++the per-channel dynamics: the existing coherent and mixed matrices have the
++same observed populations and different derivatives. This is an instance of
++the shared nonfactorization criterion, not a consciousness assignment. -/
++theorem channel_population_derivative_not_factors :
++    ¬ Mettapedia.GSLT.Core.NonFactorization.Factors
++      (fun ρ : Matrix (Fin 3) (Fin 3) ℂ => fun c => ρ c c)
++      (fun ρ : Matrix (Fin 3) (Fin 3) ℂ => fun c => lindbladian 0 L ρ c c) := by
++  apply Mettapedia.GSLT.Core.NonFactorization.NonTrivialFiber.not_factors
++  refine ⟨ρDark, ρMix, funext ρDark_diag_eq, ?_⟩
++  intro sameDerivatives
++  have same := congrFun sameDerivatives 2
++  rw [lindbladian_ρDark, lindbladian_ρMix] at same
++  exact zero_ne_one same
++
++/-- For the independently justified per-source dynamics, the same observer
++does retain the complete population derivative. Thus whether a projection
++is adequate depends on the actual operators, not on its name or carrier. -/
++theorem source_population_derivative_factors :
++    Mettapedia.GSLT.Core.NonFactorization.Factors
++      (fun ρ : Matrix (Fin 3) (Fin 3) ℂ => fun c => ρ c c)
++      (fun ρ : Matrix (Fin 3) (Fin 3) ℂ => fun c =>
++        lindbladian 0 (sourceJump rate θ) ρ c c) := by
++  refine ⟨fun populations c =>
++    ∑ c', populations c' * (generator (rateKernel rate) c' c : ℂ), ?_⟩
++  intro ρ
++  funext c
++  exact (sourceJump_populations_fix ρ c).symm
++
++#print axioms channel_population_derivative_not_factors
++#print axioms source_population_derivative_factors
++
+ end Counterexample
+ 
+ /-! ### Per-source operators with a branching source create coherence -/

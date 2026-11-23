@@ -1,0 +1,92 @@
+import "../../../../repos/mm0/examples/hol.mm1";
+
+-- Least zero/successor closure on an arbitrary HOL carrier. These are
+-- proofs over the existing HOL presentation, with no new theorem axioms.
+def naturalClosure (A: type) (z s n: term) =
+  $ !p: A -> bool. p @ z ==>
+      (!k: A. p @ k ==> p @ (s @ k)) ==> p @ n $;
+
+theorem naturalStepT (G: wff) (A: type) (s p: term)
+  (hs: $ G |- s: A -> A $) (hp: $ G |- p: A -> bool $):
+  $ G |- (!k: A. p @ k ==> p @ (s @ k)): bool $ =
+'(!! allcT k @ impcT (appT (anwl hp) anr)
+    (appT (anwl hp) (appT (anwl hs) anr)));
+
+theorem naturalZeroCore (G: wff) (A: type) (z s p: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hp: $ G |- p: A -> bool $):
+  $ G |- p @ z ==> (!k: A. p @ k ==> p @ (s @ k)) ==> p @ z $ =
+(focus
+  (have 'Pzero '(appT hp hz))
+  (have 'Step '(naturalStepT hs hp))
+  '(DISCH Pzero (impcT Step Pzero) @
+    DISCH (anwl Step) (anwl Pzero) anlr));
+
+pub theorem naturalClosureZero (G: wff) (A: type) (z s: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $):
+  $ G |- naturalClosure A z s z $ =
+'(!! GEN p @ !! naturalZeroCore k (anwl hz) (anwl hs) anr);
+
+theorem naturalInstanceT (G: wff) (A: type) (z s n p: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (hp: $ G |- p: A -> bool $):
+  $ G |- (p @ z ==> (!k: A. p @ k ==> p @ (s @ k)) ==> p @ n): bool $ =
+'(impcT (appT hp hz) @ impcT (naturalStepT hs hp) (appT hp hn));
+
+theorem naturalInstanceCong (G: wff) (A: type) (z s n p q: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (heq: $ G |- =[A -> bool] p = q $):
+  $ G |- (p @ z ==> (!k: A. p @ k ==> p @ (s @ k)) ==> p @ n) <=>
+         (q @ z ==> (!k: A. q @ k ==> q @ (s @ k)) ==> q @ n) $ =
+'(bineq impT (aeq1 heq hz) @ bineq impT
+    (alleq @ bineq impT (aeq1 (anwl heq) anr)
+      (aeq1 (anwl heq) (appT (anwl hs) anr))) (aeq1 heq hn));
+
+theorem naturalInstance (G: wff) (A: type) (z s n p: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (hp: $ G |- p: A -> bool $)
+  (h: $ G |- naturalClosure A z s n $):
+  $ G |- p @ z ==> (!k: A. p @ k ==> p @ (s @ k)) ==> p @ n $ =
+'(!! SPEC q hp (naturalInstanceT hz hs hn hp)
+    (naturalInstanceCong (anwl hz) (anwl hs) (anwl hn) anr) h);
+
+theorem naturalStepAt (G: wff) (A: type) (s n p: term)
+  (hs: $ G |- s: A -> A $) (hn: $ G |- n: A $)
+  (hp: $ G |- p: A -> bool $):
+  $ G |- (!k: A. p @ k ==> p @ (s @ k)) ==> (p @ n ==> p @ (s @ n)) $ =
+'(!! spec k (impcT (appT (anwl hp) anr)
+      (appT (anwl hp) (appT (anwl hs) anr)))
+    hn (impcT (appT hp hn) (appT hp (appT hs hn)))
+    (bineq impT (aeq2 (anwl hp) anr)
+      (aeq2 (anwl hp) (aeq2 (anwl hs) anr))));
+
+theorem naturalSuccessorCore (G: wff) (A: type) (z s n p: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (hp: $ G |- p: A -> bool $)
+  (h: $ G |- naturalClosure A z s n $):
+  $ G |- p @ z ==> (!k: A. p @ k ==> p @ (s @ k)) ==> p @ (s @ n) $ =
+(focus
+  (have 'Pzero '(appT hp hz))
+  (have 'Psuccessor '(appT hp (appT hs hn)))
+  (have 'Step '(naturalStepT hs hp))
+  (have 'StepAt '(naturalStepAt hs hn hp))
+  (have 'Instance '(naturalInstance hz hs hn hp h))
+  '(DISCH Pzero (impcT Step Psuccessor) @
+    DISCH (anwl Step) (anwl Psuccessor) @
+    MP (MP (anwll StepAt) anr)
+      (MP (MP (anwll Instance) anlr) anr)));
+
+pub theorem naturalClosureSuccessor (G: wff) (A: type) (z s n: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (h: $ G |- naturalClosure A z s n $):
+  $ G |- naturalClosure A z s (s @ n) $ =
+'(!! GEN p @ !! naturalSuccessorCore k
+    (anwl hz) (anwl hs) (anwl hn) anr (anwl h));
+
+pub theorem naturalClosureElimination (G: wff) (A: type) (z s n p: term) {k: term}
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (hp: $ G |- p: A -> bool $)
+  (h: $ G |- naturalClosure A z s n $) (hzero: $ G |- p @ z $)
+  (hstep: $ G |- !k: A. p @ k ==> p @ (s @ k) $):
+  $ G |- p @ n $ =
+'(MP (MP (naturalInstance hz hs hn hp h) hzero) hstep);

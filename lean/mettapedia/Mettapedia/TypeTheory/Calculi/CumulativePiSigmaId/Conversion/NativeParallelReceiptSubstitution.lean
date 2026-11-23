@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.RelatedSubstitution
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Conversion.NativeParallelReceipt
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Conversion.NativeConversionSubstitution
 
@@ -83,12 +84,8 @@ def renameReceipt {n m : Nat} (rho : Ren n m) {source target : Tower.Tm n} :
 weakened before its parallel development is reused. -/
 def liftArguments {n m : Nat} {source target : Sub Tower.Head n m}
     (arguments : ∀ i, Receipt (source i) (target i)) :
-    ∀ i, Receipt (liftSub source i) (liftSub target i) := by
-  intro i
-  refine Fin.cases ?_ ?_ i
-  · exact .var 0
-  · intro prior
-    exact renameReceipt wk (arguments prior)
+    ∀ i, Receipt (liftSub source i) (liftSub target i) :=
+  RelatedSubstitution.lift (E := Receipt) (.var _) (renameReceipt wk) arguments
 
 /-- Simultaneous parallel substitution preserves all five native branches. The
 authored coherence guards are transported, not recomputed or erased. -/
@@ -159,13 +156,21 @@ together, including any completed native root beneath that binder. -/
 def instantiateReceipt {n : Nat} {argument argument' : Tower.Tm n}
     {body body' : Tower.Tm (n + 1)} (argumentStep : Receipt argument argument')
     (bodyStep : Receipt body body') :
-    Receipt (inst0 argument body) (inst0 argument' body') := by
-  apply substituteReceipt (sourceSub := subst0 argument) (targetSub := subst0 argument') _ bodyStep
-  intro i
-  refine Fin.cases ?_ ?_ i
-  · exact argumentStep
-  · intro prior
-    exact .var prior
+    Receipt (inst0 argument body) (inst0 argument' body') :=
+  RelatedSubstitution.instantiate (E := Receipt)
+    (fun images evidence => substituteReceipt images evidence) Receipt.var argumentStep bodyStep
+
+section LiftControls
+
+example {n m : Nat} {source target : Sub Tower.Head n m}
+    (arguments : ∀ i, Receipt (source i) (target i)) :
+    liftArguments arguments 0 = Receipt.var 0 := rfl
+
+example {n m : Nat} {source target : Sub Tower.Head n m}
+    (arguments : ∀ i, Receipt (source i) (target i)) (prior : Fin n) :
+    liftArguments arguments prior.succ = renameReceipt wk (arguments prior) := rfl
+
+end LiftControls
 
 #print axioms renameReceipt
 #print axioms substituteReceipt

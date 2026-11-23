@@ -1,0 +1,8 @@
+(sort wff provable)
+(sort nat)
+(term wi ((a wff ()) (b wff ())) (wff ()))
+(term eq ((a nat ()) (b nat ())) (wff ()))
+(def foo ((a nat ())) (wff ()) () (eq a a))
+(axiom ax1 ((a wff ()) (b wff ())) () (wi a (wi b a)))
+(theorem bad ((y nat)) () (wi (foo y) (eq y y)) ()
+  (:conv (wi (foo y) (eq y y)) (wi (:unfold foo (y) () (eq y y)) (eq y y)) (ax1 ((eq y y) (eq y y)))))

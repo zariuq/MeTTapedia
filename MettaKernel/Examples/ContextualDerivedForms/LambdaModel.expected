@@ -1,0 +1,11 @@
+formation: name=lambda_1 captures=["saved"]
+capture: output=[] answers=["(pair a b)"]
+held: output=[] answers=["(pair (println! 9) b)"]
+late: output=[] answers=["(pair a b)"]
+public-space: output=[] answers=["()"]
+public-remove: output=[] answers=["(pair a b)"]
+closed: output=[] answers=["a"]
+capture-order: ["b", "a"]
+stale-private-cache: true/false
+raw-collision: output=[] answers=[]
+scoped-collision: output=[] answers=["b"]

@@ -1,0 +1,61 @@
+import "Syntax.module" as sx
+import "GroundKernel.module" as kernel
+
+Module Core {
+  Theory ProgramData(s: sx.Grammar) {
+    s
+      Types {
+        DlValue; DlVariable; DlArgument; DlGroundTuple; DlTuple;
+        DlRelation; DlAttributeType; DlAttributeData; DlRelationDeclaration;
+        DlComparisonData; DlPositiveLiteralData; DlClause; DlStatement; DlProgramData;
+      }
+      Terms {
+        SymbolValue . text:DlSymbol |- "symbol-value" text : DlValue;
+        IntegerValue . value:DlInteger |- "integer-value" value : DlValue;
+        UnsignedValue . value:DlUnsigned |- "unsigned-value" value : DlValue;
+        FloatValue . value:DlFloat |- "float-value" value : DlValue;
+        Variable . identifier:DlIdentifier |- "variable" identifier : DlVariable;
+        ValueArgument . value:DlValue |- "constant" value : DlArgument;
+        VariableArgument . varRef:DlVariable |- "bound-variable" varRef : DlArgument;
+        AnonymousArgument . |- "anonymous" : DlArgument;
+        GroundTuple . values:Vec(DlValue) |- "ground-tuple" values : DlGroundTuple ![wrapped];
+        Tuple . arguments:Vec(DlArgument) |- "tuple" arguments : DlTuple ![wrapped];
+        Relation . identifier:DlQualifiedName |- "relation" identifier : DlRelation;
+        SymbolType . |- "symbol" : DlAttributeType;
+        NumberType . |- "number" : DlAttributeType;
+        UnsignedType . |- "unsigned" : DlAttributeType;
+        FloatType . |- "float" : DlAttributeType;
+        Attribute . identifier:DlIdentifier, attributeType:DlAttributeType |- identifier ":" attributeType : DlAttributeData;
+        RelationDeclaration . relation:DlRelation, attributes:Vec(DlAttributeData) |- "declare" relation attributes : DlRelationDeclaration;
+        Equal . left:DlArgument, right:DlArgument |- left "=" right : DlComparisonData;
+        Different . left:DlArgument, right:DlArgument |- left "!=" right : DlComparisonData;
+        Less . left:DlArgument, right:DlArgument |- left "<" right : DlComparisonData;
+        LessEqual . left:DlArgument, right:DlArgument |- left "<=" right : DlComparisonData;
+        Greater . left:DlArgument, right:DlArgument |- left ">" right : DlComparisonData;
+        GreaterEqual . left:DlArgument, right:DlArgument |- left ">=" right : DlComparisonData;
+        PositiveAtom . relation:DlRelation, arguments:DlTuple |- "atom" relation arguments : DlPositiveLiteralData;
+        Comparison . comparison:DlComparisonData |- "comparison" comparison : DlPositiveLiteralData;
+        Clause . relation:DlRelation, head:DlTuple, body:Vec(DlPositiveLiteralData) |- "clause" relation head body : DlClause;
+        Declaration . declaration:DlRelationDeclaration |- "declaration" declaration : DlStatement;
+        GroundFact . relation:DlRelation, values:DlGroundTuple |- "fact" relation values : DlStatement;
+        PositiveRule . clause:DlClause |- "rule" clause : DlStatement;
+        InputRelation . relation:DlRelation |- "input" relation : DlStatement;
+        OutputRelation . relation:DlRelation |- "output" relation : DlStatement;
+        Program . statements:Vec(DlStatement) |- "program" statements : DlProgramData ![wrapped];
+      }
+  }
+  Theory GroundSemantics(d: ProgramData) {
+    d \/ kernel.Inference()
+      Terms {
+        AtomData . relation:DlRelation, values:DlGroundTuple
+          |- "ground-atom" relation values : DlGroundAtomData;
+        GroundingValues . values:DlGroundTuple |- "grounding" values : DlGrounding;
+        ClauseOrdinal . value:DlUnsigned |- "clause-ordinal" value : DlClauseOrdinal;
+      }
+  }
+  Theory DefaultCore() {
+    let s = sx.Grammar() in (
+      let d = ProgramData(s) in (d \/ GroundSemantics(d)))
+  }
+  theory DefaultCore()
+}

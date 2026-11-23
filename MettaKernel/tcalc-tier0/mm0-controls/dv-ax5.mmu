@@ -1,0 +1,8 @@
+(sort wff provable)
+(sort nat)
+(term wi ((a wff ()) (b wff ())) (wff ()))
+(term al ((x nat) (a wff (x))) (wff ()))
+(term eq ((a nat ()) (b nat ())) (wff ()))
+(axiom ax5 ((x nat) (a wff ())) () (wi a (al x a)))
+(theorem bad ((x nat) (y nat)) () (wi (al y (eq x y)) (al x (al y (eq x y)))) ()
+  (ax5 (x (al y (eq x y)))))

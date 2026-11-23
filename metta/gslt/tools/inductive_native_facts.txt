@@ -1,0 +1,65 @@
+Native facts in the authored Nat/Vec qualification
+================================================
+
+qualify_inductive_m1.py accepts --native-facts-config CONFIG.json. It runs the
+maintained MM0 and Megalodon natural-proof gates and replays a retained HOL Light
+source closure, all on the same --cetta executable as the append workload.
+qualify_inductive_native_facts.py can also run this component independently.
+Run either driver in the project's Lean environment with the statement emitter
+dependencies built. No archived verdict is accepted as fresh qualification.
+
+The configuration is an object containing these path-valued fields:
+
+  mm0_compiler       Existing upstream mm0-rs producer.
+  mm0_reference      Independently built upstream mm0-c verifier.
+  megalodon          Upstream Megalodon proof producer/checker.
+  hol_prefix         Prefix of retained .nodes.jsonl, .roots.jsonl and
+                     .signature.json files, beside their export.json inventory.
+  hol_adapter        Existing structured-HOL-to-HOLR request producer.
+  hol_stream_tools   Directory containing its holr.py wire builder.
+  hol_source_tools   Directory containing hol_light_prepare_export_v1.py and
+                     hol_light_proof_export_v1.py.
+
+The HOL producer and closure are explicit inputs because this component consumes
+the retained reference route. It does not own that route's source exporter or
+replace it with a new logical checker. Every input and produced artifact is
+hashed; the record retains source statements, assumptions and runtime modes.
+
+What each route qualifies
+-------------------------
+
+MM0 hol.mm0: zero closure, successor closure and ordinary closure elimination.
+The separate specification is generated from the Lean typed closure body.
+Upstream mm0-c and native CeTTa check the artifact; HE, PeTTa and Prime modes
+retain the exact object-typing premises and reject altered evidence. The source
+extension adds no axioms; the record preserves its dependencies on the loaded
+HOL logical/typing/equality rules. The whole loaded presentation contains more
+axioms than these proofs use. A smaller extracted base remains separate work.
+
+Megalodon: closure-premised induction and conditional unique recursion in its
+base STT reading. The native gate uses HE and PeTTa modes, checks an empty imported
+axiom allowlist, compares the independently typed statements and rechecks
+portable proofs. Successor injectivity/distinctness and the choice interface
+remain hypotheses of the recursion statement. This is not unconditional Peano
+recursion or Prime-mode qualification of the Megalodon service.
+
+HOL Light: retained num_RECURSION, num_INDUCTION, NOT_SUC and SUC_INJ reference
+roots under the standard axiom policy. Each returned closed sequent is compared
+with the original source node. Changed conclusions, an extra axiom and a
+truncated stream are refused. Root names do not establish correspondence with
+the authored Nat declaration; that is an additional semantic/export obligation.
+
+Completion boundary
+-------------------
+
+A component pass keeps m1_qualified false. The joint driver still exits 2 while
+the complete authored Nat facts and remaining DTT/profile comparisons are open.
+Ordinary closure elimination, closure-premised induction, conditional recursion
+and HOL reference recursion are distinct judgments. They are never merged by
+name or by counting successful checks.
+
+The companion test_inductive_native_facts.py uses a genuine successful record
+and rejects mismatched binaries, missing modes or packets, altered statements,
+discarded assumption inventories and theorem-identity changes. These controls
+supplement the native proof-refusal tests. They are interface checks, not a
+formal proof of the C implementations or a complete source-export theorem.

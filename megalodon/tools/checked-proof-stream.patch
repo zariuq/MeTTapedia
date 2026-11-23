@@ -1,0 +1,95 @@
+--- a/src/interpret.mli
++++ b/src/interpret.mli
+@@ -6,7 +6,7 @@
+ 
+ val verbosity : int ref
+ val tpabbrev : (string,tp) Hashtbl.t
+-val proving : (string * int * tm * string * Hash.hashval) option ref
++val proving : (string * int * tm * string * Hash.hashval option) option ref
+ type pos = int * int
+ val prooffun :  ((pos option * pf) list -> pf) ref
+ val deltaset : string list ref
+--- a/src/interpret.ml
++++ b/src/interpret.ml
+@@ -9,7 +9,7 @@
+ 
+ let verbosity = ref 1
+ let tpabbrev : (string,tp) Hashtbl.t = Hashtbl.create 10
+-let proving : (string * int * tm * string * Hash.hashval) option ref = ref None
++let proving : (string * int * tm * string * Hash.hashval option) option ref = ref None
+ type pos = int * int
+ let prooffun : ((pos option * pf) list -> pf) ref = ref (fun _ -> raise (Failure "Bug. Proof construction function has not been set"))
+ let deltaset : string list ref = ref []
+--- a/src/megalodon.ml
++++ b/src/megalodon.ml
+@@ -750,7 +750,7 @@
+     Hashtbl.remove sigdelta_opaque xh;
+   with Not_found ->
+     Printf.printf "WARNING: %s was not opaque, so not made transparent.\n" x
+-  
++
+ let evaluate_docitem_1 ditem =
+   begin
+     match !sigoutfile with
+@@ -1587,10 +1587,14 @@
+       let agtm = !tmallclos atm in
+       let ahv = ptm_all_id (i,agtm) sigtmof sigdelta in
+       if !verbosity > 5 then Printf.printf "(MGPROPID \"%s\" \"%s\")\n" x ahv;
+-      let pfgahv = pfg_propid agtm in
++      let pfgahv = if i = 0 then Some (pfg_propid agtm) else None in
+       (*      if !verbosity > 5 && (Hashtbl.mem indexknowns ahv || Hashtbl.mem ownedprop pfgahv) then (Printf.printf "Warning: The id %s for the proposition for theorem %s is already known.\n" ahv x; flush stdout); *)
+       Hashtbl.add sigknh x ahv;
+-      Hashtbl.add ownedprop pfgahv ();
++      begin
++        match pfgahv with
++        | Some h -> Hashtbl.add ownedprop h ()
++        | None -> ()
++      end;
+       if i = 0 && (!pfgsummary || not (!html = None)) then
+         begin
+           let (pfgpure,pfgahv) = pfg_propid2 agtm in
+@@ -1614,7 +1618,15 @@
+ 	  | None -> ()
+ 	end;
+       if (!verbosity > 3) then (Printf.printf "Proposition of %s %s : %s was assigned id %s\n" c x (tm_to_str agtm) ahv; flush stdout);
+-      if !sexprinfo then Printf.printf "(THM \"%s\" \"%s\" \"%s\" %d %s %d)\n" x ahv (Hash.hashval_hexstring pfgahv) i (tm_to_sexpr agtm) !lineno;
++      if !sexprinfo then
++        begin
++          let pfgid =
++            match pfgahv with
++            | Some h -> Hash.hashval_hexstring h
++            | None -> "none"
++          in
++          Printf.printf "(THM \"%s\" \"%s\" \"%s\" %d %s %d)\n" x ahv pfgid i (tm_to_sexpr agtm) !lineno
++        end;
+       begin
+         match !sexprallsubgoals_inclfile with
+         | None -> ()
+@@ -2898,7 +2910,12 @@
+ 	    try
+ 	      if !verbosity > 19 then (Printf.printf "Qed start\n"; flush stdout);
+ 	      if not (Hashtbl.mem indexknowns gphv) then Hashtbl.add indexknowns gphv ();
+-              if not (Hashtbl.mem ownedprop pfggphv) then Hashtbl.add ownedprop pfggphv ();
++              begin
++                match pfggphv with
++                | Some h when not (Hashtbl.mem ownedprop h) ->
++                    Hashtbl.add ownedprop h ()
++                | Some _ | None -> ()
++              end;
+ 	      activate_special_knowns gphv;
+ 	      if !pfgtheory = Egal then megaauto_set_known gphv;
+               if fofp() && i = 0 && not (Hashtbl.mem fofskip gphv) then
+@@ -2955,7 +2972,12 @@
+ 		  raise (Failure("Proof doesn't prove the proposition."))
+ 	      | Some(dl) ->
+ 		  deltaset := dl;
+-                  if !sexprinfo then (List.iter (fun d -> Printf.printf "(DELTA \"%s\")\n" d) dl; Printf.printf "(QED)\n");
++                  if !sexprinfo then
++                    begin
++                      List.iter (fun d -> Printf.printf "(DELTA \"%s\")\n" d) dl;
++                      Printf.printf "(PROOF \"%s\" %s)\n" thmname (pf_to_sexpr dgpf);
++                      Printf.printf "(QED)\n"
++                    end;
+                   if !pfgout then List.iter (fun d -> Hashtbl.add pfgdelta d ()) !deltaset;
+ 		  if (!verbosity > 19) then (Printf.printf "Delta Set:"; List.iter (fun h -> Printf.printf " %s" h) dl; Printf.printf "\n"; flush stdout);
+ 		  let dhv = ppf_id (i,dgpf) sigtmof sigdelta in

@@ -1,0 +1,212 @@
+import "NaturalCarrier.mm1";
+
+-- The natural subtype uses the existing nonempty-predicate type definition.
+def holNaturalPredicate =
+  $ \ n: ind. naturalClosure ind infiniteZero infiniteSuccessor n $;
+def holNatural = $ tydef holNaturalPredicate $;
+def holZero = $ abs holNaturalPredicate @ infiniteZero $;
+def holSuccessor = $ \ n: holNatural.
+  abs holNaturalPredicate @ (infiniteSuccessor @ (rep holNaturalPredicate @ n)) $;
+def holPullback (p: term) =
+  $ \ n: ind. p @ (abs holNaturalPredicate @ n) $;
+
+theorem holNaturalPredicateT (G: wff):
+  $ G |- holNaturalPredicate: ind -> bool $ =
+'(!! lamT n @ naturalClosureT infiniteZeroT infiniteSuccessorT anr);
+
+theorem holNaturalPredicateBeta (G: wff) (n: term)
+  (hn: $ G |- n: ind $):
+  $ G |- holNaturalPredicate @ n <=>
+    naturalClosure ind infiniteZero infiniteSuccessor n $ =
+'(!! betac k (naturalClosureT infiniteZeroT infiniteSuccessorT anr) hn
+  (naturalClosureT infiniteZeroT infiniteSuccessorT hn) @
+  naturalClosureNumberCong infiniteZeroT infiniteSuccessorT anr);
+
+theorem holNaturalPredicateZero (G: wff):
+  $ G |- holNaturalPredicate @ infiniteZero $ =
+'(eqmpr (holNaturalPredicateBeta infiniteZeroT) @
+  naturalClosureZero infiniteZeroT infiniteSuccessorT);
+
+theorem holAbsT (G: wff):
+  $ G |- abs holNaturalPredicate: ind -> holNatural $ =
+'(absT holNaturalPredicateT holNaturalPredicateZero);
+
+theorem holRepT (G: wff):
+  $ G |- rep holNaturalPredicate: holNatural -> ind $ =
+'(repT holNaturalPredicateT holNaturalPredicateZero);
+
+theorem holAbsRep (G: wff) (n: term) (hn: $ G |- n: holNatural $):
+  $ G |- =[holNatural] abs holNaturalPredicate @ (rep holNaturalPredicate @ n) = n $ =
+'(syl (ian id hn) @ abs_rep holNaturalPredicateT holNaturalPredicateZero);
+
+theorem holRepAbs (G: wff) (n: term) (hn: $ G |- n: ind $):
+  $ G |- holNaturalPredicate @ n <=>
+    =[ind] rep holNaturalPredicate @ (abs holNaturalPredicate @ n) = n $ =
+'(syl (ian id hn) @ rep_abs holNaturalPredicateT holNaturalPredicateZero);
+
+theorem holRepMember (G: wff) (n: term) (hn: $ G |- n: holNatural $):
+  $ G |- holNaturalPredicate @ (rep holNaturalPredicate @ n) $ =
+'(eqmpr (holRepAbs (appT holRepT hn)) @ aeq2 holRepT (holAbsRep hn));
+
+pub theorem holZeroT (G: wff): $ G |- holZero: holNatural $ =
+'(appT holAbsT infiniteZeroT);
+
+pub theorem holSuccessorT (G: wff):
+  $ G |- holSuccessor: holNatural -> holNatural $ =
+'(!! lamT n @ appT holAbsT (appT infiniteSuccessorT (appT holRepT anr)));
+
+theorem holSuccessorBeta (G: wff) (n: term) (hn: $ G |- n: holNatural $):
+  $ G |- =[holNatural] holSuccessor @ n =
+    abs holNaturalPredicate @ (infiniteSuccessor @ (rep holNaturalPredicate @ n)) $ =
+'(!! betac k (appT holAbsT (appT infiniteSuccessorT (appT holRepT anr))) hn
+  (appT holAbsT (appT infiniteSuccessorT (appT holRepT hn))) @
+  aeq2 holAbsT (aeq2 infiniteSuccessorT (aeq2 holRepT anr)));
+
+theorem holNaturalPredicateSuccessor (G: wff) (n: term)
+  (hn: $ G |- n: ind $) (h: $ G |- holNaturalPredicate @ n $):
+  $ G |- holNaturalPredicate @ (infiniteSuccessor @ n) $ =
+'(eqmpr (holNaturalPredicateBeta (appT infiniteSuccessorT hn)) @
+  naturalClosureSuccessor infiniteZeroT infiniteSuccessorT hn @
+    eqmp (holNaturalPredicateBeta hn) h);
+
+theorem holRepZero (G: wff):
+  $ G |- =[ind] rep holNaturalPredicate @ holZero = infiniteZero $ =
+'(eqmp (holRepAbs infiniteZeroT) holNaturalPredicateZero);
+
+theorem holRepSuccessor (G: wff) (n: term) (hn: $ G |- n: holNatural $):
+  $ G |- =[ind] rep holNaturalPredicate @ (holSuccessor @ n) =
+    infiniteSuccessor @ (rep holNaturalPredicate @ n) $ =
+'(trans (aeq2 holRepT (holSuccessorBeta hn)) @
+  eqmp (holRepAbs (appT infiniteSuccessorT (appT holRepT hn))) @
+    holNaturalPredicateSuccessor (appT holRepT hn) (holRepMember hn));
+
+pub theorem holZeroNotSuccessor (G: wff) (n: term)
+  (hn: $ G |- n: holNatural $):
+  $ G |- ~(=[holNatural] holZero = holSuccessor @ n) $ =
+'(NOT_INTRO @ DISCH (eqcT holZeroT (appT holSuccessorT hn)) FT @
+  MP (NOT_ELIM (infiniteZeroNotSuccessor (appT holRepT (anwl hn)))) @
+    trans (sym holRepZero) @ trans (aeq2 holRepT anr) (holRepSuccessor (anwl hn)));
+
+theorem oneOneApply (G: wff) (A: type) (f a b: term)
+  (hf: $ G |- f: A -> A $) (ha: $ G |- a: A $) (hb: $ G |- b: A $)
+  (hi: $ G |- one_one A A @ f $) (h: $ G |- =[A] f @ a = f @ b $):
+  $ G |- =[A] a = b $ =
+(focus
+  (have 'First '(!! SPEC x ha
+    (!! allcT y @ impcT
+      (eqcT (appT (anwl hf) (anwl ha)) (appT (anwl hf) anr)) (eqcT (anwl ha) anr))
+    (!! alleq y @ bineq impT
+      (bineq1 eqT (aeq2 (anwll hf) anlr) (appT (anwll hf) anr))
+      (bineq1 eqT anlr anr))
+    (eqmp (!! ONE_ONE x y hf) hi)))
+  '(MP (!! SPEC y hb
+    (impcT (eqcT (appT hf ha) (appT hf hb)) (eqcT ha hb))
+    (bineq impT (bineq2 eqT (appT (anwl hf) (anwl ha)) (aeq2 (anwl hf) anr))
+      (bineq2 eqT (anwl ha) anr)) First) h));
+
+theorem holSuccessorCancel (G: wff) (m n: term)
+  (hm: $ G |- m: holNatural $) (hn: $ G |- n: holNatural $)
+  (h: $ G |- =[holNatural] holSuccessor @ m = holSuccessor @ n $):
+  $ G |- =[holNatural] m = n $ =
+(focus
+  (have 'Representations '(oneOneApply infiniteSuccessorT
+    (appT holRepT hm) (appT holRepT hn) infiniteSuccessorInjective @
+      trans (sym (holRepSuccessor hm)) @
+        trans (aeq2 holRepT h) (holRepSuccessor hn)))
+  '(trans (sym (holAbsRep hm)) @
+    trans (aeq2 holAbsT Representations) (holAbsRep hn)));
+
+pub theorem holSuccessorInjective (G: wff) (m n: term)
+  (hm: $ G |- m: holNatural $) (hn: $ G |- n: holNatural $):
+  $ G |- (=[holNatural] holSuccessor @ m = holSuccessor @ n) <=>
+    (=[holNatural] m = n) $ =
+'(IMP_ANTISYM
+  (DISCH (eqcT (appT holSuccessorT hm) (appT holSuccessorT hn)) (eqcT hm hn) @
+    holSuccessorCancel (anwl hm) (anwl hn) anr)
+  (DISCH (eqcT hm hn) (eqcT (appT holSuccessorT hm) (appT holSuccessorT hn)) @
+    aeq2 holSuccessorT anr));
+
+theorem holPullbackT (G: wff) (p: term) (hp: $ G |- p: holNatural -> bool $):
+  $ G |- holPullback p: ind -> bool $ =
+'(!! lamT n @ appT (anwl hp) (appT holAbsT anr));
+
+theorem holPullbackBeta (G: wff) (p n: term)
+  (hp: $ G |- p: holNatural -> bool $) (hn: $ G |- n: ind $):
+  $ G |- holPullback p @ n <=> p @ (abs holNaturalPredicate @ n) $ =
+'(!! betac k (appT (anwl hp) (appT holAbsT anr)) hn
+  (appT hp (appT holAbsT hn)) @ aeq2 (anwl hp) (aeq2 holAbsT anr));
+
+theorem holSuccessorOfClosed (G: wff) (n: term)
+  (hn: $ G |- n: ind $)
+  (h: $ G |- naturalClosure ind infiniteZero infiniteSuccessor n $):
+  $ G |- =[holNatural] holSuccessor @ (abs holNaturalPredicate @ n) =
+    abs holNaturalPredicate @ (infiniteSuccessor @ n) $ =
+'(trans (holSuccessorBeta (appT holAbsT hn)) @ aeq2 holAbsT @
+  aeq2 infiniteSuccessorT @ eqmp (holRepAbs hn) @ eqmpr (holNaturalPredicateBeta hn) h);
+
+theorem holPullbackZero (G: wff) (p: term)
+  (hp: $ G |- p: holNatural -> bool $) (hzero: $ G |- p @ holZero $):
+  $ G |- holPullback p @ infiniteZero $ =
+'(eqmpr (holPullbackBeta hp infiniteZeroT) hzero);
+
+theorem holPullbackStepAt (G: wff) (p n: term) {k: term}
+  (hp: $ G |- p: holNatural -> bool $) (hn: $ G |- n: ind $)
+  (hstep: $ G |- !k: holNatural. p @ k ==> p @ (holSuccessor @ k) $)
+  (hclosed: $ G |- naturalClosure ind infiniteZero infiniteSuccessor n $)
+  (h: $ G |- holPullback p @ n $):
+  $ G |- holPullback p @ (infiniteSuccessor @ n) $ =
+(focus
+  (have 'Previous '(eqmp (holPullbackBeta hp hn) h))
+  (have 'Next '(MP (MP (!! naturalStepAt k holSuccessorT (appT holAbsT hn) hp) hstep) Previous))
+  '(eqmpr (holPullbackBeta hp (appT infiniteSuccessorT hn)) @
+    eqmp (aeq2 hp (holSuccessorOfClosed hn hclosed)) Next));
+
+theorem holPullbackStep (G: wff) (p: term) {k j: term}
+  (hp: $ G |- p: holNatural -> bool $)
+  (hstep: $ G |- !k: holNatural. p @ k ==> p @ (holSuccessor @ k) $):
+  $ G |- !j: ind. naturalClosure ind infiniteZero infiniteSuccessor j ==>
+    holPullback p @ j ==> holPullback p @ (infiniteSuccessor @ j) $ =
+'(!! GEN j @
+  DISCH (naturalClosureT infiniteZeroT infiniteSuccessorT anr)
+    (impcT (appT (holPullbackT (anwl hp)) anr)
+      (appT (holPullbackT (anwl hp)) (appT infiniteSuccessorT anr))) @
+  DISCH (appT (holPullbackT (anwll hp)) anlr)
+    (appT (holPullbackT (anwll hp)) (appT infiniteSuccessorT anlr)) @
+  !! holPullbackStepAt k (anwl (anwll hp)) anllr (anwl (anwll hstep)) anlr anr);
+
+pub theorem holNaturalInduction (G: wff) (n p: term) {k: term}
+  (hn: $ G |- n: holNatural $) (hp: $ G |- p: holNatural -> bool $)
+  (hzero: $ G |- p @ holZero $)
+  (hstep: $ G |- !k: holNatural. p @ k ==> p @ (holSuccessor @ k) $):
+  $ G |- p @ n $ =
+(focus
+  (have 'Represented '(appT holRepT hn))
+  (have 'Closed '(eqmp (holNaturalPredicateBeta Represented) (holRepMember hn)))
+  (have 'At '(!! naturalClosureInduction j infiniteZeroT infiniteSuccessorT Represented
+    (holPullbackT hp) Closed (holPullbackZero hp hzero) (!! holPullbackStep k j hp hstep)))
+  '(eqmp (aeq2 hp (holAbsRep hn)) @ eqmp (holPullbackBeta hp Represented) At));
+
+theorem holSuccessorOneOne (G: wff):
+  $ G |- one_one holNatural holNatural @ holSuccessor $ =
+'(eqmpr (!! ONE_ONE m n holSuccessorT) @ !! GEN m @ !! GEN n @
+  DISCH (eqcT (appT holSuccessorT anlr) (appT holSuccessorT anr)) (eqcT anlr anr) @
+    holSuccessorCancel (anwl anlr) (anwl anr) anr);
+
+theorem holSuccessorNotOnto (G: wff):
+  $ G |- ~(onto holNatural holNatural @ holSuccessor) $ =
+(focus
+  (have 'GoalType '(appT onto_T holSuccessorT))
+  (have 'Missing '(!! SPEC y holZeroT
+    (!! excT x @ eqcT holZeroT (appT holSuccessorT anr))
+    (!! exeq x @ bineq1 eqT anlr (appT holSuccessorT anr))
+    (eqmp (!! ONTO x y holSuccessorT) anr)))
+  '(NOT_INTRO @ DISCH GoalType FT @ !! CHOOSE x FT Missing @
+    MP (NOT_ELIM (holZeroNotSuccessor anlr)) anr));
+
+pub theorem holNaturalInfinity (G: wff) {f: term}:
+  $ G |- ?f: holNatural -> holNatural.
+    one_one holNatural holNatural @ f /\ ~(onto holNatural holNatural @ f) $ =
+'(!! EXISTS f
+  (andcT (appT one_one_T anr) (notcT (appT onto_T anr))) holSuccessorT
+  (bineq andT (aeq2 one_one_T anr) (aeq2 notT (aeq2 onto_T anr)))
+  (CONJ holSuccessorOneOne holSuccessorNotOnto));

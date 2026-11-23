@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationNameTraversal
 import Mettapedia.GSLT.LanguageDef.TptpFofNnfShiftLanguageDef
 import Mettapedia.GSLT.LanguageDef.TptpFofPrenexLanguageDef
 import Mettapedia.GSLT.LanguageDef.RewriteValidationTransport
@@ -694,89 +695,14 @@ theorem rewrite_count : language.rewrites.length = 45 := by
       "tptp-fof-prenex-normalize:result"] := by
   rfl
 
-local macro "certify_authored_rows" : tactic =>
-  `(tactic|
-    (simp [-Bool.and_eq_true, RewriteValidationCertificate.check,
-      RewriteValidationCertificate.contextTypesCheck,
-      RewriteValidationCertificate.premiseTypesCheck,
-      RewriteValidationCertificate.patternDeclaredCheck,
-      RewriteValidationCertificate.premisesDeclaredCheck,
-      RewriteValidationCertificate.allPatternsScopedCheck,
-      RewriteValidationCertificate.fvarsAvoidConstructorsCheck,
-      RewriteValidationCertificate.bindersAvoidConstructorsCheck,
-      RewriteValidationCertificate.contextAvoidsConstructorsCheck,
-      RewriteValidationCertificate.rightBoundCheck,
-      language_typeNames, language_constructorSignatures,
-      language_constructorLabels, typed, mkRule, congruence,
-      authoredRewrites, matrixShiftRewrites, formShiftRewrites,
-      combineRewrites, prenexRewrites, indexZero, indexSucc,
-      termRequest, termResult, termsRequest, termsResult,
-      sourceVerum, sourceFalsum, sourcePositive, sourceNegative,
-      sourceEqual, sourceNotEqual, sourceAnd, sourceOr, sourceAll, sourceEx,
-      matrixVerum, matrixFalsum, matrixPositive, matrixNegative,
-      matrixEqual, matrixNotEqual, matrixAnd, matrixOr,
-      formMatrix, formAll, formEx, connectiveAnd, connectiveOr,
-      matrixShiftRequest, matrixShiftResult, formShiftRequest,
-      formShiftResult, combineRequest, combineResult, prenexRequest,
-      prenexResult,
-      TptpFofNnfShiftLanguageDef.indexRequest,
-      TptpFofNnfShiftLanguageDef.indexResult,
-      TptpFofNnfShiftLanguageDef.termRequest,
-      TptpFofNnfShiftLanguageDef.termResult,
-      TptpFofNnfShiftLanguageDef.termsRequest,
-      TptpFofNnfShiftLanguageDef.termsResult,
-      TptpFofNnfShiftLanguageDef.formulaRequest,
-      TptpFofNnfShiftLanguageDef.formulaResult,
-      TptpFofNnfShiftLanguageDef.indexZero,
-      TptpFofNnfShiftLanguageDef.indexSucc,
-      TptpFofNnfShiftLanguageDef.termVariable,
-      TptpFofNnfShiftLanguageDef.termFunction,
-      TptpFofNnfShiftLanguageDef.termsNil,
-      TptpFofNnfShiftLanguageDef.termsCons,
-      TptpFofNnfShiftLanguageDef.verum,
-      TptpFofNnfShiftLanguageDef.falsum,
-      TptpFofNnfShiftLanguageDef.positive,
-      TptpFofNnfShiftLanguageDef.negative,
-      TptpFofNnfShiftLanguageDef.equal,
-      TptpFofNnfShiftLanguageDef.notEqual,
-      TptpFofNnfShiftLanguageDef.and,
-      TptpFofNnfShiftLanguageDef.or,
-      TptpFofNnfShiftLanguageDef.all,
-      TptpFofNnfShiftLanguageDef.ex,
-      TptpFofNnfShiftLanguageDef.a, TptpFofNnfShiftLanguageDef.v,
-      a, v, LanguageDef.premisePatterns, LanguageDef.patternFvarNames,
-      LanguageDef.patternBinderNames, Pattern.constructorRefs,
-      Pattern.constructorRefsList, Pattern.freeFvarNames,
-      Pattern.isWellScoped, Pattern.isWellScopedAt,
-      Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
-      LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames,
-      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
-      Pattern.zipHead, Pattern.mapHead, Pattern.evalHead]; decide +kernel))
-
 private theorem constructorLabels_nodup :
     (language.terms.map (·.label)).Nodup := by
   decide +kernel
 
-private theorem matrixShiftRewrites_checked :
-    matrixShiftRewrites.all (RewriteValidationCertificate.check language) = true := by
-  certify_authored_rows
-
-private theorem formShiftRewrites_checked :
-    formShiftRewrites.all (RewriteValidationCertificate.check language) = true := by
-  certify_authored_rows
-
-private theorem combineRewrites_checked :
-    combineRewrites.all (RewriteValidationCertificate.check language) = true := by
-  certify_authored_rows
-
-private theorem prenexRewrites_checked :
-    prenexRewrites.all (RewriteValidationCertificate.check language) = true := by
-  certify_authored_rows
 private theorem authoredRewrites_checked :
-    authoredRewrites.all (RewriteValidationCertificate.check language) = true := by
-  simp only [authoredRewrites, List.all_append, matrixShiftRewrites_checked,
-    formShiftRewrites_checked, combineRewrites_checked, prenexRewrites_checked, Bool.and_self]
+    authoredRewrites.all (RewriteValidationCertificate.check language) = true :=
+  (RewriteValidationCertificate.check_all_eq_checkByNameTraversal language _).trans
+    (by decide +kernel)
 
 private def addedTerms : List GrammarRule :=
   TptpFofPrenexLanguageDef.matrixTerms ++

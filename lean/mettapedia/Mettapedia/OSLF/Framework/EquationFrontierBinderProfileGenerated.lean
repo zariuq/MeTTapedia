@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.OSLF.MeTTaIL.EquationFrontierBinderProfileExecution
 import Mettapedia.OSLF.MeTTaIL.EquationFrontierBinderProfileCoverage
 import Mettapedia.GSLT.LanguageDef.EquationSemantics
@@ -1005,9 +1006,8 @@ theorem raw_class_normalization {ambient : Nat} (allowed : List Token)
     (Pattern.eraseBinderMetadata_eq_self_of_canonical (state_canonical source))
 
 theorem rewrite_noncontextual (rule : RewriteRule) (authored : rule ∈ language.rewrites) :
-    NoncontextualPremises rule.premises := by
-  simp only [language, List.mem_cons, List.not_mem_nil, or_false] at authored
-  rcases authored with rfl | rfl <;> exact .relationQuery .nil
+    NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel) rule authored
 
 theorem rewrite_matching (rule : RewriteRule) (authored : rule ∈ language.rewrites)
     (source : Pattern) :

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.EquationFrontierFrames
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.SyntacticMerge
 
 /-!
@@ -516,14 +517,7 @@ theorem goodv_query_bodies {atoms : List Atom}
         value.erase activation.bindings works := by
       rw [erased]
       exact frontier
-    obtain ⟨environments, paired⟩ := Entry.Value.UnifyRel.equation_frontier
-      (policy := policy.rebuilding) activation.certified frontier'
-    have unifiers : ∀ w ∈ works, ∃ output : Frame, output.bindings = w.bindings ∧
-        Entry.Value.UnifyRel policy.rebuilding activation.environment value
-          (Entry.Value.ofAtom w.pattern) output.environment := by
-      intro w member
-      obtain ⟨after, unified, certificate⟩ := forall₂_left_exists paired w member
-      exact ⟨⟨w.bindings, after, certificate⟩, rfl, unified⟩
+    have unifiers := activation.equationFrontier_unifiers (policy := policy) (query := value) frontier'
     have related : List.Forall₂ (fun work L => GoodRuns dispatch lookup policy target atoms
         (Entry.Value.ofAtom work.body) L ∧ BodyFacts work.body) works Ls := by
       have viaBodies := bodies

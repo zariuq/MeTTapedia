@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.Languages.MeTTa.PeTTa.ConfigurationEncoding
 import Mettapedia.OSLF.Framework.TypeSynthesis
 
@@ -441,14 +442,8 @@ theorem no_authored_equations : language.equations = [] := rfl
 theorem equation_free : language.isEquationFree = true := by decide
 
 theorem nonrecursive_rules : ∀ rewrite ∈ language.rewrites,
-    Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises rewrite.premises := by
-  intro rewrite member
-  simp only [language, rules, List.mem_cons, List.mem_nil_iff, or_false] at member
-  rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-    rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  all_goals repeat' constructor
+    Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises rewrite.premises :=
+  (Mettapedia.OSLF.MeTTaIL.ContextualStep.check_noncontextualRules_iff _).mp (by decide +kernel)
 
 private def atom? (pattern : Pattern) : Option Atom := OSLFCore.Bridge.GroundData.decode pattern
 

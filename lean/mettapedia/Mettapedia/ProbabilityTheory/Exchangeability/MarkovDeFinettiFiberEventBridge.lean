@@ -10220,6 +10220,37 @@ lemma tendsto_prefixRatioApproxENN_of_start_eq_to_rowKernelStepProd
     exact ENNReal.ofReal_toReal hstep_ne_top
   simpa [hstart, htarget] using hmain
 
+abbrev RowKernelFamily (k : ℕ) : Type :=
+  Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)
+
+abbrev AEVisitsFromStart {k : ℕ} (P : Measure (ℕ → Fin k)) (a : Fin k) : Prop :=
+  ∀ i : Fin k, ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i
+
+abbrev AEPositiveUsedTransitions {k : ℕ} (P : Measure (ℕ → Fin k))
+    (rowKernel : RowKernelFamily k) (a : Fin k) (tail : List (Fin k)) : Prop :=
+  ∀ p ∈ prefixUsedTransitionSet (k := k) a tail,
+    ∀ᵐ ω ∂P, ω 0 = a → 0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω
+
+abbrev AEEventuallyPrefixCompatible {k : ℕ} (P : Measure (ℕ → Fin k))
+    (a : Fin k) (tail : List (Fin k)) : Prop :=
+  ∀ᵐ ω ∂P, ω 0 = a → ∀ᶠ r in Filter.atTop,
+    prefixCompatibleState (k := k) a tail (tail.length + r)
+      (Nat.le_add_right tail.length r) (pathPrefixState (k := k) ω (tail.length + r))
+
+abbrev AENormalizedEulerCorrectionLimit {k : ℕ} (P : Measure (ℕ → Fin k))
+    (a : Fin k) (tail : List (Fin k)) : Prop :=
+  ∀ᵐ ω ∂P, ω 0 = a → Filter.Tendsto
+    (fun r => prefixNormalizedEulerTrailCorrectionRatioReal (k := k) a tail (tail.length + r)
+      (Nat.le_add_right tail.length r) (pathPrefixState (k := k) ω (tail.length + r)))
+    Filter.atTop (nhds (1 : ℝ))
+
+abbrev AEPrefixRatioLimit {k : ℕ} (P : Measure (ℕ → Fin k))
+    (rowKernel : RowKernelFamily k) (a : Fin k) (tail : List (Fin k)) : Prop :=
+  ∀ᵐ ω ∂P, Filter.Tendsto
+    (fun r => prefixRatioApproxENN (k := k) a tail r ω)
+    Filter.atTop (nhds (if ω 0 = a then
+      rowKernelStepProd (k := k) rowKernel ω (a :: tail) else 0))
+
 theorem ae_tendsto_prefixRatioApproxENN_of_coordwise_component_limits
     (P : Measure (ℕ → Fin k))
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
@@ -10249,16 +10280,7 @@ theorem ae_tendsto_prefixRatioApproxENN_of_coordwise_component_limits
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < ((rowKernel i
                 (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -10393,21 +10415,8 @@ lemma ae_tendsto_prefixRatioApproxENN_of_coordwise_component_limits_of_prefixUse
               (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
               Filter.atTop
               (nhds (rowKernelVisitProbReal (k := k) rowKernel i j ω)))
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -10425,9 +10434,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcess_compo
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow :
       ∀ i j : Fin k,
         ∀ᵐ r ∂rowProcessLaw (k := k) P i,
@@ -10435,21 +10442,8 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcess_compo
             (fun m => rowProcessEmpiricalFreq (k := k) j r m)
             Filter.atTop
             (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal)))
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -10480,21 +10474,8 @@ lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcess_component
             (fun m => rowProcessEmpiricalFreq (k := k) j r m)
             Filter.atTop
             (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal)))
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -10531,16 +10512,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcess_component
           ω 0 = a →
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -10631,9 +10603,7 @@ lemma ae_hout_pathPrefixState_shift_of_strongRecurrence_on_start_of_ae_exists_vi
     (P : MeasureTheory.Measure (ℕ → Fin k))
     (hStrong : StrongRecurrence (k := k) P)
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i) :
+    (hvisit : AEVisitsFromStart P a) :
     ∀ i : Fin k,
       ∀ᵐ ω ∂P, ω 0 = a →
         Filter.Tendsto
@@ -10650,25 +10620,10 @@ lemma ae_eventually_prefixCompatibleState_pathPrefixState_of_strongRecurrence_vi
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       ω 0 = a →
         ∀ᶠ r in Filter.atTop,
@@ -10764,9 +10719,7 @@ lemma ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_vi
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
     (hΘpos :
       ∀ i j : Fin k,
@@ -10882,15 +10835,9 @@ lemma ae_tendsto_prefixTokenDeletionLowerFactorReal_shift_of_strongRecurrence_vi
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) :
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs)) :
     ∀ᵐ ω ∂P,
       ω 0 = a →
         Filter.Tendsto
@@ -10953,13 +10900,7 @@ lemma ae_tendsto_prefixTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_pref
 lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_bridge_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hBridge :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -10984,13 +10925,7 @@ lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArbor
 lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_bridgeCard_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11016,13 +10951,7 @@ lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArbor
 lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArborescenceRatioReal_shift_of_ae_pathPrefixBridgeCardEq_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hBridge :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -11049,13 +10978,7 @@ lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixTokenRootedArbor
 lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_shift_of_positiveBridgeCard_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hPositiveBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11079,13 +11002,7 @@ lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRoo
 lemma ae_eventually_prefixTokenDeletionLowerFactorReal_le_prefixPositiveTokenRootedArborescenceRatioReal_shift_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hBridge :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -11128,13 +11045,7 @@ lemma ae_eventually_prefixTokenRootedArborescenceRatioReal_le_one_shift
 lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridge_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hBridge :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11171,13 +11082,7 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tends
 lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_bridgeCard_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11217,13 +11122,7 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tends
 lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hBridge :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11268,13 +11167,7 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_token
 lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11356,22 +11249,10 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRe
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgePair :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -11498,13 +11379,7 @@ lemma tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_tendsto_prefixTo
 lemma ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_shift_of_ae_tendsto_prefixTokenRootedArborescenceRatioReal_of_ae_eventually_prefixCompatibleState_of_ae_tendsto_outdeg
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hout :
       ∀ i : Fin k,
         ∀ᵐ ω ∂P,
@@ -11564,9 +11439,7 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRe
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
     (hΘpos :
       ∀ i j : Fin k,
@@ -11574,13 +11447,7 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRe
           ω 0 = a →
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridge :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11614,9 +11481,7 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRe
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
     (hΘpos :
       ∀ i j : Fin k,
@@ -11624,13 +11489,7 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRe
           ω 0 = a →
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11665,22 +11524,10 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRe
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridge :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11714,22 +11561,10 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRe
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11764,22 +11599,10 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRe
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgePos :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -11868,22 +11691,10 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRe
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hPositiveBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -11909,25 +11720,10 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -11943,9 +11739,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
     (hΘpos :
       ∀ i j : Fin k,
@@ -11953,16 +11747,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
           ω 0 = a →
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -11983,21 +11768,8 @@ lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_
       ∀ i : Fin k,
         ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i})
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -12021,16 +11793,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_
           ω 0 = a →
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -12048,9 +11811,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
     (hΘpos :
       ∀ i j : Fin k,
@@ -12058,13 +11819,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
           ω 0 = a →
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridge :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -12096,9 +11851,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
     (hΘpos :
       ∀ i j : Fin k,
@@ -12106,13 +11859,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
           ω 0 = a →
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -12145,22 +11892,10 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridge :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -12192,22 +11927,10 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -12242,22 +11965,10 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgePair :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -12324,22 +12035,10 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hPositiveBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -12370,22 +12069,10 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgePos :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -12417,15 +12104,9 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
     (hBridgePair :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -12475,13 +12156,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_
           ω 0 = a →
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridge :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -12511,18 +12186,8 @@ lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_
       ∀ i : Fin k,
         ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i})
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridge :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -12558,13 +12223,7 @@ lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_
           ω 0 = a →
             0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
               0 < rowKernelVisitProbReal (k := k) rowKernel i j ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -12595,18 +12254,8 @@ lemma ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcessCoordwise_
       ∀ i : Fin k,
         ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i})
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -12830,13 +12479,7 @@ lemma ae_tendsto_prefixRatioApproxENN_to_zero_of_ae_eventually_prefixCompatibleS
     (P : Measure (ℕ → Fin k))
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hout :
       ∀ i : Fin k,
         ∀ᵐ ω ∂P,
@@ -12854,16 +12497,7 @@ lemma ae_tendsto_prefixRatioApproxENN_to_zero_of_ae_eventually_prefixCompatibleS
               (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
               Filter.atTop
               (nhds (rowKernelVisitProbReal (k := k) rowKernel i j ω)))
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ)))
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs))
     (hzero :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -12921,13 +12555,7 @@ lemma ae_tendsto_prefixRatioApproxENN_to_zero_of_ae_eventually_prefixCompatibleS
 lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixNormalizedBridgeProductReal_of_ae_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
     (hbridgeNorm :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -12968,23 +12596,8 @@ lemma ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tends
 lemma ae_tendsto_prefixNormalizedBridgeProductReal_shift_of_ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_of_ae_eventually_prefixCompatibleState
     (P : Measure (ℕ → Fin k))
     (a : Fin k) (ys : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a ys (ys.length + r)
-              (Nat.le_add_right ys.length r)
-              (pathPrefixState (k := k) ω (ys.length + r)))
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a ys (ys.length + r)
-                (Nat.le_add_right ys.length r)
-                (pathPrefixState (k := k) ω (ys.length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hcomp : AEEventuallyPrefixCompatible P a ys)
+    (hgraph : AENormalizedEulerCorrectionLimit P a ys) :
     ∀ᵐ ω ∂P,
       ω 0 = a →
         Filter.Tendsto
@@ -13016,13 +12629,7 @@ theorem ae_tendsto_prefixRatioApproxENN_of_coordwise_component_limits_of_ae_even
     (P : Measure (ℕ → Fin k))
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hout :
       ∀ i : Fin k,
         ∀ᵐ ω ∂P,
@@ -13041,16 +12648,7 @@ theorem ae_tendsto_prefixRatioApproxENN_of_coordwise_component_limits_of_ae_even
               Filter.atTop
               (nhds (((rowKernel i
                 (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal)))
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -13110,27 +12708,10 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-    (hgraph :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          Filter.Tendsto
-            (fun r =>
-              prefixNormalizedEulerTrailCorrectionRatioReal
-                (k := k) a (b :: xs) ((b :: xs).length + r)
-                (Nat.le_add_right (b :: xs).length r)
-                (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-            Filter.atTop (nhds (1 : ℝ))) :
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
+    (hgraph : AENormalizedEulerCorrectionLimit P a (b :: xs)) :
     ∀ᵐ ω ∂P,
       Filter.Tendsto
         (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
@@ -13151,17 +12732,9 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hbridgeNorm :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -13188,22 +12761,10 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hPositiveBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
@@ -13234,22 +12795,10 @@ lemma ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordw
     (hStrong : StrongRecurrence (k := k) P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hvisit :
-      ∀ i : Fin k,
-        ∀ᵐ ω ∂P, ω 0 = a → ∃ t : ℕ, ω t = i)
+    (hvisit : AEVisitsFromStart P a)
     (hrow : RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hΘposUsed :
-      ∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-        ∀ᵐ ω ∂P,
-          ω 0 = a →
-            0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω)
-    (hcomp :
-      ∀ᵐ ω ∂P,
-        ω 0 = a →
-          ∀ᶠ r in Filter.atTop,
-            prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-              (Nat.le_add_right (b :: xs).length r)
-              (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+    (hΘposUsed : AEPositiveUsedTransitions P rowKernel a (b :: xs))
+    (hcomp : AEEventuallyPrefixCompatible P a (b :: xs))
     (hBridgePos :
       ∀ᵐ ω ∂P,
         ω 0 = a →
@@ -13287,12 +12836,7 @@ lemma cylinder_cons_eq_lintegral_startIndicator_rowKernelStepProd_of_ae_tendsto_
       μ xs = P (MarkovDeFinettiRecurrence.cylinder (k := k) xs))
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
     (a b : Fin k) (xs : List (Fin k))
-    (hlim :
-      ∀ᵐ ω ∂P,
-        Filter.Tendsto
-          (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
-          Filter.atTop
-          (nhds (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0))) :
+    (hlim : AEPrefixRatioLimit P rowKernel a (b :: xs)) :
     P (MarkovDeFinettiRecurrence.cylinder (k := k) (a :: b :: xs)) =
       ∫⁻ ω,
         (if ω 0 = a then rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0) ∂P := by
@@ -13431,57 +12975,90 @@ theorem builtRowKernelOnExtension_of_ae_tendsto_prefixRatioApproxENN
   exact rowSuccessorMatrixInvariance_of_ae_tendsto_prefixRatioApproxENN
     (k := k) (μ := μ) hμ P hExt rowKernel hlim
 
-theorem buildRowKernelOnRecurrentExtension_of_coordwise_component_builder
-    (hLocal :
+abbrev RowKernelEvalAEMeasurable {k : ℕ} (P : Measure (ℕ → Fin k))
+    (rowKernel : RowKernelFamily k) : Prop :=
+  ∀ i b : Fin k, AEMeasurable
+    (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
+    (rowProcessLaw (k := k) P i)
+
+abbrev RowKernelSingletonProductAEMeasurable {k : ℕ} (P : Measure (ℕ → Fin k))
+    (rowKernel : RowKernelFamily k) : Prop :=
+  ∀ i : Fin k, AEMeasurable
+    (fun r : ℕ → Fin k => Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
+    (rowProcessLaw (k := k) P i)
+
+abbrev RowKernelCesaroBuilder (k : ℕ) : Prop :=
+  ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P) (rowKernel : RowKernelFamily k),
+    RowKernelEvalAEMeasurable P rowKernel →
+    StartRestrictedRowKernelData (k := k) P rowKernel →
+    RowKernelSingletonProductAEMeasurable P rowKernel →
+    RowProcessCoordwiseCesaroLimit (k := k) P rowKernel
+
+/-- Local row-kernel evidence on a fixed recurrent extension. The last slot
+is a condition on each nonempty tail of a word. -/
+abbrev PrefixExtensionRowKernelBuilder (k : ℕ)
+    (recurrent : Measure (ℕ → Fin k) → Prop)
+    (wordCondition : Measure (ℕ → Fin k) → RowKernelFamily k → Fin k → Fin k → List (Fin k) → Prop) :
+    Prop :=
+  ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ) (P : Measure (ℕ → Fin k))
+    (_hP : IsProbabilityMeasure P)
+    (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
+    (_hRec : recurrent P),
+      ∃ rowKernel : RowKernelFamily k,
+        RowKernelEvalAEMeasurable P rowKernel ∧
+        StartRestrictedRowKernelData (k := k) P rowKernel ∧
+        RowKernelSingletonProductAEMeasurable P rowKernel ∧
+        ∀ a b xs, wordCondition P rowKernel a b xs
+
+/-- Change the word condition using evidence from the actual extension and
+the same row kernel. Its measurability and start data pass through. -/
+theorem PrefixExtensionRowKernelBuilder.map {k : ℕ}
+    {recurrent : Measure (ℕ → Fin k) → Prop}
+    {before after : Measure (ℕ → Fin k) → RowKernelFamily k → Fin k → Fin k → List (Fin k) → Prop}
+    (build : PrefixExtensionRowKernelBuilder k recurrent before)
+    (transport :
       ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
+        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ) (P : Measure (ℕ → Fin k))
         (_hP : IsProbabilityMeasure P)
         (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hrecAe : ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0}),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    Filter.Tendsto
-                      (fun r =>
-                        MarkovDeFinettiHardEuler.outdeg (k := k)
-                          (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
-                      Filter.atTop Filter.atTop) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    Filter.Tendsto
-                      (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
-                      Filter.atTop
-                      (nhds (((rowKernel i
-                        (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal))) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
-                      0 < ((rowKernel i
-                        (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+        (_hRec : recurrent P) (rowKernel : RowKernelFamily k),
+          RowKernelEvalAEMeasurable P rowKernel →
+          StartRestrictedRowKernelData (k := k) P rowKernel →
+          RowKernelSingletonProductAEMeasurable P rowKernel →
+          ∀ a b xs, before P rowKernel a b xs → after P rowKernel a b xs) :
+    PrefixExtensionRowKernelBuilder k recurrent after := by
+  intro μ hμ P hP hExt hRec
+  obtain ⟨rowKernel, hEval, hStart, hPi, hWord⟩ := build μ hμ P hP hExt hRec
+  exact ⟨rowKernel, hEval, hStart, hPi, fun a b xs =>
+    transport μ hμ P hP hExt hRec rowKernel hEval hStart hPi a b xs (hWord a b xs)⟩
+
+theorem buildRowKernelOnRecurrentExtension_of_coordwise_component_builder
+    (hLocal : PrefixExtensionRowKernelBuilder k (fun P => ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0})
+      (fun P rowKernel a b xs =>
+        (∀ i : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+                Filter.atTop Filter.atTop) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+                Filter.atTop
+                (nhds (((rowKernel i
+                  (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal))) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+                0 < ((rowKernel i
+                  (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs))) :
     BuildRowKernelOnRecurrentExtension k := by
   intro μ hμ P hP hExt hrecAe
   rcases hLocal μ hμ P hP hExt hrecAe with
@@ -13495,56 +13072,31 @@ theorem buildRowKernelOnRecurrentExtension_of_coordwise_component_builder
     (k := k) P rowKernel a b xs hout hfreq hΘpos hgraph
 
 theorem fortiniSuccessorMatrixInvarianceTheorem_of_coordwise_component_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hrecAe : ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0}),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    Filter.Tendsto
-                      (fun r =>
-                        MarkovDeFinettiHardEuler.outdeg (k := k)
-                          (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
-                      Filter.atTop Filter.atTop) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    Filter.Tendsto
-                      (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
-                      Filter.atTop
-                      (nhds (((rowKernel i
-                        (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal))) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
-                      0 < ((rowKernel i
-                        (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (fun P => ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0})
+      (fun P rowKernel a b xs =>
+        (∀ i : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+                Filter.atTop Filter.atTop) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+                Filter.atTop
+                (nhds (((rowKernel i
+                  (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal))) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+                0 < ((rowKernel i
+                  (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheorem k := by
   have hBuild :
       BuildRowKernelOnRecurrentExtension k :=
@@ -13555,31 +13107,8 @@ theorem fortiniSuccessorMatrixInvarianceTheorem_of_coordwise_component_builder
     (recurrentLatentCoherenceBridgeTheorem_proved (k := k) hBuild)
 
 theorem buildRowKernelOnRecurrentExtension_of_prefixRatioApproxENN_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hrecAe : ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0}),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              ∀ᵐ ω ∂P,
-                Filter.Tendsto
-                  (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
-                  Filter.atTop
-                  (nhds (if ω 0 = a then
-                    rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (fun P => ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0})
+      (fun P rowKernel a b xs => AEPrefixRatioLimit P rowKernel a (b :: xs))) :
     BuildRowKernelOnRecurrentExtension k := by
   intro μ hμ P hP hExt hrecAe
   rcases hLocal μ hμ P hP hExt hrecAe with
@@ -13589,31 +13118,8 @@ theorem buildRowKernelOnRecurrentExtension_of_prefixRatioApproxENN_builder
     (k := k) (μ := μ) hμ P hExt rowKernel hEval hstart hPi hlim
 
 theorem fortiniSuccessorMatrixInvarianceTheorem_of_prefixRatioApproxENN_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hrecAe : ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0}),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              ∀ᵐ ω ∂P,
-                Filter.Tendsto
-                  (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
-                  Filter.atTop
-                  (nhds (if ω 0 = a then
-                    rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (fun P => ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = ω 0})
+      (fun P rowKernel a b xs => AEPrefixRatioLimit P rowKernel a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheorem k := by
   have hBuild : BuildRowKernelOnRecurrentExtension k :=
     buildRowKernelOnRecurrentExtension_of_prefixRatioApproxENN_builder
@@ -13623,31 +13129,8 @@ theorem fortiniSuccessorMatrixInvarianceTheorem_of_prefixRatioApproxENN_builder
     (recurrentLatentCoherenceBridgeTheorem_proved (k := k) hBuild)
 
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              ∀ᵐ ω ∂P,
-                Filter.Tendsto
-                  (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
-                  Filter.atTop
-                  (nhds (if ω 0 = a then
-                    rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0)))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs => AEPrefixRatioLimit P rowKernel a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   intro μ hμ hExtStrong
   rcases hExtStrong with ⟨P, hP, hExt, hStrong⟩
@@ -13664,172 +13147,78 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioAp
   exact ⟨pi, hpi, fun xs => (hExt xs).trans (hreprP xs)⟩
 
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_coordwise_component_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    Filter.Tendsto
-                      (fun r =>
-                        MarkovDeFinettiHardEuler.outdeg (k := k)
-                          (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
-                      Filter.atTop Filter.atTop) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    Filter.Tendsto
-                      (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
-                      Filter.atTop
-                      (nhds (((rowKernel i
-                        (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal))) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
-                      0 < ((rowKernel i
-                        (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        (∀ i : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+                Filter.atTop Filter.atTop) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+                Filter.atTop
+                (nhds (((rowKernel i
+                  (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal))) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+                0 < ((rowKernel i
+                  (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   refine
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
       (k := k) ?_
-  intro μ hμ P hP hExt hStrong
-  rcases hLocal μ hμ P hP hExt hStrong with
-    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-  intro a b xs
-  rcases hcomp a b xs with ⟨hout, hfreq, hΘpos, hgraph⟩
+  refine hLocal.map ?_
+  intro μ hμ P hP hExt hStrong rowKernel hEval hstart hPi a b xs hcomp
+  rcases hcomp with ⟨hout, hfreq, hΘpos, hgraph⟩
   exact ae_tendsto_prefixRatioApproxENN_of_coordwise_component_limits
     (k := k) P rowKernel a b xs hout hfreq hΘpos hgraph
 
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcess_component_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ r ∂rowProcessLaw (k := k) P i,
-                  Filter.Tendsto
-                    (fun m => rowProcessEmpiricalFreq (k := k) j r m)
-                    Filter.atTop
-                    (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal))) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        (∀ i j : Fin k,
+          ∀ᵐ r ∂rowProcessLaw (k := k) P i,
+            Filter.Tendsto
+              (fun m => rowProcessEmpiricalFreq (k := k) j r m)
+              Filter.atTop
+              (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal))) ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   refine
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
       (k := k) ?_
-  intro μ hμ P hP hExt hStrong
-  rcases hLocal μ hμ P hP hExt hStrong with
-    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-  intro a b xs
-  rcases hcomp a b xs with ⟨hvisit, hrow, hΘposUsed, hgraph⟩
+  refine hLocal.map ?_
+  intro μ hμ P hP hExt hStrong rowKernel hEval hstart hPi a b xs hcomp
+  rcases hcomp with ⟨hvisit, hrow, hΘposUsed, hgraph⟩
   exact
     ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcess_components
       (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph
 
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              RowProcessCoordwiseCesaroLimit (k := k) P rowKernel ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        RowProcessCoordwiseCesaroLimit (k := k) P rowKernel ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   refine
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
       (k := k) ?_
-  intro μ hμ P hP hExt hStrong
-  rcases hLocal μ hμ P hP hExt hStrong with
-    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-  intro a b xs
-  rcases hcomp a b xs with ⟨hvisit, hrow, hΘposUsed, hgraph⟩
+  refine hLocal.map ?_
+  intro μ hμ P hP hExt hStrong rowKernel hEval hstart hPi a b xs hcomp
+  rcases hcomp with ⟨hvisit, hrow, hΘposUsed, hgraph⟩
   exact
     ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
       (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph
@@ -13841,67 +13230,19 @@ asks for positivity on the finite `prefixUsedTransitionSet`; it is enough to
 provide eventual prefix compatibility and the normalized Euler-trail correction
 limit. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P _ a b xs =>
+        AEVisitsFromStart P a ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   refine
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
       (k := k) ?_
-  intro μ hμ P hP hExt hStrong
-  rcases hLocal μ hμ P hP hExt hStrong with
-    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-  intro a b xs
-  rcases hcomp a b xs with ⟨hvisit, hprefixComp, hgraph⟩
+  refine hLocal.map ?_
+  intro μ hμ P hP hExt hStrong rowKernel hEval hstart hPi a b xs hcomp
+  rcases hcomp with ⟨hvisit, hprefixComp, hgraph⟩
   exact
     ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
       (k := k) P hStrong rowKernel a b xs hvisit
@@ -13915,65 +13256,19 @@ positivity. This makes the plain intrinsic route available directly over the
 smaller `hΘposUsed + hgraph` seam instead of forcing callers to package
 eventual compatibility separately. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   refine
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
       (k := k) ?_
-  intro μ hμ P hP hExt hStrong
-  rcases hLocal μ hμ P hP hExt hStrong with
-    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-  intro a b xs
-  rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hgraph⟩
+  refine hLocal.map ?_
+  intro μ hμ P hP hExt hStrong rowKernel hEval hstart hPi a b xs hcomp
+  rcases hcomp with ⟨hvisit, hΘposUsed, hgraph⟩
   exact
     ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
       (k := k) P hStrong rowKernel a b xs hvisit
@@ -13984,67 +13279,19 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProc
 eventual prefix compatibility plus the normalized Euler-trail correction limit,
 with row-Cesàro data supplied intrinsically by `hRowCoord`. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P _ a b xs =>
+        AEVisitsFromStart P a ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   refine
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
       (k := k) ?_
-  intro μ hμ P hP hExt hStrong
-  rcases hLocal μ hμ P hP hExt hStrong with
-    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-  intro a b xs
-  rcases hcomp a b xs with ⟨hvisit, hprefixComp, hgraph⟩
+  refine hLocal.map ?_
+  intro μ hμ P hP hExt hStrong rowKernel hEval hstart hPi a b xs hcomp
+  rcases hcomp with ⟨hvisit, hprefixComp, hgraph⟩
   exact
     ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
       (k := k) P hStrong rowKernel a b xs hvisit
@@ -14055,67 +13302,27 @@ residual local convergence seam in the more intrinsic normalized bridge-product
 language, while still using eventual prefix compatibility as the exact place
 where bridge-product and normalized-Euler correction coincide. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState_of_tendsto_prefixNormalizedBridgeProductReal
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedBridgeProductReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P _ a b xs =>
+        AEVisitsFromStart P a ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                prefixNormalizedBridgeProductReal
+                  (k := k) a (b :: xs) ((b :: xs).length + r)
+                  (Nat.le_add_right (b :: xs).length r)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+              Filter.atTop (nhds (1 : ℝ))))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   refine
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
       (k := k) ?_
-  intro μ hμ P hP hExt hStrong
-  rcases hLocal μ hμ P hP hExt hStrong with
-    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-  intro a b xs
-  rcases hcomp a b xs with ⟨hvisit, hprefixComp, hbridgeNorm⟩
+  refine hLocal.map ?_
+  intro μ hμ P hP hExt hStrong rowKernel hEval hstart hPi a b xs hcomp
+  rcases hcomp with ⟨hvisit, hprefixComp, hbridgeNorm⟩
   exact
     ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState_of_ae_tendsto_prefixNormalizedBridgeProductReal
       (k := k) P hStrong rowKernel a b xs hvisit
@@ -14128,56 +13335,16 @@ token-deletion squeeze, used-transition positivity, and the specialized bridge
 theorem. What still remains external at this layer is eventual prefix
 compatibility together with the bridge theorem itself. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalBridgeCardEqPair_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    pathPrefixBridgeCardEqPair (k := k) a (b :: xs) ω r))) :
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            ∀ᶠ r in Filter.atTop,
+              pathPrefixBridgeCardEqPair (k := k) a (b :: xs) ω r))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   exact
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
@@ -14201,56 +13368,16 @@ separate support-local arborescence-ratio limit input. This keeps eventual
 prefix compatibility explicit, but once that is available the smaller
 support-local bridge object is already enough for the AE convergence route. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r))) :
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            ∀ᶠ r in Filter.atTop,
+              pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   exact
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
@@ -14276,59 +13403,24 @@ only as a compatibility interface and factors through the smaller theorem by
 deriving the needed eventual prefix compatibility from the induced normalized-
 Euler limit. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_pathLocalPositiveBridgeCardEqPair
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixPositiveTokenRootedArborescenceRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            ∀ᶠ r in Filter.atTop,
+              pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                prefixPositiveTokenRootedArborescenceRatioReal
+                  (k := k) a (b :: xs) ((b :: xs).length + r)
+                  (Nat.le_add_right (b :: xs).length r)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+              Filter.atTop (nhds (1 : ℝ))))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   exact
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
@@ -14369,65 +13461,25 @@ wrapper. The stronger no-extra-ratio support-local builder now exists just
 below it, so this theorem keeps the older interface without adding a distinct
 mathematical seam. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridge_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hRowCoord : RowKernelCesaroBuilder k)
     (hPositiveBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           positiveTokenRootedBridgeCardEq (k := k) s)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixPositiveTokenRootedArborescenceRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                prefixPositiveTokenRootedArborescenceRatioReal
+                  (k := k) a (b :: xs) ((b :: xs).length + r)
+                  (Nat.le_add_right (b :: xs).length r)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+              Filter.atTop (nhds (1 : ℝ))))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   exact
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
@@ -14451,56 +13503,16 @@ path-prefix states forced by recurrence/outdegree growth, the support-local
 bridge data collapses back to the old path-local bridge data, so the existing
 token-deletion route suffices. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hRowCoord : RowKernelCesaroBuilder k)
     (hPositiveBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           positiveTokenRootedBridgeCardEq (k := k) s)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   exact
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
@@ -14525,58 +13537,18 @@ token-deletion squeeze, used-transition positivity, and the specialized bridge
 theorem. What still remains external at this layer is eventual prefix
 compatibility together with the bridge theorem itself. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_bridge_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hRowCoord : RowKernelCesaroBuilder k)
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           (eulerTrailFinset (graphOfState s) s.start s.last).card =
             tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
               outdegFactorialWeight (k := k) s)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   exact
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
@@ -14603,58 +13575,18 @@ compatibility; the remaining normalized-Euler convergence step is derived
 internally from the token-deletion squeeze plus the specialized bridge
 theorem. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hRowCoord : RowKernelCesaroBuilder k)
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           (eulerTrailFinset (graphOfState s) s.start s.last).card =
             tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
               outdegFactorialWeight (k := k) s)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   exact
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_bridge_of_eventually_prefixCompatibleState
@@ -14663,213 +13595,88 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProc
         exact hLocal μ hμ P hP hExt hStrong)
 
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_infiniteVisits_rowProcess_component_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i}) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ r ∂rowProcessLaw (k := k) P i,
-                  Filter.Tendsto
-                    (fun m => rowProcessEmpiricalFreq (k := k) j r m)
-                    Filter.atTop
-                    (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal))) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) :
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        (∀ i : Fin k,
+          ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i}) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ r ∂rowProcessLaw (k := k) P i,
+            Filter.Tendsto
+              (fun m => rowProcessEmpiricalFreq (k := k) j r m)
+              Filter.atTop
+              (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal))) ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs))) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   refine
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
       (k := k) ?_
-  intro μ hμ P hP hExt hStrong
-  rcases hLocal μ hμ P hP hExt hStrong with
-    ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-  refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-  intro a b xs
-  rcases hcomp a b xs with ⟨hinf, hrow, hΘposUsed, hgraph⟩
+  refine hLocal.map ?_
+  intro μ hμ P hP hExt hStrong rowKernel hEval hstart hPi a b xs hcomp
+  rcases hcomp with ⟨hinf, hrow, hΘposUsed, hgraph⟩
   exact
     ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcess_components
       (k := k) P rowKernel a b xs hinf hrow hΘposUsed hgraph
 
-theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              ∀ᵐ ω ∂P,
-                Filter.Tendsto
-                  (fun r => prefixRatioApproxENN (k := k) a (b :: xs) r ω)
-                  Filter.atTop
-                  (nhds (if ω 0 = a then
-                    rowKernelStepProd (k := k) rowKernel ω (a :: b :: xs) else 0))))
+theorem markovParamLaw_of_strongRecurrence_invariance
+    (invariance : FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k)
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  rcases exists_extension_strongRecurrence_of_markovRowRecurrent (k := k) μ hrow with
-    ⟨P, hP, hExt, hStrong⟩
-  exact
+  obtain ⟨P, hP, hExt, hStrong⟩ := exists_extension_strongRecurrence_of_markovRowRecurrent
+    (k := k) μ hrow
+  exact invariance μ hμ ⟨P, hP, hExt, hStrong⟩
+
+theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs => AEPrefixRatioLimit P rowKernel a (b :: xs)))
+    (μ : FiniteAlphabet.PrefixMeasure (Fin k))
+    (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
+    (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
+    ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
+      ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
+  exact markovParamLaw_of_strongRecurrence_invariance
     (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_prefixRatioApproxENN_builder
-      (k := k) hLocal) μ hμ ⟨P, hP, hExt, hStrong⟩
+      (k := k) hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcess_component_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ r ∂rowProcessLaw (k := k) P i,
-                  Filter.Tendsto
-                    (fun m => rowProcessEmpiricalFreq (k := k) j r m)
-                    Filter.atTop
-                    (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal))) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ)))))
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        (∀ i j : Fin k,
+          ∀ᵐ r ∂rowProcessLaw (k := k) P i,
+            Filter.Tendsto
+              (fun m => rowProcessEmpiricalFreq (k := k) j r m)
+              Filter.atTop
+              (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal))) ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-      (k := k)
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hrow, hΘposUsed, hgraph⟩
-        exact
-          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcess_components
-            (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcess_component_builder
+      (k := k) hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              RowProcessCoordwiseCesaroLimit (k := k) P rowKernel ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ)))))
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        RowProcessCoordwiseCesaroLimit (k := k) P rowKernel ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-      (k := k)
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hrow, hΘposUsed, hgraph⟩
-        exact
-          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
-            (k := k) P hStrong rowKernel a b xs hvisit hrow hΘposUsed hgraph)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder
+      (k := k) hLocal) μ hμ hrow
 
 /-- Intrinsic-row-Cesàro variant of the markov-parameter reconstruction builder.
 `hLocal` omits `RowProcessCoordwiseCesaroLimit`; that component is supplied by
@@ -14877,78 +13684,20 @@ theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowPro
 compatibility plus the normalized Euler-trail correction limit rather than
 finite-used-transition positivity. -/
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ)))))
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P _ a b xs =>
+        AEVisitsFromStart P a ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-      (k := k)
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hprefixComp, hgraph⟩
-        exact
-          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi)
-            hprefixComp
-            hgraph)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic
+      (k := k) hRowCoord hLocal) μ hμ hrow
 
 /-- Intrinsic-row-Cesàro markov-parameter builder over the smaller plain
 normalized-Euler seam. As with the Fortini builder above, used-transition
@@ -14956,893 +13705,282 @@ positivity plus the normalized-Euler limit are enough here; eventual prefix
 compatibility is derived internally rather than supplied at the theorem
 interface. -/
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ)))))
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-      (k := k)
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hgraph⟩
-        exact
-          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi)
-            hΘposUsed hgraph)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
+      (k := k) hRowCoord hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ)))))
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P _ a b xs =>
+        AEVisitsFromStart P a ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-      (k := k)
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hprefixComp, hgraph⟩
-        exact
-          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi) hprefixComp hgraph)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState_of_tendsto_prefixNormalizedBridgeProductReal
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedBridgeProductReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ)))))
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P _ a b xs =>
+        AEVisitsFromStart P a ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                prefixNormalizedBridgeProductReal
+                  (k := k) a (b :: xs) ((b :: xs).length + r)
+                  (Nat.le_add_right (b :: xs).length r)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+              Filter.atTop (nhds (1 : ℝ)))))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-      (k := k)
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hprefixComp, hbridgeNorm⟩
-        exact
-          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_eventually_prefixCompatibleState_of_ae_tendsto_prefixNormalizedBridgeProductReal
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi)
-            hprefixComp hbridgeNorm)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_eventually_prefixCompatibleState_of_tendsto_prefixNormalizedBridgeProductReal
+      (k := k) hRowCoord hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalBridgeCardEqPair_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    pathPrefixBridgeCardEqPair (k := k) a (b :: xs) ω r)))
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            ∀ᶠ r in Filter.atTop,
+              pathPrefixBridgeCardEqPair (k := k) a (b :: xs) ω r)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
-      (k := k)
-      hRowCoord
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp, hBridgePair⟩
-        refine ⟨hvisit, hΘposUsed, ?_⟩
-        exact
-          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixBridgeCardEqPair_of_eventually_prefixCompatibleState
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi)
-            hΘposUsed hprefixComp hBridgePair)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalBridgeCardEqPair_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_bridge_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hRowCoord : RowKernelCesaroBuilder k)
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           (eulerTrailFinset (graphOfState s) s.start s.last).card =
             tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
               outdegFactorialWeight (k := k) s)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r)))))
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
-      (k := k)
-      hRowCoord
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp⟩
-        refine ⟨hvisit, hΘposUsed, ?_⟩
-        exact
-          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tokenDeletionSqueeze_of_bridgeCard_of_eventually_prefixCompatibleState
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi)
-            hΘposUsed hprefixComp
-            (fun {_M} {_s} hs => hBridgeCard hs))
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord hBridgeCard hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r)))
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            ∀ᶠ r in Filter.atTop,
+              pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
-      (k := k)
-      hRowCoord
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp, hBridgePair⟩
-        refine ⟨hvisit, hΘposUsed, ?_⟩
-        exact
-          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_pathPrefixPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi)
-            hΘposUsed hprefixComp hBridgePair)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord hLocal) μ hμ hrow
 
 /-- Support-local bridge-facing row-recurrent compatibility wrapper. The
 stronger no-extra-ratio path-local support-local route already exists, so this
 older interface now factors through it by deriving eventual prefix
 compatibility from the induced normalized-Euler limit. -/
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_pathLocalPositiveBridgeCardEqPair
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixPositiveTokenRootedArborescenceRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ)))))
+    (hRowCoord : RowKernelCesaroBuilder k)
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            ∀ᶠ r in Filter.atTop,
+              pathPrefixPositiveBridgeCardEqPair (k := k) a (b :: xs) ω r) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                prefixPositiveTokenRootedArborescenceRatioReal
+                  (k := k) a (b :: xs) ((b :: xs).length + r)
+                  (Nat.le_add_right (b :: xs).length r)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+              Filter.atTop (nhds (1 : ℝ)))))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_pathLocalPositiveBridgeCardEqPair_of_eventually_prefixCompatibleState
-      (k := k) hRowCoord
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hBridgePair, htokPos⟩
-        have hgraph :
-            ∀ᵐ ω ∂P,
-              ω 0 = a →
-                Filter.Tendsto
-                  (fun r =>
-                    prefixNormalizedEulerTrailCorrectionRatioReal
-                      (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                  Filter.atTop (nhds (1 : ℝ)) :=
-          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_ae_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_ae_pathPrefixPositiveBridgeCardEqPair
-            (k := k) P a (b :: xs) hBridgePair htokPos
-        have hprefixComp :
-            ∀ᵐ ω ∂P,
-              ω 0 = a →
-                ∀ᶠ r in Filter.atTop,
-                  prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                    (Nat.le_add_right (b :: xs).length r)
-                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) :=
-          ae_eventually_prefixCompatibleState_pathPrefixState_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi)
-            hΘposUsed hgraph
-        exact ⟨hvisit, hΘposUsed, hprefixComp, hBridgePair⟩)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_pathLocalPositiveBridgeCardEqPair
+      (k := k) hRowCoord hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridge_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hRowCoord : RowKernelCesaroBuilder k)
     (hPositiveBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           positiveTokenRootedBridgeCardEq (k := k) s)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r))) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixPositiveTokenRootedArborescenceRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ)))))
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs) ∧
+        (∀ᵐ ω ∂P,
+          ω 0 = a →
+            Filter.Tendsto
+              (fun r =>
+                prefixPositiveTokenRootedArborescenceRatioReal
+                  (k := k) a (b :: xs) ((b :: xs).length + r)
+                  (Nat.le_add_right (b :: xs).length r)
+                  (pathPrefixState (k := k) ω ((b :: xs).length + r)))
+              Filter.atTop (nhds (1 : ℝ)))))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-      (k := k)
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp, _htokPos⟩
-        exact
-          ae_tendsto_prefixRatioApproxENN_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState_via_supportSplit
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi)
-            hΘposUsed hprefixComp
-            (fun {_M} {_s} hs => hPositiveBridgeCard hs))
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_positiveBridge_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord hPositiveBridgeCard hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hRowCoord : RowKernelCesaroBuilder k)
     (hPositiveBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           positiveTokenRootedBridgeCardEq (k := k) s)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r)))))
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
-      (k := k) hRowCoord
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hvisit, hΘposUsed, hprefixComp⟩
-        refine ⟨hvisit, hΘposUsed, ?_⟩
-        exact
-          ae_tendsto_prefixNormalizedEulerTrailCorrectionRatioReal_shift_of_strongRecurrence_visit_rowProcessCoordwise_components_of_ae_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
-            (k := k) P hStrong rowKernel a b xs hvisit
-            (hRowCoord P hP rowKernel hEval hstart hPi)
-            hΘposUsed hprefixComp
-            (fun {_M} {_s} hs => hPositiveBridgeCard hs))
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_positiveBridge_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord hPositiveBridgeCard hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
-    (hRowCoord :
-      ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
-        (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-          (∀ i : Fin k, ∀ b : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-              (rowProcessLaw (k := k) P i)) →
-          StartRestrictedRowKernelData (k := k) P rowKernel →
-          (∀ i : Fin k,
-            AEMeasurable
-              (fun r : ℕ → Fin k =>
-                Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-              (rowProcessLaw (k := k) P i)) →
-          RowProcessCoordwiseCesaroLimit (k := k) P rowKernel)
+    (hRowCoord : RowKernelCesaroBuilder k)
     (hBridgeCard :
       ∀ {M : ℕ} {s : MarkovState k},
         s ∈ stateFinset k M →
           (eulerTrailFinset (graphOfState s) s.start s.last).card =
             tokenRootedArborescenceCount (k := k) (graphOfState (k := k) s) s.last *
               outdegFactorialWeight (k := k) s)
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a → ∃ t : ℕ, ω t = i) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  ∀ᶠ r in Filter.atTop,
-                    prefixCompatibleState (k := k) a (b :: xs) ((b :: xs).length + r)
-                      (Nat.le_add_right (b :: xs).length r)
-                      (pathPrefixState (k := k) ω ((b :: xs).length + r)))))
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        AEVisitsFromStart P a ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AEEventuallyPrefixCompatible P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_bridge_of_eventually_prefixCompatibleState
-      (k := k) hRowCoord hBridgeCard
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        exact hLocal μ hμ P hP hExt hStrong)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_tokenDeletionSqueeze_of_bridge_of_eventually_prefixCompatibleState
+      (k := k) hRowCoord hBridgeCard hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_infiniteVisits_rowProcess_component_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i}) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ r ∂rowProcessLaw (k := k) P i,
-                  Filter.Tendsto
-                    (fun m => rowProcessEmpiricalFreq (k := k) j r m)
-                    Filter.atTop
-                    (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal))) ∧
-              (∀ p ∈ prefixUsedTransitionSet (k := k) a (b :: xs),
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < rowKernelVisitProbReal (k := k) rowKernel p.1 p.2 ω) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ)))))
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        (∀ i : Fin k,
+          ∀ᵐ ω ∂P, Set.Infinite {t : ℕ | ω t = i}) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ r ∂rowProcessLaw (k := k) P i,
+            Filter.Tendsto
+              (fun m => rowProcessEmpiricalFreq (k := k) j r m)
+              Filter.atTop
+              (nhds (((rowKernel i r) ({j} : Set (Fin k))).toReal))) ∧
+        AEPositiveUsedTransitions P rowKernel a (b :: xs) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-      (k := k)
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hinf, hrow, hΘposUsed, hgraph⟩
-        exact
-          ae_tendsto_prefixRatioApproxENN_of_ae_infinite_visits_rowProcess_components
-            (k := k) P rowKernel a b xs hinf hrow hΘposUsed hgraph)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_infiniteVisits_rowProcess_component_builder
+      (k := k) hLocal) μ hμ hrow
 
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_coordwise_component_builder
-    (hLocal :
-      ∀ (μ : FiniteAlphabet.PrefixMeasure (Fin k))
-        (_hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
-        (P : Measure (ℕ → Fin k))
-        (_hP : IsProbabilityMeasure P)
-        (_hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
-        (_hStrong : StrongRecurrence (k := k) P),
-          ∃ (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k)),
-            (∀ i : Fin k, ∀ b : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k => (rowKernel i r : Measure (Fin k)) ({b} : Set (Fin k)))
-                (rowProcessLaw (k := k) P i)) ∧
-            StartRestrictedRowKernelData (k := k) P rowKernel ∧
-            (∀ i : Fin k,
-              AEMeasurable
-                (fun r : ℕ → Fin k =>
-                  Measure.pi (fun _ : Fin 1 => (rowKernel i r : Measure (Fin k))))
-                (rowProcessLaw (k := k) P i)) ∧
-            (∀ (a b : Fin k) (xs : List (Fin k)),
-              (∀ i : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    Filter.Tendsto
-                      (fun r =>
-                        MarkovDeFinettiHardEuler.outdeg (k := k)
-                          (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
-                      Filter.atTop Filter.atTop) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    Filter.Tendsto
-                      (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
-                      Filter.atTop
-                      (nhds (((rowKernel i
-                        (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal))) ∧
-              (∀ i j : Fin k,
-                ∀ᵐ ω ∂P,
-                  ω 0 = a →
-                    0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
-                      0 < ((rowKernel i
-                        (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) ∧
-              (∀ᵐ ω ∂P,
-                ω 0 = a →
-                  Filter.Tendsto
-                    (fun r =>
-                      prefixNormalizedEulerTrailCorrectionRatioReal
-                        (k := k) a (b :: xs) ((b :: xs).length + r)
-                        (Nat.le_add_right (b :: xs).length r)
-                        (pathPrefixState (k := k) ω ((b :: xs).length + r)))
-                    Filter.atTop (nhds (1 : ℝ))))) 
+    (hLocal : PrefixExtensionRowKernelBuilder k (StrongRecurrence (k := k))
+      (fun P rowKernel a b xs =>
+        (∀ i : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun r =>
+                  MarkovDeFinettiHardEuler.outdeg (k := k)
+                    (pathPrefixState (k := k) ω ((b :: xs).length + r)) i)
+                Filter.atTop Filter.atTop) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              Filter.Tendsto
+                (fun m => rowSuccessorEmpiricalFreq (k := k) i j ω m)
+                Filter.atTop
+                (nhds (((rowKernel i
+                  (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal))) ∧
+        (∀ i j : Fin k,
+          ∀ᵐ ω ∂P,
+            ω 0 = a →
+              0 < (prefixWordState (k := k) a (b :: xs)).counts.counts i j →
+                0 < ((rowKernel i
+                  (rowSuccessorVisitProcess (k := k) i ω)) ({j} : Set (Fin k))).toReal) ∧
+        AENormalizedEulerCorrectionLimit P a (b :: xs)))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (hrow : MarkovRowRecurrentPrefixMeasure (k := k) μ) :
     ∃ (pi : Measure (MarkovParam k)), IsProbabilityMeasure pi ∧
       ∀ xs : List (Fin k), μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂pi := by
-  exact
-    exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_prefixRatioApproxENN_builder
-      (k := k)
-      (hLocal := fun μ hμ P hP hExt hStrong => by
-        rcases hLocal μ hμ P hP hExt hStrong with
-          ⟨rowKernel, hEval, hstart, hPi, hcomp⟩
-        refine ⟨rowKernel, hEval, hstart, hPi, ?_⟩
-        intro a b xs
-        rcases hcomp a b xs with ⟨hout, hfreq, hΘpos, hgraph⟩
-        exact ae_tendsto_prefixRatioApproxENN_of_coordwise_component_limits
-          (k := k) P rowKernel a b xs hout hfreq hΘpos hgraph)
-      μ hμ hrow
+  exact markovParamLaw_of_strongRecurrence_invariance
+    (fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_coordwise_component_builder
+      (k := k) hLocal) μ hμ hrow
 
 /-! ## Section 5: Sound Stopping Point
 

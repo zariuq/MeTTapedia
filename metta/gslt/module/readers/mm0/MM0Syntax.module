@@ -1,0 +1,152 @@
+-- MM0's specification format, `.mm0` (the outer grammar of mm0.md), as a GSLT presentation.
+--
+-- Formulas are math strings, `$ ... $`, one token each here; what is inside them is read by the
+-- second stage, under the file's notations.
+--   provable sort wff;
+--   term im (a b: wff): wff;
+--   infixr im: $->$ prec 25;
+--   axiom ax_1 (a b: wff): $ a -> b -> a $;
+--   def an (a b: wff): wff = $ ~(a -> ~b) $;
+--   theorem a1i (a b: wff): $ b $ > $ a -> b $;
+--
+-- The grammar is composed from pieces over one shared set of sorts:
+--   Sorts       token and phrase sorts, declared once;
+--   TypeRows    identifier lists, types (a sort and its dependencies), arrow types;
+--   Binders     type binders, formula binders and dummy binders;
+--   Notations   delimiter, prefix, infixl, infixr, coercion and notation statements;
+--   Statements  sort (modifiers in MM0's fixed order), term, axiom, theorem, def, input, output;
+--   Files       statement sequences.
+-- `Grammar` joins them over one `let`-bound Sorts value, so the sorts are shared, not copied.
+-- A def's type is an arrow type, as a term's is (`def all: type > term;`): mm0.md writes `type`
+-- there, the reference verifiers accept arrows and the examples use them.
+-- `import` is not in mm0.md's grammar; a file with imports is read after joining them.
+--
+-- `Tokens` is the lexical layer (TokenProfileV2, as MMUSyntax.module's, with two more entries):
+-- only space and newline separate tokens; `* . : ; ( ) > { } =` are tokens by themselves; `--`
+-- starts a comment that runs to the end of the line; an identifier is a letter or `_` followed by
+-- letters, digits and `_`, but not `_` alone (the blank `_` is a fixed spelling); a number is `0`
+-- or a nonzero digit followed by digits; a math string runs from `$` to the next `$`.
+-- MM0's pseudo-keywords are lexed as identifiers and are fixed spellings only where the grammar
+-- puts them, so a sort or a variable may be called `sort`.
+Module MM0Syntax {
+  Theory Sorts() {
+    Types {
+      id_tok; num_tok; math_tok;
+      ids; bids; typ; arrow; tbinder; tbinders; fbinder; fbinders; farrow;
+      dummy_id; dummy_ids; dbinder; dbinders;
+      prec; prec_const; nlit; nlits; io_item; io_items;
+      mod_pure; mod_strict; mod_provable; mod_free;
+      statement; mm0_file;
+    }
+  }
+  Theory TypeRows(s: Sorts) {
+    s Terms {
+      ids_empty . |- : ids;
+      ids_more . first:id_tok, rest:ids |- first rest : ids;
+      bids_empty . |- : bids;
+      bids_more . first:id_tok, rest:bids |- first rest : bids;
+      bids_blank . rest:bids |- "_" rest : bids;
+      typ_deps . srt:id_tok, deps:ids |- srt deps : typ;
+      arrow_last . last:typ |- last : arrow;
+      arrow_more . first:typ, rest:arrow |- first ">" rest : arrow;
+    }
+  }
+  Theory Binders(s: Sorts) {
+    s Terms {
+      tbinder_bound . labels:ids, ty:typ |- "{" labels ":" ty "}" : tbinder;
+      tbinder_regular . labels:bids, ty:typ |- "(" labels ":" ty ")" : tbinder;
+      tbinders_empty . |- : tbinders;
+      tbinders_more . first:tbinder, rest:tbinders |- first rest : tbinders;
+      fbinder_bound . labels:ids, ty:typ |- "{" labels ":" ty "}" : fbinder;
+      fbinder_regular . labels:bids, ty:typ |- "(" labels ":" ty ")" : fbinder;
+      fbinder_hyp . labels:bids, formula:math_tok |- "(" labels ":" formula ")" : fbinder;
+      fbinders_empty . |- : fbinders;
+      fbinders_more . first:fbinder, rest:fbinders |- first rest : fbinders;
+      farrow_last . formula:math_tok |- formula : farrow;
+      farrow_type . first:typ, rest:farrow |- first ">" rest : farrow;
+      farrow_hyp . formula:math_tok, rest:farrow |- formula ">" rest : farrow;
+      dummy_dot . label:id_tok |- "." label : dummy_id;
+      dummy_plain . label:id_tok |- label : dummy_id;
+      dummy_blank . |- "_" : dummy_id;
+      dummy_ids_empty . |- : dummy_ids;
+      dummy_ids_more . first:dummy_id, rest:dummy_ids |- first rest : dummy_ids;
+      dbinder_bound . labels:dummy_ids, ty:typ |- "{" labels ":" ty "}" : dbinder;
+      dbinder_regular . labels:dummy_ids, ty:typ |- "(" labels ":" ty ")" : dbinder;
+      dbinders_empty . |- : dbinders;
+      dbinders_more . first:dbinder, rest:dbinders |- first rest : dbinders;
+    }
+  }
+  Theory Notations(s: Sorts) {
+    s Terms {
+      prec_number . n:num_tok |- n : prec;
+      prec_zero . |- "0" : prec;
+      prec_max . |- "max" : prec;
+      prec_const_one . constant:math_tok, level:prec |- "(" constant ":" level ")" : prec_const;
+      nlit_const . constant:prec_const |- constant : nlit;
+      nlit_var . label:id_tok |- label : nlit;
+      nlits_empty . |- : nlits;
+      nlits_more . first:nlit, rest:nlits |- first rest : nlits;
+      statement_delimiter_both . both:math_tok |- "delimiter" both ";" : statement;
+      statement_delimiter_lr . left:math_tok, right:math_tok |- "delimiter" left right ";" : statement;
+      statement_prefix . label:id_tok, constant:math_tok, level:prec |- "prefix" label ":" constant "prec" level ";" : statement;
+      statement_infixl . label:id_tok, constant:math_tok, level:prec |- "infixl" label ":" constant "prec" level ";" : statement;
+      statement_infixr . label:id_tok, constant:math_tok, level:prec |- "infixr" label ":" constant "prec" level ";" : statement;
+      statement_coercion . label:id_tok, source:id_tok, target:id_tok |- "coercion" label ":" source ">" target ";" : statement;
+      statement_notation . label:id_tok, args:tbinders, ty:typ, first:prec_const, rest:nlits |- "notation" label args ":" ty "=" first rest ";" : statement;
+    }
+  }
+  Theory Statements(s: Sorts) {
+    s Terms {
+      pure_no . |- : mod_pure;
+      pure_yes . |- "pure" : mod_pure;
+      strict_no . |- : mod_strict;
+      strict_yes . |- "strict" : mod_strict;
+      provable_no . |- : mod_provable;
+      provable_yes . |- "provable" : mod_provable;
+      free_no . |- : mod_free;
+      free_yes . |- "free" : mod_free;
+      statement_sort . mpure:mod_pure, mstrict:mod_strict, mprov:mod_provable, mfree:mod_free, label:id_tok |- mpure mstrict mprov mfree "sort" label ";" : statement;
+      statement_term . label:id_tok, args:tbinders, ty:arrow |- "term" label args ":" ty ";" : statement;
+      statement_axiom . label:id_tok, args:fbinders, ty:farrow |- "axiom" label args ":" ty ";" : statement;
+      statement_theorem . label:id_tok, args:fbinders, ty:farrow |- "theorem" label args ":" ty ";" : statement;
+      statement_def_abstract . label:id_tok, args:dbinders, ty:arrow |- "def" label args ":" ty ";" : statement;
+      statement_def_value . label:id_tok, args:dbinders, ty:arrow, value:math_tok |- "def" label args ":" ty "=" value ";" : statement;
+      io_item_id . label:id_tok |- label : io_item;
+      io_item_math . formula:math_tok |- formula : io_item;
+      io_items_empty . |- : io_items;
+      io_items_more . first:io_item, rest:io_items |- first rest : io_items;
+      statement_input . kind:id_tok, items:io_items |- "input" kind ":" items ";" : statement;
+      statement_output . kind:id_tok, items:io_items |- "output" kind ":" items ";" : statement;
+    }
+  }
+  Theory Files(s: Sorts) {
+    s Terms {
+      file_empty . |- : mm0_file;
+      file_more . first:statement, rest:mm0_file |- first rest : mm0_file;
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts() in (TypeRows(s) \/ Binders(s) \/ Notations(s) \/ Statements(s) \/ Files(s))
+  }
+  Theory Tokens() {
+    Types { TokenProfileData; }
+    Terms {
+      GetTokenProfile . |- "token-profile" : TokenProfileData;
+    }
+    Rewrites {
+      ReturnTokenProfile : (GetTokenProfile) ~>
+        "TokenProfileV2"(
+          "Start"("mm0_file"),
+          "Admissible"("Range"("33", "126")),
+          "Separator"("Points"("32", "10")),
+          "Delimiters"("Points"("42", "46", "58", "59", "40", "41", "62", "123", "125", "61")),
+          "LineComment"("--"),
+          "Class2"("id_tok", "Union"("Range"("65", "90"), "Range"("97", "122"), "Points"("95")),
+                             "Union"("Range"("65", "90"), "Range"("97", "122"), "Range"("48", "57"), "Points"("95"))),
+          "Except"("id_tok", "_"),
+          "Class2"("num_tok", "Range"("49", "57"), "Range"("48", "57")),
+          "Quoted"("math_tok", "36", "36"));
+    }
+  }
+  theory Grammar()
+}

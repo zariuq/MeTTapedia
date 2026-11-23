@@ -33,8 +33,8 @@ evaluated arguments `min` answers as `(if (<= $x $y) $x $y)` does.  CeTTa's PeTT
 it on integers, and on operands that are not numbers, raising its type error on the first
 one, as `<=` does.  On doubles and the numeric constants it selects an operand by the exact
 order (`MinMaxSelection`, DIFF-17).  The test agrees at a mixed tie (`(min 1 1.0)` is `1`)
-and not at signed zeros, a NaN first operand, or an integer and a double equal only as
-doubles: `(min 0.0 -0.0)` is `-0.0`, `(min nan 1)` is `nan`, `(min 9007199254740993
+and at signed zeros (`(min 0.0 -0.0)` is `0.0`), and not at a NaN first operand or an
+integer and a double equal only as doubles: `(min nan 1)` is `nan`, `(min 9007199254740993
 9007199254740992.0)` is the double (`MinMaxSelection.Controls.le_test_differs`).  No single
 test spells the selection (`MinMaxSelection.Controls.no_single_test`), so on doubles the
 rule is not the dialect's `min`; CeTTa's C has no such rewrite and runs `min` as an

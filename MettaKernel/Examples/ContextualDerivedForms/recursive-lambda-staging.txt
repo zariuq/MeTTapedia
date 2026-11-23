@@ -1,0 +1,64 @@
+Recursive ordinary lambda preparation
+
+PeTTa/LambdaStaging separates reserving a generated name from finishing its
+clause. Reservation precedes body preparation; nested clauses install before
+their enclosing clause. Finishing keeps the later cursor and occupancy set.
+Capture selection inspects the original body, before nested lambda extraction.
+
+ReservationRel, ArgumentsRel and Layer specify the preparation rules without
+calling prepare. prepare_iff preserves and reflects their bounded derivations.
+prepare_exists proves sufficient structural depth for every finite input.
+The total stage interface computes that depth and prepares once; the depth
+scan has a cost and is not evaluator fuel. LambdaStagingDepth proves that
+successful depth choices agree, the unbounded relation is functional, and
+the total interface agrees with any successful bounded preparation.
+
+Extension laws retain existing code as an ordered prefix and keep both the
+name cursor and occupied support monotone. Quotation and held arguments skip
+their payloads. Literal superpose alternatives are visited separately, rather
+than interpreting the alternative list itself as one application. Passive let,
+let* and case patterns remain syntax; only initializers, selectors and bodies
+are prepared. RowsRel keeps malformed rows for the source error boundary.
+The once form preserves its operator while preparing its child; the streaming
+consumer therefore receives first demand rather than constructor data.
+
+The actual unifying evaluator consumes the prepared code and residual query.
+The nested example returns (pair a b), installs lambda_2 before lambda_1,
+and retains the original outer capture order g,y before its formal x.
+The held-store example installs no lambda. Preparing the lambda in an
+unselected branch installs private code but does not execute its printing
+body. StagingModel executes the total interface and all eight observations.
+
+lambda-nested-staging.metta independently checks four observations under SWI
+and a retained native snapshot. These runs calibrate the named programs;
+they are not compiler correspondence or current-tree runtime qualification.
+
+The full translator still needs compiled call/data decisions.
+lambda-future-head.metta is a cold-process distinguishing example:
+
+  !((|-> () (lambda_1)))
+
+SWI returns (lambda_1): that literal head was data while the body was
+translated, before the generated lambda became callable. The earlier pure
+extraction pass lost that decision. ConstructorDataHeads now emits ordinary
+quotation for this case, and the actual source consumer returns (lambda_1).
+Its generic operational law retains the reached caller and world under any
+later registry. Artifact execution is separate from deciding whether a
+program change requires recompilation.
+
+lambda-future-arguments.metta checks the argument-bearing case:
+
+  !((|-> ($x) (lambda_1 $x)) a)
+
+SWI and the prepared source consumer return (lambda_1 a). ConstructorDataHeads
+assembles the data through existing cons-atom calls; the generated name cannot
+turn that earlier constructor decision into recursion. The generic completed
+schedule law retains ordered effects, branch substitutions and the caller.
+Independent operand and fault fixtures exercise the source reader and actual
+prepared execution. No source spelling is banned.
+
+This is a preparation-phase correspondence, not whole-source translation
+adequacy. Remaining work includes full unfinished-run reflection and recursive
+operand streaming, static computed-head staging, eta expansion, overloaded typed alternatives,
+native partial arities, translator hooks and functional-pattern staging.
+No C or machine-code correspondence is established here.

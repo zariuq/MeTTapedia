@@ -1,0 +1,5 @@
+(= (choose) (let $ignored1 (add-atom &self (event left)) a))
+(= (choose) (let $ignored2 (add-atom &self (event right)) b))
+!(collapse (record (choose)
+                  (let $ignored3 (add-atom &self (event suffix)) x)))
+!(collapse (match &self (event $x) $x))

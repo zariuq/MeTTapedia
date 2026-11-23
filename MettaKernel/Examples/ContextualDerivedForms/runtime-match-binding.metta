@@ -1,0 +1,5 @@
+!(add-atom &self (row a))
+!(let $m match (let $v ($m &self (row $x) $x) (pair $v $x)))
+!(let $m match ($m &self (row a) (quote (println! 9))))
+!(add-atom &self (open $z))
+!(let $m match ($m &self (open b) yes))

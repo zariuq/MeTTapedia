@@ -1,0 +1,11 @@
+--- pinned-namespace-adapted
++++ Mettapedia/CognitiveArchitecture/Memory/WorkingMemory.lean
+@@ -87,7 +87,7 @@
+ 
+ /-- `WMTMStore.admit` for a new identity: when the store is full, evict a
+ lowest-STI item, then insert the newcomer without comparing it. A present
+-identity is refreshed in place. -/
++identity is left unchanged by this admission model. -/
+ def admitU (cap : ℕ) (s : List (Item V)) (x : Item V) : List (Item V) :=
+   if x.id ∈ s.map Item.id then s
+   else if s.length < cap then x :: s

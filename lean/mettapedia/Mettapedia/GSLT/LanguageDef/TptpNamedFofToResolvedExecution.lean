@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.TptpNamedFofToResolvedLanguageDef
+import Mettapedia.GSLT.LanguageDef.TptpNamedFofToResolvedRules
 
 /-!
 # Operational canaries for named-to-resolved FOF

@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.OrderedArgumentDispatch
 import Mettapedia.GSLT.LanguageDef.OrderedMatchMachineLanguage
 import Mettapedia.GSLT.LanguageDef.BindingDecisionExactness
 
@@ -38,6 +39,7 @@ open Mettapedia.GSLT.Core.ConservativeExtension (encodeNat decodeNat? decodeNat?
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.OrderedArgumentDispatch
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
@@ -230,76 +232,6 @@ theorem encodeState_injective : Function.Injective encodeState := by
   simpa using this
 
 variable (relations : RelationEnv) (source : LanguageDef)
-
-/-! ## Rule applications that cannot match -/
-
-/-- A rule whose left-hand side has a different head never applies. -/
-private theorem applyRule_head_mismatch (rule : RewriteRule) (ruleHead : String)
-    (ruleArguments : List Pattern) (ruleLeft : rule.left = .apply ruleHead ruleArguments)
-    (head : String) (arguments : List Pattern) (distinct : head ≠ ruleHead) :
-    applyRuleWithPremisesUsing (relationEnv relations source) language rule
-      (.apply head arguments) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, Ne.symm distinct]
-
-/-- A rule whose first argument constructor differs never applies. -/
-private theorem applyRule_first_mismatch (rule : RewriteRule) (head ruleFirstHead : String)
-    (ruleFirstArguments ruleRest : List Pattern)
-    (ruleLeft : rule.left = .apply head (.apply ruleFirstHead ruleFirstArguments :: ruleRest))
-    (firstHead : String) (firstArguments rest : List Pattern) (distinct : firstHead ≠ ruleFirstHead) :
-    applyRuleWithPremisesUsing (relationEnv relations source) language rule
-      (.apply head (.apply firstHead firstArguments :: rest)) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, matchArgs,
-    Ne.symm distinct]
-
-/-- A rule whose first argument's own first constructor differs never applies. -/
-private theorem applyRule_first_nested_mismatch (rule : RewriteRule)
-    (head firstHead ruleInnerHead : String) (ruleInnerArguments ruleInnerRest ruleRest : List Pattern)
-    (ruleLeft : rule.left =
-      .apply head (.apply firstHead (.apply ruleInnerHead ruleInnerArguments :: ruleInnerRest) :: ruleRest))
-    (innerHead : String) (innerArguments innerRest rest : List Pattern)
-    (distinct : innerHead ≠ ruleInnerHead) :
-    applyRuleWithPremisesUsing (relationEnv relations source) language rule
-      (.apply head (.apply firstHead (.apply innerHead innerArguments :: innerRest) :: rest)) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, matchArgs,
-    mergeBindings, Ne.symm distinct]
-
-/-- A rule whose second argument constructor differs never applies. -/
-private theorem applyRule_second_mismatch (rule : RewriteRule) (head : String) (ruleFirst : Pattern)
-    (ruleSecondHead : String) (ruleSecondArguments ruleRest : List Pattern)
-    (ruleLeft : rule.left = .apply head (ruleFirst :: .apply ruleSecondHead ruleSecondArguments :: ruleRest))
-    (first : Pattern) (secondHead : String) (secondArguments rest : List Pattern)
-    (distinct : secondHead ≠ ruleSecondHead) :
-    applyRuleWithPremisesUsing (relationEnv relations source) language rule
-      (.apply head (first :: .apply secondHead secondArguments :: rest)) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, matchArgs,
-    mergeBindings, Ne.symm distinct]
-
-/-- A rule whose third argument constructor differs never applies. -/
-private theorem applyRule_third_mismatch (rule : RewriteRule) (head : String)
-    (ruleFirst ruleSecond : Pattern) (ruleThirdHead : String) (ruleThirdArguments ruleRest : List Pattern)
-    (ruleLeft : rule.left =
-      .apply head (ruleFirst :: ruleSecond :: .apply ruleThirdHead ruleThirdArguments :: ruleRest))
-    (first second : Pattern) (thirdHead : String) (thirdArguments rest : List Pattern)
-    (distinct : thirdHead ≠ ruleThirdHead) :
-    applyRuleWithPremisesUsing (relationEnv relations source) language rule
-      (.apply head (first :: second :: .apply thirdHead thirdArguments :: rest)) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, matchArgs,
-    mergeBindings, Ne.symm distinct]
-
-/-- A rule whose third argument's own first constructor differs never applies. -/
-private theorem applyRule_third_nested_mismatch (rule : RewriteRule) (head : String)
-    (ruleFirst ruleSecond : Pattern) (thirdHead ruleInnerHead : String)
-    (ruleInnerArguments ruleInnerRest ruleRest : List Pattern)
-    (ruleLeft : rule.left =
-      .apply head (ruleFirst :: ruleSecond ::
-        .apply thirdHead (.apply ruleInnerHead ruleInnerArguments :: ruleInnerRest) :: ruleRest))
-    (first second : Pattern) (innerHead : String) (innerArguments innerRest rest : List Pattern)
-    (distinct : innerHead ≠ ruleInnerHead) :
-    applyRuleWithPremisesUsing (relationEnv relations source) language rule
-      (.apply head (first :: second ::
-        .apply thirdHead (.apply innerHead innerArguments :: innerRest) :: rest)) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, matchArgs,
-    mergeBindings, Ne.symm distinct]
 
 /-! ## The catalog on encoded arguments -/
 
@@ -847,37 +779,21 @@ private theorem apply_iretDone (value : Pattern) (bindings : Bindings) :
 
 /-! ## Executor equations, one per state family -/
 
-private theorem executor_eq (state : Pattern) :
+local macro "check_selected_rules" : tactic =>
+  `(tactic|
+    (simp only [selectRuleIndices, observeLabels, applicationLabelAt, ArgumentStep.select,
+        List.map_cons, List.map_nil, List.getElem?_cons_zero, List.getElem?_cons_succ, Option.bind]
+     decide +kernel))
+
+private theorem executor_eq_selected
+    (paths : List (List ArgumentStep)) (state : Pattern)
+    (indices : List Nat) (candidates : List RewriteRule)
+    (selected : selectRuleIndices paths state language.rewrites = indices)
+    (readback : indices.filterMap (fun index => language.rewrites[index]?) = candidates) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language state =
-      applyRuleWithPremisesUsing (relationEnv relations source) language succeedRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language captureRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language checkBoundRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language checkConstructorRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language joinRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language joinRightRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language joinMergeRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language finishRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language dropRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language tryLeafRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language tryNextRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language switchDispatchRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language switchDefaultRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language dispatchHitRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language dispatchMissRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language prefilterDoneRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language prefilterWildRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language prefilterNodeRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language afterMatchRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language premiseRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language premisesDoneRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language instVarRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language instBvarRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language instAppRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language instargsDoneRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language instargsNextRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language iretArgRewrite state ++
-      (applyRuleWithPremisesUsing (relationEnv relations source) language iretDoneRewrite state))))))))))))))))))))))))))) := by
-  simp [rewriteStepWithPremisesUsing, language]
+      candidates.flatMap
+        (fun rule => applyRuleWithPremisesUsing (relationEnv relations source) language rule state) := by
+  rw [rewriteStepWithPremisesUsing_eq_selected paths, ← selectRuleIndices_readback, selected, readback]
 
 private theorem execute_run_failure (subject : Pattern) (cursor : List Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -885,36 +801,10 @@ private theorem execute_run_failure (subject : Pattern) (cursor : List Pattern) 
       (machineStep relations source (.run .failure subject cursor)).map encodeState := by
   simp only [
     encodeState, encodeProgram, machineStep, List.map]
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source dropRewrite "mm-run" "mm-drop" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source tryLeafRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source tryNextRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source switchDefaultRewrite "mm-run" "mm-switch" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source switchDispatchRewrite "mm-run" "mm-switch" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [] [] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_nil]
 
 private theorem execute_run_drop_nil (next : Program) (subject : Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -922,36 +812,10 @@ private theorem execute_run_drop_nil (next : Program) (subject : Pattern) :
       (machineStep relations source (.run (.drop next) subject [])).map encodeState := by
   simp only [
     encodeState, encodeProgram, encodeCursor, machineStep, List.map]
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_third_mismatch relations source dropRewrite "mm-run" _ _ "mm-ccons" _ _ rfl _ _ _ _ _ (by decide),
-    applyRule_first_mismatch relations source tryLeafRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source tryNextRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source switchDefaultRewrite "mm-run" "mm-switch" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source switchDispatchRewrite "mm-run" "mm-switch" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0], [.application 2]] _
+    [] [] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_nil]
 
 private theorem execute_run_drop_cons (next : Program) (subject focused : Pattern) (cursor : List Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -960,36 +824,11 @@ private theorem execute_run_drop_cons (next : Program) (subject focused : Patter
   have matched_drop := apply_drop relations source next subject focused cursor
   simp only [
     encodeState, encodeProgram, encodeCursor, machineStep, List.map] at matched_drop ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    matched_drop,
-    applyRule_first_mismatch relations source tryLeafRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source tryNextRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source switchDefaultRewrite "mm-run" "mm-switch" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source switchDispatchRewrite "mm-run" "mm-switch" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [8] [dropRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_drop]
+    rfl
 
 private theorem execute_run_try (leaf : Leaf) (patterns : List MatrixPattern) (onFailure : Program) (subject : Pattern)
     (cursor : List Pattern) :
@@ -1000,36 +839,11 @@ private theorem execute_run_try (leaf : Leaf) (patterns : List MatrixPattern) (o
   have matched_tryNext := apply_tryNext relations source leaf patterns onFailure subject cursor
   simp only [
     encodeState, encodeProgram, encodeLeaf, machineStep, List.map] at matched_tryLeaf matched_tryNext ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source dropRewrite "mm-run" "mm-drop" _ _ rfl _ _ _ (by decide),
-    matched_tryLeaf,
-    matched_tryNext,
-    applyRule_first_mismatch relations source switchDefaultRewrite "mm-run" "mm-switch" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source switchDispatchRewrite "mm-run" "mm-switch" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [9, 10] [tryLeafRewrite, tryNextRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_tryLeaf, matched_tryNext]
+    rfl
 
 private theorem execute_run_switch_nil (branches : Branches) (default : Program) (subject : Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1038,36 +852,11 @@ private theorem execute_run_switch_nil (branches : Branches) (default : Program)
   have matched_switchDefault := apply_switchDefault relations source branches default subject []
   simp only [
     encodeState, encodeProgram, encodeCursor, machineStep, List.map] at matched_switchDefault ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source dropRewrite "mm-run" "mm-drop" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source tryLeafRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source tryNextRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    matched_switchDefault,
-    applyRule_third_mismatch relations source switchDispatchRewrite "mm-run" _ _ "mm-ccons" _ _ rfl _ _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0], [.application 2]] _
+    [12] [switchDefaultRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_switchDefault]
+    rfl
 
 private theorem execute_run_switch_cons (branches : Branches) (default : Program) (subject focused : Pattern)
     (cursor : List Pattern) :
@@ -1078,36 +867,11 @@ private theorem execute_run_switch_cons (branches : Branches) (default : Program
   have matched_switchDispatch := apply_switchDispatch relations source branches default subject focused cursor
   simp only [
     encodeState, encodeProgram, encodeCursor, machineStep, List.map] at matched_switchDefault matched_switchDispatch ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source dropRewrite "mm-run" "mm-drop" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source tryLeafRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source tryNextRewrite "mm-run" "mm-try" _ _ rfl _ _ _ (by decide),
-    matched_switchDefault,
-    matched_switchDispatch,
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [11, 12] [switchDispatchRewrite, switchDefaultRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_switchDefault, matched_switchDispatch]
+    rfl
 
 private theorem execute_dispatch_nil (subject focused : Pattern) (cursor : List Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1115,36 +879,10 @@ private theorem execute_dispatch_nil (subject focused : Pattern) (cursor : List 
       (machineStep relations source (.dispatch .nil subject focused cursor)).map encodeState := by
   simp only [
     encodeState, encodeBranches, machineStep, List.map]
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source dispatchHitRewrite "mm-dispatch" "mm-bcons" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source dispatchMissRewrite "mm-dispatch" "mm-bcons" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [] [] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_nil]
 
 private theorem execute_dispatch_cons (key : Key) (program : Program) (rest : Branches) (subject focused : Pattern)
     (cursor : List Pattern) :
@@ -1155,36 +893,11 @@ private theorem execute_dispatch_cons (key : Key) (program : Program) (rest : Br
   have matched_dispatchMiss := apply_dispatchMiss relations source key program rest subject focused cursor
   simp only [
     encodeState, encodeBranches, machineStep] at matched_dispatchHit matched_dispatchMiss ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    matched_dispatchHit,
-    matched_dispatchMiss,
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  by_cases keyTest : subjectKey focused = key <;> simp [keyTest, encodeState]
+  refine (executor_eq_selected relations source [[]] _
+    [13, 14] [dispatchHitRewrite, dispatchMissRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_dispatchHit, matched_dispatchMiss]
+    by_cases keyTest : subjectKey focused = key <;> simp [keyTest, encodeState]
 
 private theorem execute_prefilter_nil_nil (leaf : Leaf) (subject : Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1194,36 +907,11 @@ private theorem execute_prefilter_nil_nil (leaf : Leaf) (subject : Pattern) :
   simp only [
     encodeState, encodeLeaf, encodePatterns, encodeCursor, encodeKont, encodeFrame,
     machineStep, List.map] at matched_prefilterDone ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    matched_prefilterDone,
-    applyRule_first_mismatch relations source prefilterWildRewrite "mm-prefilter" "mm-pcons" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source prefilterNodeRewrite "mm-prefilter" "mm-pcons" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [15] [prefilterDoneRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_prefilterDone]
+    rfl
 
 private theorem execute_prefilter_nil_cons (focused : Pattern) (cursor : List Pattern) (leaf : Leaf) (subject : Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1231,36 +919,10 @@ private theorem execute_prefilter_nil_cons (focused : Pattern) (cursor : List Pa
       (machineStep relations source (.prefilter [] (focused :: cursor) leaf subject)).map encodeState := by
   simp only [
     encodeState, encodeLeaf, encodePatterns, encodeCursor, machineStep, List.map]
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_second_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ "mm-cnil" _ _ rfl _ _ _ _ (by decide),
-    applyRule_first_mismatch relations source prefilterWildRewrite "mm-prefilter" "mm-pcons" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source prefilterNodeRewrite "mm-prefilter" "mm-pcons" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0], [.application 1]] _
+    [] [] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_nil]
 
 private theorem execute_prefilter_cons_nil (pattern : MatrixPattern) (patterns : List MatrixPattern) (leaf : Leaf) (subject : Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1268,36 +930,10 @@ private theorem execute_prefilter_cons_nil (pattern : MatrixPattern) (patterns :
       (machineStep relations source (.prefilter (pattern :: patterns) [] leaf subject)).map encodeState := by
   simp only [
     encodeState, encodeLeaf, encodePatterns, encodeCursor, machineStep, List.map]
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source prefilterDoneRewrite "mm-prefilter" "mm-pnil" _ _ rfl _ _ _ (by decide),
-    applyRule_second_mismatch relations source prefilterWildRewrite "mm-prefilter" _ "mm-ccons" _ _ rfl _ _ _ _ (by decide),
-    applyRule_second_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ "mm-ccons" _ _ rfl _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0], [.application 1]] _
+    [] [] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_nil]
 
 private theorem execute_prefilter_wild (patterns : List MatrixPattern) (focused : Pattern) (cursor : List Pattern) (leaf : Leaf)
     (subject : Pattern) :
@@ -1308,36 +944,11 @@ private theorem execute_prefilter_wild (patterns : List MatrixPattern) (focused 
   simp only [
     encodeState, encodeLeaf, encodePatterns, encodeMatrixPattern, encodeCursor, machineStep,
     List.map] at matched_prefilterWild ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source prefilterDoneRewrite "mm-prefilter" "mm-pnil" _ _ rfl _ _ _ (by decide),
-    matched_prefilterWild,
-    applyRule_first_nested_mismatch relations source prefilterNodeRewrite "mm-prefilter" "mm-pcons" "mm-node" _ _ _ rfl _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0], [.application 0, .application 0]] _
+    [16] [prefilterWildRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_prefilterWild]
+    rfl
 
 private theorem execute_prefilter_node (head : Head) (children patterns : List MatrixPattern) (focused : Pattern)
     (cursor : List Pattern) (leaf : Leaf) (subject : Pattern) :
@@ -1347,37 +958,12 @@ private theorem execute_prefilter_node (head : Head) (children patterns : List M
   have matched_prefilterNode := apply_prefilterNode relations source head children patterns focused cursor leaf subject
   simp only [
     encodeState, encodeLeaf, encodePatterns, encodeMatrixPattern, encodeCursor, machineStep] at matched_prefilterNode ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source prefilterDoneRewrite "mm-prefilter" "mm-pnil" _ _ rfl _ _ _ (by decide),
-    applyRule_first_nested_mismatch relations source prefilterWildRewrite "mm-prefilter" "mm-pcons" "mm-wild" _ _ _ rfl _ _ _ _ (by decide),
-    matched_prefilterNode,
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  by_cases keyTest : subjectKey focused = (⟨head, children.length⟩ : Key) <;> simp [
-    keyTest, encodeState, encodeLeaf]
+  refine (executor_eq_selected relations source [[], [.application 0], [.application 0, .application 0]] _
+    [17] [prefilterNodeRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_prefilterNode]
+    by_cases keyTest : subjectKey focused = (⟨head, children.length⟩ : Key) <;> simp [
+      keyTest, encodeState, encodeLeaf]
 
 private theorem execute_bdRun_succeed (subject : Pattern) (kont : List Frame) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1386,36 +972,11 @@ private theorem execute_bdRun_succeed (subject : Pattern) (kont : List Frame) :
   have matched_succeed := apply_succeed relations source subject kont
   simp only [
     encodeState, encodeDecision, encodeBindings, machineStep, List.map] at matched_succeed ⊢
-  rw [executor_eq relations source,
-    matched_succeed,
-    applyRule_first_mismatch relations source captureRewrite "bd-run" "bd-capture" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source checkBoundRewrite "bd-run" "bd-check-bound" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source checkConstructorRewrite "bd-run" "bd-check-constructor" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source joinRewrite "bd-run" "bd-join" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [0] [succeedRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_succeed]
+    rfl
 
 private theorem execute_bdRun_capture (path : AccessPath) (name : String) (subject : Pattern) (kont : List Frame) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1424,36 +985,11 @@ private theorem execute_bdRun_capture (path : AccessPath) (name : String) (subje
   have matched_capture := apply_capture relations source path name subject kont
   simp only [
     encodeState, encodeDecision, encodeBindings, machineStep] at matched_capture ⊢
-  rw [executor_eq relations source,
-    applyRule_first_mismatch relations source succeedRewrite "bd-run" "bd-succeed" _ _ rfl _ _ _ (by decide),
-    matched_capture,
-    applyRule_first_mismatch relations source checkBoundRewrite "bd-run" "bd-check-bound" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source checkConstructorRewrite "bd-run" "bd-check-constructor" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source joinRewrite "bd-run" "bd-join" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  cases projection : path.project? subject <;> simp [encodeState, encodeBindings]
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [1] [captureRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_capture]
+    cases projection : path.project? subject <;> simp [encodeState, encodeBindings]
 
 private theorem execute_bdRun_checkBound (path : AccessPath) (expected : Nat) (subject : Pattern) (kont : List Frame) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1462,39 +998,14 @@ private theorem execute_bdRun_checkBound (path : AccessPath) (expected : Nat) (s
   have matched_checkBound := apply_checkBound relations source path expected subject kont
   simp only [
     encodeState, encodeDecision, encodeBindings, machineStep] at matched_checkBound ⊢
-  rw [executor_eq relations source,
-    applyRule_first_mismatch relations source succeedRewrite "bd-run" "bd-succeed" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source captureRewrite "bd-run" "bd-capture" _ _ rfl _ _ _ (by decide),
-    matched_checkBound,
-    applyRule_first_mismatch relations source checkConstructorRewrite "bd-run" "bd-check-constructor" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source joinRewrite "bd-run" "bd-join" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  cases projection : path.project? subject with
-  | none => simp []
-  | some focused =>
-      cases bound : isBoundAt focused expected <;> simp [bound, encodeState, encodeBindings]
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [2] [checkBoundRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_checkBound]
+    cases projection : path.project? subject with
+    | none => simp []
+    | some focused =>
+        cases bound : isBoundAt focused expected <;> simp [bound, encodeState, encodeBindings]
 
 private theorem execute_bdRun_checkConstructor (path : AccessPath) (expected : String) (arity : Nat) (children : Decision)
     (subject : Pattern) (kont : List Frame) :
@@ -1504,40 +1015,15 @@ private theorem execute_bdRun_checkConstructor (path : AccessPath) (expected : S
   have matched_checkConstructor := apply_checkConstructor relations source path expected arity children subject kont
   simp only [
     encodeState, encodeDecision, machineStep] at matched_checkConstructor ⊢
-  rw [executor_eq relations source,
-    applyRule_first_mismatch relations source succeedRewrite "bd-run" "bd-succeed" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source captureRewrite "bd-run" "bd-capture" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source checkBoundRewrite "bd-run" "bd-check-bound" _ _ rfl _ _ _ (by decide),
-    matched_checkConstructor,
-    applyRule_first_mismatch relations source joinRewrite "bd-run" "bd-join" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  cases projection : path.project? subject with
-  | none => simp []
-  | some focused =>
-      cases constructorTest : isConstructorOf focused expected arity <;>
-        simp [constructorTest, encodeState]
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [3] [checkConstructorRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_checkConstructor]
+    cases projection : path.project? subject with
+    | none => simp []
+    | some focused =>
+        cases constructorTest : isConstructorOf focused expected arity <;>
+          simp [constructorTest, encodeState]
 
 private theorem execute_bdRun_join (head tail : Decision) (subject : Pattern) (kont : List Frame) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1546,36 +1032,11 @@ private theorem execute_bdRun_join (head tail : Decision) (subject : Pattern) (k
   have matched_join := apply_join relations source head tail subject kont
   simp only [
     encodeState, encodeKont, encodeFrame, encodeDecision, machineStep, List.map] at matched_join ⊢
-  rw [executor_eq relations source,
-    applyRule_first_mismatch relations source succeedRewrite "bd-run" "bd-succeed" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source captureRewrite "bd-run" "bd-capture" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source checkBoundRewrite "bd-run" "bd-check-bound" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source checkConstructorRewrite "bd-run" "bd-check-constructor" _ _ rfl _ _ _ (by decide),
-    matched_join,
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [4] [joinRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_join]
+    rfl
 
 private theorem execute_bdRet_nil (bindings : Bindings) (subject : Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1584,36 +1045,11 @@ private theorem execute_bdRet_nil (bindings : Bindings) (subject : Pattern) :
   have matched_finish := apply_finish relations source bindings subject
   simp only [
     encodeState, encodeKont, machineStep, List.map] at matched_finish ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_third_mismatch relations source joinRightRewrite "bd-ret" _ _ "bd-kcons" _ _ rfl _ _ _ _ _ (by decide),
-    applyRule_third_mismatch relations source joinMergeRewrite "bd-ret" _ _ "bd-kcons" _ _ rfl _ _ _ _ _ (by decide),
-    matched_finish,
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_third_mismatch relations source afterMatchRewrite "bd-ret" _ _ "bd-kcons" _ _ rfl _ _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 2]] _
+    [7] [finishRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_finish]
+    rfl
 
 private theorem execute_bdRet_joinRight (bindings : Bindings) (tail : Decision) (subject : Pattern) (kont : List Frame) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1622,36 +1058,11 @@ private theorem execute_bdRet_joinRight (bindings : Bindings) (tail : Decision) 
   have matched_joinRight := apply_joinRight relations source bindings tail subject kont
   simp only [
     encodeState, encodeKont, encodeFrame, machineStep, List.map] at matched_joinRight ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    matched_joinRight,
-    applyRule_third_nested_mismatch relations source joinMergeRewrite "bd-ret" _ _ "bd-kcons" "bd-join-merge" _ _ _ rfl _ _ _ _ _ _ (by decide),
-    applyRule_third_mismatch relations source finishRewrite "bd-ret" _ _ "bd-knil" _ _ rfl _ _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_third_nested_mismatch relations source afterMatchRewrite "bd-ret" _ _ "bd-kcons" "mm-after" _ _ _ rfl _ _ _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 2], [.application 2, .application 0]] _
+    [5] [joinRightRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_joinRight]
+    rfl
 
 private theorem execute_bdRet_joinMerge (tailBindings headBindings : Bindings) (subject : Pattern) (kont : List Frame) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1660,36 +1071,11 @@ private theorem execute_bdRet_joinMerge (tailBindings headBindings : Bindings) (
   have matched_joinMerge := apply_joinMerge relations source tailBindings headBindings subject kont
   simp only [
     encodeState, encodeKont, encodeFrame, machineStep] at matched_joinMerge ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_third_nested_mismatch relations source joinRightRewrite "bd-ret" _ _ "bd-kcons" "bd-join-right" _ _ _ rfl _ _ _ _ _ _ (by decide),
-    matched_joinMerge,
-    applyRule_third_mismatch relations source finishRewrite "bd-ret" _ _ "bd-knil" _ _ rfl _ _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_third_nested_mismatch relations source afterMatchRewrite "bd-ret" _ _ "bd-kcons" "mm-after" _ _ _ rfl _ _ _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  cases merge : mergeBindings headBindings tailBindings <;> simp [encodeState]
+  refine (executor_eq_selected relations source [[], [.application 2], [.application 2, .application 0]] _
+    [6] [joinMergeRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_joinMerge]
+    cases merge : mergeBindings headBindings tailBindings <;> simp [encodeState]
 
 private theorem execute_bdRet_afterMatch (bindings : Bindings) (subject : Pattern) (premises : List PremisePlan)
     (template : PatternPlan) (kont : List Frame) :
@@ -1699,36 +1085,11 @@ private theorem execute_bdRet_afterMatch (bindings : Bindings) (subject : Patter
   have matched_afterMatch := apply_afterMatch relations source bindings subject premises template kont
   simp only [
     encodeState, encodeKont, encodeFrame, machineStep, List.map] at matched_afterMatch ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_third_nested_mismatch relations source joinRightRewrite "bd-ret" _ _ "bd-kcons" "bd-join-right" _ _ _ rfl _ _ _ _ _ _ (by decide),
-    applyRule_third_nested_mismatch relations source joinMergeRewrite "bd-ret" _ _ "bd-kcons" "bd-join-merge" _ _ _ rfl _ _ _ _ _ _ (by decide),
-    applyRule_third_mismatch relations source finishRewrite "bd-ret" _ _ "bd-knil" _ _ rfl _ _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    matched_afterMatch,
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 2], [.application 2, .application 0]] _
+    [18] [afterMatchRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_afterMatch]
+    rfl
 
 private theorem execute_bdDone (bindings : Bindings) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1736,36 +1097,10 @@ private theorem execute_bdDone (bindings : Bindings) :
       (machineStep relations source (.bdDone bindings)).map encodeState := by
   simp only [
     encodeState, machineStep, List.map]
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[]] _
+    [] [] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_nil]
 
 private theorem execute_premises_nil (template : PatternPlan) (bindings : Bindings) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1774,36 +1109,11 @@ private theorem execute_premises_nil (template : PatternPlan) (bindings : Bindin
   have matched_premisesDone := apply_premisesDone relations source template bindings
   simp only [
     encodeState, encodeInstantiateKont, encodeQueries, machineStep, List.map] at matched_premisesDone ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source premiseRewrite "mm-premises" "mm-qcons" _ _ rfl _ _ _ (by decide),
-    matched_premisesDone,
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [20] [premisesDoneRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_premisesDone]
+    rfl
 
 private theorem execute_premises_cons (query : PremisePlan) (queries : List PremisePlan) (template : PatternPlan)
     (bindings : Bindings) :
@@ -1813,36 +1123,11 @@ private theorem execute_premises_cons (query : PremisePlan) (queries : List Prem
   have matched_premise := apply_premise relations source query queries template bindings
   simp only [
     encodeState, encodeQueries, encodeQuery, machineStep] at matched_premise ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    matched_premise,
-    applyRule_first_mismatch relations source premisesDoneRewrite "mm-premises" "mm-qnil" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  simp [List.map_map, Function.comp_def, encodeState]
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [19] [premiseRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_premise]
+    simp [List.map_map, Function.comp_def, encodeState]
 
 private theorem execute_instantiate_var (name : String) (bindings : Bindings) (kont : List InstantiateFrame) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1851,36 +1136,11 @@ private theorem execute_instantiate_var (name : String) (bindings : Bindings) (k
   have matched_instVar := apply_instVar relations source name bindings kont
   simp only [
     encodeState, encodeTemplate, machineStep, List.map] at matched_instVar ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    matched_instVar,
-    applyRule_first_mismatch relations source instBvarRewrite "mm-inst" "mm-tbvar" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source instAppRewrite "mm-inst" "mm-tapp" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [21] [instVarRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_instVar]
+    rfl
 
 private theorem execute_instantiate_bvar (index : Nat) (bindings : Bindings) (kont : List InstantiateFrame) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -1889,36 +1149,11 @@ private theorem execute_instantiate_bvar (index : Nat) (bindings : Bindings) (ko
   have matched_instBvar := apply_instBvar relations source index bindings kont
   simp only [
     encodeState, encodeTemplate, machineStep, List.map] at matched_instBvar ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source instVarRewrite "mm-inst" "mm-tvar" _ _ rfl _ _ _ (by decide),
-    matched_instBvar,
-    applyRule_first_mismatch relations source instAppRewrite "mm-inst" "mm-tapp" _ _ rfl _ _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [22] [instBvarRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_instBvar]
+    rfl
 
 private theorem execute_instantiate_app (constructor : String) (arguments : List PatternPlan) (bindings : Bindings)
     (kont : List InstantiateFrame) :
@@ -1928,36 +1163,11 @@ private theorem execute_instantiate_app (constructor : String) (arguments : List
   have matched_instApp := apply_instApp relations source constructor arguments bindings kont
   simp only [
     encodeState, encodeCursor, encodeTemplate, machineStep, List.map] at matched_instApp ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_first_mismatch relations source instVarRewrite "mm-inst" "mm-tvar" _ _ rfl _ _ _ (by decide),
-    applyRule_first_mismatch relations source instBvarRewrite "mm-inst" "mm-tbvar" _ _ rfl _ _ _ (by decide),
-    matched_instApp,
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 0]] _
+    [23] [instAppRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_instApp]
+    rfl
 
 private theorem execute_instantiateArguments_nil (constructor : String) (accumulated : List Pattern) (bindings : Bindings)
     (kont : List InstantiateFrame) :
@@ -1967,36 +1177,11 @@ private theorem execute_instantiateArguments_nil (constructor : String) (accumul
   have matched_instargsDone := apply_instargsDone relations source constructor accumulated bindings kont
   simp only [
     encodeState, encodeTemplates, machineStep, List.map] at matched_instargsDone ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    matched_instargsDone,
-    applyRule_third_mismatch relations source instargsNextRewrite "mm-instargs" _ _ "mm-tcons" _ _ rfl _ _ _ _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 2]] _
+    [24] [instargsDoneRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_instargsDone]
+    rfl
 
 private theorem execute_instantiateArguments_cons (constructor : String) (accumulated : List Pattern) (template : PatternPlan)
     (templates : List PatternPlan) (bindings : Bindings) (kont : List InstantiateFrame) :
@@ -2007,36 +1192,11 @@ private theorem execute_instantiateArguments_cons (constructor : String) (accumu
   simp only [
     encodeState, encodeInstantiateKont, encodeInstantiateFrame, encodeTemplates, machineStep,
     List.map] at matched_instargsNext ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_third_mismatch relations source instargsDoneRewrite "mm-instargs" _ _ "mm-tnil" _ _ rfl _ _ _ _ _ (by decide),
-    matched_instargsNext,
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 2]] _
+    [25] [instargsNextRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_instargsNext]
+    rfl
 
 private theorem execute_instantiated_arg (value : Pattern) (bindings : Bindings) (constructor : String)
     (accumulated : List Pattern) (templates : List PatternPlan) (kont : List InstantiateFrame) :
@@ -2047,36 +1207,11 @@ private theorem execute_instantiated_arg (value : Pattern) (bindings : Bindings)
   simp only [
     encodeState, encodeCursor, encodeInstantiateKont, encodeInstantiateFrame, machineStep,
     List.map] at matched_iretArg ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    matched_iretArg,
-    applyRule_third_mismatch relations source iretDoneRewrite "mm-iret" _ _ "mm-inil" _ _ rfl _ _ _ _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 2]] _
+    [26] [iretArgRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_iretArg]
+    rfl
 
 private theorem execute_instantiated_nil (value : Pattern) (bindings : Bindings) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -2085,36 +1220,11 @@ private theorem execute_instantiated_nil (value : Pattern) (bindings : Bindings)
   have matched_iretDone := apply_iretDone relations source value bindings
   simp only [
     encodeState, encodeInstantiateKont, machineStep, List.map] at matched_iretDone ⊢
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_third_mismatch relations source iretArgRewrite "mm-iret" _ _ "mm-icons" _ _ rfl _ _ _ _ _ (by decide),
-    matched_iretDone]
-  rfl
+  refine (executor_eq_selected relations source [[], [.application 2]] _
+    [27] [iretDoneRewrite] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_cons, List.flatMap_nil, matched_iretDone]
+    rfl
 
 private theorem execute_done (result : Pattern) :
     rewriteStepWithPremisesUsing (relationEnv relations source) language
@@ -2122,36 +1232,10 @@ private theorem execute_done (result : Pattern) :
       (machineStep relations source (.done result)).map encodeState := by
   simp only [
     encodeState, machineStep, List.map]
-  rw [executor_eq relations source,
-    applyRule_head_mismatch relations source succeedRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source captureRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkBoundRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source checkConstructorRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRewrite "bd-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinRightRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source joinMergeRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source finishRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dropRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryLeafRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source tryNextRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDefaultRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source switchDispatchRewrite "mm-run" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchHitRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source dispatchMissRewrite "mm-dispatch" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterDoneRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterWildRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source prefilterNodeRewrite "mm-prefilter" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source afterMatchRewrite "bd-ret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premiseRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source premisesDoneRewrite "mm-premises" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instVarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instBvarRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instAppRewrite "mm-inst" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsDoneRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source instargsNextRewrite "mm-instargs" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretArgRewrite "mm-iret" _ rfl _ _ (by decide),
-    applyRule_head_mismatch relations source iretDoneRewrite "mm-iret" _ rfl _ _ (by decide)]
-  rfl
+  refine (executor_eq_selected relations source [[]] _
+    [] [] ?_ rfl).trans ?_
+  · check_selected_rules
+  · simp only [List.flatMap_nil]
 
 
 /-! ## Exactness -/

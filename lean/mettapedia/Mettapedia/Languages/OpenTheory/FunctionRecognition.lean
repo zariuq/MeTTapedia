@@ -38,4 +38,28 @@ theorem destFunction?_eq_some_iff (type domain codomain : Ty) :
     rw [same]
     exact destFunction?_function domain codomain
 
+theorem eq_function_of_destFunction? {ty domain codomain : Ty}
+    (h : ty.destFunction? = some (domain, codomain)) :
+    ty = .function domain codomain := by
+  cases ty with
+  | var name => simp [destFunction?] at h
+  | op operator arguments =>
+      match arguments, h with
+      | [first, second], h =>
+          simp only [destFunction?] at h
+          split at h
+          · rename_i same
+            simp only [Option.some.injEq, Prod.mk.injEq] at h
+            obtain ⟨rfl, rfl⟩ := h
+            have := (TypeOp.same_eq_true_iff _ _).mp same
+            subst this
+            rfl
+          · contradiction
+
+theorem function_inj {domain codomain domain' codomain' : Ty}
+    (h : Ty.function domain codomain = Ty.function domain' codomain') :
+    domain = domain' ∧ codomain = codomain' := by
+  simp only [Ty.function, Ty.op.injEq, List.cons.injEq] at h
+  exact ⟨h.2.1, h.2.2.1⟩
+
 end Mettapedia.Languages.OpenTheory.Ty

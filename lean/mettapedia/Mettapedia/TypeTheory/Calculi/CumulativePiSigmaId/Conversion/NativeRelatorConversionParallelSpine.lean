@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.ApplicationSpine
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Conversion.NativeRelatorConversionParallel
 
 /-!
@@ -35,21 +36,16 @@ def spineDepth : Tower.Tm n → Nat
   | .app function _ => spineDepth function + 1
   | _ => 0
 
+theorem spine_eq_constant (name : DeclName) (arguments : List (Tower.Tm n)) :
+    spine name arguments = ApplicationSpine.constant name arguments := by
+  induction arguments with
+  | nil => rfl
+  | cons _ _ ih => simp only [spine, ApplicationSpine.constant, ih]
+
 theorem spine_injective (name : DeclName) : Function.Injective (spine (n := n) name) := by
-  intro first
-  induction first with
-  | nil =>
-      intro second equality
-      cases second with
-      | nil => rfl
-      | cons _ _ => cases equality
-  | cons argument rest ih =>
-      intro second equality
-      cases second with
-      | nil => cases equality
-      | cons argument' rest' =>
-          obtain ⟨tail, head⟩ := Tm.app.inj equality
-          exact congrArg₂ List.cons head (ih tail)
+  intro first second same
+  apply ApplicationSpine.constant_injective name
+  simpa only [spine_eq_constant] using same
 
 @[simp] theorem spineHead_spine (name : DeclName) (arguments : List (Tower.Tm n)) :
     spineHead (spine name arguments) = some name := by
@@ -70,19 +66,10 @@ def Rigidity (name : DeclName) (arity : Nat) : Prop :=
   (name ≠ IntrinsicRelator.eliminateName ∨ arity < 9)
 
 theorem Rigidity.shorten {name : DeclName} {arity : Nat}
-    (rigid : Rigidity name (arity + 1)) : Rigidity name arity := by
-  rcases rigid with ⟨first, second, third⟩
-  constructor
-  · rcases first with different | short
-    · exact .inl different
-    · exact .inr (by omega)
-  constructor
-  · rcases second with different | short
-    · exact .inl different
-    · exact .inr (by omega)
-  · rcases third with different | short
-    · exact .inl different
-    · exact .inr (by omega)
+    (rigid : Rigidity name (arity + 1)) : Rigidity name arity :=
+  ⟨ApplicationSpine.excludes_at_smaller_arity (Nat.le_succ _) rigid.1,
+    ApplicationSpine.excludes_at_smaller_arity (Nat.le_succ _) rigid.2.1,
+    ApplicationSpine.excludes_at_smaller_arity (Nat.le_succ _) rigid.2.2⟩
 
 private theorem spine_inversion_aux {source target : Tower.Tm n} (parallel : Par source target) :
     ∀ name arguments, source = spine name arguments →
@@ -104,65 +91,38 @@ private theorem spine_inversion_aux {source target : Tower.Tm n} (parallel : Par
           exact ⟨argument' :: rest', by simp only [spine, shape], .cons argumentStep arguments⟩
   | listNil =>
       intro name arguments equality rigid
-      have names : Intrinsic.eliminateName = name := by
-        simpa only [Intrinsic.eliminateApp, spineHead, spineHead_spine, Option.some.injEq] using
-          congrArg spineHead equality
-      have counts : 5 = arguments.length := by
-        simpa only [Intrinsic.eliminateApp, spineDepth, spineDepth_spine] using congrArg spineDepth equality
-      rcases rigid.1 with different | short
-      · exact False.elim (different names.symm)
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.1 rfl (equality.trans (spine_eq_constant _ _))).elim
   | listCons =>
       intro name arguments equality rigid
-      have names : Intrinsic.eliminateName = name := by
-        simpa only [Intrinsic.eliminateApp, spineHead, spineHead_spine, Option.some.injEq] using
-          congrArg spineHead equality
-      have counts : 5 = arguments.length := by
-        simpa only [Intrinsic.eliminateApp, spineDepth, spineDepth_spine] using congrArg spineDepth equality
-      rcases rigid.1 with different | short
-      · exact False.elim (different names.symm)
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.1 rfl (equality.trans (spine_eq_constant _ _))).elim
   | identity =>
       intro name arguments equality rigid
-      have names : Intrinsic.identityEliminateName = name := by
-        simpa only [Intrinsic.identityEliminateApp, spineHead, spineHead_spine, Option.some.injEq] using
-          congrArg spineHead equality
-      have counts : 6 = arguments.length := by
-        simpa only [Intrinsic.identityEliminateApp, spineDepth, spineDepth_spine] using congrArg spineDepth equality
-      rcases rigid.2.1 with different | short
-      · exact False.elim (different names.symm)
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.2.1 rfl (equality.trans (spine_eq_constant _ _))).elim
   | relNil =>
       intro name arguments equality rigid
-      have names : IntrinsicRelator.eliminateName = name := by
-        simpa only [IntrinsicRelator.eliminateApp, spineHead, spineHead_spine, Option.some.injEq] using
-          congrArg spineHead equality
-      have counts : 9 = arguments.length := by
-        simpa only [IntrinsicRelator.eliminateApp, spineDepth, spineDepth_spine] using congrArg spineDepth equality
-      rcases rigid.2.2 with different | short
-      · exact False.elim (different names.symm)
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.2.2 rfl (equality.trans (spine_eq_constant _ _))).elim
   | relCons =>
       intro name arguments equality rigid
-      have names : IntrinsicRelator.eliminateName = name := by
-        simpa only [IntrinsicRelator.eliminateApp, spineHead, spineHead_spine, Option.some.injEq] using
-          congrArg spineHead equality
-      have counts : 9 = arguments.length := by
-        simpa only [IntrinsicRelator.eliminateApp, spineDepth, spineDepth_spine] using congrArg spineDepth equality
-      rcases rigid.2.2 with different | short
-      · exact False.elim (different names.symm)
-      · omega
+      exact (ApplicationSpine.excludes_root rigid.2.2 rfl (equality.trans (spine_eq_constant _ _))).elim
   | _ =>
       intro name arguments equality _
-      have impossible := congrArg spineHead equality
-      simp only [spineHead, spineHead_spine] at impossible
-      cases impossible
+      exact (ApplicationSpine.excludes_headless rfl (equality.trans (spine_eq_constant _ _))).elim
+
+
 
 theorem spine_inversion (name : DeclName) (arguments : List (Tower.Tm n))
     (rigid : Rigidity name arguments.length)
     {target : Tower.Tm n} (parallel : Par (spine name arguments) target) :
     ∃ arguments', target = spine name arguments' ∧ List.Forall₂ Par arguments arguments' :=
   spine_inversion_aux parallel name arguments rfl rigid
+
+private theorem spine_related_of_fixed (name : DeclName)
+    {arguments target : List (Tower.Tm n)}
+    (rigid : Rigidity name arguments.length)
+    (parallel : Par (spine name arguments) (spine name target)) :
+    List.Forall₂ Par arguments target :=
+  ApplicationSpine.related_of_fixed (name := name) (by
+    simpa only [spine_eq_constant] using spine_inversion name arguments rigid parallel)
 
 def listPrefix (a p z s : Tower.Tm n) : Tower.Tm n :=
   spine Intrinsic.eliminateName [s, z, p, a]
@@ -194,12 +154,11 @@ theorem listPrefix_to_fixed
     {a p z s a' p' z' s' : Tower.Tm n}
     (parallel : Par (listPrefix a p z s) (listPrefix a' p' z' s')) :
     Par a a' ∧ Par p p' ∧ Par z z' ∧ Par s s' := by
-  obtain ⟨a'', p'', z'', s'', shape, ha, hp, hz, hs⟩ := listPrefix_inversion parallel
-  have fields := @spine_injective n Intrinsic.eliminateName
-    [s', z', p', a'] [s'', z'', p'', a''] shape
-  simp only [List.cons.injEq, and_true] at fields
-  rcases fields with ⟨rfl, rfl, rfl, rfl⟩
-  exact ⟨ha, hp, hz, hs⟩
+  have related := spine_related_of_fixed Intrinsic.eliminateName
+    (arguments := [s, z, p, a]) (target := [s', z', p', a'])
+    (by simp only [List.length_cons, List.length_nil, Rigidity]; decide) parallel
+  simpa only [List.forall₂_cons, List.forall₂_nil_left_iff, eq_self, and_assoc,
+    and_left_comm, and_comm, and_true, true_and] using related
 
 def identityPrefix (a x p d y : Tower.Tm n) : Tower.Tm n :=
   spine Intrinsic.identityEliminateName [y, d, p, x, a]
@@ -233,12 +192,11 @@ theorem identityPrefix_to_fixed
     {a x p d y a' x' p' d' y' : Tower.Tm n}
     (parallel : Par (identityPrefix a x p d y) (identityPrefix a' x' p' d' y')) :
     Par a a' ∧ Par x x' ∧ Par p p' ∧ Par d d' ∧ Par y y' := by
-  obtain ⟨a'', x'', p'', d'', y'', shape, ha, hx, hp, hd, hy⟩ := identityPrefix_inversion parallel
-  have fields := @spine_injective n Intrinsic.identityEliminateName
-    [y', d', p', x', a'] [y'', d'', p'', x'', a''] shape
-  simp only [List.cons.injEq, and_true] at fields
-  rcases fields with ⟨rfl, rfl, rfl, rfl, rfl⟩
-  exact ⟨ha, hx, hp, hd, hy⟩
+  have related := spine_related_of_fixed Intrinsic.identityEliminateName
+    (arguments := [y, d, p, x, a]) (target := [y', d', p', x', a'])
+    (by simp only [List.length_cons, List.length_nil, Rigidity]; decide) parallel
+  simpa only [List.forall₂_cons, List.forall₂_nil_left_iff, eq_self, and_assoc,
+    and_left_comm, and_comm, and_true, true_and] using related
 
 def relPrefix (a b r p z s xs ys : Tower.Tm n) : Tower.Tm n :=
   spine IntrinsicRelator.eliminateName [ys, xs, s, z, p, r, b, a]
@@ -278,12 +236,11 @@ theorem relPrefix_to_fixed
     {a b r p z s xs ys a' b' r' p' z' s' xs' ys' : Tower.Tm n}
     (parallel : Par (relPrefix a b r p z s xs ys) (relPrefix a' b' r' p' z' s' xs' ys')) :
     Par a a' ∧ Par b b' ∧ Par r r' ∧ Par p p' ∧ Par z z' ∧ Par s s' ∧ Par xs xs' ∧ Par ys ys' := by
-  obtain ⟨a'', b'', r'', p'', z'', s'', xs'', ys'', shape, ha, hb, hr, hp, hz, hs, hxs, hys⟩ := relPrefix_inversion parallel
-  have fields := @spine_injective n IntrinsicRelator.eliminateName
-    [ys', xs', s', z', p', r', b', a'] [ys'', xs'', s'', z'', p'', r'', b'', a''] shape
-  simp only [List.cons.injEq, and_true] at fields
-  rcases fields with ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
-  exact ⟨ha, hb, hr, hp, hz, hs, hxs, hys⟩
+  have related := spine_related_of_fixed IntrinsicRelator.eliminateName
+    (arguments := [ys, xs, s, z, p, r, b, a]) (target := [ys', xs', s', z', p', r', b', a'])
+    (by simp only [List.length_cons, List.length_nil, Rigidity]; decide) parallel
+  simpa only [List.forall₂_cons, List.forall₂_nil_left_iff, eq_self, and_assoc,
+    and_left_comm, and_comm, and_true, true_and] using related
 
 theorem par_nilApp
     {a a' : Tower.Tm n}
@@ -306,12 +263,11 @@ theorem nilApp_to_fixed
     {a a' : Tower.Tm n}
     (parallel : Par (Intrinsic.nilApp a) (Intrinsic.nilApp a')) :
     Par a a' := by
-  obtain ⟨a'', shape, ha⟩ := nilApp_inversion parallel
-  have fields := @spine_injective n Intrinsic.nilName
-    [a'] [a''] shape
-  simp only [List.cons.injEq, and_true] at fields
-  rcases fields with ⟨rfl⟩
-  exact ha
+  have related := spine_related_of_fixed Intrinsic.nilName
+    (arguments := [a]) (target := [a'])
+    (by simp only [List.length_cons, List.length_nil, Rigidity]; decide) parallel
+  simpa only [List.forall₂_cons, List.forall₂_nil_left_iff, eq_self, and_assoc,
+    and_left_comm, and_comm, and_true, true_and] using related
 
 theorem par_consApp
     {a h t a' h' t' : Tower.Tm n}
@@ -338,12 +294,11 @@ theorem consApp_to_fixed
     {a h t a' h' t' : Tower.Tm n}
     (parallel : Par (Intrinsic.consApp a h t) (Intrinsic.consApp a' h' t')) :
     Par a a' ∧ Par h h' ∧ Par t t' := by
-  obtain ⟨a'', h'', t'', shape, ha, hh, ht⟩ := consApp_inversion parallel
-  have fields := @spine_injective n Intrinsic.consName
-    [t', h', a'] [t'', h'', a''] shape
-  simp only [List.cons.injEq, and_true] at fields
-  rcases fields with ⟨rfl, rfl, rfl⟩
-  exact ⟨ha, hh, ht⟩
+  have related := spine_related_of_fixed Intrinsic.consName
+    (arguments := [t, h, a]) (target := [t', h', a'])
+    (by simp only [List.length_cons, List.length_nil, Rigidity]; decide) parallel
+  simpa only [List.forall₂_cons, List.forall₂_nil_left_iff, eq_self, and_assoc,
+    and_left_comm, and_comm, and_true, true_and] using related
 
 theorem par_nilRelApp
     {a b r a' b' r' : Tower.Tm n}
@@ -370,12 +325,11 @@ theorem nilRelApp_to_fixed
     {a b r a' b' r' : Tower.Tm n}
     (parallel : Par (IntrinsicRelator.nilRelApp a b r) (IntrinsicRelator.nilRelApp a' b' r')) :
     Par a a' ∧ Par b b' ∧ Par r r' := by
-  obtain ⟨a'', b'', r'', shape, ha, hb, hr⟩ := nilRelApp_inversion parallel
-  have fields := @spine_injective n IntrinsicRelator.nilRelName
-    [r', b', a'] [r'', b'', a''] shape
-  simp only [List.cons.injEq, and_true] at fields
-  rcases fields with ⟨rfl, rfl, rfl⟩
-  exact ⟨ha, hb, hr⟩
+  have related := spine_related_of_fixed IntrinsicRelator.nilRelName
+    (arguments := [r, b, a]) (target := [r', b', a'])
+    (by simp only [List.length_cons, List.length_nil, Rigidity]; decide) parallel
+  simpa only [List.forall₂_cons, List.forall₂_nil_left_iff, eq_self, and_assoc,
+    and_left_comm, and_comm, and_true, true_and] using related
 
 theorem par_consRelApp
     {a b r h k t u he te a' b' r' h' k' t' u' he' te' : Tower.Tm n}
@@ -414,12 +368,11 @@ theorem consRelApp_to_fixed
     {a b r h k t u he te a' b' r' h' k' t' u' he' te' : Tower.Tm n}
     (parallel : Par (IntrinsicRelator.consRelApp a b r h k t u he te) (IntrinsicRelator.consRelApp a' b' r' h' k' t' u' he' te')) :
     Par a a' ∧ Par b b' ∧ Par r r' ∧ Par h h' ∧ Par k k' ∧ Par t t' ∧ Par u u' ∧ Par he he' ∧ Par te te' := by
-  obtain ⟨a'', b'', r'', h'', k'', t'', u'', he'', te'', shape, ha, hb, hr, hh, hk, ht, hu, hhe, hte⟩ := consRelApp_inversion parallel
-  have fields := @spine_injective n IntrinsicRelator.consRelName
-    [te', he', u', t', k', h', r', b', a'] [te'', he'', u'', t'', k'', h'', r'', b'', a''] shape
-  simp only [List.cons.injEq, and_true] at fields
-  rcases fields with ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
-  exact ⟨ha, hb, hr, hh, hk, ht, hu, hhe, hte⟩
+  have related := spine_related_of_fixed IntrinsicRelator.consRelName
+    (arguments := [te, he, u, t, k, h, r, b, a]) (target := [te', he', u', t', k', h', r', b', a'])
+    (by simp only [List.length_cons, List.length_nil, Rigidity]; decide) parallel
+  simpa only [List.forall₂_cons, List.forall₂_nil_left_iff, eq_self, and_assoc,
+    and_left_comm, and_comm, and_true, true_and] using related
 
 theorem lam_inversion {body : Tower.Tm (n + 1)} {target : Tower.Tm n}
     (parallel : Par (.lam body) target) :

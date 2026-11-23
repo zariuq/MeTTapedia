@@ -1,0 +1,113 @@
+Prepared primitive publication: model and counterexamples
+========================================================
+
+Classification: derived model consumer and calibration expectations.
+
+The Lean model is Machines/PreparedStoreProtocol. Its executable negative
+controls are in PreparedStoreProtocolControls. The bridge in
+ConstraintMultisetRewriting/Step/PublicationProtocol proves that a committed
+model publication realizes an admitted existing ordered tcalc step.
+
+Vocabulary and scope
+--------------------
+Key is a requested value key; O is a physical occurrence identity. Repeating
+a requested key must not repeat the same physical deletion. Conversely, two
+different occurrences carrying one key must remain two occurrences. In the
+CeTTa exact-selection example, an AtomId is a value key, not an arbitrary
+physical row position or occurrence lifetime.
+
+World.space identifies the selected space. Plan.ticket identifies one
+recorded preparation. Neither a space identity nor an operation kind alone
+identifies that preparation. Natural-valued tickets model a serial issuer;
+finite-word overflow and independent/forked issuers need their own contracts.
+
+This model covers one serialized primitive publication. It does not impose
+whole-transform rollback. Refusal preserves the current world, including any
+effects performed by earlier primitives. Native allocation, memory layout,
+pointer retention, actual locks and source-to-C correspondence are outside
+the proved boundary.
+
+Corrected contracts
+-------------------
+F1: record_exact and successful_receipt_taken_iff connect every receipt entry
+    to the actual published footprint and immutable payload. Receipt.length
+    is derived from constructed records; it cannot independently advertise
+    more slots. completed_records_are_initialized checks the array-view law.
+
+F2: duplicate_requests_irrelevant and ready_taken_distinct prove that request
+    repetition does not duplicate a physical selection. The positive mixed
+    case retains two equal-valued stored copies. removed_exact identifies
+    the real before/after occurrence difference.
+
+F3: rejected_prepare_preserves_state and busy_preserves_plan forbid changing
+    an existing pending operation while reporting that preparation failed.
+    A tagged operation carries its arguments together.
+
+F4: mismatched_receipt_refused preserves both world and pending state when
+    the supplied association is wrong. Publication constructs the receipt
+    from its own plan; it accepts no foreign payload to certify. Recorded
+    preparation advances the serial ticket supply; ordinary preparation does
+    not advance it.
+
+One-shot behavior: publication_consumes and cannot_republish prevent a
+successful primitive from executing twice. Capacity refusal occurs before
+publication and leaves both the store and ticket counter unchanged.
+
+No compulsory second matching pass
+---------------------------------
+Ready states semantic dependency obligations. publishReady consumes existing
+evidence and directly applies the physical effect. publish_under_ready proves
+that the checked wrapper agrees with this direct path. The model therefore
+does not require implementing preparation, validation and publication as
+three separate scans.
+
+no_recording_no_ticket_allocation proves that disabling recording leaves
+the ticket supply unchanged. unrecorded proves that no receipt is constructed
+for such a plan. These are model laws; physical allocation and cycle counts
+still require implementation evidence.
+
+Executable controls
+-------------------
+From the Lean project root:
+
+  lake env lean --run ../../MettaKernel/Examples/ContextualDerivedForms/PublicationModel.lean
+
+Compare stdout with PublicationModel.expected. The four deliberately broken
+variants are expected to exhibit their named failures; the corrected protocol
+has separate positive controls. This is not a test which changes its expected
+answer to follow a native implementation.
+
+The related finite store-program consumer is:
+
+  lake env lean --run ../../MettaKernel/Examples/ContextualDerivedForms/RunStoreProgram.lean
+
+It executes append/query/remove/query through the proved tcalc interpretation,
+pauses after two operations and resumes without repeating the append. The
+accounted charge and the protocol inspection budget are separate quantities.
+
+This finite example uses an allocator fresh against the current live store.
+FreshOccurrenceAllocation.Controls.deleted_identity_can_be_reused shows why
+retained historical cursors need a stronger supply or a wider avoidance set.
+The example does not select an allocation policy for Prime or CeTTa.
+
+Refinement limits
+-----------------
+The erase readiness profile observes the complete requested key region at
+publication. A native captured-prefix deletion can have narrower dependencies
+and deliberately leave later matching appends alone. Do not apply the model's
+live-region check to that different contract. The four defect controls keep
+the store stable between preparation and publication, so their conclusions
+do not depend on choosing one of these observation policies.
+
+An append here is one prepared atomic append effect. CeTTa's ordered
+ADD_BATCH helpers may represent several source operations and retain an
+earlier prefix on later failure; those helpers must be compared compositionally,
+not declared equivalent to one atomic append merely because both use a batch.
+
+The reference's rejected preparation preserves its entire State. The essential
+runtime rejection contract is preservation of the logical world and pending
+operation. A failed recorded preparation may consume an unused ticket or
+profiling work without violating that contract, provided association remains
+fresh and no successful receipt is fabricated. Consecutive numerical ticket
+values are not a required language observation. The ordinary no-recording path
+still must not pay for receipt-only ticket allocation.

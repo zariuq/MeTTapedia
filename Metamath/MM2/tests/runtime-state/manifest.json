@@ -1,0 +1,203 @@
+{
+  "schema": "mm2-internal-state-fixtures-v1",
+  "cases": [
+    {
+      "name": "authored_duplicate_constant",
+      "mode": "constant-duplicate",
+      "file": "authored_duplicate_constant.mm2",
+      "forms": 8,
+      "parsed_sha256": "0e9217346e4a63783900d0a8a6b6d2b6f62fee9771115caa9a43bd4df15977d1",
+      "counts": {
+        "mm-source-statement-rejected": 1,
+        "mm-source-statement-applied": 0,
+        "mm-source-control": 0,
+        "mm-source-object-link": 0,
+        "mm-source-variable-typecode-binding": 0,
+        "mm-source-active-hypothesis-link": 0,
+        "mm-hypothesis-lookup": 0,
+        "mm-source-object-frontier": 3
+      },
+      "reason": "duplicate-constant-name"
+    },
+    {
+      "name": "authored_occupied_constant",
+      "mode": "constant-occupied",
+      "file": "authored_occupied_constant.mm2",
+      "forms": 9,
+      "parsed_sha256": "2c0f307fab0cf716845317e1f0d00a49519d06d569a9940d54f4b386fea063e1",
+      "counts": {
+        "mm-source-statement-rejected": 1,
+        "mm-source-statement-applied": 0,
+        "mm-source-control": 0,
+        "mm-source-object-link": 1,
+        "mm-source-variable-typecode-binding": 0,
+        "mm-source-active-hypothesis-link": 0,
+        "mm-hypothesis-lookup": 0,
+        "mm-source-object-frontier": 3
+      },
+      "reason": "occupied-object-name"
+    },
+    {
+      "name": "authored_duplicate_variable",
+      "mode": "variable-duplicate",
+      "file": "authored_duplicate_variable.mm2",
+      "forms": 8,
+      "parsed_sha256": "05735b938061c52de01a3df3ca6e9676866f7ec9feca9a6e56fd52ff9ee35735",
+      "counts": {
+        "mm-source-statement-rejected": 1,
+        "mm-source-statement-applied": 0,
+        "mm-source-control": 0,
+        "mm-source-object-link": 0,
+        "mm-source-variable-typecode-binding": 0,
+        "mm-source-active-hypothesis-link": 0,
+        "mm-hypothesis-lookup": 0,
+        "mm-source-object-frontier": 3
+      },
+      "reason": "duplicate-variable-name"
+    },
+    {
+      "name": "authored_active_variable",
+      "mode": "variable-active",
+      "file": "authored_active_variable.mm2",
+      "forms": 10,
+      "parsed_sha256": "6351ced59e793b7cbe3d05a1acf18bfac2572fb5d79834aca0473d583e2ee9b9",
+      "counts": {
+        "mm-source-statement-rejected": 1,
+        "mm-source-statement-applied": 0,
+        "mm-source-control": 0,
+        "mm-source-object-link": 2,
+        "mm-source-variable-typecode-binding": 0,
+        "mm-source-active-hypothesis-link": 0,
+        "mm-hypothesis-lookup": 0,
+        "mm-source-object-frontier": 3
+      },
+      "reason": "active-variable-name"
+    },
+    {
+      "name": "authored_floating_fresh",
+      "mode": "floating-fresh",
+      "file": "authored_floating_fresh.mm2",
+      "forms": 11,
+      "parsed_sha256": "1aa96c293a6f434a0c15dab10ec94d2b49aa21c8996c427b75cc7c8b7141ae47",
+      "counts": {
+        "mm-source-statement-rejected": 0,
+        "mm-source-statement-applied": 1,
+        "mm-source-control": 1,
+        "mm-source-object-link": 5,
+        "mm-source-variable-typecode-binding": 1,
+        "mm-source-active-hypothesis-link": 1,
+        "mm-hypothesis-lookup": 1,
+        "mm-source-object-frontier": 3
+      },
+      "reason": null
+    },
+    {
+      "name": "authored_floating_conflict",
+      "mode": "floating-conflict",
+      "file": "authored_floating_conflict.mm2",
+      "forms": 17,
+      "parsed_sha256": "488f2a2b74106d3118c487bca47249338f2e8d5cad1b76cde8fcc76596c8d0d5",
+      "counts": {
+        "mm-source-statement-rejected": 1,
+        "mm-source-statement-applied": 0,
+        "mm-source-control": 0,
+        "mm-source-object-link": 6,
+        "mm-source-variable-typecode-binding": 1,
+        "mm-source-active-hypothesis-link": 1,
+        "mm-hypothesis-lookup": 1,
+        "mm-source-object-frontier": 3
+      },
+      "reason": "duplicate-floating-variable"
+    },
+    {
+      "name": "authored_nested_constant",
+      "mode": "constant-nested",
+      "file": "authored_nested_constant.mm2",
+      "forms": 8,
+      "parsed_sha256": "05dea21ebc43fd0843dd56830afd2874a2bda543bdd2503c3add2d7d0d5dd1ae",
+      "counts": {
+        "mm-source-statement-rejected": 1,
+        "mm-source-statement-applied": 0,
+        "mm-source-control": 0,
+        "mm-source-object-link": 0,
+        "mm-source-variable-typecode-binding": 0,
+        "mm-source-active-hypothesis-link": 0,
+        "mm-hypothesis-lookup": 0,
+        "mm-source-object-frontier": 3
+      },
+      "reason": "constant-not-top-level"
+    },
+    {
+      "name": "authored_scope_underflow",
+      "mode": "scope-underflow",
+      "file": "authored_scope_underflow.mm2",
+      "forms": 8,
+      "parsed_sha256": "617f606b07dc5490d2d8c429b1a7ecada0f280a7972961f48810bc1f533a5f52",
+      "counts": {
+        "mm-source-statement-rejected": 1,
+        "mm-source-statement-applied": 0,
+        "mm-source-control": 0,
+        "mm-source-object-link": 0,
+        "mm-source-variable-typecode-binding": 0,
+        "mm-source-active-hypothesis-link": 0,
+        "mm-hypothesis-lookup": 0,
+        "mm-source-object-frontier": 3
+      },
+      "reason": "scope-underflow"
+    },
+    {
+      "name": "authored_essential_fresh",
+      "mode": "essential-fresh",
+      "file": "authored_essential_fresh.mm2",
+      "forms": 12,
+      "parsed_sha256": "0b7486b422c97d60f956976c6da2cf904317b44e2969ed2f234ec98810d2f97c",
+      "counts": {
+        "mm-source-statement-rejected": 0,
+        "mm-source-statement-applied": 1,
+        "mm-source-control": 1,
+        "mm-source-object-link": 4,
+        "mm-source-variable-typecode-binding": 0,
+        "mm-source-active-hypothesis-link": 1,
+        "mm-hypothesis-lookup": 1,
+        "mm-source-object-frontier": 3
+      },
+      "reason": null
+    },
+    {
+      "name": "authored_essential_wrong_formula",
+      "mode": "essential-wrong-formula",
+      "file": "authored_essential_wrong_formula.mm2",
+      "forms": 12,
+      "parsed_sha256": "8977ff8bc9b415a4f8d5d3fa1fdb40ae76a3ecbca40a1aff038eed96377ed4cf",
+      "counts": {
+        "mm-source-statement-rejected": 1,
+        "mm-source-statement-applied": 0,
+        "mm-source-control": 0,
+        "mm-source-object-link": 3,
+        "mm-source-variable-typecode-binding": 0,
+        "mm-source-active-hypothesis-link": 0,
+        "mm-hypothesis-lookup": 0,
+        "mm-source-object-frontier": 3
+      },
+      "reason": "invalid-essential-formula"
+    },
+    {
+      "name": "authored_essential_occupied",
+      "mode": "essential-occupied",
+      "file": "authored_essential_occupied.mm2",
+      "forms": 13,
+      "parsed_sha256": "5c95bda411d7aa7c5cf62b0fb387748f1083c4b5bc9584f4a2b69db25f11dd50",
+      "counts": {
+        "mm-source-statement-rejected": 1,
+        "mm-source-statement-applied": 0,
+        "mm-source-control": 0,
+        "mm-source-object-link": 4,
+        "mm-source-variable-typecode-binding": 0,
+        "mm-source-active-hypothesis-link": 0,
+        "mm-hypothesis-lookup": 0,
+        "mm-source-object-frontier": 3
+      },
+      "reason": "occupied-essential-label"
+    }
+  ]
+}

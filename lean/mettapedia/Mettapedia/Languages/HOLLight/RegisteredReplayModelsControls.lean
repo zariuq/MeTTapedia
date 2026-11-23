@@ -2,6 +2,7 @@ import Mettapedia.Languages.HOLLight.SourceProfileModels
 import Mettapedia.Languages.HOLLight.SourceProfileModels
 import Mettapedia.Languages.HOLLight.RegisteredPointedModels
 import Mettapedia.Languages.HOLLight.DefinitionReplayModels
+import Mettapedia.Languages.HOLLight.CheckedInferenceTrace
 
 /-!
 # Replay-to-model controls
@@ -148,6 +149,30 @@ def forgedRetention : Receipt := { retentionNode with conclusion := Theorem.empt
 theorem forged_retention_refused :
     (Command.proof forgedRetention retentionInstances).check emptyAxiomPolicy SourceProfile.primitiveContext #[] = none := by
   decide +kernel
+
+private def reflexiveRequest : InferenceRequest := .refl DefinitionAdapters.Controls.identityTerm
+private def repeatedRequest : InferenceRequest :=
+  .trans ContextControls.identityExistence ContextControls.identityExistence
+
+private def formRetention (request : RuleRequest) (fact : Theorem) : Bool :=
+  let signature := SourceProfile.primitiveContext.signature
+  requestFormedB signature retentionInstances request &&
+    theoremFormedB signature retentionInstances fact
+
+checked_hol_trace repeated emptyAxiomPolicy formRetention ("repeated-premise", 0) [
+  ContextControls.identityExistence reflexiveRequest [],
+  ContextControls.identityExistence repeatedRequest [0, 0],
+  ContextControls.identityExistence repeatedRequest [0, 0]
+]
+
+example : repeated_suffix0.map (·.parents) = [[], [0, 0], [0, 0]] := rfl
+
+example : repeated_suffix0.all (fun node => formRetention node.witness node.conclusion) = true :=
+  repeated_trace0.formed
+
+private def futurePremise : Receipt := { repeated_node1 with parents := [1, 1] }
+
+example : futurePremise.replay (ruleWitness emptyAxiomPolicy) repeated_cache1 = none := rfl
 
 
 def verdicts : List (String × Bool) :=

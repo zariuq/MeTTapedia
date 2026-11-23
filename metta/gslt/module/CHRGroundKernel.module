@@ -1,0 +1,37 @@
+import "CHRIR.module" as ir
+
+Module CHRGroundKernel {
+  Theory Transactions(d: ir.Constraints) {
+    d
+      Types { ChrSelection; ChrRestoreData; ChrApplication; }
+      Terms {
+        ChrSelect . heads:ChrHeadsData, store:ChrStoreData |- "select" heads store : ChrSelection;
+        ChrSelected . rest:ChrStoreData |- "selected" rest : ChrSelection;
+        ChrRestore . heads:ChrHeadsData, store:ChrStoreData |- "restore" heads store : ChrRestoreData;
+        ChrRestored . store:ChrStoreData |- "restored" store : ChrRestoreData;
+        ChrApply . key:ChrKeyData, kept:ChrHeadsData, removed:ChrHeadsData, body:ChrBodyData, store:ChrStoreData
+          |- "apply" key kept removed body store : ChrApplication;
+        ChrApplied . key:ChrKeyData, body:ChrBodyData, store:ChrStoreData
+          |- "applied" key body store : ChrApplication;
+      }
+      Rewrites {
+        SelectNil . contents:HashBag(ChrOccurrenceData)
+          |- (ChrSelect (ChrHeads []) (ChrStore contents)) ~> (ChrSelected (ChrStore contents));
+        SelectCons . head:ChrOccurrenceData, tail:Vec(ChrOccurrenceData), rest:HashBag(ChrOccurrenceData), result:ChrStoreData
+          | (ChrSelect (ChrHeads tail) (ChrStore rest)) ~> (ChrSelected result)
+          |- (ChrSelect (ChrHeads [head, ...tail]) (ChrStore {head, ...rest})) ~> (ChrSelected result);
+        RestoreNil . contents:HashBag(ChrOccurrenceData)
+          |- (ChrRestore (ChrHeads []) (ChrStore contents)) ~> (ChrRestored (ChrStore contents));
+        RestoreCons . head:ChrOccurrenceData, tail:Vec(ChrOccurrenceData), contents:HashBag(ChrOccurrenceData), result:HashBag(ChrOccurrenceData)
+          | (ChrRestore (ChrHeads tail) (ChrStore contents)) ~> (ChrRestored (ChrStore result))
+          |- (ChrRestore (ChrHeads [head, ...tail]) (ChrStore contents)) ~> (ChrRestored (ChrStore {head, ...result}));
+        Apply . key:ChrKeyData, kept:Vec(ChrOccurrenceData), removed:Vec(ChrOccurrenceData), body:ChrBodyData,
+          store:ChrStoreData, afterKept:ChrStoreData, rest:ChrStoreData, result:ChrStoreData
+          | (ChrSelect (ChrHeads kept) store) ~> (ChrSelected afterKept),
+            (ChrSelect (ChrHeads removed) afterKept) ~> (ChrSelected rest),
+            (ChrRestore (ChrHeads kept) rest) ~> (ChrRestored result)
+          |- (ChrApply key (ChrHeads kept) (ChrHeads removed) body store) ~> (ChrApplied key body result);
+      }
+  }
+  theory Transactions(ir.Constraints(ir.Data()))
+}

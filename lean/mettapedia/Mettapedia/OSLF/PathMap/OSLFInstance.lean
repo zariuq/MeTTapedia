@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.OSLF.PathMap.Core
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Match
@@ -196,15 +197,8 @@ private theorem pathMapPredicate_apply (relEnv : RelationEnv)
 Contextual closure therefore contributes no additional PathMap steps. -/
 private theorem pathMapLang_rules_noncontextual :
     ∀ rule, rule ∈ pathMapLang.rewrites →
-      NoncontextualPremises rule.premises := by
-  intro rule ruleMember
-  simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at ruleMember
-  rcases ruleMember with
-    rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  all_goals first
-    | exact .relationQuery .nil
-    | exact .relationQuery (.relationQuery .nil)
-    | exact .relationQuery (.relationQuery (.relationQuery .nil))
+      NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 /-- No PathMap rule moves a metavariable under a binder -- the language has no
 binder at all -- so firing one is plain binding application. -/

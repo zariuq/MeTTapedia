@@ -1,0 +1,10 @@
+stale dense flags: initialized=false
+correct dense batch: committed records=2
+repeated physical take: success=false remaining=[1]
+correct repeated keys: committed records=1
+equal stored copies: committed records=2
+bad reprepare changes slot=true
+correct reprepare preserves slot=true
+kind-and-space accepts wrong receipt=true
+correct association: refused Mettapedia.Machines.PreparedStoreProtocol.Fault.receiptMismatch
+ordinary publication: committed unrecorded; tickets=0

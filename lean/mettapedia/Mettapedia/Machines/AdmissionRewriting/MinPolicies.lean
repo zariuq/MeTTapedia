@@ -21,12 +21,12 @@ equal.
 * `minLt x y`: `y` if `y < x`, else `x`.
 * `minNum` (IEEE 754-2008): the number when one operand is NaN, NaN only when both are.
 * `minimum` (IEEE 754-2019): NaN when either is NaN, and `-0.0` below `0.0`.  CeTTa's PeTTa
-  lane now selects an operand (`MinMaxSelection`, DIFF-17), which keeps both: a NaN operand
-  propagates, and `-0.0` is below `0` and `0.0`.
+  lane now selects an operand (`MinMaxSelection`, DIFF-17): a NaN operand propagates, as in
+  `minimum`, and the signed zeros are one value, decided by the tie rule.
 
 This file proves:
 * `minLe_ties_first`, `minLt_ties_first`: on equal values both answer the first argument:
-  the choice CeTTa made (`(min 0.0 -0.0)` was `0.0`; `(min 1 1.0)` is still `1`);
+  the choice CeTTa makes (`(min 0.0 -0.0)` is `0.0`, `(min 1 1.0)` is `1`);
 * `minLe_eq_minLt`: off NaN the two spellings agree; `nan_controls`: on NaN they differ,
   each from the other and from `minNum` and `minimum`;
 * `no_single_test_minNum`, `no_single_test_minimum`: no `if` on one comparison that is false
@@ -38,10 +38,11 @@ This file proves:
 
 So for CeTTa's `min` as it was, the rule's spelling must be `(<= $x $y)`, not `(< $y $x)`.
 The NaN policy itself is a choice of the dialect; the rule follows it.  CeTTa's PeTTa lane
-now selects an operand (`MinMaxSelection`): like `minimum` it propagates NaN and puts `-0.0`
-below the other zeros, so no single test spells it (`MinMaxSelection.Controls.no_single_test`,
-as `no_single_test_minimum` here), and on doubles the rule is not the dialect's `min`
-(`MinMaxSelection.Controls.le_test_differs`); CeTTa runs `min` as an intrinsic.
+now selects an operand (`MinMaxSelection`): like `minimum` it propagates NaN, so no single
+test spells it (`MinMaxSelection.Controls.no_single_test`, as `no_single_test_minimum` here),
+and on doubles the rule is not the dialect's `min` at a NaN first operand or at an integer
+and a double equal only as doubles (`MinMaxSelection.Controls.le_test_differs`); CeTTa runs
+`min` as an intrinsic.
 -/
 
 set_option autoImplicit false

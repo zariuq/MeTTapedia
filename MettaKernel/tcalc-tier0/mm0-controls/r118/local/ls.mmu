@@ -1,0 +1,7 @@
+(sort wff provable)
+(local sort hid provable)
+(sort nat)
+(term unit () (wff ()))
+(term empty () (wff ()))
+(term f ((n hid ())) (wff ()))
+(axiom proof_of_unit () () (unit))

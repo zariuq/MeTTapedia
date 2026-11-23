@@ -1,0 +1,111 @@
+{
+  "schema": "store-demand-contract-qualification-v1",
+  "date": "2026-11-09",
+  "scope": "Semantic contracts and calibration fixtures; no C-correspondence or runtime-readiness claim",
+  "lean": {
+    "toolchain": "leanprover/lean4:v4.33.1",
+    "warnings_as_errors": true,
+    "named_theorems": 80,
+    "audited_declarations": 337,
+    "audited_theorems_including_generated": 189,
+    "allowed_axioms": [
+      "propext",
+      "Classical.choice",
+      "Quot.sound"
+    ],
+    "modules": [
+      {
+        "source": "Mettapedia/Machines/StoreAndDemand/FirstAnswer.lean",
+        "sha256": "29849cd564cf61e68d3725ddb99bd3b44510b8ef339d92ee1d24b6be46af5b38",
+        "exit": 0,
+        "unchanged": true
+      },
+      {
+        "source": "Mettapedia/Languages/MeTTa/StoreAndDemand/StoreEffects.lean",
+        "sha256": "40403056b84480cc0611bfde0e8435a4114147ac46f327c6a3b10bafd68a40e9",
+        "exit": 0,
+        "unchanged": true
+      },
+      {
+        "source": "Mettapedia/Languages/MeTTa/StoreAndDemand/PeTTaSelection.lean",
+        "sha256": "e1ba9b97a0e2913369f6c27c4a7060623c4c7d434e6d0e61e5644208fc6c7619",
+        "exit": 0,
+        "unchanged": true
+      },
+      {
+        "source": "Mettapedia/Languages/MeTTa/StoreAndDemand/ValidationReuse.lean",
+        "sha256": "aa8e346d3bcf431dc6904eafd1d6046ae4e4f68e68daf558cf2a5b1138e76b31",
+        "exit": 0,
+        "unchanged": true
+      },
+      {
+        "source": "Mettapedia/Languages/MeTTa/StoreAndDemand/RunReceipts.lean",
+        "sha256": "32abae4788c88c0cb3e6ddd559bd1f5c502c63e5f6adfc2f98136b27b0c1d512",
+        "exit": 0,
+        "unchanged": true
+      },
+      {
+        "source": "Mettapedia/Languages/MeTTa/StoreAndDemand/Demand.lean",
+        "sha256": "040765309caf02e72d3fd6cc6a48b5d1f141c76350aebc72a2c20489aaa347c0",
+        "exit": 0,
+        "unchanged": true
+      },
+      {
+        "source": "Mettapedia/Languages/MeTTa/StoreAndDemand/SearchCursor.lean",
+        "sha256": "eba3f236cb232a6297d3a359b3744515714f387a08712520de36c9935c96176e",
+        "exit": 0,
+        "unchanged": true
+      },
+      {
+        "source": "Mettapedia/Languages/MeTTa/StoreAndDemand/Contracts.lean",
+        "sha256": "14b1cf2c1ec6e4313c8fd7f062f2512afd35c01d863b0272e0001b52bcf60afc",
+        "exit": 0,
+        "unchanged": true
+      },
+      {
+        "source": "Mettapedia/Languages/MeTTa/StoreAndDemand/Audit.lean",
+        "sha256": "5eb7328281a036e8499695b237d544e1de8df7d5fda05e882b874049333fd943",
+        "exit": 0,
+        "unchanged": true
+      }
+    ]
+  },
+  "fixtures": {
+    "manifest_sha256": "cd7d472cc1503d1239272b6ce185c13e04d1e3c0697fdb24aca8a84fe7009233",
+    "programs": 40,
+    "dialect_observations": 73,
+    "resolved_contract_references": 41,
+    "binary_sha256": "c57628d29bcb5646ff983dfc41d4b7ea7e78b127d7912972582f4aa7b6ab266f",
+    "binary_stable_during_replays": true,
+    "native_passed": 69,
+    "native_failures": [
+      {
+        "case": "destination-count",
+        "dialect": "petta",
+        "source_sha256": "d826ce730d69e593b31a61e5eb06138b4ac4da20ec02bc2c319251e037b01dab",
+        "expected_sha256": "58ccf742be148800b2683d75786d69e20c890db19145248b62903ec26bd1d66a"
+      },
+      {
+        "case": "destination-empty",
+        "dialect": "petta",
+        "source_sha256": "f2a9f5e6cf9d6a01a70b7ae679d5bcd8e08baa6e9f52a9037f826810fa99872f",
+        "expected_sha256": "3e1fb60653108be842ca7a98295c64aba03612d89a3c43327aa5c37ab81be69e"
+      },
+      {
+        "case": "fused-makes",
+        "dialect": "petta",
+        "source_sha256": "f99c029d22e7f1402f440cdfba397da5a94751ebca58cd144a4729978c8594d2",
+        "expected_sha256": "afe4b06533dee3fc6ce537494e16ea9e91b052ef62595add074822c4a70992e8"
+      },
+      {
+        "case": "lost-keep-stops-later-firing",
+        "dialect": "petta",
+        "source_sha256": "597fd8d100ced62b32a7224d043cc6ed4f989e95e8c45dc9b5cfc51e2e4c368e",
+        "expected_sha256": "27c49fc6797d59117120c2488f8543f7eaf5766faa0fea2e7e67d3ff7378f42d"
+      }
+    ],
+    "authored_petta_passed": 36,
+    "authored_petta_total": 36,
+    "authored_petta_native_transform_trace_forbidden": true
+  }
+}

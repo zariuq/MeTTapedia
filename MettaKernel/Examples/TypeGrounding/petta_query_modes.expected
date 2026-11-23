@@ -1,0 +1,7 @@
+C
+((-> A C) B)
+C
+Number
+((-> A C) A A)
+C
+C

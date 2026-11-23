@@ -1,0 +1,29 @@
+{- Every spelling the format writes for a LanguageDef, read alike by the Lean reader and the grammar-driven reader:
+   anonymous binders and their bound variables by index, the substitution for an open body's bound variable,
+   abstraction parameters without binder names, separator and delimiter items, collection algebras, constructors
+   declared bare, binders whose body is a collection, and equations under their names. -}
+Module Spellings {
+  Theory Spellings() {
+    Types { Proc; Name; Guard; Term; }
+    Terms {
+      "Nil" .  |- "0" : Proc;
+      "Par" . ps:HashBag(Proc) |- "{" ps sep("|") "}" : Proc ![bare, flatten, unit "Nil"];
+      "Sum" . gs:HashBag(Guard) |- "[" gs sep("+") "]" : Proc ![wrapped];
+      "Bag" . xs:HashBag(Term) |- "bag" xs : Term ![];
+      "Inp" . x:Name, ^body:[Name -> Proc] |- x "(" ")" "." body : Proc;
+      "Nu" . ^body:[Name -> Proc] |- "ν" body : Proc;
+      "Node" . kids:Vec(Term) |- "node" kids.*delim("(", ")") : Term;
+    }
+    Equations {
+      "Drop" .  |- "Nu"(^."Nil") = "Nil";
+      "Swap" . P:Proc |- "Nu"(^x0."Nu"(^x1.P)) = "Nu"(^x1."Nu"(^x0.P));
+      "Ext" . P:Proc, rest:HashBag(Proc) |- {"Nu"(^x0.P), ...rest} = "Nu"(^x0. {P, ...rest});
+      "Self" .  |- "Nu"(^."Out"(#0, #0)) = "Nil";
+    }
+    Rewrites {
+      "Comm" . x:Name, body:Proc, z:Name |- {"Inp"(x, ^.body), "Out"(x, z), ...rest} ~> {[z/#0]body, ...rest};
+      Cong : if S ~> T then "Nu"(^. S) ~> "Nu"(^. T);
+    }
+  }
+  theory Spellings()
+}

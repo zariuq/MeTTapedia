@@ -1,0 +1,67 @@
+Partial selection, earlier effects and source removal
+====================================================
+
+StatefulQueryRun connects QueryState.run to the existing bounded cursor.
+It preserves the actual answer, final service state, ordered request/reply
+history and invoice. A finished run needs one inspection per executed request
+and one for the return. The completed_above theorem proves that more inspections
+cannot run work after the return. These are scheduler inspections, not CPU
+instructions or an internal unifier budget.
+
+EffectfulRowSelection has two implementations:
+- reference recursively visits rows in order, threading each test's actual world;
+- program uses the existing adaptive query syntax and reversed kept/taken
+  accumulators, executed by the shared cursor.
+
+loop_refines and program_refines establish their complete observation equality.
+cursor_reference and cursor_row_budget connect the program to the actual cursor.
+split_without_replay preserves its saved continuation and accumulated charge.
+The generic service may have effects. An error preserves the world reached by
+that test and does not invoke later tests. Selection itself publishes no removal.
+Whether its snapshot remains valid for subsequent publication is a separate
+dependency obligation.
+
+The controls inspect rows [1,2,3,4] and record each visit as an effect. Row 3
+reports an interrupted test. After a two-request pause, effects are [1,2].
+Resuming yields the error at index 12 with effects [1,2,3], three charges, and
+no visit to row 4. Restarting instead yields [1,2,1,2,3]. Another control makes
+the decision depend on a counter: selecting once takes row 7, while rechecking
+changes the decision and increments the counter again. Rechecking effectful
+source work is therefore not an observationally inert validation technique.
+
+PeTTaSelectionCursor supplies the actual source unifier, with each occurrence
+renamed at its own use number and no substitution shared across rows.
+scan_iff_selection and cursor_selection_iff preserve and reflect the independent
+PeTTaStoreSelection.Removal judgment. source_iff_scan connects completed values
+to the existing survivors function. scan_realized constructs the actual admitted
+ordered tcalc effect; no hypothetical target-equivalence premise is supplied.
+
+completed_remove_transition constructs the independent source Transition.remove
+judgment from a successful scan and the actual named-space write. Caller frames,
+input, earlier output and the required fresh-use increment are retained.
+failed_scan_prevents_remove_rows derives the lack of source removal from an
+exhausted scan. failed_scan_preserves_source_configuration proves the resulting
+source runner exhaustion retains the entire configuration, including effects
+already produced before this call.
+
+The source model's historical return convention is preserved explicitly; it is
+not asserted to equal current CeTTa's Boolean convention. Its survivors function
+computes recursive tails first, whereas the cursor visits from the front.
+Completed values agree because these scoped row-unification tests are pure and
+total with an explicit exhaustion result. This theorem does not authorize
+reordering arbitrary callbacks or identify internal costs and fuel cutoffs.
+
+Two kinds of interruption remain distinct. A cursor budget pause retains its
+pending program and is resumable. An exhausted source unifier is represented
+as an incomplete-test result; this package does not save the unifier's internal
+continuation or turn exhaustion into a semantic mismatch. Full interpreted
+transform conjuncts and native pointer/concurrent-writer obligations remain
+outside this adapter.
+
+Run from the Lean project root:
+
+  lake env lean --run ../../MettaKernel/Examples/ContextualDerivedForms/PartialSelectionModel.lean
+
+Compare stdout with PartialSelectionModel.expected. This derived consumer
+checks generic effectful controls, scoped source selection and an actual source
+removal step. It is not a CeTTa benchmark or C implementation proof.

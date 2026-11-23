@@ -1,0 +1,27 @@
+Module Radix16 {
+  Theory Words() {
+    Types { R16Nibble; R16Word24; }
+    Terms {
+      R16Nibble0 . |- "0" : R16Nibble;
+      R16Nibble1 . |- "1" : R16Nibble;
+      R16Nibble2 . |- "2" : R16Nibble;
+      R16Nibble3 . |- "3" : R16Nibble;
+      R16Nibble4 . |- "4" : R16Nibble;
+      R16Nibble5 . |- "5" : R16Nibble;
+      R16Nibble6 . |- "6" : R16Nibble;
+      R16Nibble7 . |- "7" : R16Nibble;
+      R16Nibble8 . |- "8" : R16Nibble;
+      R16Nibble9 . |- "9" : R16Nibble;
+      R16Nibble10 . |- "a" : R16Nibble;
+      R16Nibble11 . |- "b" : R16Nibble;
+      R16Nibble12 . |- "c" : R16Nibble;
+      R16Nibble13 . |- "d" : R16Nibble;
+      R16Nibble14 . |- "e" : R16Nibble;
+      R16Nibble15 . |- "f" : R16Nibble;
+      R16Pack24 . n5:R16Nibble, n4:R16Nibble, n3:R16Nibble,
+        n2:R16Nibble, n1:R16Nibble, n0:R16Nibble
+        |- n5 n4 n3 n2 n1 n0 : R16Word24;
+    }
+  }
+  theory Words()
+}

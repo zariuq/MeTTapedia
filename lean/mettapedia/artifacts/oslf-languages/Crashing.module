@@ -1,0 +1,21 @@
+Module Crashing {
+  Theory Crashing() {
+    Types {
+      Nat;
+      State;
+    }
+    Terms {
+      "Zero" .  |- "zero" : Nat;
+      "Succ" . n:Nat |- "succ" n : Nat;
+      "Counter" . n:Nat |- "counter" n : State;
+      "Halted" .  |- "halted" : State;
+    }
+    Equations {
+    }
+    Rewrites {
+      "Advance" . n:Nat |- "Counter"(n) ~> "Counter"("Succ"(n));
+      "Crash" . n:Nat |- "Counter"(n) ~> "Halted";
+    }
+  }
+  theory Crashing()
+}

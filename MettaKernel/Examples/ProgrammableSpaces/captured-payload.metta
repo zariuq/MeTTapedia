@@ -1,0 +1,6 @@
+!(bind! &jobs (new-space))
+!(add-atom &jobs (p a))
+!(add-atom &jobs (payload (exec second (, (p $inner)) (O (+ (q $inner))))))
+!(add-atom &jobs (exec first (, (payload $captured)) (O (+ $captured))))
+!(select 100 (search-policy (control FIFO (resources MM2) (budget 100000))) &jobs)
+!(collapse (get-atoms &jobs))

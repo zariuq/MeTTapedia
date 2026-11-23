@@ -1,0 +1,23 @@
+load jobs.maude
+
+mod GOLD-NESTED-WORKFLOW is
+  protecting GOLD-JOBS .
+  sorts Check Workflow .
+  ops pending reviewed approved rejected : -> Check [ctor] .
+  op empty : -> Workflow [ctor] .
+  op __ : Workflow Workflow -> Workflow [ctor assoc comm id: empty] .
+  ops task done : Job -> Workflow [ctor] .
+  op permit : Job Check -> Workflow [ctor frozen (2)] .
+  op group : Workflow -> Workflow [ctor] .
+  op sealed : Workflow -> Workflow [ctor frozen] .
+  var J : Job .
+  var C : Check .
+  var W : Workflow .
+
+  eq group(empty) = empty .
+  eq group(group(W)) = group(W) .
+  rl [inspect] : pending => reviewed .
+  rl [approve] : reviewed => approved .
+  crl [complete] : permit(J, C) task(J) => permit(J, C) done(J)
+    if C => approved .
+endm

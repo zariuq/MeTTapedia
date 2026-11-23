@@ -1,0 +1,22 @@
+Module FullLambda {
+  Theory FullLambda() {
+    Types {
+      Term;
+    }
+    Terms {
+      "Lam" . ^body:[Term] |- "lam" body : Term;
+      "App" . function:Term, argument:Term |- function argument : Term;
+      "Ok" .  |- "ok" : Term;
+      "Err" .  |- "err" : Term;
+    }
+    Equations {
+    }
+    Rewrites {
+      "Beta" . argument:Term |- "App"("Lam"(^.body), argument) ~> [argument/#0]body;
+      AppLeft : if x ~> y then "App"(x, other) ~> "App"(y, other);
+      AppRight : if x ~> y then "App"(other, x) ~> "App"(other, y);
+      LamBody : if x ~> y then "Lam"(^.x) ~> "Lam"(^.y);
+    }
+  }
+  theory FullLambda()
+}

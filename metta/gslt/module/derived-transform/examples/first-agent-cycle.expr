@@ -1,0 +1,1 @@
+(once (match &q (job $j) (let $ignored (add-atom &out (done $j)) (value $j))))

@@ -1,0 +1,3300 @@
+{
+  "schema": "contextual-derived-forms-progress-v1",
+  "date": "2026-11-11",
+  "goal_complete": false,
+  "scope": "Checked contextual/source partial profiles and tcalc store/publication/cost interpretations; completed-operand scope/readout; streaming control, prefixes and demand with complete binding/support/region invariants; output-plan formation, literal constraint updates and conditional canonical copying for corresponding source/runtime banks. The actual copier satisfies the independent source copy contract and avoids caller capture. Static plain-list-head compilation now has independent data-tree rules and calibration. Whole source/compiler producer/control and authored-surface correspondence, production of the bank-model relation, arbitrary caller equivariance, remaining typed/list-view/lambda/dynamic regions, HE recursive demand and richer transform/authority remain open.",
+  "source_modules": [
+    {
+      "source": "Mettapedia/Data/FirstFreshName.lean",
+      "sha256": "35dd7030ac5237864fb95a1c067f23e0a008e8112731adad11246c4d27c15d3a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.29,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/CountedErase.lean",
+      "sha256": "f80d06a66316e506dbf3f4168dc81f8bffead27e1d9562022ddf15efd3eeca3d",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.33,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/FirstOccurrence.lean",
+      "sha256": "5c946de752e35c6ed8d73183301a3dc7c9eefac67547cc1f5e595053bf55906f",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.27,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/FirstSelection.lean",
+      "sha256": "2f5a9375a817361261d4e0f2df3f4d0c9bb1ca299a81cd145ed94f7ed315b537",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.44,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/FirstSelectionInvariant.lean",
+      "sha256": "24e9afd93fd7fe336036d0686df0eafe5d12b8453cfd1e50865e9b86966c4f63",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.33,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/FreshOccurrenceAllocation.lean",
+      "sha256": "339b32bdf9ce2fbf7feffe073bc6d6c6b76898a1c4a9392db7f5f30107aa45b7",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.24,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/OptionMapM.lean",
+      "sha256": "8d5e9b783f08c86023aa40d400a76c52073df6ec093128f8dc8663a860844f08",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.29,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/OptionMapMReflection.lean",
+      "sha256": "bfc99ed1e26d6e07426072280608f5501f7e5d9bd8cba7c849b5f822b776ff5e",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.19,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/PublicationSpecializationWork.lean",
+      "sha256": "dd716c9da574fbcdadd1ce69f9d63f942eae3b8b1f63a10aa84b485ffc49f524",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.98,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/PublicationWork.lean",
+      "sha256": "c686eace9b5bda969c3d27be417cc9a9a64436d29faf03422c764053e4b7689d",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.18,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/List/RetainedOccurrenceAllocation.lean",
+      "sha256": "1467356fcc050da499b5351b092b6375c31e57a5ae84abadb3a61b7537b873d2",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.99,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Data/ScopedString.lean",
+      "sha256": "42fdfe0fac12f117b94decbe23b08614f8a3a9c1d37342216251311ea97ecdbd",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 0.93,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/AdaptiveCallCache.lean",
+      "sha256": "f896d202ad24245f89e71bfa3a5961b60e3411f8b15571fa96f5cb97b815bd78",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.67,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/AdaptiveStorePrograms.lean",
+      "sha256": "6335a965f2c4202e8f8a9fcd99a9ab740378d243106f801dac9cd6b9399181ea",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.37,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/ConcreteStorePrograms.lean",
+      "sha256": "3be850bccf001090af04acd79a26284bc61237f9aa94ef0dd4b0a653bed00855",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.17,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/CountedStoreInterpretation.lean",
+      "sha256": "b0b56466495de345601631081b23986de36e2bb87f57ce7c1846cd46c245cb6a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.08,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/HEArgumentContexts.lean",
+      "sha256": "9491504d8f6b389c0ce5c23922e94a49e93a272c377e994ab0ff977e988d9095",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.2,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/HEChainContexts.lean",
+      "sha256": "56687735a074bbd6e08123edb830ae4891cbf9bb45a32f8ca419208d84df9948",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.33,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/HEInertBindings.lean",
+      "sha256": "d92706bcdd2e1eefc0ae6f0df1380c7f34ce7bee00e55d2cba2829fd99c54bed",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.35,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/HEPriorityControls.lean",
+      "sha256": "caee545eef6ec9608fe59d158de33b7e06d44be29b3722c5ff5a5eb5627c2656",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.36,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/HEReturnAndSpaces.lean",
+      "sha256": "206d8fa63c14ac060ea8a3d82eda142d95122de2628f292108ecbb239f0593e7",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.8,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/HEStatefulContexts.lean",
+      "sha256": "321a43bd062e6b492086b3614d0da6de5852f46b8f11490a853b3fba9de94cac",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.59,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/HEWorldControls.lean",
+      "sha256": "3ceb240184494b6c3df3dff252069a81816dd31efcef65ad7128465fbe5cbdb1",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.76,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/HybridImmediateRemoval.lean",
+      "sha256": "dc920759a74769e188266ab6f863432347bfe8040578957f6f05e2c50a2c0231",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.63,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/ImmediateRemoval.lean",
+      "sha256": "604b555a927a0abc8d4724a6a42a9f09478285b0bc80b8e255154e38cf63807c",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.63,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaActivation.lean",
+      "sha256": "8e4d417b11e95584c598a9786f9afb43649318caee4dd5191c50f04742cec1d6",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.32,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaApplicationContexts.lean",
+      "sha256": "a1c65cc323f30d668269b75e41584da336d72ebfab7a62c6a94372dc5eab9219",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.05,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaApplicationControls.lean",
+      "sha256": "5d74f3f8fe83143aca70efca75fec055f2158f6c12f417730d7c3c3dd3d9ebda",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.14,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaBindingContexts.lean",
+      "sha256": "2ed1757c3be2ebed9840c6d537fce1c32dd92511674b92c62e58246f7e741a13",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.0,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaCallCache.lean",
+      "sha256": "9fc1155fc42754641d258a07dea0cb3169fe7706ea3c2a0ccf18b79029b920a0",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.48,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaCollectionReadoutControls.lean",
+      "sha256": "5b5b3db8e25e111eeb444376b23e5adee572bdec659c9209d5ba9b787f773276",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.29,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaConstraintPresentationControls.lean",
+      "sha256": "e43915f5a0c926503199fce5d56c00f140dea79d7fe9106752aba7eb7c809f32",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.28,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaConstraintReadoutControls.lean",
+      "sha256": "d4fa0d5a75fee80c22eceaf9e3194837cc96fc9452ba5e1379985ee03402425f",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.04,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaConstructorControls.lean",
+      "sha256": "774b4f0a02a87cd218466a826427ffd6de1dfd2fba8abd8a0441dc745ae331b3",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 3.18,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaConstructorFaultControls.lean",
+      "sha256": "c98f009f5c8e01f7a83eddb211f0991b906b07047922db5885b982f323c05d4d",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.65,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaContexts.lean",
+      "sha256": "3e03ec63fcef43c3d7955b69493a82792105aef78987700753b8b845bc520d6a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.25,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaContinuationContexts.lean",
+      "sha256": "2fde2bfc1c0d796afb1e8bfa63c4d4d2253f6dfba3fb781b5d8830efeae00e15",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.57,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaDynamicContexts.lean",
+      "sha256": "4d3a63c3fa4b975a1a2ff9c2aba6191e2a95cc26c282b3b12d3b4c4f5a89fac4",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.3,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaLambdaControls.lean",
+      "sha256": "7f23ad275b585dc4b09b2524a76f52a480a9572d5537e455bf660279b070a19f",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.48,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaOutputPlanControls.lean",
+      "sha256": "315cd5df264b4ee2190a81eba4b77212451aa8d03473cfdbc1224cdf2e826af6",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 3.3,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaOutputPlanFormationControls.lean",
+      "sha256": "693b512b173dc75b778604fc45c1cc71f5ecf2669e6c0b9830d8c1f02dabb9c2",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.24,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaOutputPlanListHeadControls.lean",
+      "sha256": "1d3e40bfe7a6becbb340d4f60dcb263fa18aa5344504ff0dea923bfa3ed13de7",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.85,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaQueryInterpretation.lean",
+      "sha256": "4ba2499c83aabbc52a0598847487c13dc8743eb23fab045d906adda82abaae50",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.07,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaReadoutControls.lean",
+      "sha256": "274ab3f5f65d60a2d874a61eea6336fcc323c152c2ebec7e5e00f3715ba82e43",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 4.05,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaRuntimeMatchControls.lean",
+      "sha256": "7206594818d78dafa9dd965f6c5754123c24594123d6df045eb537c68a42ab49",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 23.41,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaScopeControls.lean",
+      "sha256": "20096a42379f2aa3049bc457c65dbb712ae61f96a3e75490d15692a4af8bf7fd",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 23.32,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaScopePreservationControls.lean",
+      "sha256": "cf21ebd7cfc4bc4636277165c77bd5d031ec386c8c605faba1f16313f0629525",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.61,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaSelectionCursor.lean",
+      "sha256": "1cc658d258c5fa2b79ab5c82389ecd65da7dc8d7ddf8e411df9195b577d1fb96",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.34,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaStagingControls.lean",
+      "sha256": "85e3ee7f7be1b8bab562cfba31cfe49398e6f950379392b389ba33a1e8560a2d",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 8.16,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaStoreSelection.lean",
+      "sha256": "1cc8cfec549132d37d2c8d2057699cf2eb536cd4d0fdda5138b43b2b73614ef4",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.12,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaStreamingBindingControls.lean",
+      "sha256": "b6adb786c283ff7a72ba2c4e5c0435c6b8137a218a88676a9c3dacbc12b44b7e",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.85,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaStreamingContexts.lean",
+      "sha256": "b59106935777e8fb7c9fac7130b866c50d442476f52e9ab790765f87ca5a16fe",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.39,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaStreamingControls.lean",
+      "sha256": "7163ffc89319b4302906ee4d24b4dc39d2a95ce01a29979d1ec858eaddb3301d",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 4.59,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaStreamingRegionControls.lean",
+      "sha256": "821f07ed993656f9c29106961a93e22d6564f36f5d0a1acecd454476823a53f9",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.24,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaStreamingScopeControls.lean",
+      "sha256": "7aaa0d35c090be6798eda6988d6d3c58acaaff910f1538f666ceee071314e46f",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.31,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaTransformDemand.lean",
+      "sha256": "7fa7ea18ec08b6b274c3cff87cacb4f740869c3663b4f0dc6d190c9bade9da51",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.58,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/ProgressAudit.lean",
+      "sha256": "0b3e04c04c056fd7fb80c4853eb6e36c8b502d6ceb142f4837b907eb1665e019",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 8.27,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/RetainedStorePrograms.lean",
+      "sha256": "75517ee0cc58821350bb3da88e805caddb8d13c2675a091632c74201b5752bdb",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.3,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/SpecializedPublicationWork.lean",
+      "sha256": "06a8990a4b8ab7c36aefeda1547579a04f9d282b0eeb4ed96884a4e47042121b",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.35,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/StoreOperations.lean",
+      "sha256": "a9b1b72eaa653a5282205b48d0ad1212dfa98930b1a9bf9d45e656a40915fc62",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.75,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/StoreProgramPrefixes.lean",
+      "sha256": "02eb3e0bf0bc8080cee2a94057b1055b32a8042c050937f17adb4a9235935042",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.42,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/StoreSelectionPolicies.lean",
+      "sha256": "7315f9ec52993db45dee8f5d7ba31386f813b8925ac0bed53b67aa9ff4f2ddeb",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.2,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/ContextualTransform/TransformHeadRecognition.lean",
+      "sha256": "2ecc9a0d4f1492ae384f7f0765111935f3c29709997df5eaa8b58210d3c5b89a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.68,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/BudgetCycle.lean",
+      "sha256": "4288df148e7cfbcff210df198123d2502d9088766a8357f7aed6d7627f393db5",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.13,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/Code.lean",
+      "sha256": "71caab793054f77a58425badc1df1a1177fa8976f6c6e2b0102e48bd83bad022",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.63,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/ContextualExpansion.lean",
+      "sha256": "225e8f078272735a247c9c3faa91469213ada87064c9f72028b9380d1864837f",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.6,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/Lowering.lean",
+      "sha256": "c179d3875d48b73c366d489b2a0392b16889c42f4dc9ce432ce07c8cc4739e12",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.69,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/Presentations.lean",
+      "sha256": "ee37c177d8d0db255ca6e1371203872f4d53b53b2691e9210527b5b31e2d1892",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 5.02,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/HE/StatefulPriorityTraversal.lean",
+      "sha256": "fafe21080cbd479b94fe2f5b14baaf200c8fd1c41fa504f489b8c8a8c528e65d",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.81,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/AnswerReadout.lean",
+      "sha256": "7d5b80da129db628bf720ea7d2fefd6c1b7ddb921c3ca47db2471136927b7600",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.04,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/CollectionCopyReadout.lean",
+      "sha256": "cd647068848ff78d4ee324dd8bf9dbc796ce2464c3db5d4e1d278d5536e495b4",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.81,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/ConstructorAssembly.lean",
+      "sha256": "ad0c6fcf92c8b9b85ce00a7c7eeabeb8d1b369893fa3bc86175af59e91562faa",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.0,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/ConstructorContinuations.lean",
+      "sha256": "eeaefca255fc7dec6fa7948c0225cd0809857522f6d9c81dcd03bd48656e2e94",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.09,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/ConstructorDataHeads.lean",
+      "sha256": "3b882833bffa89a00b65b56d489f93ba5a6cca330c5f275986ce36bdd363113c",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.23,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/ConstructorDirect.lean",
+      "sha256": "2ed72507da958b8acaabc7cc1ec6c9ab9bb0b78f3965625030a4b10448822029",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.07,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/ConstructorEvaluation.lean",
+      "sha256": "d1ee24371774049b6f6d1eb5056124939939f2094bd70d3f7cb0ac77c5352d08",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.12,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/ConstructorFaults.lean",
+      "sha256": "c980d1247dd1860e314c13de59a246ff73d0332cb7cf85df14b1a8aad5268154",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.68,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/ConstructorRealization.lean",
+      "sha256": "7d5b8500d5c05c599d81163d9c75dde8f669bbafbaa5ef21669308eae4c41d67",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.07,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/ConstructorSpine.lean",
+      "sha256": "c06c59a57677044d86945c8f54d903ee7ca096941e021dd43ea088c035536e84",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.4,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/DynamicCallControls.lean",
+      "sha256": "7d9fa0d609413ce06b2d95c9ad7a3bb257f4b26cb2636259b87a2760b607d466",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 3.29,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/DynamicRecovery.lean",
+      "sha256": "81f30e8e098c15a828e8d145e8eed4d7c5d6d62df5f2ff1437563da24f09d776",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.28,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/EagerDFS.lean",
+      "sha256": "ec633440e7149ad98b2a1f9431b6442829351e9cfe33fd795edf92d4619b6890",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 37.13,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/LambdaLifting.lean",
+      "sha256": "640f3d09017f0f11a9db5a87067cf6dd74ccf3faab4a721ffdc58d91112ce6e1",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.34,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/LambdaStaging.lean",
+      "sha256": "0e3aa8a64e54b5e33cc52880e05bbc1b4f7d33e778f248f95dc802d5f905d1d9",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.99,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/LambdaStagingDepth.lean",
+      "sha256": "cf2610968a3534e14558c415e524a26e343919e8bb9c9de6fdb98d18353ad842",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.14,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/LibTransform.lean",
+      "sha256": "042980435b93b48ad99bb459fc21fb720cf3d89b00b4d987d31911a3dd4e9d56",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.8,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlan.lean",
+      "sha256": "01d74e4f8085ac9ad45b5b45099a1a696b774f45e3893a890a608f26cc2627e8",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.43,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanBranchRules.lean",
+      "sha256": "1e4f979bc666238db32a7ccfd0d6654f9a19b36736352f387064714431f4e07c",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.8,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanCompiler.lean",
+      "sha256": "c81c9430991234de0a191e121797bf4a6f81e09d2fe5e73ad578707d8d8b86ec",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.04,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanConstraintAdmission.lean",
+      "sha256": "58da55369c7a21eb88e7408741c7b4b254c0c8eaca48972f8fd25c2dc96329d9",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.23,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanDataHeads.lean",
+      "sha256": "fec6d695ae27c2b9a3f9eef3e262325ed8c893882830285f711b600ebf938aa5",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.82,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanFormation.lean",
+      "sha256": "15e3667a86361b2c4fe24ac8c800c8f827a6547e110367a53c76aa593ddecc48",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.94,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanFormationCorrect.lean",
+      "sha256": "491db2071848f034cd2cc9e6ad77df0dca9a26194f7da5d7af1c99c47499a206",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.05,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanFormationDepth.lean",
+      "sha256": "b1b2c2ef2a0ee9c6ef9094a6acadfbe70945410c8e1b32b48e0797835d917ae2",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.92,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanGate.lean",
+      "sha256": "628efb8494d2afd9ae6b0bc631dc2e174480e08fcf9dc6e2343f969f898dfb49",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.15,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanNames.lean",
+      "sha256": "4fdab4af6d0a9eb9c56a3a8edf77364c4e420b64d4d87f9e01fc627fa099c5d7",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.8,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanPolicy.lean",
+      "sha256": "2df71b42a7c4c91d5f44aa7e50a41671dd80ee423d00d6c338c0a070985384ad",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.2,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/OutputPlanProgramFormation.lean",
+      "sha256": "32ffa16dbbfabbd59f0f5a2891f4ca6daaf93c3a2d042cd820582a939d4c18f7",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.25,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/PrivateCode.lean",
+      "sha256": "d6af222152d511583101e89f0a2b9f2fcf2d9c547ffe0ff5799fe94979cb5745",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.06,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/ScopedSource.lean",
+      "sha256": "e1b9239762cf1ee0fc150f9fb5fa2cd8b71a4dca5ea977ceb178a10e4bdbfe10",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.37,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StdLib.lean",
+      "sha256": "4b70452c0bdb40197b2ba821a204e2ad15afff345fc1e6987c743035f4afe150",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 41.48,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/Streaming.lean",
+      "sha256": "7dbd7b087d233bd3eddaa33d59ebe63127d91c1c0b9d2e365b77c89d197cf82a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.48,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingAnswerTransport.lean",
+      "sha256": "9cb7ae63b0ff674e000d6182804ff09da21cf1134c474f1f200d51a88dbba7a1",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.0,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingBindingInvariant.lean",
+      "sha256": "8ba1f4fc117bcd0d5cad8175df6016158965ca5cb4084ea130cdb80be5165f23",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.09,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingBindingPreservation.lean",
+      "sha256": "2fd04ba9e25cc241331beddfa005da32119c69c2f13001101e04198b407174b4",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.06,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingBindingReachability.lean",
+      "sha256": "b25c6f0d439b75e47b05dd0e7364cac6d7c122a80336df20841a4477b1df53f1",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.8,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingCollectionReadout.lean",
+      "sha256": "f5e7105384205b880b74ba1328de958828ff54eea54d1789fa26c874b1e1665a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.1,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingDemand.lean",
+      "sha256": "9e83ef096c2234b9f264b5ad78d700ff1c804c7d8d6d49873b47792ae11644e4",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.11,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingPhases.lean",
+      "sha256": "f3e17651e53fcf84a5ac9cd828cc06c9cf7dee5e073ce1d9fbe15ee9e82f4038",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.5,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingPrefixes.lean",
+      "sha256": "88f3c29cb87d786de76c067e47e5f311dd10c87223f9d51e4656ca2ba7a8fce0",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.32,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingRegionPreservation.lean",
+      "sha256": "71ae7dc767870d122c0bd64dfaba77b25360a8274523680688c48357a49a3e5e",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.28,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingRegionReachability.lean",
+      "sha256": "9020f39eef655e44b271b91c7e8a496d0cf9df2b873a755c2dac63dbe5edd0db",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.2,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingRegionSelections.lean",
+      "sha256": "241e54991a1254e6f3085bd55c6c67170e6d2791945e11b97d8730c5e3303e12",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.67,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingRegions.lean",
+      "sha256": "5ad51a55586e590f246463e25b0f9f88e03f119f9f653d5759c8d4324854411e",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.67,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingReturns.lean",
+      "sha256": "620857707aca9159e28a23ecd4ef61fa815685dee169493f713dcfa184fcef91",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.48,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingScopeInvariant.lean",
+      "sha256": "b2d0365e553b562e290e5e779495322ccea5d67ba32daf98a574cf39ca3867b7",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.11,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingScopePreservation.lean",
+      "sha256": "a35984c7eb39ff263686a6a6b89496f0c4db864ad7bf353e9a254ea0006d31e3",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.17,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingScopeReachability.lean",
+      "sha256": "41e39ab60727c89d245f2f71a9dfc331a11eefcff2eb4b8214d8a25d542c0532",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.09,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/StreamingSpec.lean",
+      "sha256": "bdba3a8bbe38f17de983fad0d5f64dfd3f72e3995bd690099f5f4c08928b1b99",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.68,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/Unifying.lean",
+      "sha256": "1661d90c2e28db4fbd4ca4797bbbd5b50459a565e676ede175ece13121fc5302",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.13,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingAllocation.lean",
+      "sha256": "9b8c73ecc2b2f0e81237284a6b058b1328d9d23233b619dd5e4a32d9e4f822ee",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.59,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingCollectionCopies.lean",
+      "sha256": "a8ae4d3c7630c1ba6bcf3d1dd28b18886ac7754d0c7807bf7bf8f561050c0bd3",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.01,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingCompilerLocals.lean",
+      "sha256": "cf47f753c2ec0a18442eb927698b37504e8df3dc302674487eb21933eeb1b05a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.37,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingComputation.lean",
+      "sha256": "8b80cd754cd9418f96dd82c170af1ee08f821529ce6e985df5865e75eeaefde0",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.53,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingConstraintPresentation.lean",
+      "sha256": "5f5cc96c002db1e6880a102a4e6bbb450aea5f3d19a10154845ed255ec9febde",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.65,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingConstraintPreservation.lean",
+      "sha256": "28fe5af001d60b165326b3e0f1ab450da099659f4cfa7c9cad907026a3396b34",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.66,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingConstraintReadout.lean",
+      "sha256": "d89e60e625bf8f8e570c9a1d0211059aa9cd9b4c8de530b0ba67f69ba98d9c4b",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.83,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingConstraintRefusal.lean",
+      "sha256": "00b9c90a363ccbb0c83484aef043e27406e3f4727834e06e5c3d6b852310885d",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.69,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingContinuationScopes.lean",
+      "sha256": "c41e2db653a50d3c0364d85b6b732d1dcf733ca93553e1d2311eb3c1d71bb918",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.47,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingControls.lean",
+      "sha256": "195e11754d7ab61fe4a30bc11eb594e5b61e838e39aa32b23c462a7f7f49a0f2",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 4.28,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingFrontierScopes.lean",
+      "sha256": "a3bdd9109c6833b9c6e85a972b9b653ce07835818db866c8aa62ff875ccd8f0a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.39,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingGround.lean",
+      "sha256": "cb7a92c4e1c1a9cb46a477d64dd76ae8d7c763f57abf0143cea937c0276ec9dd",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.81,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingLocalProjection.lean",
+      "sha256": "111efd8b50e873e5f8618e24e4b99ad4faa938a7f28f82328edf9ade97a508dd",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.32,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingPrefixScopes.lean",
+      "sha256": "6a1147606e9ac823bad7cc3e058f05863f2f25034956d24fac3a279462cdb869",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.38,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingPrefixes.lean",
+      "sha256": "e5e2c92a483d19b3d1f07ef38b4d4d1704028fefde9e3ef6e447f8f714a7fe92",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.28,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingPreservation.lean",
+      "sha256": "52a577e696f60efbc384611596cc9e7d05a5daefdfc0464f00aa1b401e92b199",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.34,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingPrimitiveScopes.lean",
+      "sha256": "1825a38a7b8c78b13f2fc0d03f2121214387a4e437bbb29f3ffd3e3695e2bd2e",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.38,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingRecoveryFrames.lean",
+      "sha256": "721c8fe1c6eebbe18f989cbd1eb092104f376c845abb2cedf26c7a9ae9b3d07b",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.24,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingRefinement.lean",
+      "sha256": "2d2a0b071b767883cada2eedf14eaa72b34946aa5f0e7ad3dd575aa7a879f9e0",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 4.3,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingRetainedFrames.lean",
+      "sha256": "6e3609a3eb21be0834a6cf916e4bd0345202e394b9d1b4f66da4924052bd616f",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 6.33,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingReturns.lean",
+      "sha256": "6bf2e16be1d7eb1a16b873266f981d3d71c82f6421efdfc30cdebd709d168028",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 3.49,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingScopeInvariant.lean",
+      "sha256": "d643ce8c8445c67ae7ccd78eb74dda151dabbafc66380e8be78d5022e3377a35",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.39,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingSequence.lean",
+      "sha256": "59038c10495feeed1abc81dc0302eae66f125977a0f4d28f5b666b0e0bb52256",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.05,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingSound.lean",
+      "sha256": "26ff5f969543ed09dd233de839c392030810525723fffcbd08956abc0804f4e5",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.55,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingSpec.lean",
+      "sha256": "705cdde771f81a3e72ec21d15399ee4a669e0f9d42d49e7bbd90c97c0c0c6b7d",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 6.91,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/PeTTa/UnifyingTransitionPreservation.lean",
+      "sha256": "37271922359934aefc154dc282cd9f065bf993038f414aaecb81693c57ef32f8",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 12.55,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/MeTTa/StoreAndDemand/PeTTaSelection.lean",
+      "sha256": "e1ba9b97a0e2913369f6c27c4a7060623c4c7d434e6d0e61e5644208fc6c7619",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.23,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/Charge.lean",
+      "sha256": "6f2cb72f167a2edfa0786551bc7fd7d257ecac76ad9e536c215c0beca11aa385",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.76,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/ConsumableBudget.lean",
+      "sha256": "7a0df6e18932952a55e984ae8d9eb4f50c5eee9bc43e2d021907b6e26a11b40a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.89,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/ImmediatePublication.lean",
+      "sha256": "d3b03494ce40781eb632fe19f4d119bb61f338c385f5386b8b2a437b7aa45fac",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.63,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/OrderedStore.lean",
+      "sha256": "9d0c92d34338643cc634113407d3339d70cffa40c4e1527b272f68491a54ad75",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.7,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/OrderedStoreStability.lean",
+      "sha256": "b9fc985b37232d063bfb446c875357d2b5986698a4e16e118e5e781e61ed6641",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.19,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/PublicationProtocol.lean",
+      "sha256": "41e5c61a9f4055a981a970d6adb7efaefd12c0945a17876746b51d7bcc8c40fc",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.6,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/MORK/AtomRenaming.lean",
+      "sha256": "911293d8fdf5d4c73eabd95e2bc1f2af1d692627054a67b318da436e69c319ef",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.83,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/MORK/AtomRenamingApart.lean",
+      "sha256": "8887dd4528da7d86f176d9e3207a42a39dbe6fa3b8d4194304b8b04b230fbcbb",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.04,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/MORK/SubstitutionSupport.lean",
+      "sha256": "d517bbd6fedce529300b291801bee01bfc896c1a327da0ed8c4c2cd1ccc12d2c",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 0.99,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Languages/ProcessCalculi/MORK/VariantReadout.lean",
+      "sha256": "2806522d58de8ddb378134de7d5ef4750a95f5f9e5c9114cd5b09c137b5a20f8",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.24,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Logic/LP/MutualInstantiation.lean",
+      "sha256": "bd17578874bc230154e9b528af8d6fb2a8396ced8cf8647e491926c7068a6b8c",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.01,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Logic/LP/UnificationIdempotence.lean",
+      "sha256": "0ffd5fcf1929922b7ad842bbcd82d9f56ec35e1e1bd19c5cfb7dbce39c3dde11",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.24,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Logic/LP/UnificationOccurs.lean",
+      "sha256": "fe9211642e5ad8b7068606d69a69faefd6313d1f37e893199775f970ace04e94",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 0.99,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Logic/LP/UnificationRenaming.lean",
+      "sha256": "24547fd24dcdac9dccec7d17a04c5e3e18d55b4805a3245f4162c1ad8c29b530",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.16,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/BoundedDeterministicRun.lean",
+      "sha256": "6086a6ee85400c985d12dc4c6d1625f1e3193e3fa4174f7ac49a971bac200e85",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 0.84,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/Cursor/QueryCore.lean",
+      "sha256": "1a90515b19a27af31a5edad4033b9a36bc8de478d3883987fc0c33604f19b365",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.08,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/Cursor/ReadOnlyQuery.lean",
+      "sha256": "e525c8a20fe33fe3e65c8e46007626fb8af5fa1c176ec32de8a232c64cebaf5b",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 9.73,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/Cursor/StatefulQueryRun.lean",
+      "sha256": "c86936421bc4ad618627ce6ba21866891ac383155e37f5162924c0a8f49cdc1a",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.14,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/EffectfulRowSelection.lean",
+      "sha256": "dd20f46ccab126e5a7aa06b70b152de45bb9fe8dce6ad377e0908cd339c982e7",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.19,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/HybridStorePublication.lean",
+      "sha256": "7b8aefb4cea36d9b8f95bf281c53753545d2f097128254b132e9ebf243124c7b",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.6,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/ImmediateStoreCost.lean",
+      "sha256": "125fbc3eae47052afb050fc98766bc0fafcb8d1dc61be08dc93cbaf007b5ddec",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.25,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/ImmediateStorePrefixes.lean",
+      "sha256": "ddeed9a1399debc60bcecadf96f30bd6e7093684d4b0b1f01d4b72def898cb6e",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.28,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/ImmediateStorePublication.lean",
+      "sha256": "b341aca7ca5fa8fe8bbc7307b32bf904a65ad8a86505f6a5abd8959ee49f71da",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.71,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/OrderedPriorityDemand.lean",
+      "sha256": "aee5d6e27b9c1776572e0aed1de25c82258174b3fef2ddab560aac3420244f55",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 1.7,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/OrderedPriorityTraversal.lean",
+      "sha256": "799f5c305714af4625ba1eb685acb2574c40f651e72a1830f4c863787bbf3d0d",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.05,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/PreparedReceiptOwnership.lean",
+      "sha256": "4a95c0b91263959e0ddb0a3775de7f57f5239031ef4010ea2c2f7669c81e00b3",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.58,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/PreparedStoreProtocol.lean",
+      "sha256": "ba1fefa528f340493e5ec6a3635c81b1d35d211ff1e37a2cda18baabcdc7c5cd",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.04,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/PreparedStoreProtocolControls.lean",
+      "sha256": "473ec48c8a41a7d31e7099a1fc03948ef73766c1802fe003391fa71ce1fc2a59",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.42,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/PreparedStoreStability.lean",
+      "sha256": "84d67dc32a131bf25d2f0c99a994e8d67aad8e04fb12836037fc163c68ec5837",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.08,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/ScopedCommitCursor.lean",
+      "sha256": "60a13ac3b6602f471251616240db8a7d8ccd8303df65cbf1b0bc57ca3d9e20e4",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.48,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/SymbolHeadMemo.lean",
+      "sha256": "1255a70a2c045d9b3c48349f294ede46aee7eb42a61ca5e434bb40b60f7d1fcc",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.37,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/SymbolHeadService.lean",
+      "sha256": "be730c8749bddba0651a887248d05d9188fb8e2d87f0ddf121410e258bc92873",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.69,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "Mettapedia/Machines/SymbolTableHeadCache.lean",
+      "sha256": "78f2d55b6401e2cd43dc0e1382e5d7b86d97d872b05d70bd8abb0cb59cbd6fe6",
+      "exit": 0,
+      "unchanged": true,
+      "seconds": 2.5,
+      "warnings_as_errors": true
+    }
+  ],
+  "axiom_audit": {
+    "declarations": 12701,
+    "theorems_including_generated": 6888,
+    "allowed": [
+      "propext",
+      "Classical.choice",
+      "Quot.sound"
+    ],
+    "includes_private_owned_declarations": true,
+    "implementation_entries_listed_separately": 8785,
+    "scope_expanded_to_loaded_unifying_namespace": true,
+    "includes_primitive_definition_module": true,
+    "includes_destination_source_owner": true
+  },
+  "parent_named_theorems": 375,
+  "operator_choice_public_theorems": 33,
+  "fixtures": {
+    "manifest_sha256": "c5aeb56ffb3012bec351f4dabdbff09639ecf7da4e387ee133903b4bce5f7df6",
+    "manifest_unchanged": false,
+    "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24",
+    "binary_unchanged": true,
+    "programs": 25,
+    "passed": 21,
+    "total": 25,
+    "failed": [
+      "once-into-let-count",
+      "destination-let-collect",
+      "destination-let-held-collect",
+      "dynamic-call-demand"
+    ],
+    "qualified": false,
+    "regression_cases": [
+      "once-into-let-count",
+      "destination-let-collect",
+      "destination-let-held-collect"
+    ],
+    "profile_comparison_cases": [
+      "dynamic-call-demand"
+    ],
+    "artifact": "retained immutable development executable; not current opt source or performance qualification",
+    "scope": "Historical 25-program artifact qualification; the manifest now has additional separately checked scope fixtures. No fresh opt performance or complete current-manifest qualification is claimed."
+  },
+  "upstream_he_controls": {
+    "oracle": "upstream Rust HE through hyperon metta Python CLI",
+    "hyperonpy_sha256": "b992d928c24550002e4d919b00b28385bed3bf546faf2cccfe00973b311bfb96",
+    "observations": [
+      {
+        "case": "he-typed-context",
+        "source_sha256": "61e734f9e16bda2cab394adb39a3f34ca02e0b006687b9e631c0d7d2b05dc047",
+        "expected_sha256": "6239a2e6c3ff53d65a7effe7595cbdbb6489022ea10d1686feb6fc330267da88",
+        "returncode": 0,
+        "stdout": "[3]\n[True]\n[False]\n",
+        "stderr": "",
+        "passed": true
+      },
+      {
+        "case": "he-answerless-effect",
+        "source_sha256": "191e721e6733eb3ea447ca2497e9ea50805c595c328d51566da9d818ea275689",
+        "expected_sha256": "0cbbf104b3e3abb13744b3734dc8ffc29b55a04de8d6ee629baa3e516dd019cc",
+        "returncode": 0,
+        "stdout": "[()]\n[()]\n[(seen)]\n",
+        "stderr": "",
+        "passed": true
+      },
+      {
+        "case": "he-empty-vs-invocation",
+        "source_sha256": "43cc1a78c104c8f6e4f675dc6a2c21e1dad663f8538d40efc1449ba5cd968b71",
+        "expected_sha256": "0a06db3db46730a989a1e046f62a21f2ab32bbf9cf5f3eef269bfca64e5da72f",
+        "returncode": 0,
+        "stdout": "[()]\n[(invocation-result)]\n[(invocation-result)]\n",
+        "stderr": "",
+        "passed": true
+      }
+    ]
+  },
+  "boundaries": {
+    "he_independent_roots": 121,
+    "he_controls_passed": 32,
+    "he_forbidden_paths": 0,
+    "subject_modules": 3046,
+    "subject_findings": 0,
+    "subject_graph_controls_passed": 8,
+    "immediate_generic_roots": 4,
+    "immediate_generic_findings": 0,
+    "scoped_generic_roots": 4,
+    "scoped_generic_findings": 0,
+    "partial_selection_generic_roots": 2,
+    "partial_selection_generic_findings": 0,
+    "retained_generic_roots": 4,
+    "retained_generic_findings": 0,
+    "priority_generic_roots": 2,
+    "priority_generic_findings": 0,
+    "first_fresh_generic_roots": 1,
+    "first_fresh_generic_findings": 0,
+    "scoped_string_generic_roots": 1,
+    "scoped_string_generic_findings": 0,
+    "first_occurrence_generic_roots": 1,
+    "first_occurrence_generic_findings": 0
+  },
+  "ordered_store_module": {
+    "source": "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/OrderedStore.lean",
+    "sha256": "9d0c92d34338643cc634113407d3339d70cffa40c4e1527b272f68491a54ad75",
+    "exit": 0,
+    "warnings_as_errors": true
+  },
+  "ordered_store_named_theorems": 11,
+  "c_review": {
+    "scope": "Four previously failing API controls independently replayed against rebuilt executable; not a full C qualification or correspondence proof",
+    "captured_failures_repaired": 4,
+    "binary_sha256": "b44c32735c764d0de672b43345398fe8412ac848e49b527b1b33cc46fa233888",
+    "binary_unchanged": true
+  },
+  "prepared_protocol_named_theorems": 48,
+  "allocation_named_theorems": 12,
+  "counted_list_named_theorems": 15,
+  "model_consumers": [
+    {
+      "source": "PublicationModel.lean",
+      "source_sha256": "1b602a6f34b987d887aa10d42453a750c81f0228b7dcef48bab8a9d92aed2fc6",
+      "expected": "PublicationModel.expected",
+      "expected_sha256": "2f3f42c5a2b36fff1e768374396695cc4fcf11eefe5e6bc997fe77b29b6cdd59",
+      "inputs": [],
+      "observations": 10,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 3.03,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "RunStoreProgram.lean",
+      "source_sha256": "b70a81fcd99cb28e7f8f2698e4ee5d6ade9eb4343e2c81e85841ccd2eefb9890",
+      "expected": "RunStoreProgram.expected",
+      "expected_sha256": "afcc31ad67fbf5477775579b0ea9cf430a3eed3c57d561b337be1a17458cb31c",
+      "inputs": [],
+      "observations": 5,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 3.52,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "ImmediatePublicationModel.lean",
+      "source_sha256": "149c0b8e6ba605e190f1443846fc20f8af2075c776cc9b45a55d20a99603a347",
+      "expected": "ImmediatePublicationModel.expected",
+      "expected_sha256": "440f0ec59bcd9aa91fea73c91adef02693ca6f816fae034234b6e14394703b01",
+      "inputs": [],
+      "observations": 8,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 2.96,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "PublicationCostModel.lean",
+      "source_sha256": "4bdccb1df00cbc9cfd4694b2e9a467e4317b3f6a6077323a992b12a24d369198",
+      "expected": "PublicationCostModel.expected",
+      "expected_sha256": "7465f27747ede2692019fb14afd602ad04399b50798a8210186706405d8f7a21",
+      "inputs": [],
+      "observations": 9,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 2.98,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "ScopedHeadModel.lean",
+      "source_sha256": "646aafeedf2b0c80eed5b3b02afa1933d9e44b5a7365c9b0750c4ebf0308e90a",
+      "expected": "ScopedHeadModel.expected",
+      "expected_sha256": "08befea963e605924d6b95a02bf565d865f226e8d2895f6d892bf23c0da2d14d",
+      "inputs": [],
+      "observations": 11,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 3.09,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "PartialSelectionModel.lean",
+      "source_sha256": "c0bbaf2c282508ec781414dd8fa908349d7ef26cecff5e414e2f9f43ffedfd44",
+      "expected": "PartialSelectionModel.expected",
+      "expected_sha256": "e4cc38ba7e9414b6227009eaff5a42a7b910d72cc67ffb66a5523b708b02ae38",
+      "inputs": [],
+      "observations": 7,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 3.35,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "RetainedPublicationModel.lean",
+      "source_sha256": "5f72f4610007a8fe74e0017cacb6965be65e7b552683337a5e40e930da8d7301",
+      "expected": "RetainedPublicationModel.expected",
+      "expected_sha256": "5c78cf792dfb95915eeff9723843c856d20a8a8216a35cc64f0b24298175fb01",
+      "inputs": [],
+      "observations": 8,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 3.41,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "SourceContextModel.lean",
+      "source_sha256": "b14ebc6bab060b792aa752e6946b435356153d514424d0f548b80a58283f4c05",
+      "expected": "SourceContextModel.expected",
+      "expected_sha256": "fd445a013d4d36989d092f1f8db8c8899ed6fefa00eaec5a86b0b6b9af6d4ab5",
+      "inputs": [],
+      "observations": 7,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.95,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "TransformDemandModel.lean",
+      "source_sha256": "e7fb05475fd4af34dd70e896491293113bc5239b28895df6125b4b7243e4e7c7",
+      "expected": "TransformDemandModel.expected",
+      "expected_sha256": "9ba305bff4ad73596442e6c86ba38e0a5242d88ba79a236e276ad638a1bf64b7",
+      "inputs": [],
+      "observations": 9,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 3.14,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "UpdateBudgetModel.lean",
+      "source_sha256": "ddd8df15d13d7b3277de2b35b43d4682f886fdc59a1fe60da506b0491519c18a",
+      "expected": "UpdateBudgetModel.expected",
+      "expected_sha256": "ecc7bd3f5aff03eded14d832013d87253449606a25604a763314d59c2cbd55c4",
+      "inputs": [],
+      "observations": 7,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 3.13,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "DynamicCallModel.lean",
+      "source_sha256": "61d8ebc23226645e45cd1dfe6cfedceb990f2e0935414962db7639ad5e81292d",
+      "expected": "DynamicCallModel.expected",
+      "expected_sha256": "c1e678163f52a217cf18c836c3e12d3abdf84817e05d049aef6698c9334613bc",
+      "inputs": [],
+      "observations": 13,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.95,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "HEPriorityModel.lean",
+      "source_sha256": "5459e6ca87d84db5e656c1c3e9761235d80efbb304cfda151459204fda5ac2df",
+      "expected": "HEPriorityModel.expected",
+      "expected_sha256": "ddabf3fdbf2e1e9a866542c6720c302ebcafbf0d360888cea84be1bf4b27a549",
+      "inputs": [],
+      "observations": 12,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 3.01,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "LambdaModel.lean",
+      "source_sha256": "e01dd5e9b7f0c95f9efb4189aeb89dbab47cd2340005674f76ad5379e23638b2",
+      "expected": "LambdaModel.expected",
+      "expected_sha256": "19b62ad5a00c6cb80e5a545d57b771ff12c1ce1b9385ddcb61e879fe00977d43",
+      "inputs": [],
+      "observations": 11,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.97,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "ScopeModel.lean",
+      "source_sha256": "6163d2d0bfa5ee7c05d527625a94b00304fc5000433f766dc36a4ed8549901a3",
+      "expected": "ScopeModel.expected",
+      "expected_sha256": "e19a2e56bd4a4a8482a208f535581294cd7559c04b47ad1886bcd970784010e4",
+      "inputs": [],
+      "observations": 7,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.67,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "RuntimeMatchModel.lean",
+      "source_sha256": "16be92f9a2a3a920bb91a59d979966854b2c0b767e8487fdca410a206afbf877",
+      "expected": "RuntimeMatchModel.expected",
+      "expected_sha256": "9e7bdef71a9e8919ee90d5428e6c9fa7e158db6fd56346155e500f270599c8b5",
+      "inputs": [],
+      "observations": 4,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.54,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "ReadoutModel.lean",
+      "source_sha256": "8747207954300b1ace323e079b19bc30954f189cc8910bce52ca1070625aff87",
+      "expected": "ReadoutModel.expected",
+      "expected_sha256": "b0c7fda10e1a4d61126a38fde22713ae7aa0912df2c4149d88f76b84c69396ca",
+      "inputs": [],
+      "observations": 8,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.39,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "StagingModel.lean",
+      "source_sha256": "43fd0bd413595f4b5e811919e819562db7bb4311769401ab662f6453f9b7222c",
+      "expected": "StagingModel.expected",
+      "expected_sha256": "62b7004844e66253aab0e1737c194765474557b5737567af67054feeaa55ed98",
+      "inputs": [],
+      "observations": 8,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 2.33,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "ConstructorModel.lean",
+      "source_sha256": "5d5dba36c573316b63203c24ec01cde53b029fcbfe3147328e430af0b493ec07",
+      "expected": "ConstructorModel.expected",
+      "expected_sha256": "bc51f4ac9034619b8b6f96b4dab22d31622db9fc7f337956136797efd1b614ce",
+      "inputs": [],
+      "observations": 9,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.75,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "ConstructorOperandsModel.lean",
+      "source_sha256": "03e91c1cc7e90eb73afb082f40cb641a5625bee955cc175a9f255e6928af3244",
+      "expected": "ConstructorOperandsModel.expected",
+      "expected_sha256": "462163736306c5454234344905deb3391c61f4dfaf23004c44a9257e9551bd67",
+      "inputs": [
+        {
+          "source": "constructor-operands.metta",
+          "sha256": "f91e8ebc43307770067a915ba31e98837f0cd84fbf0aed4575bc439d25b1da01"
+        }
+      ],
+      "observations": 8,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.64,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "ConstructorFaultModel.lean",
+      "source_sha256": "0c777bf2c8b402b6b331e695c669ecb0758e421b6300ea9a75307a002792ed60",
+      "expected": "ConstructorFaultModel.expected",
+      "expected_sha256": "ea8c3556f0c587015fb2e1344dbd816628b816344cd0da71b1b51f0f7d88e5fa",
+      "inputs": [
+        {
+          "source": "constructor-faults.metta",
+          "sha256": "e386558d09020e31caffc0c9e2ceace39e2724602a1a074470a86aefc6fa5132"
+        }
+      ],
+      "observations": 6,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.63,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "StreamingModel.lean",
+      "source_sha256": "b1619f8aaff176359eede6ac5446c0824550a0e9eecc374c6020c5c0b3a75f97",
+      "expected": "StreamingModel.expected",
+      "expected_sha256": "1e04be5183236b39684ef99740bbf71ef9f522b49e97da47d541f83a2e74ae94",
+      "inputs": [
+        {
+          "source": "constructor-streaming-frontier.metta",
+          "sha256": "ff0c973b05ce726a92c2a6989921e97f5557908af6dd82ddb3dd2142b89107c7"
+        },
+        {
+          "source": "constructor-operands.metta",
+          "sha256": "f91e8ebc43307770067a915ba31e98837f0cd84fbf0aed4575bc439d25b1da01"
+        },
+        {
+          "source": "constructor-faults.metta",
+          "sha256": "e386558d09020e31caffc0c9e2ceace39e2724602a1a074470a86aefc6fa5132"
+        },
+        {
+          "source": "lambda-nested-staging.metta",
+          "sha256": "64616359d6bf9c2e14c38799b15768eae3ab3e6ebc712d1908b6b2d41a19425f"
+        },
+        {
+          "source": "lambda-future-arguments.metta",
+          "sha256": "02948328277a64f2bd9303d86e3601ea200db887c7315c8ab36a5808ebf3992d"
+        },
+        {
+          "source": "streaming-demand.metta",
+          "sha256": "cd2c34c552ad44f2f84ef7815e7a5d8197927634d2041e848db46ec25be551ff"
+        }
+      ],
+      "observations": 30,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.61,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "OutputPlanModel.lean",
+      "source_sha256": "e749b5261320d881d1fc71c470d97264ed8c911acc9700c6538c5f7d99fd66a0",
+      "expected": "OutputPlanModel.expected",
+      "expected_sha256": "b06a11ebb483a62b2d2748c20c77ada6f82db4b99d613f112b7ac52758652991",
+      "inputs": [
+        {
+          "source": "source-initializer-constraint.metta",
+          "sha256": "9b17cbd30efb31536be308965b1a7fdd9fea22f5926dcf8c333668bd986c7ca8"
+        },
+        {
+          "source": "source-native-output-constraint.metta",
+          "sha256": "11969078bf9d5bd5a68485f46e01991bad4f7d2e7e11334ecf57fa72e320012e"
+        },
+        {
+          "source": "source-branch-output-alias.metta",
+          "sha256": "b1ecf7da63fb1b93f2548dccbda7f65ae08db84bcaee84966e75888a297447dc"
+        },
+        {
+          "source": "source-inert-branch-binding.metta",
+          "sha256": "356627614ba2b2ec072518dd5bcdb42ff5acaf80a1beaf48adbe6394a093e2f6"
+        },
+        {
+          "source": "source-recursive-output.metta",
+          "sha256": "aa1be8863c6770bd1a76731982928b245e9a51e30f6fb128deb5d72bff8ffd3b"
+        },
+        {
+          "source": "constructor-streaming-frontier.metta",
+          "sha256": "ff0c973b05ce726a92c2a6989921e97f5557908af6dd82ddb3dd2142b89107c7"
+        },
+        {
+          "source": "constructor-operands.metta",
+          "sha256": "f91e8ebc43307770067a915ba31e98837f0cd84fbf0aed4575bc439d25b1da01"
+        },
+        {
+          "source": "source-inert-branch-binding.metta",
+          "sha256": "356627614ba2b2ec072518dd5bcdb42ff5acaf80a1beaf48adbe6394a093e2f6"
+        },
+        {
+          "source": "source-branch-output-alias.metta",
+          "sha256": "b1ecf7da63fb1b93f2548dccbda7f65ae08db84bcaee84966e75888a297447dc"
+        },
+        {
+          "source": "source-collection-sharing.metta",
+          "sha256": "cdfe69d7b6b2f90b155039174fe1639fecc58d63fe19413f7e947a6c623969e2"
+        }
+      ],
+      "observations": 57,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.72,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "ConstraintPresentationModel.lean",
+      "source_sha256": "ec16fa5c99d1b4798ef7fb74fedc944189e6b9f48489de23a72773b97e4d6327",
+      "expected": "ConstraintPresentationModel.expected",
+      "expected_sha256": "0621333b548acecc4a8fc9125ed881fb744b3163808f300a893067eb7ba8942c",
+      "inputs": [],
+      "observations": 10,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.79,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "ConstraintReadoutModel.lean",
+      "source_sha256": "9055687a108573a159f7cd46b2a777943cf905440a4f69e7f42b17b5478450d9",
+      "expected": "ConstraintReadoutModel.expected",
+      "expected_sha256": "22ea1ac047bb21040b0db6180c69d09da23e45c206727de4b4e09409d7f7b5f8",
+      "inputs": [],
+      "observations": 6,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.75,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "StreamingRegionsModel.lean",
+      "source_sha256": "e468790b5becc79284c4570e7fbca999039e78a3ae5b2e407c19f9820ff43ab6",
+      "expected": "StreamingRegionsModel.expected",
+      "expected_sha256": "4a5f4dc9715fdda3e0f46d7a90c19aca33f4d6e47789799969c50dedf1cc7466",
+      "inputs": [],
+      "observations": 8,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.05,
+      "warnings_as_errors": true
+    },
+    {
+      "source": "CollectionReadoutModel.lean",
+      "source_sha256": "47351ba23b1c1520ec68cb32f50d269ef445494d5367ef6ae6d160548169e5f9",
+      "expected": "CollectionReadoutModel.expected",
+      "expected_sha256": "0985bf098f64ae93980634ba039431157fc502123d64d45ed1ca199eec2e960b",
+      "inputs": [],
+      "observations": 9,
+      "exit": 0,
+      "passed": true,
+      "unchanged": true,
+      "seconds": 1.9,
+      "warnings_as_errors": true
+    }
+  ],
+  "immediate_package": {
+    "source_modules": [
+      "Mettapedia/Machines/ImmediateStorePublication.lean",
+      "Mettapedia/Machines/ImmediateStorePrefixes.lean",
+      "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/ImmediatePublication.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/ImmediateRemoval.lean"
+    ],
+    "named_theorems": 33,
+    "scope": "Immediate/prepared public observation equivalence, receipt erasure for finite adaptive and paused/resumed clients, actual tcalc publication, first-occurrence and scoped PeTTa selection adapters. Administrative-cost reduction and complete invocation semantics remain open."
+  },
+  "publication_work_package": {
+    "source_modules": [
+      "Mettapedia/Data/List/PublicationWork.lean",
+      "Mettapedia/Machines/ImmediateStoreCost.lean",
+      "Mettapedia/Machines/HybridStorePublication.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/HybridImmediateRemoval.lean"
+    ],
+    "named_theorems": 53,
+    "scope": "Measured pure Boolean deletion algorithms, derived weighted work refinement for every bounded cursor client, stable-selection publication and exact-key hybrid capacity/refusal laws with a bag projection to actual ordered tcalc. Native costs, full source interruption and lifetimes remain separate."
+  },
+  "scoped_specialization_package": {
+    "source_modules": [
+      "Mettapedia/Data/List/PublicationSpecializationWork.lean",
+      "Mettapedia/Machines/SymbolTableHeadCache.lean",
+      "Mettapedia/Machines/SymbolHeadMemo.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/TransformHeadRecognition.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/SpecializedPublicationWork.lean",
+      "Mettapedia/Machines/SymbolHeadService.lean"
+    ],
+    "named_theorems": 95,
+    "scope": "Measured append/first-removal algorithms and actual ordered tcalc outputs; table-scoped recognition, exact-key bounded memo and combined lifecycle with adaptive and resumed erasure; retained-name transfer and actual PeTTa source decoding/execution. Native memory lifetime, finite incarnations, full effectful selection and C performance remain separate."
+  },
+  "partial_selection_package": {
+    "source_modules": [
+      "Mettapedia/Machines/Cursor/StatefulQueryRun.lean",
+      "Mettapedia/Machines/EffectfulRowSelection.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaSelectionCursor.lean"
+    ],
+    "named_theorems": 37,
+    "scope": "Independent effectful row scan and reversed-accumulator query client; exact common-cursor completion, world/history/account observations and no-replay resume; actual scoped PeTTa selection preservation/reflection, tcalc admission, source removal transition and source configuration at exhaustion. Internal unifier suspension, full interpreted transform conjuncts and native behavior remain separate."
+  },
+  "retained_publication_package": {
+    "source_modules": [
+      "Mettapedia/Machines/PreparedStoreStability.lean",
+      "Mettapedia/Machines/PreparedReceiptOwnership.lean",
+      "Mettapedia/Data/List/RetainedOccurrenceAllocation.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/RetainedStorePrograms.lean",
+      "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/OrderedStoreStability.lean"
+    ],
+    "named_theorems": 56,
+    "scope": "Footprint-derived readiness reuse, actual ordered-step captured-region admission, receipt/store/external graph liveness after footprint root updates, retained-ID allocation and existing tcalc store-program value correspondence with numeric-ID uniqueness. Exact regions are stronger than count-only observations; native root/inventory discovery, Finset costs, finite counters and C performance are not proved."
+  },
+  "source_argument_context_package": {
+    "source_modules": [
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaApplicationContexts.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaApplicationControls.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaContinuationContexts.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/HEArgumentContexts.lean"
+    ],
+    "named_theorems": 39,
+    "scope": "Arbitrarily nested strict static PeTTa argument contexts and exact entry cost; actual argument/case/condition/collection/live-equation continuations; completed independent stateful HE argument/function traversal and raw/error policy. Dynamic closure dispatch, whole transform interpretation and HE streaming prefixes remain open."
+  },
+  "application_swi_control": {
+    "exit": 0,
+    "fixture_sha256": "64da2c8433d3ac1fe844cfe2cd2ee4a121433683d14602c079b7c7d65dcb192b",
+    "stdout_equal": true,
+    "expected_sha256": "625ade632a60f7936a0f7a6966cb11f1348e0e672ef8edc9aeff237bf88197cc",
+    "stderr_scope": "Janus initialization reports missing libpython3.12.so.1.0; pure MeTTa fixture exits zero and all stdout observations match."
+  },
+  "transform_demand_swi_control": {
+    "exit": 0,
+    "stdout_equal": true,
+    "library_sha256": "e62b759259fb1b067ecc50b914b74d0adacccf45bc32750496b4a99a483e5dac",
+    "fixture_sha256": "fc54a571112cc94fb41bab28b39f37931018e7aa5c3b42afc381672bec735242",
+    "generated_sha256": "0cbc1cfc05a1fefd25c985c10f45c16b34ee0e0feb72878054779996a6f88335",
+    "expected_sha256": "6252c375b012c8408e8f7fccf1c3666f2507bcb938fd5d7cec173fb2ada5e2a8",
+    "stderr_scope": "The host reports missing libpython3.12.so.1.0 during Janus initialization; the pure MeTTa fixture exits zero and all stdout observations match."
+  },
+  "authored_transform_demand_package": {
+    "source_modules": [
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaTransformDemand.lean"
+    ],
+    "named_theorems": 28,
+    "rechecked_reference_modules": [
+      "Mettapedia/Languages/MeTTa/PeTTa/LibTransform.lean",
+      "Mettapedia/Machines/ScopedCommitCursor.lean"
+    ],
+    "scope": "Actual authored-library trace converted to the existing common cursor with answer/store/residual preservation and reflection; poll budget versus answer quota, once, consumer-modified stores, no-replay resume and full-drain fold. Finite first-order one-space source profile; internal matching fuel, full evaluated conjuncts, named spaces, dialect errors and native correspondence remain separate."
+  },
+  "historical_fixture_qualifications": [
+    {
+      "manifest_sha256": "b207bbf8cfb3e18dc3790d57df84cb4f1c0e66d2fcb878586ea809c0ba4c4cc3",
+      "manifest_unchanged": true,
+      "binary_sha256": "69d177d44825a9f92fa96022261e585e197a9e5a5cea8f3f0f20b38f8d659205",
+      "binary_unchanged": true,
+      "programs": 16,
+      "passed": 16,
+      "total": 16,
+      "failed": []
+    },
+    {
+      "manifest_sha256": "6b6d7526c926bd5ad007738814946945a4e36c62e9585414f89ba89bc22a986f",
+      "manifest_unchanged": true,
+      "binary_sha256": "6fca2ca7b58b216e87064d0322162ff7e14e82e2105f5771d07ffa91120621ed",
+      "binary_unchanged": true,
+      "programs": 20,
+      "passed": 17,
+      "total": 20,
+      "failed": [
+        "once-into-let-count",
+        "destination-let-collect",
+        "destination-let-held-collect"
+      ],
+      "qualified": false,
+      "artifact": "immutable development executable snapshot"
+    },
+    {
+      "manifest_sha256": "3dd068a4fe1e6b890dd18cf9c22a7c4fde72b1af5fa6fc463c1f40f688b897f7",
+      "manifest_unchanged": true,
+      "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24",
+      "binary_unchanged": true,
+      "programs": 23,
+      "passed": 19,
+      "total": 23,
+      "failed": [
+        "once-into-let-count",
+        "destination-let-collect",
+        "destination-let-held-collect",
+        "dynamic-call-demand"
+      ],
+      "qualified": false,
+      "regression_cases": [
+        "once-into-let-count",
+        "destination-let-collect",
+        "destination-let-held-collect"
+      ],
+      "profile_comparison_cases": [
+        "dynamic-call-demand"
+      ],
+      "artifact": "stable copied current development executable; no source-to-binary or performance qualification"
+    }
+  ],
+  "derived_surface_package": {
+    "source_modules": [
+      "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/BudgetCycle.lean",
+      "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/Code.lean",
+      "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/ContextualExpansion.lean",
+      "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/Lowering.lean",
+      "Mettapedia/Languages/MeTTa/Experimental/DerivedTransformForms/Presentations.lean",
+      "Mettapedia/Languages/ProcessCalculi/ConstraintMultisetRewriting/Step/ConsumableBudget.lean"
+    ],
+    "public_named_theorems": 47,
+    "authored_modules": [
+      "metta/gslt/module/derived-transform/Ambiguity.module",
+      "metta/gslt/module/derived-transform/Data.module",
+      "metta/gslt/module/derived-transform/Expressions.module",
+      "metta/gslt/module/derived-transform/Interactions.module"
+    ],
+    "paired_programs": 14,
+    "authored_reference_passed": 28,
+    "authored_reference_total": 28,
+    "parser_negative_controls_passed": 12,
+    "genuine_ambiguity_alternatives": 2,
+    "whole_input_forests_and_selected_catalogues_checked": true,
+    "source_packet_replay_and_readback_checked": true,
+    "candidate_context_readiness_and_entry_cost_proved": true,
+    "reference_qualification_sha256": "a94d894ba8d151c45575746146b9434fe8fc5b8e531056610e360b571da5c4f4",
+    "native_runtime": {
+      "binary_sha256": "6fca2ca7b58b216e87064d0322162ff7e14e82e2105f5771d07ffa91120621ed",
+      "passed": 24,
+      "total": 28,
+      "failed": [
+        "expression-claim-and-reply",
+        "expression-budgeted-update-cycle",
+        "interaction-claim-and-reply",
+        "interaction-budgeted-update-cycle"
+      ],
+      "qualified": false,
+      "ordered_answer_atoms": true,
+      "normalization_changes_neither_order_nor_multiplicity": true
+    },
+    "whole_family_operational_adequacy": false,
+    "c_correspondence": false,
+    "scope": "Actual authored grammars, retained complete source readings, PeTTa expansion, computed contextual continuation readiness and exact entry costs; conserved-credit bounds and a canonical source/actual-tcalc cycle. General semantic lowering, finite evaluator-fuel interpretation and the remaining whole-source context profiles stay open."
+  },
+  "dynamic_call_package": {
+    "source_modules": [
+      "Mettapedia/Languages/MeTTa/PeTTa/DynamicCallControls.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/DynamicRecovery.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingPrefixes.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaDynamicContexts.lean"
+    ],
+    "public_named_theorems_in_new_modules": 44,
+    "affected_dependency_modules_rechecked": 35,
+    "actual_machine_extended": true,
+    "independent_transition_correspondence": true,
+    "independent_stack_recovery_preserved_and_reflected": true,
+    "source_binding_and_return_invariants_requalified": true,
+    "private_vector_expansion_actual_consumer": true,
+    "contextual_runtime_head_entry_and_exact_cost": true,
+    "common_bounded_runner_realizes_source": true,
+    "arbitrary_suspended_prefix_resumption": true,
+    "actual_resume_marker_count": 1,
+    "restart_marker_count": 2,
+    "source_pause_budget": 46,
+    "external_swi_fixtures_passed": 3,
+    "source_to_raw_translation_adequacy": false,
+    "c_correspondence": false,
+    "scope": "Completed-operand runtime-head/private-partial dispatch, runtime error scopes, independent stack recovery and actual source-run prefixes. Statically known computed-head admission, lambda authoring/private code installation, native partial arities, freshness, streaming schedules and corrected-CeTTa policy correspondence remain separate."
+  },
+  "parent_named_theorems_scope": "Public named theorem declarations in directly checked ContextualTransform sources; excludes generated declarations and private theorems.",
+  "he_priority_prefix_package": {
+    "source_modules": [
+      "Mettapedia/Machines/OrderedPriorityTraversal.lean",
+      "Mettapedia/Machines/OrderedPriorityDemand.lean",
+      "Mettapedia/Languages/MeTTa/HE/StatefulPriorityTraversal.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/HEPriorityControls.lean"
+    ],
+    "public_named_theorems": 57,
+    "actual_worker_local_steps": true,
+    "independent_completed_phase_preservation_and_reflection": true,
+    "source_consumers": [
+      "Stateful.CallsRel",
+      "Stateful.InvocationsRel",
+      "Stateful.AtomRel.tuple",
+      "Stateful.AtomRel.function"
+    ],
+    "common_first_answer_cursor_connected": true,
+    "exactly_one_fallback_error_returned_to_first_consumer": true,
+    "source_termination_required_for_prefixes": false,
+    "model_observations_passed": 12,
+    "all_recursive_operand_streaming": false,
+    "source_reader_or_compiler_adequacy": false,
+    "c_correspondence": false,
+    "scope": "Incremental publication between completed source children, preserving reached worlds, frame readout, provisional errors, duplicate fallback occurrences and no-replay scheduler splitting. Inside-child operand/control barriers, consumer-induced interleaving, complete HE transform source interpretation, source fuel and native service/ownership correspondence remain separate.",
+    "bounded_visits_use_checked_child_transitions": true,
+    "eager_root_prefix_correspondence": false
+  },
+  "lambda_lifting_package": {
+    "source_modules": [
+      "Mettapedia/Data/FirstFreshName.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/PrivateCode.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/LambdaLifting.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingComputation.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaLambdaControls.lean"
+    ],
+    "public_named_theorems_in_new_modules": 44,
+    "actual_machine_private_inventory": true,
+    "private_code_not_published_as_atoms": true,
+    "independent_ordinary_formation_preserved_and_reflected": true,
+    "captured_variables_keep_first_occurrence_order": true,
+    "captures_resolve_without_re_evaluation": true,
+    "current_registry_cache_and_context_admission_connected": true,
+    "kernel_checked_step_computation_proposer": true,
+    "source_to_raw_translation_adequacy": false,
+    "eta_expansion": false,
+    "general_source_freshness": false,
+    "c_correspondence": false,
+    "ordinary_swi_fixture": {
+      "exit": 0,
+      "stdout_equal": true,
+      "source_sha256": "eedc6c4568eb39ec42bfd4d0a25276118ed9532e081472db3da1ce4600c17c4d",
+      "expected_sha256": "c8229d78ce85111349b8319bf6e12192cf0c0aa7329e428e358e196218673e9b"
+    },
+    "native_fixture_controls": [
+      {
+        "source": "lambda-captures.metta",
+        "exit": 0,
+        "stdout_equal": true,
+        "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24",
+        "source_sha256": "eedc6c4568eb39ec42bfd4d0a25276118ed9532e081472db3da1ce4600c17c4d",
+        "expected_sha256": "c8229d78ce85111349b8319bf6e12192cf0c0aa7329e428e358e196218673e9b"
+      },
+      {
+        "source": "lambda-freshness-collision.metta",
+        "exit": 0,
+        "stdout_equal": true,
+        "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24",
+        "source_sha256": "b2d48c68bf67226f9bdf2e637d64094c311667f0bd42361c6a37e44681475b91",
+        "expected_sha256": "0263829989b6fd954f72baaf2fc64bc2e2f01d692d4de72986ea808f6e99813f"
+      }
+    ],
+    "freshness_counterexample": {
+      "exit": 0,
+      "source_sha256": "b2d48c68bf67226f9bdf2e637d64094c311667f0bd42361c6a37e44681475b91",
+      "expected_sha256": "0263829989b6fd954f72baaf2fc64bc2e2f01d692d4de72986ea808f6e99813f",
+      "stdout_equal": true,
+      "reference_answers": [
+        "b"
+      ],
+      "raw_model_answers": [],
+      "scoped_model_answers": [
+        "b"
+      ],
+      "source_model_scope": "Raw negative entry; the scoped source boundary preserves b. General allocation/readout adequacy remains open.",
+      "raw_model_conformant": false,
+      "scoped_entry_conformant": true
+    },
+    "scope": "Ordinary non-eta-expanded private clause formation with a supplied compiled body, actual runtime capture/firing and scoped source entry. Recursive body translation, static computed-head raw/error policies, eta expansion, native partial arities and whole-configuration scope/readout adequacy remain open."
+  },
+  "lambda_dependency_recheck": {
+    "affected_modules": 69,
+    "passed": 62,
+    "unqualified": [
+      "Mettapedia.GSLT.LanguageDef",
+      "Mettapedia.GSLT",
+      "Mettapedia.GraphTheory.GSLT",
+      "Mettapedia.Languages.MeTTa",
+      "Mettapedia.Languages",
+      "Mettapedia.OSLF.SpecIndex",
+      "Mettapedia.OSLF"
+    ],
+    "complete": false,
+    "failures": [
+      "IndexedInductiveAppendSource: missing pi/project cases and a reduction proof that does not close",
+      "TypingResearch: missing compiled dependency at the MeTTa umbrella",
+      "NamePassingExternalGeneratedControls: missing compiled dependency at the specification index"
+    ],
+    "scope": "The current wider umbrella closure is not qualified; individual source/context and owned-module checks remain separately recorded.",
+    "current_object_presence_check": {
+      "missing": [
+        "Mettapedia.Languages.MeTTa.PeTTa.TypingResearch",
+        "Mettapedia.Languages.ProcessCalculi.PolyadicPi.Bridges.NamePassingExternalGeneratedControls"
+      ],
+      "indexed_inductive_append_object_present": true,
+      "wider_roots_requalified": false
+    }
+  },
+  "scoped_source_package": {
+    "source_modules": [
+      "Mettapedia/Data/ScopedString.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/ScopedSource.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingAllocation.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaScopeControls.lean"
+    ],
+    "public_named_theorems_in_new_modules": 41,
+    "additional_lambda_positive_control": 1,
+    "arbitrary_source_spellings_preserved": true,
+    "activation_name_encoding_injective": true,
+    "actual_scope_supply_monotone": true,
+    "actual_bounded_endpoint_retained": true,
+    "actual_source_request_driver_consumed": true,
+    "actual_term_unifier_preserves_support": true,
+    "fresh_parse_input_row_enumeration_and_assignment_boundaries": true,
+    "assignment_reads_retain_cell_identities": true,
+    "scoped_collision_answer": "b",
+    "raw_collision_negative_control_retained": true,
+    "reset_supply_negative_control_retained": true,
+    "model_observations_passed": 7,
+    "reference_and_native_fixture_checks": [
+      {
+        "fixture": "scope-imports.metta",
+        "lane": "swi",
+        "exit": 0,
+        "stdout_equal": true,
+        "source_sha256": "531030772f1d57dcf7a55d5c37525aa58a03cb892127bf9c6565c70d8bce6109",
+        "expected_sha256": "6480471f7c0cec45c5d2508f3df870c555ac6e435e6a384dd26d421f77f0d783",
+        "stderr_present": true
+      },
+      {
+        "fixture": "scope-imports.metta",
+        "lane": "native",
+        "exit": 0,
+        "stdout_equal": true,
+        "source_sha256": "531030772f1d57dcf7a55d5c37525aa58a03cb892127bf9c6565c70d8bce6109",
+        "expected_sha256": "6480471f7c0cec45c5d2508f3df870c555ac6e435e6a384dd26d421f77f0d783",
+        "stderr_present": false,
+        "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24"
+      },
+      {
+        "fixture": "scope-input.metta",
+        "lane": "swi",
+        "exit": 0,
+        "stdout_equal": true,
+        "source_sha256": "dcff675cc8d9ad09f03af14b636013f55f32f7ae9c350344baeed99517245d8a",
+        "expected_sha256": "0263829989b6fd954f72baaf2fc64bc2e2f01d692d4de72986ea808f6e99813f",
+        "stderr_present": true,
+        "input_sha256": "32fcf8cc0b94d644c4b537cb124ccd234afe997ac1fb79e8c879174c27709a37"
+      },
+      {
+        "fixture": "scope-input.metta",
+        "lane": "native",
+        "exit": 0,
+        "stdout_equal": true,
+        "source_sha256": "dcff675cc8d9ad09f03af14b636013f55f32f7ae9c350344baeed99517245d8a",
+        "expected_sha256": "0263829989b6fd954f72baaf2fc64bc2e2f01d692d4de72986ea808f6e99813f",
+        "stderr_present": false,
+        "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24",
+        "input_sha256": "32fcf8cc0b94d644c4b537cb124ccd234afe997ac1fb79e8c879174c27709a37"
+      },
+      {
+        "fixture": "scope-session.metta",
+        "lane": "swi",
+        "exit": 0,
+        "stdout_equal": true,
+        "source_sha256": "2bf8594777ad717d8a0a9eb7bb453cfc5fe8f4fe41ca370ae4e45c1fbaa36db9",
+        "expected_sha256": "1fec32eaffeadaf435c93974c38d417ad7c73b67fcb68d041675f0a1c4b9c204",
+        "stderr_present": true
+      },
+      {
+        "fixture": "scope-session.metta",
+        "lane": "native",
+        "exit": 0,
+        "stdout_equal": true,
+        "source_sha256": "2bf8594777ad717d8a0a9eb7bb453cfc5fe8f4fe41ca370ae4e45c1fbaa36db9",
+        "expected_sha256": "1fec32eaffeadaf435c93974c38d417ad7c73b67fcb68d041675f0a1c4b9c204",
+        "stderr_present": false,
+        "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24"
+      }
+    ],
+    "whole_configuration_world_scope_invariant": true,
+    "open_answer_source_readout": true,
+    "recursive_source_compiler_adequacy": false,
+    "c_correspondence": false,
+    "scope": "Entry, copy boundaries, counter retention and actual first-order term-unifier support preservation. General configuration/world preservation, pattern/list-view coverage and open-answer readout remain open.",
+    "open_answer_source_readout_scope": "Separate structured sharing observer and lossless inverse transport; whole source-compiler freshness remains unproved."
+  },
+  "scoped_source_dependency_recheck": {
+    "affected_modules": 76,
+    "passed": 69,
+    "unqualified": [
+      "Mettapedia.GSLT.LanguageDef",
+      "Mettapedia.GSLT",
+      "Mettapedia.GraphTheory.GSLT",
+      "Mettapedia.Languages.MeTTa",
+      "Mettapedia.Languages",
+      "Mettapedia.OSLF.SpecIndex",
+      "Mettapedia.OSLF"
+    ],
+    "complete": false,
+    "scope": "All affected individual source/context modules checked; seven wider aggregate/index roots retain the previously identified unmet dependencies."
+  },
+  "runtime_match_and_scope_package": {
+    "source_modules": [
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingScopeInvariant.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingFrontierScopes.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingContinuationScopes.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingPrimitiveScopes.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaRuntimeMatchControls.lean"
+    ],
+    "public_named_theorems_in_new_modules": 34,
+    "existing_unifier_support_extensions": 6,
+    "existing_binding_refinement_extensions": 2,
+    "actual_runtime_match_binds_caller": true,
+    "runtime_template_return_is_not_body_reexecution": true,
+    "open_rows_use_fresh_two_way_unifiers": true,
+    "actual_step_transition_correspondence_requalified": true,
+    "support_preserved_by_list_view_quoted_binding_and_argument_unification": true,
+    "actual_frontier_and_copy_support": true,
+    "actual_let_case_and_nested_let_support": true,
+    "primitive_retained_cell_support": true,
+    "actual_runtime_query_step_support": true,
+    "whole_primitive_reply_support": true,
+    "whole_configuration_world_preservation": true,
+    "open_answer_source_readout": true,
+    "recursive_source_compiler_adequacy": false,
+    "c_correspondence": false,
+    "runtime_model_observations_passed": 4,
+    "swi_fixture": {
+      "fixture": "runtime-match-binding.metta",
+      "exit": 0,
+      "stdout_equal": true,
+      "stdout": "true\n(pair a a)\n(println! 9)\ntrue\nyes\n",
+      "source_sha256": "85cd0bccc1bb157fc78f7b9df215b3545e0fc5d8c4c5a4c8bdc2ca416a70f1e5",
+      "expected_sha256": "f7de29fd12e80e6551fa15e251645674445e0362548c7a88f34e7488dc5e12d6"
+    },
+    "native_fixture": {
+      "exit": 0,
+      "stdout": "true\n(pair a a)\n(println! 9)\ntrue\nyes\n",
+      "equals_swi_expected": true,
+      "source_sha256": "85cd0bccc1bb157fc78f7b9df215b3545e0fc5d8c4c5a4c8bdc2ca416a70f1e5",
+      "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24"
+    },
+    "scope": "Actual source helper and complete transition/prefix allocation-preservation laws, with unfinished open-answer readout and source-compiler adequacy. No language restriction, runtime revalidation condition or C proof is introduced.",
+    "open_answer_source_readout_scope": "Separate structured sharing observer and lossless inverse transport; whole source-compiler freshness remains unproved."
+  },
+  "scope_invariant_dependency_recheck": {
+    "affected_modules": 82,
+    "passed": 75,
+    "unqualified": [
+      "Mettapedia.GSLT.LanguageDef",
+      "Mettapedia.GSLT",
+      "Mettapedia.GraphTheory.GSLT",
+      "Mettapedia.Languages.MeTTa",
+      "Mettapedia.Languages",
+      "Mettapedia.OSLF.SpecIndex",
+      "Mettapedia.OSLF"
+    ],
+    "complete": false
+  },
+  "complete_scope_preservation_package": {
+    "source_modules": [
+      "Mettapedia/Languages/MeTTa/PeTTa/StdLib.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingPreservation.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingTransitionPreservation.lean",
+      "Mettapedia/Languages/MeTTa/PeTTa/UnifyingPrefixScopes.lean",
+      "Mettapedia/Languages/MeTTa/ContextualTransform/PeTTaScopePreservationControls.lean"
+    ],
+    "public_named_theorems_in_new_modules": 19,
+    "new_primitive_definition_module_laws": 9,
+    "existing_helper_laws_added": 11,
+    "ordinary_primitive_reply_support": true,
+    "primitive_import_and_cell_preservation": true,
+    "all_independent_source_transitions_preserve_allocated_support": true,
+    "all_actual_bounded_endpoints_well_scoped": true,
+    "suspended_configurations_well_scoped": true,
+    "next_request_preservation": true,
+    "future_names_apart_from_returned_values_and_binding_keys": true,
+    "next_request_apart_from_retained_cells": true,
+    "positive_every_fuel_controls": 2,
+    "negative_controls": 4,
+    "unmodified_original_primitive_prefix": {
+      "unchanged": true,
+      "sha256": "020e9fafbaae8a7973a4283040e4021c09151dff6699b85af47e05386ca83186"
+    },
+    "open_answer_source_readout": true,
+    "recursive_source_compiler_adequacy": false,
+    "c_correspondence": false,
+    "scope": "Complete allocation-support preservation for the maintained completed-operand machine, from source-loaded stores and genuinely unused entry scopes. Staging, readout and universal dialect/C correspondence remain separate.",
+    "open_answer_source_readout_scope": "Separate structured sharing observer and lossless inverse transport; whole source-compiler freshness remains unproved."
+  },
+  "complete_scope_dependency_recheck": {
+    "affected_modules": 86,
+    "passed": 79,
+    "unqualified": [
+      "Mettapedia.GSLT.LanguageDef",
+      "Mettapedia.GSLT",
+      "Mettapedia.GraphTheory.GSLT",
+      "Mettapedia.Languages.MeTTa",
+      "Mettapedia.Languages",
+      "Mettapedia.OSLF.SpecIndex",
+      "Mettapedia.OSLF"
+    ],
+    "complete": false
+  },
+  "open_answer_readout_package": {
+    "source_modules": 5,
+    "scope": "First-occurrence list mathematics; actual MORK Atom renaming/readout adapters; actual PeTTa outcome and branch inverse transport. Not evaluator equivariance, recursive source-compiler adequacy, C correspondence or a public Prime display decision.",
+    "independent_bidirectional_renaming_preserved_and_reflected": true,
+    "joint_and_per_answer_observers_distinguished": true,
+    "legal_source_spellings_unrestricted": true,
+    "actual_allocated_renaming_readout_invariant": true,
+    "actual_collection_copier_per_answer_observation": true,
+    "complete_fault_and_suspended_outcome_inverse_transport": true,
+    "per_branch_substitutions_restored": true,
+    "arbitrary_source_continuation_after_transport_every_fuel": true,
+    "readout_cost_erased": false,
+    "evaluator_equivariance": false,
+    "recursive_source_compiler_adequacy": false,
+    "c_correspondence": false,
+    "model_observations_passed": 8,
+    "swi_fixture": {
+      "source": "open-answer-aliases.metta",
+      "exit": 0,
+      "stdout_equal": true,
+      "stdout": "true\nfalse\nfalse\ntrue\ntrue\nfalse\n",
+      "source_sha256": "eb754068df6b519ccb160982499d1bb5b6ab6eb489d607725c1294b656fe6612",
+      "expected_sha256": "37e977d436f138e8f1ac9e84c485666decd1d2980a4cd604919b2030657d588b",
+      "observations": 6
+    },
+    "retained_native_fixture": {
+      "source": "open-answer-aliases.metta",
+      "exit": 0,
+      "stdout_equal": true,
+      "stdout": "true\nfalse\nfalse\ntrue\ntrue\nfalse\n",
+      "source_sha256": "eb754068df6b519ccb160982499d1bb5b6ab6eb489d607725c1294b656fe6612",
+      "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24",
+      "expected_sha256": "37e977d436f138e8f1ac9e84c485666decd1d2980a4cd604919b2030657d588b",
+      "observations": 6
+    },
+    "public_named_theorems": 52,
+    "axiom_and_subject_audits_passed": true
+  },
+  "recursive_lambda_preparation_package": {
+    "source_modules": 3,
+    "public_named_theorems": 55,
+    "independent_reservation_argument_layer_rules": true,
+    "bounded_preparation_preservation_and_reflection": true,
+    "sufficient_depth_for_every_finite_input": true,
+    "total_interface": true,
+    "successful_depth_independence_and_functionality": true,
+    "old_code_prefix_cursor_and_occupied_support_preserved": true,
+    "outer_name_reserved_before_nested_body": true,
+    "nested_clauses_installed_before_outer": true,
+    "original_body_capture_order_preserved": true,
+    "actual_source_machine_consumes_prepared_clauses": true,
+    "model_observations_passed": 8,
+    "swi_fixtures": [
+      {
+        "source": "lambda-nested-staging.metta",
+        "source_sha256": "64616359d6bf9c2e14c38799b15768eae3ab3e6ebc712d1908b6b2d41a19425f",
+        "expected_sha256": "11e3a604e34fdf98390764ba20bbcb230768ee22cb2c1fead824c89f297f68ff",
+        "exit": 0,
+        "stdout_equal": true,
+        "stdout": "(pair a b)\nsafe\nheld\ntrue\n"
+      },
+      {
+        "source": "lambda-future-head.metta",
+        "source_sha256": "5c4f6c1c4dfdcbd1427674657ab820f7403061a0b8f3c94ae54b7c369a72d8c3",
+        "expected_sha256": "295f6d4a403b3b53ddb3942fab7d6c91819ae43ef1d2edf9c1562b6e5afce75f",
+        "exit": 0,
+        "stdout_equal": true,
+        "stdout": "(lambda_1)\n"
+      }
+    ],
+    "retained_native_fixtures": [
+      {
+        "source": "lambda-nested-staging.metta",
+        "source_sha256": "64616359d6bf9c2e14c38799b15768eae3ab3e6ebc712d1908b6b2d41a19425f",
+        "expected_sha256": "11e3a604e34fdf98390764ba20bbcb230768ee22cb2c1fead824c89f297f68ff",
+        "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24",
+        "exit": 0,
+        "stdout_equal": true,
+        "stdout": "(pair a b)\nsafe\nheld\ntrue\n"
+      }
+    ],
+    "future_data_head_control": {
+      "source": "lambda-future-head.metta",
+      "source_expected": "(lambda_1)",
+      "model_observation": "(lambda_1)",
+      "theorem": "PeTTaStagingControls.compiled_future_head_remains_data",
+      "resolved_in_current_preparation": true,
+      "whole_compiler_adequacy": false,
+      "c_defect_claim": false
+    },
+    "whole_recursive_source_compiler_adequacy": false,
+    "eta_expansion": false,
+    "native_partial_arities": false,
+    "overloaded_typed_alternatives": false,
+    "staging_depth_scan_erased": false,
+    "c_correspondence": false,
+    "scope": "Recursive ordinary lambda preparation with independent rules, totality, depth independence and retained nullary/nonempty data-head decisions. Passive binding and case patterns retain syntax. Full unfinished-run reflection, recursive operand streaming, typed/eta/static-head profiles and whole source-compiler adequacy remain open.",
+    "argument_future_head_control": {
+      "source": "lambda-future-arguments.metta",
+      "source_expected": "(lambda_1 a)",
+      "model_observation": "(lambda_1 a)",
+      "resolved_in_current_preparation": true,
+      "theorem": "PeTTaStagingControls.compiled_argument_head_remains_data",
+      "swi_fixture": {
+        "source": "lambda-future-arguments.metta",
+        "source_sha256": "02948328277a64f2bd9303d86e3601ea200db887c7315c8ab36a5808ebf3992d",
+        "expected_sha256": "1c591ee74306e99c687b1d79f845943f6aaa0c5ea9406a7dc0976b617761cd04",
+        "exit": 0,
+        "stdout_equal": true,
+        "stdout": "(lambda_1 a)\n"
+      },
+      "c_defect_claim": false
+    },
+    "passive_binding_and_case_roles_preserved": true,
+    "once_operator_preserved_while_child_is_prepared": true
+  },
+  "constructor_lowering_package": {
+    "independent_emission_rules_preserved_and_reflected": true,
+    "nullary_data_decision_retained_under_arbitrary_future_registry": true,
+    "existing_source_evaluator_used": true,
+    "new_runtime_primitive": false,
+    "exact_source_step_charges": {
+      "ordinary_nullary_data": 8,
+      "quoted_nullary_data": 1,
+      "same_finite_cutoffs_claimed": false
+    },
+    "actual_fresh_bindVar_keeps_original_tail": true,
+    "actual_fresh_unifyBinding_success_derived": true,
+    "source_resolution_and_idempotence_preserved_under_freshness": true,
+    "single_local_exact_projection": true,
+    "projection_commutes_with_other_binding_updates": true,
+    "whole_unifier_projection": false,
+    "whole_context_local_erasure": false,
+    "constructor_model_observations_passed": 9,
+    "staging_model_observations_passed": 8,
+    "c_correspondence": false,
+    "native_performance_claim": false,
+    "scope": "Nullary and nonempty retained data decisions have actual preparation consumers. Completed constructor schedules and all later caller allowances agree after possibly different administrative prefixes. Operand-prefix and escaping-fault transport retain reached worlds. Native-cons expansion needs no compiler temporaries. This is not whole-source compiler adequacy, full unfinished-run reflection, general recursive operand streaming or a C performance claim.",
+    "reference_nonempty_expansion_uses_existing_native_cons": true,
+    "compiler_temporaries_introduced": false,
+    "completed_operand_schedule_realization": true,
+    "exact_binding_packets_world_and_callers_preserved": true,
+    "all_subsequent_allowances_after_administrative_prefixes": true,
+    "arbitrary_operand_prefix_transport": true,
+    "escaping_fault_transport": true,
+    "full_unfinished_run_reflection": false,
+    "whole_source_compiler_adequacy": false,
+    "recursive_operand_streaming": false,
+    "operand_model_observations_passed": 8,
+    "fault_model_observations_passed": 6,
+    "root_prefix_recovery_corrected": true,
+    "root_collectors_preserve_discovery_order": true,
+    "tentative_operand_packets_not_exported": true,
+    "source_fixtures": [
+      {
+        "source": "constructor-operands.metta",
+        "source_sha256": "f91e8ebc43307770067a915ba31e98837f0cd84fbf0aed4575bc439d25b1da01",
+        "expected_sha256": "10fcced5a0f83c6becea022e1c76fd6ed7a7d94f9987ad2e776635bda51fc55c",
+        "exit": 0,
+        "stdout_equal": true,
+        "stdout": "((record left a) (record right b))\n(record a b)\n(first second)\n()\n(present)\ntrue\n(record a b)\n(record selected)\n"
+      },
+      {
+        "source": "constructor-faults.metta",
+        "source_sha256": "e386558d09020e31caffc0c9e2ceace39e2724602a1a074470a86aefc6fa5132",
+        "expected_sha256": "ea8c3556f0c587015fb2e1344dbd816628b816344cd0da71b1b51f0f7d88e5fa",
+        "exit": 0,
+        "stdout_equal": true,
+        "seconds": 0.16
+      }
+    ],
+    "retained_native_fixtures": [
+      {
+        "source": "constructor-operands.metta",
+        "source_sha256": "f91e8ebc43307770067a915ba31e98837f0cd84fbf0aed4575bc439d25b1da01",
+        "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24",
+        "exit": 0,
+        "stdout_equal": true,
+        "expected_sha256": "10fcced5a0f83c6becea022e1c76fd6ed7a7d94f9987ad2e776635bda51fc55c",
+        "scope": "retained native snapshot calibration; not current opt or implementation correspondence"
+      },
+      {
+        "source": "constructor-faults.metta",
+        "source_sha256": "e386558d09020e31caffc0c9e2ceace39e2724602a1a074470a86aefc6fa5132",
+        "binary_sha256": "cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24",
+        "exit": 0,
+        "stdout_equal": true,
+        "expected_sha256": "ea8c3556f0c587015fb2e1344dbd816628b816344cd0da71b1b51f0f7d88e5fa",
+        "scope": "retained native snapshot calibration; not current opt or implementation correspondence"
+      }
+    ],
+    "recovery_dependency_recheck": {
+      "modules": 122,
+      "passed": 122,
+      "warnings_as_errors": true,
+      "all_pins_current": true,
+      "model_consumers_passed": 20,
+      "whole_project_build_claim": false
+    },
+    "streaming_frontier_control": {
+      "fixture": "constructor-streaming-frontier.metta",
+      "source_expected": "((record a x) (record b x))\n(left suffix right suffix)\n",
+      "model_observation": "((record a x) (record b x))\n(left right suffix suffix)\n",
+      "source_sha256": "ff0c973b05ce726a92c2a6989921e97f5557908af6dd82ddb3dd2142b89107c7",
+      "expected_sha256": "121b60d05d6208f0f6c7dc4ebf56860c16987ce22945f329f8eedc18dcff03fb",
+      "model_qualified": false,
+      "external_checks": [
+        {
+          "lane": "swi",
+          "source": "constructor-streaming-frontier.metta",
+          "source_sha256": "ff0c973b05ce726a92c2a6989921e97f5557908af6dd82ddb3dd2142b89107c7",
+          "expected_sha256": "121b60d05d6208f0f6c7dc4ebf56860c16987ce22945f329f8eedc18dcff03fb",
+          "exit": 0,
+          "passed": true
+        },
+        {
+          "lane": "retained_native",
+          "source": "constructor-streaming-frontier.metta",
+          "source_sha256": "ff0c973b05ce726a92c2a6989921e97f5557908af6dd82ddb3dd2142b89107c7",
+          "expected_sha256": "121b60d05d6208f0f6c7dc4ebf56860c16987ce22945f329f8eedc18dcff03fb",
+          "exit": 0,
+          "passed": true
+        }
+      ],
+      "c_defect_claim": false
+    }
+  },
+  "streaming_source_package": {
+    "new_source_modules": 9,
+    "source_phase_tables_reused": true,
+    "shared_world_per_alternative_continuations": true,
+    "independent_placement_delivery_and_controller_rules": true,
+    "step_preservation_and_reflection": true,
+    "finite_paths_iff_bounded_endpoints": true,
+    "arbitrary_residual_resumption": true,
+    "answer_prefix_and_allocation_monotonicity": true,
+    "actual_first_answer_provider": true,
+    "arbitrary_studied_context_nesting": true,
+    "context_entry_charge": "one controller transition per shell",
+    "primitive_request_charge": "one provider inspection; distinct from controller fuel and native work",
+    "model_observations_passed": 30,
+    "all_model_consumers_passed": 21,
+    "source_modules_rechecked": 131,
+    "full_source_compiler_adequacy": false,
+    "complete_streaming_scope_and_region_invariant": true,
+    "full_streaming_constructor_correspondence": false,
+    "native_performance_claim": false,
+    "c_correspondence": false,
+    "scope": "A source-facing streaming profile using the existing primitive and unifier phases. It has independent controller-rule adequacy and calibrated source observations; these are not complete SWI compiler adequacy.",
+    "demand_fixture_checks": [
+      {
+        "lane": "swi",
+        "source": "streaming-demand.metta",
+        "source_sha256": "cd2c34c552ad44f2f84ef7815e7a5d8197927634d2041e848db46ec25be551ff",
+        "expected_sha256": "1a1b5a47c28924ca0e564a5463dbc613fbb59d87d12be60350f6b73fadb392cf",
+        "exit": 0,
+        "passed": true
+      },
+      {
+        "lane": "retained-native",
+        "source": "streaming-demand.metta",
+        "source_sha256": "cd2c34c552ad44f2f84ef7815e7a5d8197927634d2041e848db46ec25be551ff",
+        "expected_sha256": "1a1b5a47c28924ca0e564a5463dbc613fbb59d87d12be60350f6b73fadb392cf",
+        "exit": 0,
+        "passed": true
+      }
+    ],
+    "initializer_constraint_control": {
+      "fixture": "source-initializer-constraint.metta",
+      "fixture_sha256": "9b17cbd30efb31536be308965b1a7fdd9fea22f5926dcf8c333668bd986c7ca8",
+      "driver_sha256": "a7176b028b225629127ec03a81586c0f972893e32ad9f0088f815081e66cedf6",
+      "expected_sha256": "1c15f8df4404f22fbd396a1ce035637f5512fe4979c4851b775523b30d34c3ce",
+      "exit": 0,
+      "model_qualified": false,
+      "source_expected": [
+        "(chosen)",
+        "(accepted)",
+        "((selected a) (selected b))",
+        "(accepted accepted rejected)"
+      ],
+      "streaming_model_observation": [
+        "(chosen)",
+        "(accepted rejected)",
+        "((selected a) (selected b))",
+        "(accepted rejected accepted rejected)"
+      ],
+      "external_checks": [
+        {
+          "lane": "swi",
+          "source": "source-initializer-constraint.metta",
+          "source_sha256": "9b17cbd30efb31536be308965b1a7fdd9fea22f5926dcf8c333668bd986c7ca8",
+          "expected_sha256": "1c15f8df4404f22fbd396a1ce035637f5512fe4979c4851b775523b30d34c3ce",
+          "exit": 0,
+          "passed": true
+        },
+        {
+          "lane": "retained-native",
+          "source": "source-initializer-constraint.metta",
+          "source_sha256": "9b17cbd30efb31536be308965b1a7fdd9fea22f5926dcf8c333668bd986c7ca8",
+          "expected_sha256": "1c15f8df4404f22fbd396a1ce035637f5512fe4979c4851b775523b30d34c3ce",
+          "exit": 0,
+          "passed": true
+        }
+      ],
+      "scope": "compiled output constraints precede initializer effects; unconstrained binding must still enumerate both clauses",
+      "c_defect_claim": false,
+      "output_plan_component_passed": true,
+      "old_direct_streaming_profile_qualified": false
+    },
+    "public_named_theorems": 62,
+    "streaming_frontier_control": {
+      "fixture": "constructor-streaming-frontier.metta",
+      "source_expected": [
+        "((record a x) (record b x))",
+        "(left suffix right suffix)"
+      ],
+      "streaming_profile_passed": true,
+      "completed_operand_profile_passed": false,
+      "existing_expectation_unchanged": true,
+      "c_defect_claim": false
+    },
+    "streaming_invariant_evidence": "streaming_invariant_package and streaming_region_package; applies to the maintained Lean controller, not whole source/compiler or C correspondence"
+  },
+  "output_plan_package": {
+    "new_source_modules": 6,
+    "public_named_theorems": 30,
+    "same_streaming_evaluator": true,
+    "source_reader_reused": true,
+    "component": "Static-program result-term/producing-goal compilation; exact source profile boundaries are retained.",
+    "literal_gate_actual_success_refusal_interruption": true,
+    "gate_reference_entry_transitions": 4,
+    "same_native_instruction_count_claim": false,
+    "private_procedures_with_output_formal": true,
+    "original_source_equations_retained": true,
+    "reserved_target_support_freshness_distinctness_and_interface_order": true,
+    "native_raw_argument_roles_preserved": true,
+    "initializer_constraint_fixture_passed": true,
+    "recursive_procedure_fixture_passed": true,
+    "branch_policies": [
+      "swiAliases",
+      "runtimeConstraints"
+    ],
+    "general_runtime_policy_preserves_compiler_aliases": true,
+    "runtime_policy_retains_original_input_patterns": true,
+    "kernel_checked_branch_alias_and_shared_observation_controls": true,
+    "universal_inert_binding_erasure": false,
+    "prime_default_selected": false,
+    "model_observations_passed": 49,
+    "model_swi_policy_observations": 39,
+    "model_runtime_policy_observations": 10,
+    "model_independent_input_fixtures": 7,
+    "new_independent_swi_fixtures": 4,
+    "new_independent_swi_observations": 25,
+    "native_output_calibration": [
+      {
+        "lane": "swi",
+        "source": "source-native-output-constraint.metta",
+        "source_sha256": "11969078bf9d5bd5a68485f46e01991bad4f7d2e7e11334ecf57fa72e320012e",
+        "expected_sha256": "9d94e34a5d2951d7b6b520f944ca5a233e5ca1d2b0bac324d1e3570b0b87e805",
+        "exit": 0,
+        "equals_swi_expected": true,
+        "stderr_empty": false,
+        "stdout": "()\n()\n()\n(argument)\n()\n(argument)\n(chosen)\n(argument accepted)\ntrue\n(true)\n",
+        "c_defect_claim": false
+      },
+      {
+        "lane": "captured-native",
+        "source": "source-native-output-constraint.metta",
+        "source_sha256": "11969078bf9d5bd5a68485f46e01991bad4f7d2e7e11334ecf57fa72e320012e",
+        "expected_sha256": "9d94e34a5d2951d7b6b520f944ca5a233e5ca1d2b0bac324d1e3570b0b87e805",
+        "exit": 0,
+        "equals_swi_expected": false,
+        "stderr_empty": true,
+        "stdout": "()\n(forbidden)\n()\n(forbidden argument forbidden2)\n()\n(forbidden argument forbidden2)\n(chosen)\n(forbidden argument forbidden2 accepted)\ntrue\n($V0)\n",
+        "binary_sha256": "c49ee45af53e490463c8f9e6f5e0bdbc3c67bc795343072042ae9d8eb00b7dd6",
+        "c_defect_claim": false
+      }
+    ],
+    "inert_branch_calibration": [
+      {
+        "lane": "swi",
+        "source": "source-inert-branch-binding.metta",
+        "source_sha256": "356627614ba2b2ec072518dd5bcdb42ff5acaf80a1beaf48adbe6394a093e2f6",
+        "expected_sha256": "97a5d892b2206982a821f859419985227c3165332c9c8793e6c6d2924a1f7815",
+        "exit": 0,
+        "equals_swi_expected": true,
+        "stdout": "(a b)\n()\n(a a)\n(false false)\n(true true)\n",
+        "c_defect_claim": false
+      },
+      {
+        "lane": "captured-native",
+        "source": "source-inert-branch-binding.metta",
+        "source_sha256": "356627614ba2b2ec072518dd5bcdb42ff5acaf80a1beaf48adbe6394a093e2f6",
+        "expected_sha256": "97a5d892b2206982a821f859419985227c3165332c9c8793e6c6d2924a1f7815",
+        "exit": 0,
+        "equals_swi_expected": false,
+        "stdout": "(a b)\n(a b)\n(a a)\n(false false)\n(false false)\n",
+        "binary_sha256": "c49ee45af53e490463c8f9e6f5e0bdbc3c67bc795343072042ae9d8eb00b7dd6",
+        "c_defect_claim": false
+      }
+    ],
+    "recursive_calibration": [
+      {
+        "lane": "swi",
+        "source": "source-recursive-output.metta",
+        "source_sha256": "aa1be8863c6770bd1a76731982928b245e9a51e30f6fb128deb5d72bff8ffd3b",
+        "expected_sha256": "45c189431074a80ddf3202799e6752d6786a781d06df268c72d82f41a1187de9",
+        "exit": 0,
+        "equals_swi_expected": true,
+        "stdout": "(done)\n(3 2 1)\n()\n(3 2 1 2 1)\n()\n",
+        "c_defect_claim": false
+      },
+      {
+        "lane": "captured-native",
+        "source": "source-recursive-output.metta",
+        "source_sha256": "aa1be8863c6770bd1a76731982928b245e9a51e30f6fb128deb5d72bff8ffd3b",
+        "expected_sha256": "45c189431074a80ddf3202799e6752d6786a781d06df268c72d82f41a1187de9",
+        "exit": 0,
+        "equals_swi_expected": true,
+        "stdout": "(done)\n(3 2 1)\n()\n(3 2 1 2 1)\n()\n",
+        "binary_sha256": "c49ee45af53e490463c8f9e6f5e0bdbc3c67bc795343072042ae9d8eb00b7dd6",
+        "c_defect_claim": false
+      }
+    ],
+    "branch_effect_calibration": [
+      {
+        "lane": "swi",
+        "source": "source-branch-output-alias.metta",
+        "source_sha256": "b1ecf7da63fb1b93f2548dccbda7f65ae08db84bcaee84966e75888a297447dc",
+        "expected_sha256": "5f1cf3d2aa1dc91d62a811cb03c9526807c0831554b1476a7e45f171f2b4f8ed",
+        "exit": 0,
+        "passed": true,
+        "stdout": "()\n()\n(a b)\n(a a)\n(left right)\n"
+      },
+      {
+        "source": "source-branch-output-alias.metta",
+        "source_sha256": "b1ecf7da63fb1b93f2548dccbda7f65ae08db84bcaee84966e75888a297447dc",
+        "binary_sha256": "c49ee45af53e490463c8f9e6f5e0bdbc3c67bc795343072042ae9d8eb00b7dd6",
+        "expected_sha256": "5f1cf3d2aa1dc91d62a811cb03c9526807c0831554b1476a7e45f171f2b4f8ed",
+        "exit": 0,
+        "passed": false,
+        "scope": "stable copy of the opt executable; source-to-binary correspondence not established",
+        "stdout": "(a b)\n(left right)\n(a b)\n(a a)\n(left right left right)\n",
+        "c_defect_claim": false
+      }
+    ],
+    "native_contract": "Captured --lang petta is corrected stable PeTTa; SWI mismatch alone is not a defect attribution.",
+    "whole_source_compiler_adequacy": false,
+    "complete_streaming_scope_and_region_invariant": true,
+    "dynamic_program_authority": false,
+    "compiler_local_readout": false,
+    "all_typed_native_partial_lambda_regions": false,
+    "c_correspondence": false,
+    "source_to_binary_correspondence": false,
+    "native_performance_claim": false,
+    "qualification": {
+      "source_modules": 158,
+      "all_pins_current": true,
+      "warnings_as_errors": true,
+      "model_consumers_passed": 24,
+      "kernel_audit_passed": true,
+      "subject_and_he_boundary_audits_passed": true,
+      "whole_project_build_claim": false,
+      "source_refreshes_this_pass": 7,
+      "mode": "incremental source refresh with all retained pins current; complete consumer rerun"
+    },
+    "streaming_invariant_evidence": "streaming_invariant_package and streaming_region_package; applies to the maintained Lean controller, not whole source/compiler or C correspondence"
+  },
+  "output_plan_formation_package": {
+    "new_source_modules": 7,
+    "existing_optional_traversal_owner_rechecked": true,
+    "public_named_theorems": 43,
+    "independent_branch_rules": true,
+    "argument_binding_case_and_expression_layer_rules": true,
+    "compiler_preserves_and_reflects_formation_at_every_bound": true,
+    "successful_larger_allowance_preserves_whole_result": true,
+    "any_two_successful_allowances_agree": true,
+    "ordered_equation_and_directive_formation": true,
+    "original_public_source_retained": true,
+    "private_interface_order_exact": true,
+    "actual_executable_consumer_carries_formation_derivation": true,
+    "generic_optional_traversal_reflection_owner": "Mettapedia/Data/List/OptionMapMReflection.lean",
+    "positive_arbitrary_quoted_payload_control": true,
+    "negative_controls": [
+      "erase nonempty directives",
+      "remove a clause",
+      "swap distinct interfaces",
+      "replace source data",
+      "unsupported component form"
+    ],
+    "model_consumer": "OutputPlanModel.lean",
+    "model_observations_passed": 49,
+    "old_model_expectation_unchanged": true,
+    "source_policy_distinction": "Local SWI letstar_to_rec_let requires nonempty pairs; the separate Destination sequence profile admits an empty list. No universal rule is selected.",
+    "default_computed_allowance_complete_for_every_formation_derivation": false,
+    "source_execution_operational_simulation": false,
+    "whole_source_compiler_adequacy": false,
+    "complete_streaming_scope_and_region_invariant": true,
+    "compiler_local_readout": false,
+    "all_typed_native_partial_lambda_dynamic_regions": false,
+    "c_correspondence": false,
+    "native_performance_claim": false,
+    "qualification": {
+      "source_modules": 158,
+      "all_pins_current": true,
+      "warnings_as_errors": true,
+      "model_consumers_passed": 24,
+      "kernel_audit_passed": true,
+      "subject_and_he_boundary_audits_passed": true,
+      "whole_project_build_claim": false,
+      "source_refreshes_this_pass": 7,
+      "mode": "incremental source refresh with all retained pins current; complete consumer rerun"
+    },
+    "scope": "Bidirectional formation correctness of the actual structural compiler, plus ordered program/source retention and successful-bound independence. This is not yet semantic preservation/reflection of whole source execution.",
+    "streaming_invariant_evidence": "streaming_invariant_package and streaming_region_package; applies to the maintained Lean controller, not whole source/compiler or C correspondence"
+  },
+  "constraint_presentation_package": {
+    "new_source_modules": 6,
+    "public_named_theorems": 40,
+    "existing_destination_source_rechecked_from_source": true,
+    "generic_occurs_theorem_owner": "Mettapedia/Logic/LP/UnificationOccurs.lean",
+    "actual_algorithm": "PeTTa.Unifying.unifyTerms and unifyLists in the maintained Lean streaming model",
+    "first_lookup_presentation_and_readback_every_term": true,
+    "all_model_iff_absorbs_runtime_substitution": true,
+    "success_preserves_exact_source_model_set": true,
+    "every_actual_clash_refutes_source_solutions": true,
+    "source_refinement_and_local_step_earned": true,
+    "actual_source_solver_acceptance_and_refusal": true,
+    "target_literal_gate_preserves_source_model_relation": true,
+    "source_world_projection_fields": [
+      "state",
+      "input",
+      "output"
+    ],
+    "target_gate_keeps_extra_world_fields": true,
+    "interruption_keeps_pending_work": true,
+    "idempotence_is_hypothesis_not_runtime_check": true,
+    "term_profile": "existing finite first-order occurs-checked profile; no ambient rational/higher-order restriction",
+    "controller_gate_entry_transitions": 4,
+    "equal_native_instruction_or_runtime_cutoff_claim": false,
+    "kernel_controls": 6,
+    "new_model_consumer": "ConstraintPresentationModel.lean",
+    "new_model_observations_passed": 10,
+    "model_scope": "Actual maintained Lean runtime unifier and independently implemented source solver; joint variant readout, refusal, interruption and retained earlier write.",
+    "canonical_source_solver_vs_runtime_readout_transport": false,
+    "list_view_argument_pattern_correspondence": false,
+    "whole_streaming_binding_scope_and_region_invariant": true,
+    "whole_source_compiler_operational_simulation": false,
+    "default_compiler_allowance_completeness": false,
+    "whole_project_build_claim": false,
+    "c_correspondence": false,
+    "native_performance_claim": false,
+    "qualification": {
+      "source_modules": 158,
+      "all_pins_current": true,
+      "warnings_as_errors": true,
+      "model_consumers_passed": 24,
+      "kernel_audit_passed": true,
+      "subject_and_he_boundary_audits_passed": true,
+      "source_refreshes_this_pass": 7,
+      "mode": "incremental source refresh with all retained pins current; complete consumer rerun"
+    },
+    "source_and_target_pending_effects_refused": true,
+    "canonical_one_branch_source_solver_runtime_readout_transport": true,
+    "canonical_source_solver_vs_runtime_readout_transport_scope": "One represented, idempotent branch and arbitrary joint observations; cross-branch collection and full evaluator equivariance remain open.",
+    "streaming_invariant_evidence": "streaming_invariant_package and streaming_region_package; applies to the maintained Lean controller, not whole source/compiler or C correspondence"
+  },
+  "constraint_readout_package": {
+    "new_source_modules": 4,
+    "public_named_theorems": 26,
+    "generic_owner": "Mettapedia/Logic/LP/MutualInstantiation.lean",
+    "runtime_environment_most_generality_earned_from_presentation": true,
+    "actual_source_solver_mgu_theorem_reused": true,
+    "mutual_instances_yield_actual_variable_renamings": true,
+    "uniform_pair_of_maps_for_all_terms_in_one_branch": true,
+    "injectivity_on_observed_support_without_global_permutation_requirement": true,
+    "canonical_joint_readout_for_arbitrary_observation_bundles": true,
+    "actual_successful_gate_readout_specialization": true,
+    "source_and_runtime_raw_representatives_differ_control": true,
+    "existing_branch_packet_reused": true,
+    "streaming_reentry_exact_state_recovery": true,
+    "all_subsequent_streaming_prefixes_and_outcomes_preserved": true,
+    "negative_controls": [
+      "executing display labels without the inverse basis",
+      "dropping branch bindings absent from the displayed value"
+    ],
+    "effectful_caller_retains_prior_write_and_routes_once": true,
+    "new_model_consumer": "ConstraintReadoutModel.lean",
+    "new_model_observations_passed": 6,
+    "mandatory_runtime_transport_pass": false,
+    "transport_cost_erasure_claim": false,
+    "cross_branch_collection_and_scope_correspondence": false,
+    "whole_evaluator_equivariance": false,
+    "complete_streaming_binding_scope_region_invariant": true,
+    "whole_source_compiler_operational_simulation": false,
+    "prime_public_display_policy_selected": false,
+    "c_correspondence": false,
+    "native_performance_claim": false,
+    "qualification": {
+      "source_modules_with_current_pins": 158,
+      "source_refreshes_this_pass": 7,
+      "new_modules": 4,
+      "existing_generic_owners_rechecked": 2,
+      "audit_rechecked": true,
+      "warnings_as_errors": true,
+      "all_model_consumers_passed": 24,
+      "kernel_and_subject_audits_passed": true,
+      "whole_project_build_claim": false
+    },
+    "streaming_invariant_evidence": "streaming_invariant_package and streaming_region_package; applies to the maintained Lean controller, not whole source/compiler or C correspondence"
+  },
+  "streaming_invariant_package": {
+    "new_source_modules": 9,
+    "public_named_theorems": 66,
+    "generic_owner": "Mettapedia/Data/List/FirstSelectionInvariant.lean",
+    "binding_refinement_every_actual_transition": true,
+    "all_pending_tasks_frames_banks_and_root_answers_covered": true,
+    "actual_unifier_refinement_theorem_reused": true,
+    "entry_arbitrary_paths_and_all_paid_prefixes": true,
+    "reached_answer_idempotence_earned": true,
+    "allocated_variable_support_every_actual_transition": true,
+    "actual_source_scope_preservation_reused": true,
+    "collection_copy_counter_support_derived": true,
+    "next_request_hygiene_and_future_name_freshness": true,
+    "world_support_required_before_allocation_not_only_after": true,
+    "negative_controls": [
+      "invalid bindings in an unselected alternative",
+      "invalid bindings hidden in a saved source frame",
+      "invalid bindings in a collection marker",
+      "invalid completed answer",
+      "future variable hidden in a collection bank",
+      "future variable hidden in a saved caller",
+      "post-counter support does not prove unused allocation"
+    ],
+    "proof_carrying_consumer": "OutputPlanModel.lean",
+    "compiler_consumer_observations": 49,
+    "runtime_invariant_scans_introduced": false,
+    "marker_association_uniqueness": true,
+    "cross_branch_source_collection_correspondence": false,
+    "whole_source_compiler_operational_simulation": false,
+    "c_correspondence": false,
+    "native_performance_claim": false,
+    "qualification": {
+      "source_modules_with_current_pins": 172,
+      "incremental_source_checks_since_readout": 15,
+      "new_modules_since_readout": 14,
+      "binding_support_checks": 10,
+      "region_checks_including_shared_owner_and_audit": 7,
+      "audit_rechecked": true,
+      "warnings_as_errors": true,
+      "all_model_consumers_passed": 25,
+      "model_observations": 270,
+      "kernel_and_subject_audits_passed": true,
+      "whole_project_build_claim": false
+    },
+    "marker_association_evidence": "streaming_region_package"
+  },
+  "streaming_region_package": {
+    "new_source_modules": 5,
+    "public_named_theorems_in_new_region_modules": 62,
+    "generic_owner_extensions": 4,
+    "generic_owner": "Mettapedia/Data/List/FirstSelectionInvariant.lean",
+    "strict_marker_order_below_actual_counter": true,
+    "unique_keys_across_all_marker_kinds": true,
+    "every_task_and_saved_collection_caller_has_suffix_relative_links": true,
+    "exact_saved_collection_caller_association": true,
+    "collection_recording_retains_original_substitution_and_caller": true,
+    "collection_recording_keeps_every_other_job": true,
+    "first_and_handler_cuts_resolve_associated_marker": true,
+    "actual_collection_first_and_handler_searches_earn_resolution": true,
+    "all_actual_controller_transitions_preserve_ownership": true,
+    "actual_entry_finite_paths_every_paid_prefix_and_resumption": true,
+    "old_callee_handler_may_remain_outside_returned_caller": true,
+    "marker_identity_distinct_from_variable_allocation_counter": true,
+    "negative_controls": [
+      "missing marker",
+      "same key with wrong marker kind",
+      "duplicate keys across different kinds",
+      "collection marker with wrong saved caller"
+    ],
+    "positive_controls": [
+      "returned caller outside old callee handler",
+      "first cut retains outer collection and discards second packet",
+      "paid resumption",
+      "nested source collection"
+    ],
+    "new_model_consumer": "StreamingRegionsModel.lean",
+    "new_model_observations": 8,
+    "existing_compiler_consumer_carries_binding_support_and_regions": true,
+    "compiler_observations_unchanged": 49,
+    "runtime_validation_scans_introduced": false,
+    "new_language_admission_restriction": false,
+    "complete_streaming_binding_support_region_transfer": true,
+    "cross_branch_canonical_source_collection_correspondence": false,
+    "whole_source_compiler_operational_simulation": false,
+    "c_correspondence": false,
+    "native_performance_claim": false,
+    "qualification": {
+      "source_modules_with_current_pins": 172,
+      "incremental_source_checks_since_readout": 15,
+      "new_modules_since_readout": 14,
+      "binding_support_checks": 10,
+      "region_checks_including_shared_owner_and_audit": 7,
+      "audit_rechecked": true,
+      "warnings_as_errors": true,
+      "all_model_consumers_passed": 25,
+      "model_observations": 270,
+      "kernel_and_subject_audits_passed": true,
+      "whole_project_build_claim": false
+    }
+  },
+  "collection_readout_package": {
+    "new_source_modules": 8,
+    "new_public_named_theorems": 52,
+    "generic_owners": [
+      "Mettapedia/Languages/ProcessCalculi/MORK/AtomRenamingApart.lean",
+      "Mettapedia/Languages/ProcessCalculi/MORK/SubstitutionSupport.lean"
+    ],
+    "independent_source_copy_contract": "EagerDFS.Collection.IsCopy/Copies",
+    "per_row_variants_glued_into_actual_joint_maps_under_two_sided_separation": true,
+    "actual_lean_copier_satisfies_source_contract": true,
+    "occurrence_order_and_per_answer_sharing_preserved": true,
+    "actual_copies_disjoint_between_occurrences": true,
+    "allocated_caller_cannot_capture_copied_aggregate": true,
+    "copies_apart_from_supported_old_values_and_retained_cells": true,
+    "actual_source_solver_and_runtime_mgu_bridge_earns_bank_variants": true,
+    "copy_readout_boundary_for_corresponding_banks": true,
+    "actual_collection_return_earns_idempotence_and_caller_freshness": true,
+    "reached_world_identity_counter_and_exact_caller_preserved": true,
+    "raw_representatives_genuinely_differ_control": true,
+    "bad_whole_bank_renaming_passes_individual_checks_but_fails_joint": true,
+    "future_key_really_captures_and_violates_preallocation": true,
+    "new_consumer": "CollectionReadoutModel.lean",
+    "new_consumer_observations": 9,
+    "zero_budget_retention_and_paid_resumption": true,
+    "plain_list_head_compiler_admission_gap_repaired": true,
+    "static_data_tree_recognizer_preserves_and_reflects_independent_judgment": true,
+    "extended_formation_preservation_reflection_depth_and_policy_laws_requalified": true,
+    "known_calls_requiring_reevaluation_and_variable_heads_remain_explicit_regions": true,
+    "source_fixture": {
+      "fixture": "source-collection-sharing.metta",
+      "fixture_sha256": "cdfe69d7b6b2f90b155039174fe1639fecc58d63fe19413f7e947a6c623969e2",
+      "expected_printed_reference": [
+        "true",
+        "false",
+        "true",
+        "false",
+        "false",
+        "(before-collection)",
+        "done",
+        "(before-collection head argument)"
+      ],
+      "observations": 8,
+      "swi": {
+        "git_head": "c3adb863b4ad51df6dc37dfb51290f10cd70fb16",
+        "driver_sha256": "b0ee9930c7fbca5d221ff2e31a7cce30bc8e8902f463c5f80be2a971414e3aae",
+        "translator_sha256": "e55265208ad02ed5c1d58ba8a3cc3bb4958855bf048aa5bc1cea54528332ab03",
+        "stdout_sha256": "6a10fecfba41ec95290837bea17bab350f6e644f4b31bf506eb56fa969b5168c",
+        "host_janus_libpython_warning_present": true
+      },
+      "native": {
+        "binary_sha256": "c49ee45af53e490463c8f9e6f5e0bdbc3c67bc795343072042ae9d8eb00b7dd6",
+        "provenance": "Previously retained corrected-stable snapshot; no current C branch qualification or defect attribution",
+        "stdout_sha256": "6a10fecfba41ec95290837bea17bab350f6e644f4b31bf506eb56fa969b5168c",
+        "stderr_empty": true
+      },
+      "lean_compiler_consumer_observations": 57,
+      "lean_boolean_printer": "True/False; references print true/false"
+    },
+    "runtime_validation_scan_introduced": false,
+    "new_runtime_primitive": false,
+    "whole_producer_bank_correspondence": false,
+    "arbitrary_future_caller_equivariance": false,
+    "whole_source_compiler_operational_correspondence": false,
+    "c_correspondence": false,
+    "native_performance_claim": false,
+    "qualification": {
+      "source_modules_with_current_pins": 180,
+      "strict_affected_closure_this_pass": 19,
+      "all_model_consumers_passed": 26,
+      "model_observations": 287,
+      "warnings_as_errors": true,
+      "kernel_and_subject_audits_passed": true,
+      "whole_project_build_claim": false
+    }
+  }
+}

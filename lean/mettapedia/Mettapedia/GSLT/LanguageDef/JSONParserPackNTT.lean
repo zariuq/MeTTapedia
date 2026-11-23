@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ConstructorCategory
@@ -204,16 +205,8 @@ abbrev parserPackTheory : Mettapedia.GSLT.GSLT :=
 
 private theorem parserPack_rules_noncontextual :
     ∀ rule, rule ∈ parserPack.rewrites →
-      NoncontextualPremises rule.premises := by
-  intro rule ruleMember
-  simp only [parserPack, List.mem_cons, List.mem_nil_iff, or_false] at ruleMember
-  rcases ruleMember with rfl | rfl | rfl | rfl | rfl | rfl
-  · exact .relationQuery .nil
-  · exact .relationQuery (.relationQuery .nil)
-  · exact .relationQuery (.relationQuery .nil)
-  · exact .relationQuery (.relationQuery .nil)
-  · exact .relationQuery .nil
-  · exact .relationQuery .nil
+      NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 private theorem parserPack_rootStep_iff_mem_executor_using
     (relationEnv : RelationEnv)

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.EquationFrontierFrames
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.DemandSpineFinishes
 
 /-!
@@ -109,14 +110,7 @@ theorem fine_value_query (notHost : ¬ dispatch.executable (.symbol "if")) {atom
         activation.bindings works := by
       rw [erased]
       exact frontier
-    obtain ⟨environments, paired⟩ := Entry.Value.UnifyRel.equation_frontier
-      (policy := policy.rebuilding) activation.certified frontier'
-    have unifiers : ∀ w ∈ works, ∃ output : Frame, output.bindings = w.bindings ∧
-        Entry.Value.UnifyRel policy.rebuilding activation.environment value
-          (Entry.Value.ofAtom w.pattern) output.environment := by
-      intro w member
-      obtain ⟨after, unified, certificate⟩ := forall₂_left_exists paired w member
-      exact ⟨⟨w.bindings, after, certificate⟩, rfl, unified⟩
+    have unifiers := activation.equationFrontier_unifiers (policy := policy) (query := value) frontier'
     exact fine_equations_at atoms works [[pick b y n]] unifiers related stack emitted
       fun R eraseR => cont R (by rw [eraseR]; rfl)
   obtain ⟨works, frontier⟩ := frontier_total (Space.ofList atoms) (.var "t" :: live) (callOf b y n)

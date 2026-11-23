@@ -1,0 +1,16 @@
+(= (make-box) (Box 1))
+!(let $held (make-box)
+   (let $ignored (add-atom &self (= (Box 1) 9)) $held))
+!(Box 1)
+
+(item 1)
+(= (CodeBox 1) 9)
+!(match &self (item $x) (CodeBox $x))
+(= (through-match) (match &self (item $x) (CodeBox $x)))
+!(through-match)
+
+(parent p1 p0)
+(parent p2 p1)
+(= (ancestors $c) (match &self (parent $p $c) $p))
+(= (ancestors $c) (match &self (parent $p $c) (ancestors $p)))
+!(collapse (ancestors p0))

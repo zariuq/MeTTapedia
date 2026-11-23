@@ -192,6 +192,49 @@ theorem existsCut_width_ne_zero :
     (fun h => (HenkinModel.models_not _).mp (models_of_provable h True)
       ((predModel_models_exists_iff True).mpr trivial))
 
+/-- Repeating the conjunction changes the HOL syntax and preserves the
+threshold event and its interval. -/
+theorem existsCut_conjunction_same_interval :
+    (existsCut.andCut existsCut).formula ≠ existsCut.formula ∧
+      (existsCut.andCut existsCut).intervalOfConsistent predEnum predEnum_surjective
+        atMostOneTheory_consistent atMostOneTheory_paramFree atMostOneTheory_proves_emSchema =
+      existsCut.intervalOfConsistent predEnum predEnum_surjective
+        atMostOneTheory_consistent atMostOneTheory_paramFree atMostOneTheory_proves_emSchema := by
+  constructor
+  · change Term.and _ _ ≠ Term.ex _
+    intro impossible
+    cases impossible
+  · apply ExtensionalDefinableCut.intervalOfConsistent_eq_of_thresholdEvent_eq
+    rw [ExtensionalDefinableCut.andCut_thresholdEvent, Set.inter_self]
+
+open Mettapedia.GSLT.Core.NonFactorization in
+/-- An affine shift preserves the threshold event and changes the score in
+the actual one-individual model. -/
+theorem numeric_score_does_not_factor_through_threshold_event :
+    ¬ Factors (ExtensionalDefinableCut.thresholdEvent (T := atMostOneTheory))
+      (ExtensionalDefinableCut.score (T := atMostOneTheory)) := by
+  let shifted := existsCut.posAffineRescale 1 1 one_pos
+  apply NonTrivialFiber.not_factors
+  refine ⟨existsCut, shifted, ?_, ?_⟩
+  · apply Set.ext
+    intro M
+    change existsCut.threshold ≤ existsCut.score M ↔
+      1 * existsCut.threshold + 1 ≤ 1 * existsCut.score M + 1
+    simp
+  · intro sameScore
+    let M : ExtensionalTheoryModel (Base := Unit) (Const := PredConst) atMostOneTheory :=
+      ⟨predModel True, predModel_models_theory True, predModel_extensional True⟩
+    have atModel := congrFun sameScore M
+    change existsCut.score M = 1 * existsCut.score M + 1 at atModel
+    linarith
+
+theorem parameter_constant_is_not_parameter_free :
+    ¬ ParameterFree (.const (param ι 0) : Term (WithParams PredConst) [] ι) := by
+  intro free
+  cases free ι 0 with
+  | const_diff_type different => exact different rfl
+  | const_same_ne _ different => exact different rfl
+
 /-! ## A fuzzy-quantifier cut with an exact carrier size -/
 
 /-- Every extensional model has exactly one object of type `ι`: the parameter `param ι 0`

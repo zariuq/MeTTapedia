@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.GSLT.Core.IndexedCommandBlocks
 import Mettapedia.GSLT.LanguageDef.GSLTILFibreExecution
 import Mettapedia.OSLF.Framework.SuccessorFrontier
@@ -229,11 +230,8 @@ private def premises : RelationEnv where
 theorem guest_equation_free : guest.isEquationFree = true := by decide +kernel
 
 theorem guest_nonrecursive :
-    ∀ rule ∈ guest.rewrites, NoncontextualPremises rule.premises := by
-  intro rule member
-  simp only [guest, List.mem_cons, List.mem_nil_iff, or_false] at member
-  rcases member with rfl | rfl
-  all_goals exact .relationQuery .nil
+    ∀ rule ∈ guest.rewrites, NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel)
 
 theorem duplicate_frontier :
     rewriteStepWithPremisesUsing premises guest ready = [done, done] := by decide +kernel
@@ -376,9 +374,8 @@ theorem guest_equation_free : guest.isEquationFree = true := by decide +kernel
 
 theorem guest_is_recursive :
     ¬ (∀ rule ∈ guest.rewrites, NoncontextualPremises rule.premises) := by
-  intro allRules
-  have recursive := allRules underBox (by simp [guest])
-  cases recursive
+  rw [← check_noncontextualRules_iff]
+  decide +kernel
 
 theorem root_box_empty :
     rewriteStepWithPremisesUsing RelationEnv.empty guest (box ready) = [] := by decide +kernel

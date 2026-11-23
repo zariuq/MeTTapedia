@@ -30,8 +30,8 @@ theorem predicateVocabularyFullInheritanceGeOneCut_lower_eq_one_of_source_simila
     (enum : Nat → Body Const)
     (henum : ∀ b : Body Const, ∃ n, enum n = b)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
-    (hT0 : ∀ ψ ∈ T, ∀ (τ : Ty Base) (k : Nat), NoConstOccurrence (param τ k) ψ)
-    (hEM : ∀ ψ ∈ EMSchema Const, ClosedTheorySet.Provable (Const := WithParams Const) T ψ)
+    (hT0 : ParameterFreeTheory T)
+    (hEM : TheoryProvesExcludedMiddle T)
     (σ : Ty Base)
     {Pred : Type w}
     (decode : Pred →
@@ -159,8 +159,8 @@ theorem predicateVocabularyFullInheritanceGeOneCut_lower_eq_one_of_source_simila
     (enum : Nat → Body Const)
     (henum : ∀ b : Body Const, ∃ n, enum n = b)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
-    (hT0 : ∀ ψ ∈ T, ∀ (τ : Ty Base) (k : Nat), NoConstOccurrence (param τ k) ψ)
-    (hEM : ∀ ψ ∈ EMSchema Const, ClosedTheorySet.Provable (Const := WithParams Const) T ψ)
+    (hT0 : ParameterFreeTheory T)
+    (hEM : TheoryProvesExcludedMiddle T)
     (σ : Ty Base)
     {Pred : Type w}
     (decode : Pred →
@@ -261,8 +261,8 @@ theorem predicateVocabularyFullInheritanceGeOneCut_sourceSimilarityRuleImpCut_lo
     (enum : Nat → Body Const)
     (henum : ∀ b : Body Const, ∃ n, enum n = b)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
-    (hT0 : ∀ ψ ∈ T, ∀ (τ : Ty Base) (k : Nat), NoConstOccurrence (param τ k) ψ)
-    (hEM : ∀ ψ ∈ EMSchema Const, ClosedTheorySet.Provable (Const := WithParams Const) T ψ)
+    (hT0 : ParameterFreeTheory T)
+    (hEM : TheoryProvesExcludedMiddle T)
     (σ : Ty Base)
     {Pred : Type w}
     (decode : Pred →
@@ -375,8 +375,8 @@ theorem predicateVocabularyFullInheritanceGeOneCut_lower_eq_one_of_target_simila
     (enum : Nat → Body Const)
     (henum : ∀ b : Body Const, ∃ n, enum n = b)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
-    (hT0 : ∀ ψ ∈ T, ∀ (τ : Ty Base) (k : Nat), NoConstOccurrence (param τ k) ψ)
-    (hEM : ∀ ψ ∈ EMSchema Const, ClosedTheorySet.Provable (Const := WithParams Const) T ψ)
+    (hT0 : ParameterFreeTheory T)
+    (hEM : TheoryProvesExcludedMiddle T)
     (σ : Ty Base)
     {Pred : Type w}
     (decode : Pred →
@@ -504,8 +504,8 @@ theorem predicateVocabularyFullInheritanceGeOneCut_lower_eq_one_of_target_simila
     (enum : Nat → Body Const)
     (henum : ∀ b : Body Const, ∃ n, enum n = b)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
-    (hT0 : ∀ ψ ∈ T, ∀ (τ : Ty Base) (k : Nat), NoConstOccurrence (param τ k) ψ)
-    (hEM : ∀ ψ ∈ EMSchema Const, ClosedTheorySet.Provable (Const := WithParams Const) T ψ)
+    (hT0 : ParameterFreeTheory T)
+    (hEM : TheoryProvesExcludedMiddle T)
     (σ : Ty Base)
     {Pred : Type w}
     (decode : Pred →
@@ -604,8 +604,8 @@ theorem predicateVocabularyFullInheritanceGeOneCut_targetSimilarityRuleImpCut_lo
     (enum : Nat → Body Const)
     (henum : ∀ b : Body Const, ∃ n, enum n = b)
     (hCons : ClosedTheorySet.Consistent (Const := WithParams Const) T)
-    (hT0 : ∀ ψ ∈ T, ∀ (τ : Ty Base) (k : Nat), NoConstOccurrence (param τ k) ψ)
-    (hEM : ∀ ψ ∈ EMSchema Const, ClosedTheorySet.Provable (Const := WithParams Const) T ψ)
+    (hT0 : ParameterFreeTheory T)
+    (hEM : TheoryProvesExcludedMiddle T)
     (σ : Ty Base)
     {Pred : Type w}
     (decode : Pred →

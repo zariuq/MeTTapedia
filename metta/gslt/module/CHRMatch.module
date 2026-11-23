@@ -1,0 +1,20 @@
+import "CHRProgram.module" as ir
+import "CHRIR.module" as data
+import "Radix16.module" as hex
+
+Module CHRMatch {
+  Theory Matching(d: ir.Programs, h: hex.Words) {
+    (d \/ h)
+      Types { ChrMatchState; ChrSignData; }
+      Terms {
+        ChrNonnegative . |- "nonnegative" : ChrSignData;
+        ChrNegative . |- "negative" : ChrSignData;
+        ChrIntegerDigits . sign:ChrSignData, digits:Vec(R16Nibble) |- "integer-digits" sign digits : ChrValue;
+        ChrOccurrenceNumber . digits:Vec(R16Nibble) |- "occurrence-id" digits : ChrOccurrenceId;
+        ChrMatched . environment:Vec(ChrValue), kept:ChrHeadsData,
+          removed:ChrHeadsData, rest:ChrStoreData
+          |- "matched" environment kept removed rest : ChrMatchState;
+      }
+  }
+  theory Matching(ir.Programs(data.Constraints(data.Data())), hex.Words())
+}

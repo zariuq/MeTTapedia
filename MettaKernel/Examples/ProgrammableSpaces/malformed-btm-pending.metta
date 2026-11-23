@@ -1,0 +1,5 @@
+!(bind! &jobs (new-space))
+!(add-atom &jobs (p a))
+!(add-atom &jobs (exec malformed (I (BTM (p $x) (q $x))) (O (+ Wrong))))
+!(select 10 (search-policy (control FIFO (resources MM2) (budget 10000))) &jobs)
+!(collapse (get-atoms &jobs))

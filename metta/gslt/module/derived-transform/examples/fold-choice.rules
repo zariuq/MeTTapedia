@@ -1,0 +1,1 @@
+fold + over { choose { emit 1 | emit 2 | emit 3 } } from { emit 0 }

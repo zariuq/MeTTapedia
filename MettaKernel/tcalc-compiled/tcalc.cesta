@@ -1,0 +1,46 @@
+(cesta checked-c/1
+  (module ordinary_flat)
+  (word-bits 64)
+  (failure ordinary_flat_failure)
+
+  (fn pack
+    (params (source (span u32 read))
+            (premises (span u32 read))
+            (constants (span u32 read))
+            (fields (span u32 write))
+            (rows (span u32 write)))
+    (returns bool)
+    (effects)
+    (body
+      (if (gt (len premises) (usize 24)) (then (return false)) (else))
+      (if (gt (len constants) (usize 32)) (then (return false)) (else))
+      (let field_count usize
+        (add (mul (len premises) (usize 4)) (len constants)))
+      (if (gt field_count (len fields)) (then (return false)) (else))
+      (if (gt (add (len premises) (usize 1)) (len rows))
+        (then (return false)) (else))
+
+      (for index premises
+        (body
+          (let offset usize (as usize (at premises index)))
+          (if (gt offset (len source)) (then (return false)) (else))
+          (if (gt (usize 4) (sub (len source) offset))
+            (then (return false)) (else))))
+
+      (for index premises
+        (body
+          (let base usize (mul index (usize 4)))
+          (let offset usize (as usize (at premises index)))
+          (put rows index (truncate u32 base))
+          (var column usize (usize 0))
+          (while (lt column (usize 4))
+            (body
+              (put fields (add base column) (at source (add offset column)))
+              (set column (add column (usize 1)))))))
+      (put rows (len premises) (truncate u32 (mul (len premises) (usize 4))))
+      (for index constants
+        (body
+          (put fields (add (mul (len premises) (usize 4)) index)
+            (at constants index))))
+      (return true)))
+)

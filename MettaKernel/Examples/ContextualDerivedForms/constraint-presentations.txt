@@ -1,0 +1,71 @@
+Solved substitutions, source equations and literal result gates
+
+The existing destination source judgment retains equations. The streaming
+Lean machine retains a solved substitution with first-match lookup. The adapter
+uses the existing source term codec and first-order equation solver; it does
+not define source admission by the runtime's answer.
+
+UnifyingConstraintPresentation.environment interprets the actual lookup.
+Readback agrees with runtime resolve for every Atom. Its equation presentation
+records each key occurrence against the value selected by that lookup. A
+model of this graph absorbs the runtime substitution under every later term
+observation. This is stronger than agreement on the currently displayed value.
+
+For example, the runtime list x=a,x=b reads x as a. Its presentation is x=a,
+x=a, not the inconsistent conjunction x=a,x=b. Raw physical dictionary entries
+and simultaneous logical assignments are different things. No raw-storage
+observer or allocation cost is erased by this representation theorem.
+
+UnifyingConstraintPreservation proves, for every successful actual term
+unification on an idempotent input substitution:
+
+  models(presentation after)
+    iff models(presentation before) and the requested equation holds.
+
+This quantifies over every source environment. Success neither loses an old
+constraint nor adds an unjustified one. The proof covers the actual binding
+update and left-to-right list unifier, using the prior unifier soundness laws.
+It does not assume the desired model-equivalence conclusion.
+
+UnifyingConstraintRefusal proves that every actual clash has no source model
+satisfying the old constraints and requested equation. Its occurs-check case
+uses the complete first-order derivation theory; the generic occurs theorem
+is owned by Logic/LP/UnificationOccurs. The result is for the existing finite,
+occurs-checked profile. It does not restrict an ambient language's rational
+or other higher-order term policies.
+
+OutputPlanConstraintAdmission relates an arbitrary retained source equation
+record to the solved substitution by equality of their model sets. A successful
+actual result gate earns the independent source Refinement and Source.Step,
+and the extended source record represents the new substitution. A clashing
+gate earns the source refusal. The target's actual four-transition lowering
+retains its caller/older jobs, reached world and extra allocation/private-code
+fields as specified by the existing gate laws. The source observes its state,
+input and output through the explicit world projection.
+
+An interrupted gate retains pending work and the reached world. Interruption
+is not source refusal or producer exhaustion. Four controller transitions are
+the reference lowering's entry charge, not four C operations or a requirement
+for repeated validation. Idempotence is an invariant supplied by the actual
+binding construction; no runtime idempotence scan is introduced.
+
+PeTTaConstraintPresentationControls includes first-lookup/shadow distinctions,
+the zero-unifier-budget/source-enabled distinction, cyclic refusal and the
+counterexample to dropping idempotence. The executable
+ConstraintPresentationModel runs the runtime unifier and independent source
+solver on ten observations. It compares joint variable-sharing readouts using
+the existing VariantReadout observer, not raw generated names. The gate
+control starts after a real earlier addition; refusal retains that atom and
+executes no part of the rejected addition.
+
+This is operational correspondence for the literal constraint-update
+boundary, not simulation of every compiler/producer/control instruction.
+List-view argument patterns, complete streaming binding/region invariants,
+canonical source-solver/runtime readout transport, whole compiler semantics,
+typed/dynamic/lambda regions and the original authored-surface obligations
+remain separate. No C, x86 or native-performance correspondence is claimed.
+
+The subsequent canonical one-branch readout connection and exact native
+streaming packet re-entry are now checked; see constraint-readout.txt.
+They do not by themselves close cross-branch scope/collection or whole
+source-control execution correspondence.

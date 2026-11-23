@@ -1,0 +1,185 @@
+{
+  "scope": "Retained constructor readiness; target and schema typing contexts remain distinct; formation and admission are separate",
+  "cases": [
+    {
+      "name": "ordinary_constructor",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "wrong_source_sort",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"B\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "wrong_schema_sort",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"Other\")) LNil) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "both_argument_checks_fail",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"Other\")) LNil) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"B\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "wrong_constructor_label",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"G\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "wrong_result_category",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"Other\") \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "arrow_result_rejected",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TArrow (TBase \"P\") (TBase \"P\")) \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "collection_result_rejected",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")) \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "multibinder_result_rejected",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TMultiBinder (TBase \"P\")) \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "nullary_constructor",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" LNil LNil (GrammarTypingV1 \"F\" \"P\" LNil))",
+      "expected": "true"
+    },
+    {
+      "name": "nullary_excess_source",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" LNil (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" LNil))",
+      "expected": "false"
+    },
+    {
+      "name": "missing_source_argument",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) LNil (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "missing_schema_argument",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" LNil (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "excess_schema_argument",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") (LCons (FVar \"x\") LNil)) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "separate_target_free_context",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) (LCons (Binding \"local\" (TBase \"P\")) LNil) (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (FVar \"local\") LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "schema_context_does_not_type_target",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (FVar \"x\") LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "target_context_does_not_type_schema",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) (LCons (Binding \"x\" (TBase \"P\")) LNil) LNil LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "target_bound_context",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil (LCons (TBase \"P\") LNil) (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (Var 0) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "separate_bound_contexts",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) (LCons (TBase \"P\") LNil) (LCons (TBase \"P\") LNil) (TBase \"P\") \"F\" (LCons (Var 0) LNil) (LCons (Var 0) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "same_depth_wrong_schema_type",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) (LCons (TArrow (TBase \"P\") (TBase \"P\")) LNil) (LCons (TBase \"P\") LNil) (TBase \"P\") \"F\" (LCons (Var 0) LNil) (LCons (Var 0) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "same_depth_wrong_target_type",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) (LCons (TBase \"P\") LNil) (LCons (TArrow (TBase \"P\") (TBase \"P\")) LNil) (TBase \"P\") \"F\" (LCons (Var 0) LNil) (LCons (Var 0) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "out_of_scope_target_index",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil (LCons (TBase \"P\") LNil) (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (Var 1) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "wrapped_collection_with_rest",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" LNil (RSome \"rest\")) LNil) (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PApp \"A\" LNil) (LCons (PApp \"A\" LNil) LNil)) RNone) LNil) (GrammarTypingWrappedV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "bare_collection_carrier_rejected",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" LNil (RSome \"rest\")) LNil) (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PApp \"A\" LNil) (LCons (PApp \"A\" LNil) LNil)) RNone) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "wrapped_collection_wrong_rest",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" LNil (RSome \"missing\")) LNil) (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PApp \"A\" LNil) LNil) RNone) LNil) (GrammarTypingWrappedV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "wrapped_collection_wrong_kind",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashSet\" LNil (RSome \"rest\")) LNil) (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PApp \"A\" LNil) LNil) RNone) LNil) (GrammarTypingWrappedV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "nested_collection_wrapper",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" LNil (RSome \"rest\")) LNil) (RSome \"nestedRest\")) LNil) (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PApp \"A\" LNil) (LCons (PApp \"A\" LNil) LNil)) RNone) LNil) RNone) LNil) (GrammarTypingWrappedV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "two_parameters_include_collection",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" LNil (RSome \"rest\")) (LCons (FVar \"x\") LNil)) (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PApp \"A\" LNil) (LCons (PApp \"A\" LNil) LNil)) RNone) (LCons (PApp \"A\" LNil) LNil)) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (TermSimple \"arg\" (TBase \"P\")) LNil))))",
+      "expected": "true"
+    },
+    {
+      "name": "ordinary_wrapper_recurses",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PApp \"Wrap\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" LNil (RSome \"rest\")) LNil)) LNil) (LCons (PApp \"Wrap\" (LCons (PCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (LCons (PApp \"A\" LNil) LNil) RNone) LNil)) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "abstraction_parameter",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PLam BNone (Var 0)) LNil) (LCons (PLam BNone (Var 0)) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermAbstraction (BSome \"display\") \"body\" (TBase \"P\")) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "named_lambda_not_nameless_parameter",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PLam (BSome \"x\") (Var 0)) LNil) (LCons (PLam BNone (Var 0)) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermAbstraction (BSome \"display\") \"body\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "multiple_abstraction_parameter",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PMultiLam 2 LNil (Var 1)) LNil) (LCons (PMultiLam 2 LNil (Var 1)) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermMultiAbstraction (LCons \"u\" (LCons \"v\" LNil)) \"body\" (TBase \"P\")) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "multiple_abstraction_missing_scope",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (PMultiLam 1 LNil (Var 1)) LNil) (LCons (PMultiLam 2 LNil (Var 1)) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermMultiAbstraction (LCons \"u\" (LCons \"v\" LNil)) \"body\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "equal_labels_literal_data",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"if\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"if\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "true"
+    },
+    {
+      "name": "first_binding_controls_target",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) (LCons (Binding \"local\" (TBase \"Other\")) (LCons (Binding \"local\" (TBase \"P\")) LNil)) (LCons (Binding \"x\" (TBase \"P\")) (LCons (Binding \"rest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) (LCons (Binding \"nestedRest\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\")))) LNil))) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (FVar \"local\") LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    },
+    {
+      "name": "first_binding_controls_schema",
+      "call": "(gslt:collection-presentation:view-constructor-ready (LCons \"P\" (LCons \"Other\" LNil)) (LCons (GrammarTypingV1 \"A\" \"P\" LNil) (LCons (GrammarTypingV1 \"B\" \"Other\" LNil) (LCons (GrammarTypingWrappedV1 \"Wrap\" \"P\" (LCons (TermSimple \"arg\" (TCollection \"Mettapedia.OSLF.MeTTaIL.Syntax.CollType.hashBag\" (TBase \"P\"))) LNil)) LNil))) LNil (LCons (Binding \"x\" (TBase \"Other\")) (LCons (Binding \"x\" (TBase \"P\")) LNil)) LNil LNil (TBase \"P\") \"F\" (LCons (FVar \"x\") LNil) (LCons (PApp \"A\" LNil) LNil) (GrammarTypingV1 \"F\" \"P\" (LCons (TermSimple \"arg\" (TBase \"P\")) LNil)))",
+      "expected": "false"
+    }
+  ]
+}

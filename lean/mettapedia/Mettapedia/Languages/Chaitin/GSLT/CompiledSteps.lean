@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.MeTTaIL.NoncontextualPremiseCheck
 import Mettapedia.Languages.Chaitin.GSLT.LanguageDef
 
 /-!
@@ -41,10 +42,8 @@ private theorem premises_independent (base : BasePremiseEvaluator) (lang : Langu
       exact ih next
 
 theorem rules_noncontextual (rule : RewriteRule) (member : rule ∈ language.rewrites) :
-    NoncontextualPremises rule.premises := by
-  simp only [language, List.mem_cons, List.not_mem_nil, or_false] at member
-  rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  all_goals first | exact .nil | exact .relationQuery .nil
+    NoncontextualPremises rule.premises :=
+  (check_noncontextualRules_iff _).mp (by decide +kernel) rule member
 
 theorem rewriteAt_succ (fuel : Nat) (source : Pattern) :
     rewriteAt dataPremises language (fuel + 1) source = rewriteAt dataPremises language 1 source := by

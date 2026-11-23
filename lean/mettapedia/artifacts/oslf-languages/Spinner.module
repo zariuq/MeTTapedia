@@ -1,0 +1,24 @@
+Module Spinner {
+  Theory Spinner() {
+    Types {
+      State;
+      Nat;
+    }
+    Terms {
+      "Loop" .  |-  : State;
+      "Back" .  |-  : State;
+      "Grow" . n:Nat |-  : State;
+      "Z" .  |-  : Nat;
+      "S" . n:Nat |-  : Nat;
+    }
+    Equations {
+    }
+    Rewrites {
+      Spin : "Loop" ~> "Back";
+      Return : "Back" ~> "Loop";
+      Leave : "Loop" ~> "Grow"("Z");
+      "Growth" . n:Nat |- "Grow"(n) ~> "Grow"("S"(n));
+    }
+  }
+  theory Spinner()
+}

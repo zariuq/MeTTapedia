@@ -909,10 +909,10 @@ theorem beginBody_source (settings : Settings) (session : Session) (context : Ca
   · simp only [beginBody, admitted, ProgramReplay.Snapshot.decode]
   · simp only [beginBody, admitted]
 
-/-- Ordinary work always delegates to the actual original evaluator and its
-proved finite-store support construction. -/
+/-- Ordinary work executes the presentation generated from the selected
+space's current rows and retains the original finite store readback. -/
 def ordinary (rows : List Atom) (session : Session) : Option Session :=
-  (ProgramReplay.nativeStep (SpaceSemantics.index rows) session.world.packet).map fun packet =>
+  (ProgramReplay.nativeStepInSpace rows session.world.packet).map fun packet =>
     {session with world := {session.world with packet}}
 
 theorem ordinary_source (rows : List Atom) (session next : Session)
@@ -921,6 +921,7 @@ theorem ordinary_source (rows : List Atom) (session next : Session)
       session.world.packet.decode next.world.packet.decode := by
   obtain ⟨packet, original, same⟩ := Option.map_eq_some_iff.mp computed
   subst next
+  rw [ProgramReplay.nativeStepInSpace_exact] at original
   exact ProgramReplay.nativeStep_sound _ _ _ original
 
 /-- One controller transition: one actual ordinary instruction, one retained
@@ -1184,7 +1185,7 @@ theorem ordinary_fault (rows : List Atom) (session : Session) (reason : Effects.
     (fault : session.world.packet.control = .fault reason) : ordinary rows session = none := by
   have original : Eval.step (SpaceSemantics.index rows) session.world.packet.decode = none := by
     simp only [Eval.step, ProgramReplay.Snapshot.decode, fault]
-  simp only [ordinary, ProgramReplay.nativeStep, original, Option.map_none]
+  simp only [ordinary, ProgramReplay.nativeStepInSpace_exact, ProgramReplay.nativeStep, original, Option.map_none]
 
 /-- Pinned fallback includes source faults and completed states, so the
 conditional wrapper cannot change any original pinned finite execution. -/
@@ -1238,7 +1239,7 @@ theorem pinned_advance_original (settings : Settings) (rows : List Atom)
   | zero => rfl
   | succ fuel ih =>
       have delegated := pinned_step_exact settings rows session pinned running top
-      simp only [advance, delegated, ordinary]
+      simp only [advance, delegated, ordinary, ProgramReplay.nativeStepInSpace_exact]
       cases native : ProgramReplay.nativeStep (SpaceSemantics.index rows) session.world.packet with
       | none =>
           have original : Eval.step (SpaceSemantics.index rows) session.world.packet.decode = none := by
@@ -2606,7 +2607,8 @@ theorem transition_complete {settings : Settings} {before after : Controller.Ses
   | ordinary running selected noHook source =>
       rw [running_dispatch _ _ running (ordinary_runnable source),
         (no_hook_exact _ _).mpr noHook, (selectedRows_exact _ _ _).mpr selected]
-      simp only [Controller.ordinary, (ProgramReplay.nativeStep_of_transition _ _ _ source).1,
+      simp only [Controller.ordinary, ProgramReplay.nativeStepInSpace_exact,
+        (ProgramReplay.nativeStep_of_transition _ _ _ source).1,
         Option.map_some]
   | invalidSpace running runnable noHook unallocated =>
       rw [running_dispatch _ _ running runnable, (no_hook_exact _ _).mpr noHook,
@@ -2722,7 +2724,7 @@ theorem transition_sound {settings : Settings} {before after : Controller.Sessio
                   exact actual_is_source (.invalidSpace phase runnable noHook
                     ((no_rows_exact _ _).mp rowsCase)) actual
               | some rows =>
-                  simp only [rowsCase, Controller.ordinary] at computed
+                  simp only [rowsCase, Controller.ordinary, ProgramReplay.nativeStepInSpace_exact] at computed
                   obtain ⟨packet, emitted, _⟩ := Option.map_eq_some_iff.mp computed
                   exact actual_is_source (.ordinary phase ((selectedRows_exact _ _ _).mp rowsCase)
                     noHook (ProgramReplay.nativeStep_sound _ _ _ emitted)) actual

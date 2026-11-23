@@ -1,0 +1,1 @@
+(case (value a) ((a (value yes)) ($other (value no))))

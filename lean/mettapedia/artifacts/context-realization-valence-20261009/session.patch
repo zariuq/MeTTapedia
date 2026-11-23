@@ -1,0 +1,1229 @@
+--- a/Mettapedia/GSLT/Causality/Abstraction.lean
++++ b/Mettapedia/GSLT/Causality/Abstraction.lean
+@@ -76,7 +76,7 @@
+ open Mettapedia.GSLT.Distinction
+ open Mettapedia.GSLT.Causality.Hierarchy
+ 
+-universe uS uT uC uR uC' uR' uO uO' uA uL uV
++universe uS uT uM uC uR uC' uR' uC'' uR'' uO uO' uA uL uV
+ 
+ /-! ## Intervention maps, passive maps, saturated maps -/
+ 
+@@ -87,6 +87,24 @@
+     (A : AdmissibleClass rulesS) (B : AdmissibleClass rulesT) where
+   map : rulesS.Context → rulesT.Context
+   admissible : ∀ {context : rulesS.Context}, A.Admissible context → B.Admissible (map context)
++
++/-- Retaining the same declared interventions. -/
++def InterventionMap.id {S : GSLT.{uS}} {rules : ContextualRules.{uC, uR} S}
++    (A : AdmissibleClass rules) : InterventionMap A A where
++  map := _root_.id
++  admissible allowed := allowed
++
++/-- Successive intervention translations retain admissibility through both
++boundaries. Their commuting squares remain separate obligations. -/
++def InterventionMap.comp {S : GSLT.{uS}} {M : GSLT.{uM}} {T : GSLT.{uT}}
++    {sourceRules : ContextualRules.{uC, uR} S}
++    {middleRules : ContextualRules.{uC', uR'} M}
++    {targetRules : ContextualRules.{uC'', uR''} T}
++    {A : AdmissibleClass sourceRules} {B : AdmissibleClass middleRules}
++    {C : AdmissibleClass targetRules}
++    (earlier : InterventionMap A B) (later : InterventionMap B C) : InterventionMap A C where
++  map := later.map ∘ earlier.map
++  admissible allowed := later.admissible (earlier.admissible allowed)
+ 
+ /-- The translation on the labels of the saturated systems. -/
+ def InterventionMap.label {S : GSLT.{uS}} {T : GSLT.{uT}}
+--- a/Mettapedia/CognitiveArchitecture/Consciousness/TraceAndImplementation.lean
++++ b/Mettapedia/CognitiveArchitecture/Consciousness/TraceAndImplementation.lean
+@@ -4,6 +4,9 @@
+ import Mettapedia.CognitiveArchitecture.Consciousness.ArchitecturalIndicators
+ import Mettapedia.GSLT.Core.RelationPresentation
+ import Mettapedia.GSLT.Causality.ScriptedExecution
++import Mettapedia.GSLT.Causality.ScriptedExecutionRecoding
++import Mettapedia.GSLT.Core.OperationalReadbackControls
++import Mettapedia.CognitiveArchitecture.Consciousness.Valence
+ import Mettapedia.CategoryTheory.LocalSections
+ 
+ /-!
+@@ -47,6 +50,12 @@
+ cannot distinguish the direct executor from a valid backup. Replacing the
+ evaluator while holding the table fixed can distinguish them. The permitted
+ context class is therefore part of the realization criterion.
++
++`ContextualRealization` transports that criterion through admitted intervention
++maps and operational covers. The concrete recoding changes states, tables,
++evaluators and replacement commands together. The valence instance at the end
++uses independently stated finite potentials: it transports authored prefix
++constraints, without identifying those constraints with felt experience.
+ -/
+ 
+ set_option autoImplicit false
+@@ -533,6 +542,103 @@
+ 
+ end PremiseComparison
+ 
++/-! ## Realization boundaries and conditional assessment transport -/
++
++namespace RealizationControl
++
++open Mettapedia.GSLT.IndexedOperational
++open Mettapedia.GSLT.Ultrainfinite
++open Mettapedia.GSLT.IndexedOperational.OperationalRealization
++
++/-- An independently constructed compiler uses two target instructions for
++one source step. Public reachability agrees, while instruction counts differ. -/
++theorem public_behavior_with_different_internal_paths :
++    ((LoweringCanary.lowering.mapStep FusionCanary.source_step).length = 2 ∧
++      ((Route.cons ⟨FusionCanary.source_step⟩ (Route.refl true)) :
++        ExecutionPath FusionCanary.source false true).length = 1) ∧
++    ((∃ after, FusionCanary.source.MultiStep false after ∧ after = true) ↔
++      ∃ final, LoweringCanary.target.MultiStep (LoweringCanary.lowering.mapTerm false) final ∧
++        LoweringCanary.sourceView final = true) :=
++  ⟨LoweringCanary.implementation_count_differs, LoweringCanary.commitment_reachable_iff false⟩
++
++/-- Forward simulation cannot supply the required reflected behavior when
++the target has an escaping transition outside the compiled states. -/
++theorem extra_behavior_blocks_cover :
++    ¬ ∃ translation : SemanticCoveredTranslation
++      Mettapedia.GSLT.IndexedOperational.OperationalImplementation.Canary.implementation.asGSLT
++      Mettapedia.GSLT.IndexedOperational.OperationalImplementation.Canary.escapingTarget,
++      translation.mapTerm = some :=
++  Mettapedia.GSLT.IndexedOperational.OperationalImplementation.Canary.no_semantic_cover_with_some_encoding
++
++end RealizationControl
++
++namespace ValenceRealizationControl
++
++open Mettapedia.GSLT.Causality
++open Mettapedia.GSLT.Causality.ScriptedExecution
++open Mettapedia.GSLT.Causality.ScriptedExecutionRecoding
++open Valence
++
++/-- A toy potential on a displayed Boolean state. Its welfare interpretation
++is an explicit hypothesis, not a consciousness or happiness assignment. -/
++def energy (machine : Machine Bool Bool) : ℚ := if machine.player.current then 0 else 1
++
++/-- The target states use numerical codes. This potential is independently
++stated as a formula on their code, rather than defined by the source observer. -/
++def encodedEnergy (machine : Machine (Fin 2) Bool) : ℚ := 1 - (machine.player.current.val : ℚ)
++
++theorem energy_commutes (machine : Machine Bool Bool) :
++    encodedEnergy (recodeMachine ScriptedExecutionRecoding.Controls.boolToFin machine) =
++      energy machine := by
++  cases current : machine.player.current <;>
++    simp [encodedEnergy, energy, recodeMachine, recodePlayer,
++      ScriptedExecutionRecoding.Controls.boolToFin, finTwoEquiv, current]
++
++def appraisal (sensitive : Bool) : TransitionAppraisal (Machine Bool Bool) Bool :=
++  potentialDrop (fun machine => (if sensitive then 2 else 1) * energy machine)
++
++def encodedAppraisal (sensitive : Bool) : TransitionAppraisal (Machine (Fin 2) Bool) Bool :=
++  potentialDrop (fun machine => (if sensitive then 2 else 1) * encodedEnergy machine)
++
++theorem appraisal_commutes (sensitive : Bool) (before after : Machine Bool Bool) (input : Bool) :
++    encodedAppraisal sensitive
++        (recodeMachine ScriptedExecutionRecoding.Controls.boolToFin before) input
++        (recodeMachine ScriptedExecutionRecoding.Controls.boolToFin after) =
++      appraisal sensitive before input after := by
++  simp only [appraisal, encodedAppraisal, potentialDrop, energy_commutes]
++
++/-- The same actual recoding that transports component interventions also
++transports both declared appraisals over every actual input prefix. -/
++theorem prefix_policy_recode_iff (initial : Machine Bool Bool) (inputs : List Bool) :
++    RobustPrefixNonnegative Set.univ tick encodedAppraisal
++        (recodeMachine ScriptedExecutionRecoding.Controls.boolToFin initial) inputs ↔
++      RobustPrefixNonnegative Set.univ tick appraisal initial inputs := by
++  have comparison := robustPrefixNonnegative_map_iff Set.univ Set.univ id
++    (fun _ _ => Set.mem_univ _) (fun hypothesis _ => ⟨hypothesis, Set.mem_univ _, rfl⟩)
++    tick tick (recodeMachine ScriptedExecutionRecoding.Controls.boolToFin) id
++    (tick_commutes ScriptedExecutionRecoding.Controls.boolToFin)
++    appraisal encodedAppraisal (fun hypothesis _ before input =>
++      appraisal_commutes hypothesis before (tick before input) input) initial inputs
++  simpa only [List.map_id] using comparison
++
++/-- In this finite model, supplying true reaches a lower potential. Both
++appraisals satisfy the prefix policy, and the recoded execution does too. -/
++theorem lowering_potential_positive :
++    RobustPrefixNonnegative Set.univ tick appraisal ScriptedExecution.Controls.executor [true] ∧
++      RobustPrefixNonnegative Set.univ tick encodedAppraisal
++        (recodeMachine ScriptedExecutionRecoding.Controls.boolToFin ScriptedExecution.Controls.executor)
++        [true] := by
++  have safe : RobustPrefixNonnegative Set.univ tick appraisal ScriptedExecution.Controls.executor [true] := by
++    refine ⟨⟨false, Set.mem_univ _⟩, ?_⟩
++    intro hypothesis _ horizon
++    cases hypothesis <;> cases horizon <;>
++      norm_num [accumulated, appraisal, potentialDrop, energy, tick,
++        ScriptedExecution.Controls.executor, ScriptedExecution.Controls.write, direct,
++        ScriptedBackup.backupStep, ScriptedBackup.advance, List.take]
++  exact ⟨safe, (prefix_policy_recode_iff _ _).mpr safe⟩
++
++end ValenceRealizationControl
++
+ #print axioms all_intervention_invariants_passive_iff
+ #print axioms ConditionalArguments.necessity_sufficiency_supervenience_incompatible
+ #print axioms ResponseControl.causal_invariance_compatible_with_record_insufficiency
+--- a/Mettapedia/GSLT/README.md
++++ b/Mettapedia/GSLT/README.md
+@@ -188,6 +188,24 @@
+ preserves and reflects transitions but fails static faithfulness, so it is not
+ hosting for these raw machine equations.
+ 
++[`Causality/ContextualRealization.lean`](Causality/ContextualRealization.lean)
++connects the existing intervention maps to equation-class operational covers.
++A commuting square at every state transports saturated modal satisfaction and
++the formula-generated OSLF native types. Coverage of target observations and
++admitted contexts additionally transports equivalence at every causal rung.
++The squares compose, and a context-theory hosting map supplies the required
++operational and equivariance laws at each retained interface. This statement
++does not identify the entire ambient native-type frames.
++
++[`Causality/ScriptedExecutionRecoding.lean`](Causality/ScriptedExecutionRecoding.lean)
++constructs such a realization: a state equivalence conjugates the evaluator,
++recodes every table entry, and conjugates replacement commands. The independent
++backup algorithm commutes with this change, including its activity labels.
++Context composition, table multiplicity, inverse recoding and successive
++recodings are preserved. The Boolean-to-`Fin 2` control retains the separating
++component intervention. Conversely, projecting to displayed state alone cannot
++represent that intervention as a function on displayed states.
++
+ ## OSLF interface (how the rest of Mettapedia uses GSLT)
+ 
+ GSLT supplies the *spec* that OSLF turns into an executable modal type theory. The
+--- a/Mettapedia/CognitiveArchitecture/README.md
++++ b/Mettapedia/CognitiveArchitecture/README.md
+@@ -147,6 +147,36 @@
+   identity undetermined. These are small mathematical reconstructions with stated
+   premises; they supply no empirical consciousness assignment.
+ 
++[`GSLT/Causality/ContextualRealization.lean`](../GSLT/Causality/ContextualRealization.lean)
++connects the realization criterion to operational covers and context-theory
++hosting. Its commuting intervention square transports modal formulas and
++formula-generated native types; vocabulary and context coverage yield exact
++comparison at every causal rung. The concrete
++[`ScriptedExecutionRecoding.lean`](../GSLT/Causality/ScriptedExecutionRecoding.lean)
++instance changes states, tables, evaluators and replacement commands together.
++The existing consciousness comparison now also reuses the compiler lowering
++control: public reachability agrees while one source instruction becomes two
++target instructions. An escaping target transition blocks an operational cover.
++
++[`Consciousness/Valence.lean`](Consciousness/Valence.lean) separates learning
++reward, architectural affect and authored transition appraisal. It reuses
++observer visibility and occurrence-indexed wellbeing judgments. Finite
++execution appraisals compose chronologically and transport through actual
++tick/appraisal commutation. `potentialDrop` is a unit-step finite-difference
++reconstruction of Joffily and Coricelli's proposed free-energy dynamics; it does
++not establish an empirical model of experience. The relational account in
++[`Cybernetics/ReflexiveValence.lean`](../Cybernetics/ReflexiveValence.lean) remains
++a distinct hypothesis rather than being identified with scalar appraisal.
++
++`RobustPrefixNonnegative` requires a nonempty admitted assessor family and a
++nonnegative cumulative appraisal at every input prefix. Enlarging that family
++can block permission, and transport requires coverage of its target assessors.
++Zero final appraisal can hide a negative prefix. A permitted trace can still
++contain a negative episode, so the criterion is not a suffering-free guarantee.
++An instance on the actual Boolean-to-`Fin 2` machine recoding preserves two
++independently stated toy appraisals and their prefix constraints. Arithmetic
++evidence remains separate from evidence of patienthood or felt valence.
++
+ ### Values
+ 
+ Values is nine files extending beyond consequentialism.
+@@ -198,6 +228,14 @@
+ covers that batch and its stated consumers; the earlier directory-wide inventory
+ was dated 2026-08-25.
+ 
++The subsequent contextual-realization and valence batch qualifies five modules:
++57 new named theorems, five warnings-as-errors checks, and an audit of 316 kernel
++declarations using only the same three standard axioms. Its scoped build includes
++the existing GödelClaw workspace consumer. The audit includes earlier declarations
++in the edited modules; it is not a directory-wide or deployed-runtime qualification.
++The reproducible scope and checks are recorded in
++[`QUALIFICATION.json`](../../artifacts/context-realization-valence-20261009/QUALIFICATION.json).
++
+ ## References
+ 
+ - Zhenhua Cai, Ben Goertzel & Nil Geisweiller, [*OpenPsi: Realizing Dörner's "Psi" Cognitive Model in the OpenCog Integrative AGI Architecture*](https://doi.org/10.1007/978-3-642-22887-2_22) (AGI 2011, LNCS 6830, Springer) — the OpenPsi demands/modulators formalized in `OpenPsi/`.
+@@ -206,6 +244,9 @@
+ - Shalom H. Schwartz, [*Universals in the Content and Structure of Values*](https://doi.org/10.1016/S0065-2601(08)60281-6), in *Advances in Experimental Social Psychology* 25 (1992), 1–65 — the ten-value circumplex in `Values/SchwartzValues.lean`.
+ - Jonathan Haidt, [*The Righteous Mind: Why Good People Are Divided by Politics and Religion*](https://righteousmind.com/) (Pantheon, 2012) — Moral Foundations Theory in `Values/MoralFoundations.lean`.
+ - Alan Gewirth, [*Reason and Morality*](https://press.uchicago.edu/ucp/books/book/chicago/R/bo25842059.html) (University of Chicago Press, 1978) — the Principle of Generic Consistency underlying the Gewirth/FOET ethics layer in `GodelClaw/Ethics/` and `Values/FOETBridge.lean`.
++- Mateus Joffily and Giorgio Coricelli, [*Emotional Valence and the Free-Energy Principle*](https://doi.org/10.1371/journal.pcbi.1003094) (2013) — the source hypothesis for the discrete potential-difference appraisal.
++- Kent Berridge, Terry Robinson and J. Wayne Aldridge, [*Dissecting components of reward: liking, wanting, and learning*](https://pmc.ncbi.nlm.nih.gov/articles/PMC2756052/) (2009) — distinguishes components of reward rather than equating reward with pleasure.
++- Robert Long et al., [*Taking AI Welfare Seriously*](https://arxiv.org/abs/2411.00986) (2024) — motivates welfare assessment under uncertainty.
+ 
+ ---
+ *Realization and local-view qualification updated 2026-10-09.*
+--- /dev/null
++++ b/Mettapedia/GSLT/Causality/ContextualRealization.lean
+@@ -0,0 +1,287 @@
++import Mettapedia.GSLT.Causality.Abstraction
++import Mettapedia.GSLT.Core.SemanticImplementation
++import Mettapedia.GSLT.Contexts.ContextMorphism
++import Mettapedia.GSLT.Contexts.TransitionProfile
++import Mettapedia.GSLT.Contexts.RelativeEquivalence
++import Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes
++
++/-!
++# Operational realization with admitted interventions
++
++An equation-class operational cover and an existing `InterventionMap` yield
++a cover of saturated observations when their context square commutes at every
++source state. All formulas in the translated language, including negations,
++then preserve and reflect satisfaction. Their formula-generated OSLF native
++types transport as well; no equivalence of the entire ambient topoi follows.
++
++Transport of full counterfactual equivalence additionally requires coverage
++of the target atoms and admitted contexts. This exposes the vocabulary
++obligation instead of equating a cover of input tests with a cover of every
++component intervention.
++
++The bridge from `ContextMap.Hosting` supplies the operational and context
++laws at an interface using the already proved hosting and equivariance laws.
++It works with equations rather than equality of raw representatives. A
++public macro-step relation can be used when host execution lowers one source
++step to several internal steps; no micro-step equality is imposed here.
++-/
++
++set_option autoImplicit false
++
++namespace Mettapedia.GSLT.Causality.ContextualRealization
++
++open Mettapedia.GSLT
++open Mettapedia.GSLT.HennessyMilner
++open Mettapedia.GSLT.IndexedOperational
++open Mettapedia.GSLT.MinimalEnablingContext
++open Mettapedia.GSLT.AdmissibleContextCongruence
++open Mettapedia.GSLT.Causality.Abstraction
++
++universe uS uT uM uC uC' uC'' uR uR' uR'' uA uA'
++
++section Saturation
++
++variable {S : GSLT.{uS}} {T : GSLT.{uT}}
++  {sourceRules : ContextualRules.{uC, uR} S} {targetRules : ContextualRules.{uC', uR'} T}
++  {A : AdmissibleClass sourceRules} {B : AdmissibleClass targetRules}
++  (operational : SemanticCoveredTranslation S T) (interventions : InterventionMap A B)
++  (sourceObservations : ContextualRules.Observations.{uA} S)
++  (targetObservations : ContextualRules.Observations.{uA'} T)
++  (mapAtom : sourceObservations.Atom → targetObservations.Atom)
++  (atomLaw : ∀ atom term, sourceObservations.observes atom term ↔
++    targetObservations.observes (mapAtom atom) (operational.mapTerm term))
++  (square : ∀ ⦃context⦄, A.Admissible context → ∀ term,
++    T.Equiv (operational.mapTerm (sourceRules.plug context term))
++      (targetRules.plug (interventions.map context) (operational.mapTerm term)))
++
++/-- Ordinary observations use the same independently justified operational
++cover as the context-sensitive observations. -/
++def passiveCover : SystemCover (Hierarchy.passive sourceObservations)
++    (Hierarchy.passive targetObservations) :=
++  operational.systemCover ⟨sourceObservations.Atom, sourceObservations.observes⟩
++    ⟨targetObservations.Atom, targetObservations.observes⟩
++    sourceObservations.observes_resp targetObservations.observes_resp mapAtom atomLaw
++
++include atomLaw in
++theorem association_iff (atomsOnto : Function.Surjective mapAtom) (left right : S.Term) :
++    Hierarchy.Agree B targetObservations .association
++        (operational.mapTerm left) (operational.mapTerm right) ↔
++      Hierarchy.Agree A sourceObservations .association left right :=
++  (Hierarchy.passive_bisimilar_iff B targetObservations _ _).symm.trans
++    (((passiveCover operational sourceObservations targetObservations mapAtom atomLaw).bisimilar_map_iff
++      atomsOnto (fun label => ⟨label, rfl⟩) left right).trans
++        (Hierarchy.passive_bisimilar_iff A sourceObservations left right))
++
++/-- Saturating an operational cover retains exactly its translated contexts
++and observations, with outgoing reflection up to target equations. -/
++def saturatedCover : SystemCover (A.saturated sourceObservations) (B.saturated targetObservations) where
++  mapTerm := operational.mapTerm
++  mapAtom atom := (mapAtom atom.1, interventions.label atom.2)
++  mapLabel := interventions.label
++  mapEquiv := operational.mapEquiv
++  observes_iff atom term :=
++    (atomLaw atom.1 (sourceRules.plug atom.2.1 term)).trans
++      (targetObservations.observes_resp (mapAtom atom.1) (square atom.2.2 term))
++  mapAct {label source target} step := by
++    have image := operational.mapStep step
++    obtain ⟨next, advances, equivalent⟩ := T.rewrites_resp_left (square label.2 source) image
++    exact T.rewrites_resp_right advances (T.equations.iseqv.symm equivalent)
++  liftAct {label source target} step := by
++    obtain ⟨middle, advances, equivalent⟩ :=
++      T.rewrites_resp_left (T.equations.iseqv.symm (square label.2 source)) step
++    obtain ⟨next, sourceStep, mapped⟩ := operational.liftStep advances
++    exact ⟨next, sourceStep, T.equations.iseqv.trans mapped
++      (T.equations.iseqv.symm equivalent)⟩
++
++include atomLaw square
++
++theorem formula_iff (formula : Formula (A.saturated sourceObservations).Atom
++    (A.saturated sourceObservations).Label) (term : S.Term) :
++    (B.saturated targetObservations).sat
++        (formula.map (saturatedCover operational interventions sourceObservations
++          targetObservations mapAtom atomLaw square).mapAtom interventions.label)
++        (operational.mapTerm term) ↔
++      (A.saturated sourceObservations).sat formula term :=
++  (saturatedCover operational interventions sourceObservations targetObservations
++    mapAtom atomLaw square).sat_map formula term
++
++/-- No target-vocabulary surjectivity is needed to reflect a distinction
++already expressible through the source observation boundary. -/
++theorem counterfactual_of_map {left right : S.Term}
++    (related : Hierarchy.Agree B targetObservations .counterfactual
++      (operational.mapTerm left) (operational.mapTerm right)) :
++    Hierarchy.Agree A sourceObservations .counterfactual left right :=
++  (saturatedCover operational interventions sourceObservations targetObservations
++    mapAtom atomLaw square).bisimilar_of_map related
++
++theorem counterfactual_iff (atomsOnto : Function.Surjective mapAtom)
++    (contextsOnto : Function.Surjective interventions.label) (left right : S.Term) :
++    Hierarchy.Agree B targetObservations .counterfactual
++        (operational.mapTerm left) (operational.mapTerm right) ↔
++      Hierarchy.Agree A sourceObservations .counterfactual left right := by
++  apply (saturatedCover operational interventions sourceObservations targetObservations
++    mapAtom atomLaw square).bisimilar_map_iff _ contextsOnto
++  rintro ⟨atom, context⟩
++  obtain ⟨sourceAtom, rfl⟩ := atomsOnto atom
++  obtain ⟨sourceContext, rfl⟩ := contextsOnto context
++  exact ⟨(sourceAtom, sourceContext), rfl⟩
++
++/-- One-shot interventions transport by the operational cover and the
++equation-class square, using every admitted target context. -/
++theorem intervention_iff (atomsOnto : Function.Surjective mapAtom)
++    (contextsOnto : Function.Surjective interventions.label) (left right : S.Term) :
++    Hierarchy.Agree B targetObservations .intervention
++        (operational.mapTerm left) (operational.mapTerm right) ↔
++      Hierarchy.Agree A sourceObservations .intervention left right := by
++  constructor
++  · intro related context allowed
++    apply (association_iff (A := A) (B := B) operational sourceObservations targetObservations
++      mapAtom atomLaw atomsOnto _ _).mp
++    exact reductionBisimilar_trans targetObservations
++      (reductionBisimilar_of_equiv targetObservations (square allowed left))
++      (reductionBisimilar_trans targetObservations
++        (related (interventions.admissible allowed))
++        (reductionBisimilar_of_equiv targetObservations
++          (T.equations.iseqv.symm (square allowed right))))
++  · intro related context allowed
++    obtain ⟨⟨origin, admitted⟩, same⟩ := contextsOnto ⟨context, allowed⟩
++    have image : interventions.map origin = context := congrArg Subtype.val same
++    rw [← image]
++    exact reductionBisimilar_trans targetObservations
++      (reductionBisimilar_of_equiv targetObservations
++        (T.equations.iseqv.symm (square admitted left)))
++      (reductionBisimilar_trans targetObservations
++        ((association_iff (A := A) (B := B) operational sourceObservations targetObservations
++          mapAtom atomLaw atomsOnto _ _).mpr (related admitted))
++        (reductionBisimilar_of_equiv targetObservations (square admitted right)))
++
++theorem all_rungs_iff (atomsOnto : Function.Surjective mapAtom)
++    (contextsOnto : Function.Surjective interventions.label)
++    (rung : Hierarchy.Rung) (left right : S.Term) :
++    Hierarchy.Agree B targetObservations rung (operational.mapTerm left) (operational.mapTerm right) ↔
++      Hierarchy.Agree A sourceObservations rung left right := by
++  cases rung with
++  | association =>
++      exact association_iff operational sourceObservations targetObservations mapAtom atomLaw atomsOnto left right
++  | intervention =>
++      exact intervention_iff operational interventions sourceObservations targetObservations
++        mapAtom atomLaw square atomsOnto contextsOnto left right
++  | counterfactual =>
++      exact counterfactual_iff operational interventions sourceObservations targetObservations
++        mapAtom atomLaw square atomsOnto contextsOnto left right
++
++end Saturation
++
++/-! ## Composition of the context square -/
++
++section Composition
++
++variable {S : GSLT.{uS}} {M : GSLT.{uM}} {T : GSLT.{uT}}
++  {sourceRules : ContextualRules.{uC, uR} S}
++  {middleRules : ContextualRules.{uC', uR'} M}
++  {targetRules : ContextualRules.{uC'', uR''} T}
++  {A : AdmissibleClass sourceRules} {B : AdmissibleClass middleRules}
++  {C : AdmissibleClass targetRules}
++
++theorem composed_square (earlier : SemanticCoveredTranslation S M)
++    (later : SemanticCoveredTranslation M T)
++    (first : InterventionMap A B) (second : InterventionMap B C)
++    (firstSquare : ∀ ⦃context⦄, A.Admissible context → ∀ term,
++      M.Equiv (earlier.mapTerm (sourceRules.plug context term))
++        (middleRules.plug (first.map context) (earlier.mapTerm term)))
++    (secondSquare : ∀ ⦃context⦄, B.Admissible context → ∀ term,
++      T.Equiv (later.mapTerm (middleRules.plug context term))
++        (targetRules.plug (second.map context) (later.mapTerm term)))
++    {context : sourceRules.Context} (allowed : A.Admissible context) (term : S.Term) :
++    T.Equiv ((earlier.comp later).mapTerm (sourceRules.plug context term))
++      (targetRules.plug ((first.comp second).map context)
++        ((earlier.comp later).mapTerm term)) :=
++  T.equations.iseqv.trans (later.mapEquiv (firstSquare allowed term))
++    (secondSquare (first.admissible allowed) (earlier.mapTerm term))
++
++end Composition
++
++/-! ## Hosting maps provide the contextual realization laws -/
++
++section Hosting
++
++universe u
++
++variable {source target : ContextTheory.{u}} (map : ContextMap source target)
++
++/-- A hosting map induces the existing equation-class operational cover at
++each retained interface. The context information is not discarded. -/
++def hostingOperational (hosting : map.Hosting) (origin : source.Interface) :
++    SemanticCoveredTranslation (source.gslt origin) (target.gslt (map.interface origin)) where
++  mapTerm := map.term
++  mapEquiv := map.term_resp
++  mapStep step := (map.preservesTransitions_iff_rewrites.mp hosting.preserves) step
++  liftStep step := by
++    obtain ⟨next, advances, equivalent⟩ :=
++      (map.reflectsTransitions_iff_rewrites.mp hosting.reflects) step
++    exact ⟨next, advances, (target.equations _).iseqv.symm equivalent⟩
++
++def hostingInterventions (origin : source.Interface)
++    (A : AdmissibleClass (source.contextualRules origin))
++    (B : AdmissibleClass (target.contextualRules (map.interface origin)))
++    (admitted : ∀ ⦃context⦄, A.Admissible context → B.Admissible (map.context context)) :
++    InterventionMap A B where
++  map := map.context
++  admissible allowed := admitted allowed
++
++/-- The actual hosting equivariance law proves the intervention square;
++it is not an extra hypothesis on a separately invented context model. -/
++theorem hosting_square (hosting : map.Hosting) (origin : source.Interface)
++    (A : AdmissibleClass (source.contextualRules origin))
++    (B : AdmissibleClass (target.contextualRules (map.interface origin)))
++    (admitted : ∀ ⦃context⦄, A.Admissible context → B.Admissible (map.context context))
++    (context : (source.contextualRules origin).Context) (term : source.Term origin) :
++    (target.gslt (map.interface origin)).Equiv
++      ((hostingOperational map hosting origin).mapTerm
++        ((source.contextualRules origin).plug context term))
++      ((target.contextualRules (map.interface origin)).plug
++        ((hostingInterventions map origin A B admitted).map context)
++        ((hostingOperational map hosting origin).mapTerm term)) := by
++  change (target.equations (map.interface origin)).r
++    (map.term (source.apply context term))
++    (target.apply (map.context context) (map.term term))
++  exact map.apply_equivariant context term
++
++end Hosting
++
++/-! ## Formula-generated native types -/
++
++section NativeTypes
++
++variable {S T : GSLT}
++  {sourceRules : ContextualRules.{uC, uR} S} {targetRules : ContextualRules.{uC', uR'} T}
++  {A : AdmissibleClass sourceRules} {B : AdmissibleClass targetRules}
++  (operational : SemanticCoveredTranslation S T) (interventions : InterventionMap A B)
++  (sourceObservations : ContextualRules.Observations.{uA} S)
++  (targetObservations : ContextualRules.Observations.{uA'} T)
++  (mapAtom : sourceObservations.Atom → targetObservations.Atom)
++  (atomLaw : ∀ atom term, sourceObservations.observes atom term ↔
++    targetObservations.observes (mapAtom atom) (operational.mapTerm term))
++  (square : ∀ ⦃context⦄, A.Admissible context → ∀ term,
++    T.Equiv (operational.mapTerm (sourceRules.plug context term))
++      (targetRules.plug (interventions.map context) (operational.mapTerm term)))
++
++theorem formulaNativeType_iff (formula : Formula (A.saturated sourceObservations).Atom
++    (A.saturated sourceObservations).Label) (term : S.Term) :
++    (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.gsltOSLF T).satisfies (S := ())
++      (operational.mapTerm term)
++      (Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes.formulaNativeType
++        (B.saturated targetObservations)
++        (formula.map (saturatedCover operational interventions sourceObservations
++          targetObservations mapAtom atomLaw square).mapAtom interventions.label)).pred ↔
++    (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.gsltOSLF S).satisfies (S := ()) term
++      (Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes.formulaNativeType
++        (A.saturated sourceObservations) formula).pred :=
++  Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes.systemCover_formulaNativeType_iff
++    (A.saturated sourceObservations)
++    (saturatedCover operational interventions sourceObservations targetObservations
++      mapAtom atomLaw square) formula term
++
++end NativeTypes
++
++end Mettapedia.GSLT.Causality.ContextualRealization
+--- /dev/null
++++ b/Mettapedia/GSLT/Causality/ScriptedExecutionRecoding.lean
+@@ -0,0 +1,259 @@
++import Mettapedia.GSLT.Causality.ContextualRealization
++import Mettapedia.GSLT.Causality.ScriptedExecution
++
++/-!
++# Representation change retaining component interventions
++
++A state equivalence transports the evaluator by conjugation and transports
++every stored table entry. Input symbols and table/evaluator activity remain
++unchanged. The independently defined backup algorithm commutes with this
++recoding, including mismatch and table-exhaustion branches.
++
++Evaluator-replacement commands are conjugated as well. Their finite sequences
++commute with execution and cover every target component context. The general
++contextual-realization bridge therefore transports modal formulas and full
++counterfactual comparison. This is an actual constructed instance of the
++context square, rather than an assertion that state correspondence alone
++supplies it.
++
++The negative control shows that forgetting the player and evaluator does not
++admit even a functional interpretation of one declared component intervention.
++The positive control changes Boolean machine states to `Fin 2` and retains the
++intervention that separates direct execution from a recorded backup.
++-/
++
++set_option autoImplicit false
++
++namespace Mettapedia.GSLT.Causality.ScriptedExecutionRecoding
++
++open Mettapedia.GSLT
++open Mettapedia.GSLT.ScriptedBackup
++open Mettapedia.GSLT.Causality.ScriptedExecution
++open Mettapedia.GSLT.Causality.Abstraction
++open Mettapedia.GSLT.HennessyMilner
++open Mettapedia.GSLT.IndexedOperational
++open Mettapedia.GSLT.MinimalEnablingContext
++open Mettapedia.GSLT.AdmissibleContextCongruence
++
++variable {State Target Input : Type} [DecidableEq Input]
++
++def recodeEvaluator (coding : State ≃ Target) (evaluator : State → Input → State) :
++    Target → Input → Target :=
++  fun state input => coding (evaluator (coding.symm state) input)
++
++def recodePlayer (coding : State ≃ Target) (player : Player State Input) : Player Target Input :=
++  ⟨coding player.current, player.remaining.map (fun row => (row.1, coding row.2)), player.live⟩
++
++def recodeMachine (coding : State ≃ Target) (machine : Machine State Input) :
++    Machine Target Input :=
++  ⟨recodeEvaluator coding machine.evaluator, recodePlayer coding machine.player⟩
++
++def recodeCommand (coding : State ≃ Target) : Command State Input → Command Target Input
++  | .feed input => .feed input
++  | .replaceEvaluator evaluator => .replaceEvaluator (recodeEvaluator coding evaluator)
++
++omit [DecidableEq Input] in
++theorem recodeEvaluator_inverse (coding : State ≃ Target) (evaluator : State → Input → State) :
++    recodeEvaluator coding.symm (recodeEvaluator coding evaluator) = evaluator := by
++  funext state input
++  simp [recodeEvaluator]
++
++omit [DecidableEq Input] in
++theorem recodePlayer_inverse (coding : State ≃ Target) (player : Player State Input) :
++    recodePlayer coding.symm (recodePlayer coding player) = player := by
++  cases player with
++  | mk current remaining live =>
++      simp [recodePlayer, List.map_map, Function.comp_def]
++
++omit [DecidableEq Input] in
++theorem recodeMachine_inverse (coding : State ≃ Target) (machine : Machine State Input) :
++    recodeMachine coding.symm (recodeMachine coding machine) = machine := by
++  cases machine with
++  | mk evaluator player =>
++      simp only [recodeMachine, recodeEvaluator_inverse, recodePlayer_inverse]
++
++omit [DecidableEq Input] in
++theorem recodeCommand_inverse (coding : State ≃ Target) (command : Command State Input) :
++    recodeCommand coding.symm (recodeCommand coding command) = command := by
++  cases command <;> simp [recodeCommand, recodeEvaluator_inverse]
++
++omit [DecidableEq Input] in
++theorem recodeCommands_inverse (coding : State ≃ Target) (commands : List (Command State Input)) :
++    (commands.map (recodeCommand coding)).map (recodeCommand coding.symm) = commands := by
++  induction commands with
++  | nil => rfl
++  | cons command commands ih => simp only [List.map_cons, recodeCommand_inverse, ih]
++
++omit [DecidableEq Input] in
++theorem recodeMachine_comp {Further : Type} (first : State ≃ Target) (second : Target ≃ Further)
++    (machine : Machine State Input) :
++    recodeMachine second (recodeMachine first machine) =
++      recodeMachine (first.trans second) machine := by
++  cases machine with
++  | mk evaluator player =>
++      cases player with
++      | mk current remaining live =>
++          simp [recodeMachine, recodePlayer, Equiv.trans,
++            List.map_map, Function.comp_def]
++          rfl
++
++omit [DecidableEq Input] in
++theorem recodeCommand_comp {Further : Type} (first : State ≃ Target) (second : Target ≃ Further)
++    (command : Command State Input) :
++    recodeCommand second (recodeCommand first command) =
++      recodeCommand (first.trans second) command := by
++  cases command <;> rfl
++
++omit [DecidableEq Input] in
++/-- Table-entry occurrences are transported without deduplication. -/
++theorem recodePlayer_table_length (coding : State ≃ Target) (player : Player State Input) :
++    (recodePlayer coding player).remaining.length = player.remaining.length :=
++  List.length_map _
++
++/-- The actual context composition executes the inner commands first;
++translation retains that ordering rather than re-scheduling replacements. -/
++theorem context_comp_commutes (coding : State ≃ Target)
++    (outer inner : List (Command State Input)) :
++    ((rules (State := State) (Input := Input)).compose outer inner).map (recodeCommand coding) =
++      (rules (State := Target) (Input := Input)).compose
++        (outer.map (recodeCommand coding)) (inner.map (recodeCommand coding)) :=
++  List.map_append
++
++/-- Both the player and the declared source of its successor are retained. -/
++theorem advance_commutes (coding : State ≃ Target) (evaluator : State → Input → State)
++    (player : Player State Input) (input : Input) :
++    advance (recodeEvaluator coding evaluator) (recodePlayer coding player) input =
++      (recodePlayer coding (advance evaluator player input).1,
++        (advance evaluator player input).2) := by
++  cases player with
++  | mk current remaining live =>
++      cases live
++      · cases remaining with
++        | nil => simp [advance, recodePlayer, recodeEvaluator]
++        | cons row rest =>
++            rcases row with ⟨expected, target⟩
++            by_cases sameInput : input = expected <;>
++              simp [advance, recodePlayer, recodeEvaluator, sameInput]
++      · simp [advance, recodePlayer, recodeEvaluator]
++
++theorem tick_commutes (coding : State ≃ Target) (machine : Machine State Input) (input : Input) :
++    recodeMachine coding (tick machine input) = tick (recodeMachine coding machine) input := by
++  have successor := congrArg Prod.fst (advance_commutes coding machine.evaluator machine.player input)
++  exact congrArg (Machine.mk (recodeEvaluator coding machine.evaluator)) successor.symm
++
++theorem command_commutes (coding : State ≃ Target) (command : Command State Input)
++    (machine : Machine State Input) :
++    recodeMachine coding (applyCommand command machine) =
++      applyCommand (recodeCommand coding command) (recodeMachine coding machine) := by
++  cases command with
++  | feed input => exact tick_commutes coding machine input
++  | replaceEvaluator evaluator => rfl
++
++theorem plug_commutes (coding : State ≃ Target) (commands : List (Command State Input))
++    (machine : Machine State Input) :
++    recodeMachine coding (plug commands machine) =
++      plug (commands.map (recodeCommand coding)) (recodeMachine coding machine) := by
++  induction commands generalizing machine with
++  | nil => rfl
++  | cons command commands ih =>
++      change recodeMachine coding (plug commands (applyCommand command machine)) =
++        plug (commands.map (recodeCommand coding))
++          (applyCommand (recodeCommand coding command) (recodeMachine coding machine))
++      rw [ih, command_commutes]
++
++/-- Reflection is proved from the target algorithm, using its actual input
++event and the tick commutation law. -/
++def operational (coding : State ≃ Target) : SemanticCoveredTranslation
++    (theory (tick (State := State) (Input := Input)))
++    (theory (tick (State := Target) (Input := Input))) where
++  mapTerm := recodeMachine coding
++  mapEquiv := by intro left right equal; cases equal; rfl
++  mapStep := by
++    rintro source target ⟨input, rfl⟩
++    exact ⟨input, tick_commutes coding source input⟩
++  liftStep := by
++    rintro source target ⟨input, rfl⟩
++    exact ⟨tick source input, ⟨input, rfl⟩, tick_commutes coding source input⟩
++
++def interventions (coding : State ≃ Target) : InterventionMap
++    (componentClass (State := State) (Input := Input))
++    (componentClass (State := Target) (Input := Input)) where
++  map commands := commands.map (recodeCommand coding)
++  admissible _ := AdmissibleClass.top_admissible _
++
++theorem interventions_onto (coding : State ≃ Target) :
++    Function.Surjective (interventions (Input := Input) coding).label := by
++  rintro ⟨commands, _⟩
++  refine ⟨⟨commands.map (recodeCommand coding.symm), AdmissibleClass.top_admissible _⟩, ?_⟩
++  apply Subtype.ext
++  exact recodeCommands_inverse coding.symm commands
++
++theorem observation_commutes (coding : State ≃ Target) (value : State)
++    (machine : Machine State Input) :
++    (observations (State := State)).observes value machine ↔
++      (observations (State := Target)).observes (coding value) (recodeMachine coding machine) :=
++  coding.injective.eq_iff.symm
++
++/-- The square is earned for every actual command sequence. -/
++def cover (coding : State ≃ Target) : SystemCover
++    ((componentClass (State := State) (Input := Input)).saturated observations)
++    ((componentClass (State := Target) (Input := Input)).saturated observations) :=
++  ContextualRealization.saturatedCover (operational coding) (interventions coding)
++    observations observations coding (observation_commutes coding)
++    (fun {_} _ machine => plug_commutes coding _ machine)
++
++theorem formula_iff (coding : State ≃ Target)
++    (formula : Formula ((componentClass (State := State) (Input := Input)).saturated observations).Atom
++      ((componentClass (State := State) (Input := Input)).saturated observations).Label)
++    (machine : Machine State Input) :
++    ((componentClass (State := Target)).saturated observations).sat
++        (formula.map (cover coding).mapAtom (cover coding).mapLabel) (recodeMachine coding machine) ↔
++      ((componentClass (State := State)).saturated observations).sat formula machine :=
++  (cover coding).sat_map formula machine
++
++theorem all_rungs_iff (coding : State ≃ Target) (rung : Hierarchy.Rung)
++    (left right : Machine State Input) :
++    Hierarchy.Agree (componentClass (State := Target)) observations rung
++        (recodeMachine coding left) (recodeMachine coding right) ↔
++      Hierarchy.Agree (componentClass (State := State)) observations rung left right :=
++  ContextualRealization.all_rungs_iff (operational coding) (interventions coding)
++    observations observations coding (observation_commutes coding)
++    (fun {_} _ machine => plug_commutes coding _ machine)
++    coding.surjective (interventions_onto coding) rung left right
++
++namespace Controls
++
++def boolToFin : Bool ≃ Fin 2 := finTwoEquiv.symm
++
++/-- Changing representation retains the explicit evaluator intervention
++that input-only testing fails to distinguish. -/
++theorem recoded_replacement_separates :
++    ((componentClass (State := Fin 2)).saturated observations).sat
++        (ScriptedExecution.Controls.replacementTrue.map (cover boolToFin).mapAtom
++          (cover boolToFin).mapLabel)
++        (recodeMachine boolToFin ScriptedExecution.Controls.executor) ∧
++      ¬ ((componentClass (State := Fin 2)).saturated observations).sat
++        (ScriptedExecution.Controls.replacementTrue.map (cover boolToFin).mapAtom
++          (cover boolToFin).mapLabel)
++        (recodeMachine boolToFin ScriptedExecution.Controls.backup) := by
++  exact ⟨(formula_iff boolToFin _ _).mpr ScriptedExecution.Controls.replacement_formula_separates.1,
++    fun accepted => ScriptedExecution.Controls.replacement_formula_separates.2
++      ((formula_iff boolToFin _ _).mp accepted)⟩
++
++/-- Equal displayed states cannot supply a single target intervention
++operator for the declared replacement: the two retained components respond
++differently. This obstructs the square itself, before modal transport. -/
++theorem no_displayed_replacement_operator :
++    ¬ ∃ operation : Bool → Bool, ∀ machine : Machine Bool Bool,
++      operation machine.player.current =
++        (plug (replacementRun ScriptedExecution.Controls.forceTrue [false]) machine).player.current := by
++  rintro ⟨operation, commutes⟩
++  have direct := commutes ScriptedExecution.Controls.executor
++  have backup := commutes ScriptedExecution.Controls.backup
++  change operation false = true at direct
++  change operation false = false at backup
++  exact Bool.noConfusion (direct.symm.trans backup)
++
++end Controls
++
++end Mettapedia.GSLT.Causality.ScriptedExecutionRecoding
+--- /dev/null
++++ b/Mettapedia/CognitiveArchitecture/Consciousness/Valence.lean
+@@ -0,0 +1,418 @@
++import Mettapedia.CognitiveArchitecture.Agent.WellbeingObserverTransformationBoundary
++import Mettapedia.CognitiveArchitecture.MicroPsi.Basic
++import Mettapedia.GSLT.Dynamics.EffectTraceInterleaving
++import Mathlib.Tactic.Ring
++
++/-!
++# Transition appraisals and conservative assessment under uncertainty
++
++Learning reward, an architectural affect variable, and a proposed hedonic
++appraisal are distinct interfaces.  Neither a reward value nor a mathematical
++appraisal certificate establishes consciousness, patienthood, or felt pleasure.
++The existing occurrence-indexed `WellbeingJudgment` records which assessor and
++execution supply a value; no subject identity or cross-subject aggregation is
++introduced here.
++
++Joffily and Coricelli, "Emotional Valence and the Free-Energy Principle" (2013),
++propose valence as the negative time derivative of variational free energy.
++`potentialDrop` is only a unit-step finite-difference reconstruction of that
++proposal.  No continuous-time limit, generative-model identification, or
++empirical adequacy theorem is asserted.  Arbitrary transition appraisals remain
++available alongside it.  The separate categorical account in
++`Cybernetics.ReflexiveValence` uses propagation and relational polarities and is
++not identified with these rational quantities.
++
++Temporal addition is an explicit assessment convention.  `RobustPrefixNonnegative`
++means nonnegative cumulative change from the starting baseline at every prefix,
++under every admitted assessor.  It neither means absence of negative episodes
++nor absence of suffering.  Its nonempty-domain requirement prevents an empty
++assessment family from certifying anything.  This is a conservative policy
++relative to stated hypotheses, not a derived definition of moral welfare.
++
++References:
++* Joffily and Coricelli (2013), https://doi.org/10.1371/journal.pcbi.1003094
++* Berridge, Robinson and Aldridge (2009), "Dissecting components of reward:
++  liking, wanting, and learning", https://pmc.ncbi.nlm.nih.gov/articles/PMC2756052/
++* Long et al. (2024), "Taking AI Welfare Seriously",
++  https://arxiv.org/abs/2411.00986
++-/
++
++set_option autoImplicit false
++
++namespace Mettapedia.CognitiveArchitecture.Consciousness.Valence
++
++open Mettapedia.Cybernetics
++open Mettapedia.GSLT.Dynamics.EffectTraceInterleaving
++open Mettapedia.CognitiveArchitecture.Agent
++open Mettapedia.CognitiveArchitecture.Agent.WellbeingObserverTransformationBoundary
++
++universe uState uInput uTarget uTargetInput uHypothesis uTargetHypothesis
++
++variable {State : Type uState} {Input : Type uInput}
++
++/-- An authored transition assessment, indexed by both actual endpoints and
++the input occurrence.  Its interpretation is a separate hypothesis. -/
++abbrev TransitionAppraisal (State : Type uState) (Input : Type uInput) :=
++  State → Input → State → ℚ
++
++/-- Difference over one discrete time unit, not a continuous derivative. -/
++def potentialDrop (potential : State → ℚ) : TransitionAppraisal State Input :=
++  fun before _ after => potential before - potential after
++
++theorem potentialDrop_nonneg_iff (potential : State → ℚ)
++    (before after : State) (input : Input) :
++    0 ≤ potentialDrop potential before input after ↔
++      potential after ≤ potential before := by
++  exact sub_nonneg
++
++theorem potentialDrop_scale (potential : State → ℚ) (scale : ℚ)
++    (before after : State) (input : Input) :
++    potentialDrop (fun state => scale * potential state) before input after =
++      scale * potentialDrop potential before input after := by
++  simp only [potentialDrop]
++  ring
++
++/-- Accumulate assessments along the states actually produced by `step`.
++Repeated inputs contribute repeated occurrences; no set deduplication occurs. -/
++def accumulated (step : State → Input → State)
++    (appraisal : TransitionAppraisal State Input) : State → List Input → ℚ
++  | _, [] => 0
++  | initial, input :: inputs =>
++      appraisal initial input (step initial input) +
++        accumulated step appraisal (step initial input) inputs
++
++@[simp] theorem accumulated_nil (step : State → Input → State)
++    (appraisal : TransitionAppraisal State Input) (initial : State) :
++    accumulated step appraisal initial [] = 0 := rfl
++
++@[simp] theorem accumulated_cons (step : State → Input → State)
++    (appraisal : TransitionAppraisal State Input) (initial : State)
++    (input : Input) (inputs : List Input) :
++    accumulated step appraisal initial (input :: inputs) =
++      appraisal initial input (step initial input) +
++        accumulated step appraisal (step initial input) inputs := rfl
++
++/-- Temporal composition starts the second segment at the first segment's
++actual endpoint.  It does not reset the system or re-use the initial state. -/
++theorem accumulated_append (step : State → Input → State)
++    (appraisal : TransitionAppraisal State Input) (initial : State)
++    (first second : List Input) :
++    accumulated step appraisal initial (first ++ second) =
++      accumulated step appraisal initial first +
++        accumulated step appraisal (run step initial first) second := by
++  induction first generalizing initial with
++  | nil => simp
++  | cons input inputs inductionHypothesis =>
++      simp only [List.cons_append, accumulated_cons, run_cons]
++      rw [inductionHypothesis]
++      exact (add_assoc _ _ _).symm
++
++/-- Finite potential differences telescope along the actual execution. -/
++theorem accumulated_potentialDrop (step : State → Input → State)
++    (potential : State → ℚ) (initial : State) (inputs : List Input) :
++    accumulated step (potentialDrop potential) initial inputs =
++      potential initial - potential (run step initial inputs) := by
++  induction inputs generalizing initial with
++  | nil => simp
++  | cons input inputs inductionHypothesis =>
++      simp only [accumulated_cons, potentialDrop, run_cons]
++      rw [inductionHypothesis]
++      ring
++
++/-- Actual tick commutation and per-transition appraisal compatibility imply
++transport of the complete temporal accumulation. -/
++theorem accumulated_map
++    {Target : Type uTarget} {TargetInput : Type uTargetInput}
++    (step : State → Input → State) (targetStep : Target → TargetInput → Target)
++    (mapState : State → Target) (mapInput : Input → TargetInput)
++    (commutes : ∀ state input,
++      mapState (step state input) = targetStep (mapState state) (mapInput input))
++    (appraisal : TransitionAppraisal State Input)
++    (targetAppraisal : TransitionAppraisal Target TargetInput)
++    (agrees : ∀ state input,
++      targetAppraisal (mapState state) (mapInput input)
++        (mapState (step state input)) = appraisal state input (step state input))
++    (initial : State) (inputs : List Input) :
++    accumulated targetStep targetAppraisal (mapState initial) (inputs.map mapInput) =
++      accumulated step appraisal initial inputs := by
++  induction inputs generalizing initial with
++  | nil => rfl
++  | cons input inputs inductionHypothesis =>
++      simp only [List.map_cons, accumulated_cons]
++      rw [← commutes, agrees, inductionHypothesis]
++
++/-- The existing occurrence-indexed evidence interface can retain exact
++computed appraisals, separately for each assessor.  Its evidence is arithmetic
++agreement with the authored execution, not evidence of felt experience. -/
++def executionJudgment {Hypothesis : Type uHypothesis} {Owner Revision : Type}
++    (step : State → Input → State)
++    (appraisal : Hypothesis → TransitionAppraisal State Input)
++    (executions : Mettapedia.Machines.StoreOccurrenceId Owner Revision →
++      State × List Input) : PatienthoodWellbeing.WellbeingJudgment Hypothesis Owner Revision where
++  Value := ℚ
++  Evidence hypothesis occurrence value :=
++    PLift (accumulated step (appraisal hypothesis)
++      (executions occurrence).1 (executions occurrence).2 = value)
++
++/-- A finite run's policy permits no negative cumulative prefix relative to
++its initial baseline, under a nonempty family of admitted appraisals. -/
++def RobustPrefixNonnegative {Hypothesis : Type uHypothesis}
++    (admitted : Set Hypothesis)
++    (step : State → Input → State)
++    (appraisal : Hypothesis → TransitionAppraisal State Input)
++    (initial : State) (inputs : List Input) : Prop :=
++  admitted.Nonempty ∧ ∀ hypothesis ∈ admitted, ∀ horizon,
++    0 ≤ accumulated step (appraisal hypothesis) initial (inputs.take horizon)
++
++theorem robustPrefixNonnegative_nil {Hypothesis : Type uHypothesis}
++    {admitted : Set Hypothesis} (nonempty : admitted.Nonempty)
++    (step : State → Input → State)
++    (appraisal : Hypothesis → TransitionAppraisal State Input) (initial : State) :
++    RobustPrefixNonnegative admitted step appraisal initial [] := by
++  exact ⟨nonempty, by intros; simp⟩
++
++/-- The empty assessor family cannot satisfy the conservative policy. -/
++theorem not_robustPrefixNonnegative_empty {Hypothesis : Type uHypothesis}
++    (step : State → Input → State)
++    (appraisal : Hypothesis → TransitionAppraisal State Input)
++    (initial : State) (inputs : List Input) :
++    ¬ RobustPrefixNonnegative (∅ : Set Hypothesis) step appraisal initial inputs := by
++  rintro ⟨⟨hypothesis, member⟩, _⟩
++  exact member
++
++/-- Enlarging the admitted hypothesis set cannot manufacture a permission.
++A nonempty subfamily is required to retain a meaningful policy. -/
++theorem robustPrefixNonnegative_of_subset {Hypothesis : Type uHypothesis}
++    {smaller larger : Set Hypothesis} (nonempty : smaller.Nonempty)
++    (subset : smaller ⊆ larger)
++    (step : State → Input → State)
++    (appraisal : Hypothesis → TransitionAppraisal State Input)
++    (initial : State) (inputs : List Input)
++    (safe : RobustPrefixNonnegative larger step appraisal initial inputs) :
++    RobustPrefixNonnegative smaller step appraisal initial inputs := by
++  exact ⟨nonempty, fun hypothesis member => safe.2 hypothesis (subset member)⟩
++
++/-- A negative prefix for any admitted hypothesis blocks this policy even if
++other assessments or the final cumulative value are positive. -/
++theorem not_robustPrefixNonnegative_of_negative {Hypothesis : Type uHypothesis}
++    {admitted : Set Hypothesis} (step : State → Input → State)
++    (appraisal : Hypothesis → TransitionAppraisal State Input)
++    (initial : State) (inputs : List Input) {hypothesis : Hypothesis}
++    (member : hypothesis ∈ admitted) (horizon : Nat)
++    (negative : accumulated step (appraisal hypothesis) initial
++      (inputs.take horizon) < 0) :
++    ¬ RobustPrefixNonnegative admitted step appraisal initial inputs := by
++  intro safe
++  exact (not_lt_of_ge (safe.2 hypothesis member horizon)) negative
++
++/-- Two permitted segments compose when the second certificate is evaluated
++from the first segment's actual final state and fresh local baseline. -/
++theorem robustPrefixNonnegative_append {Hypothesis : Type uHypothesis}
++    {admitted : Set Hypothesis} (step : State → Input → State)
++    (appraisal : Hypothesis → TransitionAppraisal State Input)
++    (initial : State) (first second : List Input)
++    (firstSafe : RobustPrefixNonnegative admitted step appraisal initial first)
++    (secondSafe : RobustPrefixNonnegative admitted step appraisal
++      (run step initial first) second) :
++    RobustPrefixNonnegative admitted step appraisal initial (first ++ second) := by
++  refine ⟨firstSafe.1, ?_⟩
++  intro hypothesis member horizon
++  by_cases within : horizon ≤ first.length
++  · rw [List.take_append_of_le_length within]
++    exact firstSafe.2 hypothesis member horizon
++  · have past : first.length ≤ horizon := Nat.le_of_lt (Nat.lt_of_not_ge within)
++    rw [List.take_append, List.take_of_length_le past, accumulated_append]
++    apply add_nonneg
++    · simpa using firstSafe.2 hypothesis member first.length
++    · exact secondSafe.2 hypothesis member (horizon - first.length)
++
++/-- Exact transport includes every admitted target assessor.  Covering only
++some target hypotheses would provide preservation for only that subfamily.
++The input map describes the actual translated run; no claim about additional
++target runs or reordered event occurrences is made. -/
++theorem robustPrefixNonnegative_map_iff
++    {Target : Type uTarget} {TargetInput : Type uTargetInput}
++    {Hypothesis : Type uHypothesis} {TargetHypothesis : Type uTargetHypothesis}
++    (admitted : Set Hypothesis) (targetAdmitted : Set TargetHypothesis)
++    (mapHypothesis : Hypothesis → TargetHypothesis)
++    (preserves : ∀ hypothesis ∈ admitted, mapHypothesis hypothesis ∈ targetAdmitted)
++    (covers : ∀ targetHypothesis ∈ targetAdmitted,
++      ∃ hypothesis ∈ admitted, mapHypothesis hypothesis = targetHypothesis)
++    (step : State → Input → State) (targetStep : Target → TargetInput → Target)
++    (mapState : State → Target) (mapInput : Input → TargetInput)
++    (commutes : ∀ state input,
++      mapState (step state input) = targetStep (mapState state) (mapInput input))
++    (appraisal : Hypothesis → TransitionAppraisal State Input)
++    (targetAppraisal : TargetHypothesis → TransitionAppraisal Target TargetInput)
++    (agrees : ∀ hypothesis ∈ admitted, ∀ state input,
++      targetAppraisal (mapHypothesis hypothesis) (mapState state) (mapInput input)
++        (mapState (step state input)) =
++          appraisal hypothesis state input (step state input))
++    (initial : State) (inputs : List Input) :
++    RobustPrefixNonnegative targetAdmitted targetStep targetAppraisal
++      (mapState initial) (inputs.map mapInput) ↔
++        RobustPrefixNonnegative admitted step appraisal initial inputs := by
++  constructor
++  · rintro ⟨⟨targetHypothesis, targetMember⟩, safe⟩
++    obtain ⟨hypothesis, member, _⟩ := covers targetHypothesis targetMember
++    refine ⟨⟨hypothesis, member⟩, ?_⟩
++    intro sourceHypothesis sourceMember horizon
++    have bound := safe (mapHypothesis sourceHypothesis)
++      (preserves sourceHypothesis sourceMember) horizon
++    rw [← List.map_take, accumulated_map step targetStep mapState mapInput
++      commutes (appraisal sourceHypothesis) _
++      (agrees sourceHypothesis sourceMember)] at bound
++    exact bound
++  · rintro ⟨⟨hypothesis, member⟩, safe⟩
++    refine ⟨⟨mapHypothesis hypothesis, preserves hypothesis member⟩, ?_⟩
++    intro targetHypothesis targetMember horizon
++    obtain ⟨sourceHypothesis, sourceMember, rfl⟩ := covers targetHypothesis targetMember
++    rw [← List.map_take, accumulated_map step targetStep mapState mapInput
++      commutes (appraisal sourceHypothesis) _ (agrees sourceHypothesis sourceMember)]
++    exact safe sourceHypothesis sourceMember horizon
++
++/-! ## Discriminating controls -/
++
++namespace Controls
++
++open Mettapedia.CognitiveArchitecture.MicroPsi
++
++/-- The same reported reward coexists with independently authored PAD states. -/
++abbrev LearningAffect := ℚ × PADState
++
++def rewardObserver : Observer LearningAffect ℚ where
++  observe := Prod.fst
++
++def pleasureAppraisal (state : LearningAffect) : ℚ := state.2.pleasure.val
++
++def rewardEqualHigh : LearningAffect := (7, PADState.happy)
++def rewardEqualLow : LearningAffect := (7, PADState.sad)
++
++/-- Equal learning reward does not make the architectural pleasure variable
++recoverable.  These PAD labels do not establish experienced happiness. -/
++theorem reward_does_not_determine_pleasure :
++    rewardObserver.observe rewardEqualHigh = rewardObserver.observe rewardEqualLow ∧
++      pleasureAppraisal rewardEqualHigh ≠ pleasureAppraisal rewardEqualLow ∧
++      ¬ AppraisalVisibleAt pleasureAppraisal rewardObserver := by
++  have different : pleasureAppraisal rewardEqualHigh ≠ pleasureAppraisal rewardEqualLow := by
++    norm_num [pleasureAppraisal, rewardEqualHigh, rewardEqualLow,
++      PADState.happy, PADState.sad, Mettapedia.CognitiveArchitecture.OpenPsi.UnitValue.one,
++      Mettapedia.CognitiveArchitecture.OpenPsi.UnitValue.zero]
++  exact ⟨rfl, different, appraisal_not_visible_of_collision
++    (first := rewardEqualHigh) (second := rewardEqualLow) rfl different⟩
++
++/-- Enriching the observer by the PAD coordinate earns the missing readout. -/
++def affectObserver : Observer LearningAffect (ℚ × ℚ) where
++  observe state := (state.1, state.2.pleasure.val)
++
++theorem pleasure_visible_with_affect :
++    AppraisalVisibleAt pleasureAppraisal affectObserver :=
++  ⟨Prod.snd, fun _ => rfl⟩
++
++/-- True increases a toy potential; false decreases it. -/
++def move (state : ℚ) (input : Bool) : ℚ :=
++  if input then state + 1 else state - 1
++
++/-- Two admitted hypotheses retain distinct magnitudes with the same sign. -/
++def assessment (sensitive : Bool) : TransitionAppraisal ℚ Bool :=
++  potentialDrop (fun state => (if sensitive then 2 else 1) * state)
++
++/-- Both appraisals certify the actual two-step decreasing trajectory. -/
++theorem decreasing_run_robust :
++    RobustPrefixNonnegative Set.univ move assessment 3 [false, false] := by
++  refine ⟨⟨false, Set.mem_univ _⟩, ?_⟩
++  intro hypothesis _ horizon
++  cases hypothesis <;> cases horizon with
++  | zero => simp
++  | succ horizon =>
++      cases horizon <;>
++        norm_num [accumulated, assessment, potentialDrop, move, List.take]
++
++/-- Change coordinates by a factor of two and reverse the input tags. -/
++def encodedMove (state : ℚ) (input : Bool) : ℚ :=
++  if input then state - 2 else state + 2
++
++def encodedAssessment (hypothesis : Bool) : TransitionAppraisal ℚ Bool :=
++  potentialDrop (fun state => if hypothesis then state / 2 else state)
++
++theorem coordinate_tick_commutes (state : ℚ) (input : Bool) :
++    2 * move state input = encodedMove (2 * state) (!input) := by
++  cases input <;> simp [move, encodedMove] <;> ring
++
++theorem coordinate_appraisal_commutes (hypothesis : Bool)
++    (state : ℚ) (input : Bool) :
++    encodedAssessment (!hypothesis) (2 * state) (!input)
++      (2 * move state input) = assessment hypothesis state input (move state input) := by
++  cases hypothesis <;> cases input <;>
++    simp [encodedAssessment, assessment, potentialDrop, move]
++
++/-- The concrete coordinate and tag changes preserve the entire prefix policy,
++including both distinct admitted appraisals. -/
++theorem coordinate_recode_robust_iff (initial : ℚ) (inputs : List Bool) :
++    RobustPrefixNonnegative Set.univ encodedMove encodedAssessment
++      (2 * initial) (inputs.map Bool.not) ↔
++        RobustPrefixNonnegative Set.univ move assessment initial inputs := by
++  apply robustPrefixNonnegative_map_iff Set.univ Set.univ Bool.not
++    (fun _ _ => Set.mem_univ _) _ move encodedMove
++    (fun state => 2 * state) Bool.not coordinate_tick_commutes
++    assessment encodedAssessment (fun hypothesis _ => coordinate_appraisal_commutes hypothesis)
++  intro hypothesis _
++  exact ⟨!hypothesis, Set.mem_univ _, Bool.not_not hypothesis⟩
++
++theorem coordinate_recode_positive :
++    RobustPrefixNonnegative Set.univ encodedMove encodedAssessment 6 [true, true] := by
++  have coordinates : (2 * 3 : ℚ) = 6 := by norm_num
++  simpa only [coordinates, List.map_cons, List.map_nil, Bool.not_false] using
++    (coordinate_recode_robust_iff 3 [false, false]).mpr decreasing_run_robust
++
++/-- Returning to the starting potential has zero total change but retains a
++negative first prefix.  An endpoint check alone loses this distinction. -/
++theorem zero_total_with_negative_prefix :
++    accumulated move (assessment false) 0 [true, false] = 0 ∧
++      accumulated move (assessment false) 0 [true] = -1 ∧
++      ¬ RobustPrefixNonnegative Set.univ move assessment 0 [true, false] := by
++  refine ⟨by norm_num [accumulated, assessment, potentialDrop, move],
++    by norm_num [accumulated, assessment, potentialDrop, move], ?_⟩
++  apply not_robustPrefixNonnegative_of_negative move assessment 0 [true, false]
++    (hypothesis := false) (Set.mem_univ _) 1
++  norm_num [accumulated, assessment, potentialDrop, move]
++
++/-- A prefix-safe trajectory can still contain a negative individual episode.
++The policy must not be advertised as a suffering-free guarantee. -/
++theorem robust_policy_allows_negative_episode :
++    RobustPrefixNonnegative Set.univ move assessment 3 [false, false, true] ∧
++      assessment false 1 true (move 1 true) = -1 := by
++  constructor
++  · refine ⟨⟨false, Set.mem_univ _⟩, ?_⟩
++    intro hypothesis _ horizon
++    cases hypothesis <;> cases horizon with
++    | zero => simp
++    | succ horizon =>
++        cases horizon with
++        | zero => norm_num [accumulated, assessment, potentialDrop, move, List.take]
++        | succ horizon =>
++            cases horizon <;>
++              norm_num [accumulated, assessment, potentialDrop, move, List.take]
++  · norm_num [assessment, potentialDrop, move]
++
++/-- Alternative hypotheses can disagree in polarity, not only magnitude. -/
++def disputedAssessment (hypothesis : Bool) : TransitionAppraisal ℚ Bool :=
++  potentialDrop (fun state => if hypothesis then -state else state)
++
++theorem disagreement_blocks_extension :
++    RobustPrefixNonnegative {false} move disputedAssessment 3 [false] ∧
++      ¬ RobustPrefixNonnegative Set.univ move disputedAssessment 3 [false] := by
++  constructor
++  · refine ⟨⟨false, Set.mem_singleton _⟩, ?_⟩
++    intro hypothesis member horizon
++    have equal : hypothesis = false := Set.mem_singleton_iff.mp member
++    subst hypothesis
++    cases horizon <;>
++      norm_num [accumulated, disputedAssessment, potentialDrop, move, List.take]
++  · apply not_robustPrefixNonnegative_of_negative move disputedAssessment 3 [false]
++      (hypothesis := true) (Set.mem_univ _) 1
++    norm_num [accumulated, disputedAssessment, potentialDrop, move]
++
++end Controls
++
++end Mettapedia.CognitiveArchitecture.Consciousness.Valence

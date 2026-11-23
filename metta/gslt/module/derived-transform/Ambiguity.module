@@ -1,0 +1,12 @@
+import "Expressions.module" as expressions
+
+Module Ambiguity {
+  Theory Grammar() {
+    expressions.Grammar()
+    Terms {
+      DValueAlternative . a0:SrcSpacing, a1:DTerm |- "(value" a0 a1 ")" : DCode;
+    }
+  }
+  Theory LexicalProfile() { expressions.LexicalProfile() }
+  theory Grammar()
+}

@@ -1,0 +1,13 @@
+!(collapse (once (superpose (
+    (let $ignored1 (add-atom &self (mark silent)) (empty))
+    (let $ignored2 (add-atom &self (mark chosen)) (record a))
+    (let $ignored3 (add-atom &self (mark forbidden)) (record b))))))
+!(collapse (match &self (mark $x) $x))
+!(collapse (once (record (superpose (first second))
+                         (let $ignored4 (add-atom &self (mark suffix)) x))))
+!(collapse (match &self (mark suffix) present))
+!(collapse (superpose ((once (superpose (a b))) outer)))
+!(collapse (once (empty)))
+!(let $f (|-> () (superpose (kept (+ bad-value 3)))) (collapse (once ($f))))
+!(collapse (once (superpose ((collapse (empty)) ignored))))
+!(collapse (superpose ((once (empty)) after-empty)))

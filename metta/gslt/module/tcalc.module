@@ -1,0 +1,81 @@
+{- tcalc is a moving target. The name covers a family, a web, of transform steps that differ in a few
+   choices: the store, how many matches one firing commits, whether guards are asked before or after a
+   firing's own tells, where the rules live, and one store or several worlds. This module gives the
+   events of one step (a request fires when it is prepared and permitted) and the syntax of its rules,
+   terms, selections and configurations. -}
+Module Tcalc {
+  Theory States() { Types { State; } }
+  Theory Firings() { Types { Firing; } }
+  Theory Transitions(states: States, firings: Firings) {
+    states \/ firings
+    Types { Proc; }
+    Terms {
+      At . state:State |- "at" state : Proc;
+      Request . state:State, firing:Firing |- "fire" state firing : Proc;
+    }
+    Rewrites {
+      Execute : if prepared(s, f, t), permitted(s, f) then (Request s f) ~> (At t);
+    }
+  }
+  Theory Events() { Transitions(States(), Firings()) }
+  Theory Syntax() {
+    Types {
+      TcIndex; TcHead; TcTerm; TcFields; TcTerms;
+      TcEquation; TcEquations; TcCheck; TcChecks; TcRule;
+      TcIndices; TcSelection; TcConfiguration; TcQuantifier;
+    }
+    Terms {
+      TcZero . |- "z" : TcIndex;
+      TcSucc . index:TcIndex |- "(" "s" index ")" : TcIndex;
+      TcSymbol . index:TcIndex |- "(" "symbol" index ")" : TcHead;
+      TcName . index:TcIndex |- "(" "name" index ")" : TcHead;
+      TcHole . index:TcIndex |- "(" "hole" index ")" : TcHead;
+      TcQuotedRule . index:TcIndex |- "(" "quoted-rule" index ")" : TcHead;
+      TcVar . index:TcIndex |- "(" "var" index ")" : TcTerm;
+      TcNode . head:TcHead, fields:TcFields |- "(" "node" head fields ")" : TcTerm;
+      TcFieldsNil . |- "fields-end" : TcFields;
+      TcFieldsCons . depth:TcIndex, term:TcTerm, rest:TcFields |-
+        "(" "field" depth term rest ")" : TcFields;
+      TcTermsNil . |- "terms-end" : TcTerms;
+      TcTermsCons . term:TcTerm, rest:TcTerms |- "(" "term" term rest ")" : TcTerms;
+      TcEquationData . left:TcTerm, right:TcTerm |- "(" "equation" left right ")" : TcEquation;
+      TcEquationsNil . |- "equations-end" : TcEquations;
+      TcEquationsCons . equation:TcEquation, rest:TcEquations |-
+        "(" "equation-entry" equation rest ")" : TcEquations;
+      TcEqual . left:TcTerm, right:TcTerm |- "(" "equal" left right ")" : TcCheck;
+      TcPredicate . quantifier:TcQuantifier, term:TcTerm |- "(" "predicate" quantifier term ")" : TcCheck;
+      TcCount . term:TcTerm, count:TcIndex |- "(" "count" term count ")" : TcCheck;
+      TcChecksNil . |- "checks-end" : TcChecks;
+      TcChecksCons . check:TcCheck, rest:TcChecks |- "(" "check" check rest ")" : TcChecks;
+      TcRuleData . take:TcTerms, read:TcTerms, tell:TcEquations, checks:TcChecks, make:TcTerms |-
+        "(" "rule" take read tell checks make ")" : TcRule;
+      TcIndicesNil . |- "indices-end" : TcIndices;
+      TcIndicesCons . index:TcIndex, rest:TcIndices |- "(" "index" index rest ")" : TcIndices;
+      TcSelectionData . take:TcIndices, read:TcIndices, make:TcIndices |-
+        "(" "selection" take read make ")" : TcSelection;
+      TcConfigurationData . knowledge:TcEquations, present:TcIndices |-
+        "(" "configuration" knowledge present ")" : TcConfiguration;
+      TcAny . |- "any" : TcQuantifier;
+      TcNone . |- "none" : TcQuantifier;
+    }
+  }
+  Theory OccurrenceStates(data: Syntax) {
+    States() \/ data
+    Terms {
+      StateData . configuration:TcConfiguration |- "(" "state" configuration ")" : State;
+    }
+  }
+  Theory OccurrenceFirings(data: Syntax) {
+    Firings() \/ data
+    Terms {
+      FiringData . source:TcConfiguration, rule:TcRule, selection:TcSelection |-
+        "(" "candidate" source rule selection ")" : Firing;
+    }
+  }
+  Theory Transform() {
+    let data = Syntax() in (
+      Transitions(OccurrenceStates(data), OccurrenceFirings(data))
+    )
+  }
+  theory Transform()
+}

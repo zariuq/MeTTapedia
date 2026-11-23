@@ -1,0 +1,7 @@
+!(collapse (match &q (job $left) $left))
+!(collapse (match &q (credit $left) $left))
+!(collapse (match &out (done $answer) $answer))
+!(let $ignored (add-atom &q (credit three)) (empty))
+!(collapse (transform &q (, (take (job $j2)) (take (credit $credit2))) (done $j2) &out))
+!(collapse (match &q (job $left) $left))
+!(collapse (match &out (done $answer) $answer))

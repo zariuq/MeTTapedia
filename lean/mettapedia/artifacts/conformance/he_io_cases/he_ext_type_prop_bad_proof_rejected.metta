@@ -1,0 +1,6 @@
+(: Entity Type)
+(: Socrates Entity)
+(: Human (-> Entity Type))
+(: Mortal (-> Entity Type))
+(: HumansAreMortal (-> (Human $t) (Mortal $t)))
+!(get-type (HumansAreMortal (Human Socrates)))

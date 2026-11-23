@@ -1,0 +1,7 @@
+(IndependentOrdersAgree true)
+(BothOriginsRetained true)
+(ExchangedOrigins ((Event 1 copy) (Event 0 copy)))
+(GuardedOrderDiffers true)
+(RefusalKeepsPending true)
+(ReplayRefused true)
+(ReplayKeepsResult true)

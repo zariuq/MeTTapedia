@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.CompletedInvocation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.IfCallBranches
 
 /-!
@@ -278,85 +279,57 @@ theorem bag_source {atoms : List Atom} (program : IfCallProgram atoms) {c y n : 
     fun frame => HERuns.read_closed policy frame bag.closedYes
   have readN : ∀ frame : Frame, frame.read policy (Entry.Value.ofAtom n) = Entry.Value.ofAtom n :=
     fun frame => HERuns.read_closed policy frame bag.closedNo
-  cases derived with
-  | delivered entered => cases Entry.functional entered entry
-  | cast entered => cases Entry.functional entered entry
-  | tuple _ shaped occurs _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      rw [Entry.Value.erase_ofAtom] at occurs
-      have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-        program.types.occurrences
-      simp [Atom.undefinedType] at same
-  | fallback _ shaped chosenRel _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      obtain ⟨_, _, _, _, impossible⟩ := outcome chosenRel
-      cases impossible
-  | selectionFailed _ shaped chosenRel _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      obtain ⟨_, _, _, _, impossible⟩ := outcome chosenRel
-      cases impossible
-  | function _ shaped chosenRel invoked priority =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, rfl⟩ := shaped
-      obtain ⟨signature, after, functionType, afterBindings, selected⟩ := outcome chosenRel
-      simp only [Completed.InvocationSelection.selected.injEq] at selected
-      obtain ⟨rfl, rfl⟩ := selected
+  obtain ⟨_, chosenRel, invocationResult⟩ :=
+    (Completed.AtomRel.iff_invocation entry shape (fun occurs => by
+        rw [Entry.Value.erase_ofAtom] at occurs
+        have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
+          program.types.occurrences
+        simp [Atom.undefinedType] at same)).mp derived
+  obtain ⟨signature, after, functionType, afterBindings, rfl⟩ := outcome chosenRel
+  cases invocationResult with
+  | selected invoked priority =>
       have projections := if_projections functionType
       have returnTypeOf : ∀ {s : SelectedTypePolicy}, s.returnType = .var "t" →
           Completed.invocationReturnType s = .var "t" := by
         intro s same
         simp [Completed.invocationReturnType, same, Atom.expressionType]
       have returnType := returnTypeOf projections.2
-      cases invoked with
-      | cons function calls rest =>
-          cases rest
-          cases function with
-          | evaluated _ operatorRel branchesRel =>
-              rw [functionType] at operatorRel
-              obtain ⟨frF, rfl⟩ := typed_cast_source_at if_data
-                (symbol_cast_entry (by decide) (by decide) (by decide +kernel)) program.types
-                (ifArrow_accepts afterBindings) operatorRel
-              rw [projections.1] at branchesRel
-              simp only [List.map_cons, List.map_nil, List.zip_cons_cons, List.zip_nil_right]
-                at branchesRel
-              cases branchesRel with
-              | stopped stopped _ =>
-                  rw [Entry.Value.erase_ofAtom] at stopped
-                  exact absurd stopped if_data.not_stopped
-              | continuing _ arguments restBranches =>
-                  cases restBranches
-                  cases arguments with
-                  | cons conditionRel conditionBranches =>
-                      have conditionErase := conditionDetermined (Entry.Value.ofAtom c)
-                        (Entry.Value.erase_ofAtom c) (marked_ofAtom c) _ _ _ _ conditionRel
-                      have packetsEq := condition_packets readY readN _ Lc conditionErase
-                        bag.booleans conditionBranches
-                      rw [returnType] at calls
-                      simp only [List.append_nil] at calls
-                      have answered := bag_calls program bag _ Lc (fun _ member => member)
-                        (by
-                          rw [List.map_map]
-                          have viaFst : ((fun r => r.1) ∘ Completed.functionAssemble
-                              (Entry.Value.ofAtom (.symbol "if"))) =
-                              (fun r : Result => (Completed.functionAssemble
-                                (Entry.Value.ofAtom (.symbol "if")) (r.1, Completed.Frame.empty)).1) := by
-                            funext r
-                            exact assemble_fst _ r _
-                          rw [viaFst]
-                          have mapped := congrArg (List.map fun v : Entry.Value =>
-                            (Completed.functionAssemble (Entry.Value.ofAtom (.symbol "if"))
-                              (v, Completed.Frame.empty)).1) packetsEq
-                          simpa only [List.map_map, Function.comp_def] using mapped)
-                        calls
-                      exact publish_answers (by simp only [List.append_nil]; exact answered)
-                        clean priority
+      obtain ⟨_, function, calls⟩ := Completed.InvocationsRel.singleton_iff.mp invoked
+      cases function with
+      | evaluated _ operatorRel branchesRel =>
+          rw [functionType] at operatorRel
+          obtain ⟨frF, rfl⟩ := typed_cast_source_at if_data
+            (symbol_cast_entry (by decide) (by decide) (by decide +kernel)) program.types
+            (ifArrow_accepts afterBindings) operatorRel
+          rw [projections.1] at branchesRel
+          simp only [List.map_cons, List.map_nil, List.zip_cons_cons, List.zip_nil_right]
+            at branchesRel
+          obtain ⟨_, arguments, rfl⟩ :=
+            (Completed.FunctionBranchesRel.singleton_continuing_iff
+              (by simpa only [Entry.Value.erase_ofAtom] using if_data.not_stopped)).mp branchesRel
+          cases arguments with
+          | cons conditionRel conditionBranches =>
+              have conditionErase := conditionDetermined (Entry.Value.ofAtom c)
+                (Entry.Value.erase_ofAtom c) (marked_ofAtom c) _ _ _ _ conditionRel
+              have packetsEq := condition_packets readY readN _ Lc conditionErase
+                bag.booleans conditionBranches
+              rw [returnType] at calls
+              have answered := bag_calls program bag _ Lc (fun _ member => member)
+                (by
+                  rw [List.map_map]
+                  have viaFst : ((fun r => r.1) ∘ Completed.functionAssemble
+                      (Entry.Value.ofAtom (.symbol "if"))) =
+                      (fun r : Result => (Completed.functionAssemble
+                        (Entry.Value.ofAtom (.symbol "if")) (r.1, Completed.Frame.empty)).1) := by
+                    funext r
+                    exact assemble_fst _ r _
+                  rw [viaFst]
+                  have mapped := congrArg (List.map fun v : Entry.Value =>
+                    (Completed.functionAssemble (Entry.Value.ofAtom (.symbol "if"))
+                      (v, Completed.Frame.empty)).1) packetsEq
+                  simpa only [List.map_map, Function.comp_def] using mapped)
+                calls
+              exact publish_answers answered clean priority
 
 /-! ## A complete run -/
 

@@ -1,0 +1,6 @@
+!(bind! &jobs (new-space))
+!(add-atom &jobs (edge a b))
+!(add-atom &jobs (edge b c))
+!(add-atom &jobs (exec (0 overlap) (, (edge $x $y)) (O (+ $x) (- $y))))
+!(select 100 (search-policy (control FIFO (resources MM2) (budget 100000))) &jobs)
+!(collapse (get-atoms &jobs))

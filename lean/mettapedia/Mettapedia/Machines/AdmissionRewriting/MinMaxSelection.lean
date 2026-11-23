@@ -9,7 +9,7 @@ PeTTa conformance list, entry 17 of its `swi_differences` test); SWI-PeTTa compu
 as arithmetic (`MinMaxSWI`). The rule:
 * the answer is an operand itself, never a new value: `(min pi 4)` is `pi`;
 * operands are ordered by the exact value they stand for, a constant by the double it reads
-  as, integers and doubles compared exactly, and `-0.0` below `0` and `0.0` (`keyOf`);
+  as, integers and doubles compared exactly; `-0.0`, `0` and `0.0` are one value (`valOf`);
 * a NaN operand propagates, the first one (IEEE 754-2019 `minimum` and `maximum`);
 * on a tie `min` answers its first operand and `max` its second.
 
@@ -18,7 +18,7 @@ as arithmetic (`MinMaxSWI`). The rule:
   (`selMin_idem`, `selMax_idem`), is associative exactly, NaN included (`selMin_assoc`,
   `selMax_assoc`), and answers NaN exactly when an operand is NaN (`selMin_nan`,
   `selMax_nan`);
-* each is commutative up to equivalence, equal keys or both NaN (`selMin_comm`,
+* each is commutative up to equivalence, equal values or both NaN (`selMin_comm`,
   `selMax_comm`);
 * on operands that are not NaN, `(min a b, max a b)` is the stable sort of `(a, b)`: `(b, a)`
   where `b` is strictly below `a`, `(a, b)` otherwise (`stable_sort`, `sort_perm`), and
@@ -26,13 +26,35 @@ as arithmetic (`MinMaxSWI`). The rule:
 A NaN breaks the stable sort and absorption by design, since both answer it
 (`Controls.nan_propagates`).
 
+**Lean's `min` and `max`, and arithmetic through them.** On operands that are not NaN the
+selection is exactly the `min` and `max` that Lean's `minOfLe` and `maxOfLe` build from the
+order of values (`selMin_eq_minOfLe`, `selMax_eq_maxOfLe`), and it answers an operand of
+least or greatest value (`valOf_selMin`, `valOf_selMax`). Hence:
+* a chain of operations that read only their operands' values, through `min` and `max`, has
+  the value of the same chain computed on the extended rationals, for this or any other
+  choice of tied operand (`Chain.value_run`, `chain_any_tie_rule`);
+* an operation monotone in an argument, exact or rounded by any monotone rounding, commutes
+  with `min` and `max` there, and an antitone one exchanges them (`min_through_monotone`,
+  `max_through_monotone`, `min_through_antitone`): `(+ (min a b) c)` has the value of
+  `(min (+ a c) (+ b c))`, and `(- c (min a b))` that of `(max (- c a) (- c b))`;
+* no rule that answers its first operand whenever its value is at most the other's answers
+  one operand in both orders of two distinct numbers of one value, such as `1` and `1.0`
+  (`no_commutative_le_rule`): commutativity up to value is all such a rule can have;
+* `clamp` is `(max lo (min x hi))` under the selection (`selClamp`): its value is the
+  clamped value (`valOf_selClamp`), it answers `x` whenever `lo ≤ x ≤ hi` by value, ties
+  with either bound included, and otherwise the bound `x` crosses (`selClamp_inside`,
+  `selClamp_below`, `selClamp_above`).
+An operation that reads a zero's sign, as IEEE's `1/x` does at zero, sees which tied zero was
+answered, and reads no function of values (`Controls.sign_reader_sees_tie`,
+`Controls.sign_reader_not_value`); PeTTa's `/` raises an error on a zero divisor of either
+sign.
+
 **The C** (`petta_numeric_min_max`, modelled by `cSel`): NaN first; then an exact
 comparison of two machine integers, of two doubles, or of a machine integer and a double
 (`grounded_int_float_order`, modelled by `cmpIntDblQ`, exact on every machine integer, the
 `2^63` edges included: `cmpIntDblQ_exact`); a big integer compared exactly with every other
 number (`num_arg_compare_value`; beside a double, the infinities first, then the exact order
-of rationals: `cmpExactXR`, `cmpExactXR_exact`); then `-0.0` below the other zeros, then the
-tie rule. It is the selection on every pair (`c_select_eq`), so on every pair of PeTTa's
+of rationals: `cmpExactXR`, `cmpExactXR_exact`); then the tie rule. It is the selection on every pair (`c_select_eq`), so on every pair of PeTTa's
 operands (integers, doubles, and the constants `inf`, `-inf`, `nan`, `pi`, `e`, `epsilon`:
 `c_select_operands`). The prepared intrinsic's integer path (`min` takes the first where
 `a <= b`, `max` the first where `a > b`), the open-equation machine's primitive, and the
@@ -50,9 +72,11 @@ on each (`Controls.big_double_exact`).
 **Controls of the other rules.** SWI's rule answers `2.0` for both `(min 2 2.0)` and
 `(max 2 2.0)`, and the earlier test rule (`min` the first where `<=` holds, `max` the first
 where `>=` holds) answers `2` for both: neither is a stable sort
-(`Controls.swi_breaks_sort`, `Controls.le_rule_breaks_sort`). The test `(if (<= x y) x y)`,
-comparing as PeTTa's `<=` does, is the selection at a mixed tie but not at signed zeros, at
-a NaN first operand, or at an integer and a double equal only as doubles
+(`Controls.swi_breaks_sort`, `Controls.le_rule_breaks_sort`). SWI also places `-0.0` below
+the other zeros: it answers `-0.0` for `(min 0.0 -0.0)`, though `0.0 ≤ -0.0` as values,
+where the selection answers `0.0` (`Controls.swi_signed_zero`). The test `(if (<= x y) x y)`,
+comparing as PeTTa's `<=` does, is the selection at a mixed tie and at signed zeros, but not
+at a NaN first operand or at an integer and a double equal only as doubles
 (`Controls.le_test_differs`), and no test that is false at NaN spells the selection, in
 either orientation (`Controls.no_single_test`).
 
@@ -64,7 +88,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Machines.AdmissionRewriting.MinMaxSelection
 
-open MinMaxSWI (XR ofQ Dbl Num Cmp cmpOf cmpOf_lt cmpOf_gt cmpOf_self cmpOf_swap negZ isNaN)
+open MinMaxSWI (XR ofQ Dbl Num Cmp cmpOf cmpOf_lt cmpOf_gt cmpOf_self cmpOf_swap isNaN)
 
 /-! ## The selection -/
 
@@ -74,9 +98,6 @@ def valOf : Num → XR
   | .flt .negZero => 0
   | .flt (.pt x) => x
   | .flt .nan => 0
-
-/-- **The order key**: the exact value, then `-0.0` below the other zeros. -/
-def keyOf (n : Num) : XR ×ₗ Bool := toLex (valOf n, !negZ n)
 
 /-- `(m, M)` is `(x, y)` or `(y, x)`. -/
 def IsPerm {β : Type} (x y m M : β) : Prop := (m = x ∧ M = y) ∨ (m = y ∧ M = x)
@@ -89,17 +110,17 @@ section Spec
 
 variable {α : Type} (num : α → Num)
 
-/-- **CeTTa's `min`**: the first NaN operand, else the operand with the lower key, the
-first on a tie. -/
+/-- **CeTTa's `min`**: the first NaN operand, else the operand of lower value, the first on
+a tie. -/
 def selMin (x y : α) : α :=
   if isNaN (num x) then x else if isNaN (num y) then y
-  else if keyOf (num y) < keyOf (num x) then y else x
+  else if valOf (num y) < valOf (num x) then y else x
 
-/-- **CeTTa's `max`**: the first NaN operand, else the operand with the higher key, the
-second on a tie. -/
+/-- **CeTTa's `max`**: the first NaN operand, else the operand of higher value, the second
+on a tie. -/
 def selMax (x y : α) : α :=
   if isNaN (num x) then x else if isNaN (num y) then y
-  else if keyOf (num y) < keyOf (num x) then x else y
+  else if valOf (num y) < valOf (num x) then x else y
 
 theorem selMin_mem (x y : α) : selMin num x y = x ∨ selMin num x y = y := by
   unfold selMin
@@ -121,7 +142,7 @@ theorem selMax_idem (x : α) : selMax num x x = x := by
 where `b` is strictly below `a`, and `(a, b)` otherwise. -/
 theorem stable_sort {x y : α} (hx : isNaN (num x) = false) (hy : isNaN (num y) = false) :
     (selMin num x y, selMax num x y) =
-      if keyOf (num y) < keyOf (num x) then (y, x) else (x, y) := by
+      if valOf (num y) < valOf (num x) then (y, x) else (x, y) := by
   unfold selMin selMax
   simp only [hx, hy, Bool.false_eq_true, if_false]
   split_ifs <;> rfl
@@ -139,19 +160,19 @@ theorem sort_perm {x y : α} (hx : isNaN (num x) = false) (hy : isNaN (num y) = 
     simp only [Prod.mk.injEq] at h
     exact h
 
-/-- Two operands are equivalent: both NaN, or neither NaN with one key. -/
+/-- Two operands are equivalent: both NaN, or neither NaN with one value. -/
 def Equiv (x y : α) : Prop :=
   (isNaN (num x) = true ∧ isNaN (num y) = true) ∨
-    (isNaN (num x) = false ∧ isNaN (num y) = false ∧ keyOf (num x) = keyOf (num y))
+    (isNaN (num x) = false ∧ isNaN (num y) = false ∧ valOf (num x) = valOf (num y))
 
 theorem selMin_comm (x y : α) : Equiv num (selMin num x y) (selMin num y x) := by
   unfold selMin Equiv
   cases hx : isNaN (num x) <;> cases hy : isNaN (num y) <;>
     simp only [hx, hy, Bool.false_eq_true, if_true, if_false, and_true, true_or]
-  by_cases h1 : keyOf (num y) < keyOf (num x)
-  · have h2 : ¬ keyOf (num x) < keyOf (num y) := not_lt.mpr h1.le
+  by_cases h1 : valOf (num y) < valOf (num x)
+  · have h2 : ¬ valOf (num x) < valOf (num y) := not_lt.mpr h1.le
     simp [h1, h2, hy]
-  · by_cases h2 : keyOf (num x) < keyOf (num y)
+  · by_cases h2 : valOf (num x) < valOf (num y)
     · simp [h1, h2, hx]
     · have := le_antisymm (not_lt.mp h2) (not_lt.mp h1)
       simp [hx, hy, this]
@@ -160,10 +181,10 @@ theorem selMax_comm (x y : α) : Equiv num (selMax num x y) (selMax num y x) := 
   unfold selMax Equiv
   cases hx : isNaN (num x) <;> cases hy : isNaN (num y) <;>
     simp only [hx, hy, Bool.false_eq_true, if_true, if_false, and_true, true_or]
-  by_cases h1 : keyOf (num y) < keyOf (num x)
-  · have h2 : ¬ keyOf (num x) < keyOf (num y) := not_lt.mpr h1.le
+  by_cases h1 : valOf (num y) < valOf (num x)
+  · have h2 : ¬ valOf (num x) < valOf (num y) := not_lt.mpr h1.le
     simp [h1, h2, hx]
-  · by_cases h2 : keyOf (num x) < keyOf (num y)
+  · by_cases h2 : valOf (num x) < valOf (num y)
     · simp [h1, h2, hy]
     · have := le_antisymm (not_lt.mp h2) (not_lt.mp h1)
       simp [hx, hy, this]
@@ -189,7 +210,7 @@ theorem selMax_nan (x y : α) :
   · simp [hx]
 
 /-- **`min` is associative exactly**: both groupings answer the first NaN, or the first
-operand with the lowest key. -/
+operand of the lowest value. -/
 theorem selMin_assoc (x y z : α) :
     selMin num (selMin num x y) z = selMin num x (selMin num y z) := by
   unfold selMin
@@ -198,15 +219,15 @@ theorem selMin_assoc (x y z : α) :
   all_goals
     first
     | rfl
-    | (by_cases h1 : keyOf (num y) < keyOf (num x) <;>
-        by_cases h2 : keyOf (num z) < keyOf (num y) <;>
-        by_cases h3 : keyOf (num z) < keyOf (num x) <;> simp [hx, hy, hz, h1, h2, h3] <;>
+    | (by_cases h1 : valOf (num y) < valOf (num x) <;>
+        by_cases h2 : valOf (num z) < valOf (num y) <;>
+        by_cases h3 : valOf (num z) < valOf (num x) <;> simp [hx, hy, hz, h1, h2, h3] <;>
         first
         | exact absurd (h2.trans h1) h3
         | exact absurd h3 (not_lt.mpr ((not_lt.mp h1).trans (not_lt.mp h2))))
 
 /-- **`max` is associative exactly**: both groupings answer the first NaN, or the last
-operand with the highest key. -/
+operand of the highest value. -/
 theorem selMax_assoc (x y z : α) :
     selMax num (selMax num x y) z = selMax num x (selMax num y z) := by
   unfold selMax
@@ -215,9 +236,9 @@ theorem selMax_assoc (x y z : α) :
   all_goals
     first
     | rfl
-    | (by_cases h1 : keyOf (num y) < keyOf (num x) <;>
-        by_cases h2 : keyOf (num z) < keyOf (num y) <;>
-        by_cases h3 : keyOf (num z) < keyOf (num x) <;> simp [hx, hy, hz, h1, h2, h3] <;>
+    | (by_cases h1 : valOf (num y) < valOf (num x) <;>
+        by_cases h2 : valOf (num z) < valOf (num y) <;>
+        by_cases h3 : valOf (num z) < valOf (num x) <;> simp [hx, hy, hz, h1, h2, h3] <;>
         first
         | exact absurd (h2.trans h1) h3
         | exact absurd h3 (not_lt.mpr ((not_lt.mp h1).trans (not_lt.mp h2))))
@@ -227,7 +248,7 @@ theorem absorb_min_max {x y : α} (hx : isNaN (num x) = false) (hy : isNaN (num 
     selMin num x (selMax num x y) = x := by
   unfold selMax selMin
   simp only [hx, hy, Bool.false_eq_true, if_false]
-  by_cases h : keyOf (num y) < keyOf (num x)
+  by_cases h : valOf (num y) < valOf (num x)
   · simp [h, hx]
   · simp [h, hy]
 
@@ -235,11 +256,224 @@ theorem absorb_max_min {x y : α} (hx : isNaN (num x) = false) (hy : isNaN (num 
     selMax num x (selMin num x y) = x := by
   unfold selMax selMin
   simp only [hx, hy, Bool.false_eq_true, if_false]
-  by_cases h : keyOf (num y) < keyOf (num x)
+  by_cases h : valOf (num y) < valOf (num x)
   · simp [h, hy]
   · simp [h, hx]
 
 end Spec
+
+/-! ## Lean's `min` and `max`, and arithmetic through them -/
+
+section LeanMinMax
+
+variable {α : Type} (num : α → Num)
+
+/-- On operands that are not NaN, `min` is the test `if a ≤ b then a else b` on values. -/
+theorem selMin_eq_le_test {x y : α} (hx : isNaN (num x) = false)
+    (hy : isNaN (num y) = false) :
+    selMin num x y = if valOf (num x) ≤ valOf (num y) then x else y := by
+  unfold selMin
+  simp only [hx, hy, Bool.false_eq_true, if_false]
+  by_cases h : valOf (num y) < valOf (num x)
+  · simp [h, not_le.mpr h]
+  · simp [h, not_lt.mp h]
+
+/-- On operands that are not NaN, `max` is the test `if a ≤ b then b else a` on values. -/
+theorem selMax_eq_le_test {x y : α} (hx : isNaN (num x) = false)
+    (hy : isNaN (num y) = false) :
+    selMax num x y = if valOf (num x) ≤ valOf (num y) then y else x := by
+  unfold selMax
+  simp only [hx, hy, Bool.false_eq_true, if_false]
+  by_cases h : valOf (num y) < valOf (num x)
+  · simp [h, not_le.mpr h]
+  · simp [h, not_lt.mp h]
+
+/-- The order of values, as an order relation on operands. -/
+abbrev valLE : LE α := ⟨fun x y => valOf (num x) ≤ valOf (num y)⟩
+
+abbrev valLEDecidable : @DecidableRel α α (valLE num).le :=
+  fun x y => inferInstanceAs (Decidable (valOf (num x) ≤ valOf (num y)))
+
+/-- **Lean's `min`**: on operands that are not NaN, the selection's `min` is the `min` that
+Lean's `minOfLe` builds from the order of values. -/
+theorem selMin_eq_minOfLe {x y : α} (hx : isNaN (num x) = false)
+    (hy : isNaN (num y) = false) :
+    selMin num x y = @Min.min α (@minOfLe α (valLE num) (valLEDecidable num)) x y := by
+  rw [selMin_eq_le_test num hx hy]
+  rfl
+
+/-- **Lean's `max`**: on operands that are not NaN, the selection's `max` is the `max` that
+Lean's `maxOfLe` builds from the order of values. -/
+theorem selMax_eq_maxOfLe {x y : α} (hx : isNaN (num x) = false)
+    (hy : isNaN (num y) = false) :
+    selMax num x y = @Max.max α (@maxOfLe α (valLE num) (valLEDecidable num)) x y := by
+  rw [selMax_eq_le_test num hx hy]
+  rfl
+
+/-- `min` answers an operand whose value is the least of the two. -/
+theorem valOf_selMin {x y : α} (hx : isNaN (num x) = false) (hy : isNaN (num y) = false) :
+    valOf (num (selMin num x y)) = min (valOf (num x)) (valOf (num y)) := by
+  rw [selMin_eq_le_test num hx hy]
+  split_ifs with h
+  · exact (min_eq_left h).symm
+  · exact (min_eq_right (le_of_lt (not_le.mp h))).symm
+
+/-- `max` answers an operand whose value is the greatest of the two. -/
+theorem valOf_selMax {x y : α} (hx : isNaN (num x) = false) (hy : isNaN (num y) = false) :
+    valOf (num (selMax num x y)) = max (valOf (num x)) (valOf (num y)) := by
+  rw [selMax_eq_le_test num hx hy]
+  split_ifs with h
+  · exact (max_eq_right h).symm
+  · exact (max_eq_left (le_of_lt (not_le.mp h))).symm
+
+/-- **No first-on-a-tie rule commutes on equal values**: a rule that answers its first
+operand whenever that operand's value is at most the other's answers different operands in
+the two orders of two distinct numbers with one value. -/
+theorem no_commutative_le_rule (m : α → α → α)
+    (hm : ∀ a b, valOf (num a) ≤ valOf (num b) → m a b = a) {x y : α} (hxy : x ≠ y)
+    (heq : valOf (num x) = valOf (num y)) : m x y ≠ m y x := by
+  rw [hm x y heq.le, hm y x heq.ge]
+  exact hxy
+
+/-- **CeTTa's `clamp`**: `(max lo (min x hi))` under the selection. -/
+def selClamp (x lo hi : α) : α := selMax num lo (selMin num x hi)
+
+/-- `clamp`'s answer has the clamped value. -/
+theorem valOf_selClamp {x lo hi : α} (hx : isNaN (num x) = false)
+    (hlo : isNaN (num lo) = false) (hhi : isNaN (num hi) = false) :
+    valOf (num (selClamp num x lo hi)) =
+      max (valOf (num lo)) (min (valOf (num x)) (valOf (num hi))) := by
+  have hm : isNaN (num (selMin num x hi)) = false := by
+    rw [selMin_nan, hx, hhi]
+    rfl
+  unfold selClamp
+  rw [valOf_selMax num hlo hm, valOf_selMin num hx hhi]
+
+/-- **Inside the bounds `clamp` answers `x`**, ties with either bound included. -/
+theorem selClamp_inside {x lo hi : α} (hx : isNaN (num x) = false)
+    (hlo : isNaN (num lo) = false) (hhi : isNaN (num hi) = false)
+    (h1 : valOf (num lo) ≤ valOf (num x)) (h2 : valOf (num x) ≤ valOf (num hi)) :
+    selClamp num x lo hi = x := by
+  unfold selClamp
+  rw [selMin_eq_le_test num hx hhi, if_pos h2, selMax_eq_le_test num hlo hx, if_pos h1]
+
+/-- **Below the lower bound `clamp` answers the lower bound.** -/
+theorem selClamp_below {x lo hi : α} (hx : isNaN (num x) = false)
+    (hlo : isNaN (num lo) = false) (hhi : isNaN (num hi) = false)
+    (h : valOf (num x) < valOf (num lo)) (hb : valOf (num lo) ≤ valOf (num hi)) :
+    selClamp num x lo hi = lo := by
+  unfold selClamp
+  rw [selMin_eq_le_test num hx hhi, if_pos (h.le.trans hb), selMax_eq_le_test num hlo hx,
+    if_neg (not_le.mpr h)]
+
+/-- **Above the upper bound `clamp` answers the upper bound.** -/
+theorem selClamp_above {x lo hi : α} (hx : isNaN (num x) = false)
+    (hlo : isNaN (num lo) = false) (hhi : isNaN (num hi) = false)
+    (h : valOf (num hi) < valOf (num x)) (hb : valOf (num lo) ≤ valOf (num hi)) :
+    selClamp num x lo hi = hi := by
+  unfold selClamp
+  rw [selMin_eq_le_test num hx hhi, if_neg (not_le.mpr h), selMax_eq_le_test num hlo hhi,
+    if_pos hb]
+
+end LeanMinMax
+
+/-! ### Arithmetic through `min` and `max`
+
+The carrier here holds no NaN: NaN propagates by the selection's own rule, and an arithmetic
+chain that meets one answers it. -/
+
+section Arithmetic
+
+variable {α : Type} (num : α → Num) (fin : ∀ a, isNaN (num a) = false)
+
+/-- An operation whose answer's value is `g` of its operands' values: an exact operation, or
+a rounded one whose rounding reads only the exact result. -/
+def ReadsValues (op : α → α → α) (g : XR → XR → XR) : Prop :=
+  ∀ x y, valOf (num (op x y)) = g (valOf (num x)) (valOf (num y))
+
+include fin in
+/-- **An operation monotone in its first argument commutes with `min` there**:
+`(op (min a b) c)` has the value of `(min (op a c) (op b c))`. -/
+theorem min_through_monotone (op : α → α → α) (g : XR → XR → XR)
+    (hop : ReadsValues num op g) (hg : ∀ c, Monotone (fun a => g a c)) (x y z : α) :
+    valOf (num (op (selMin num x y) z)) = valOf (num (selMin num (op x z) (op y z))) := by
+  rw [hop, valOf_selMin num (fin x) (fin y), valOf_selMin num (fin _) (fin _), hop, hop]
+  exact (hg _).map_min
+
+include fin in
+/-- **An operation monotone in its first argument commutes with `max` there.** -/
+theorem max_through_monotone (op : α → α → α) (g : XR → XR → XR)
+    (hop : ReadsValues num op g) (hg : ∀ c, Monotone (fun a => g a c)) (x y z : α) :
+    valOf (num (op (selMax num x y) z)) = valOf (num (selMax num (op x z) (op y z))) := by
+  rw [hop, valOf_selMax num (fin x) (fin y), valOf_selMax num (fin _) (fin _), hop, hop]
+  exact (hg _).map_max
+
+include fin in
+/-- **An operation antitone in its second argument exchanges `min` for `max`**:
+`(- c (min a b))` has the value of `(max (- c a) (- c b))`. -/
+theorem min_through_antitone (op : α → α → α) (g : XR → XR → XR)
+    (hop : ReadsValues num op g) (hg : ∀ c, Antitone (fun a => g c a)) (x y z : α) :
+    valOf (num (op z (selMin num x y))) = valOf (num (selMax num (op z x) (op z y))) := by
+  rw [hop, valOf_selMin num (fin x) (fin y), valOf_selMax num (fin _) (fin _), hop, hop]
+  exact (hg _).map_min
+
+/-- A chain of named operations through `min` and `max`. -/
+inductive Chain (ι : Type) (α : Type) where
+  | lit (a : α)
+  | min (e f : Chain ι α)
+  | max (e f : Chain ι α)
+  | op (i : ι) (e f : Chain ι α)
+
+variable {ι : Type}
+
+/-- A chain run with a choice of `min`, `max` and operations. -/
+def Chain.run (mn mx : α → α → α) (ops : ι → α → α → α) : Chain ι α → α
+  | .lit a => a
+  | .min e f => mn (e.run mn mx ops) (f.run mn mx ops)
+  | .max e f => mx (e.run mn mx ops) (f.run mn mx ops)
+  | .op i e f => ops i (e.run mn mx ops) (f.run mn mx ops)
+
+/-- A chain read on the extended rationals. -/
+def Chain.value (gs : ι → XR → XR → XR) : Chain ι α → XR
+  | .lit a => valOf (num a)
+  | .min e f => Min.min (e.value gs) (f.value gs)
+  | .max e f => Max.max (e.value gs) (f.value gs)
+  | .op i e f => gs i (e.value gs) (f.value gs)
+
+/-- **A chain has its value on the extended rationals**, for any `min` and `max` that answer
+an operand of least and greatest value and any operations that read values. -/
+theorem Chain.value_run (mn mx : α → α → α) (ops : ι → α → α → α) (gs : ι → XR → XR → XR)
+    (hmn : ∀ x y, valOf (num (mn x y)) = Min.min (valOf (num x)) (valOf (num y)))
+    (hmx : ∀ x y, valOf (num (mx x y)) = Max.max (valOf (num x)) (valOf (num y)))
+    (hops : ∀ i, ReadsValues num (ops i) (gs i)) :
+    ∀ e : Chain ι α, valOf (num (e.run mn mx ops)) = e.value num gs
+  | .lit _ => rfl
+  | .min e f => by
+      simp only [Chain.run, Chain.value, hmn, Chain.value_run mn mx ops gs hmn hmx hops e,
+        Chain.value_run mn mx ops gs hmn hmx hops f]
+  | .max e f => by
+      simp only [Chain.run, Chain.value, hmx, Chain.value_run mn mx ops gs hmn hmx hops e,
+        Chain.value_run mn mx ops gs hmn hmx hops f]
+  | .op i e f => by
+      simp only [Chain.run, Chain.value, hops i _ _, Chain.value_run mn mx ops gs hmn hmx hops e,
+        Chain.value_run mn mx ops gs hmn hmx hops f]
+
+include fin in
+/-- **The tie rule never changes a chain's value**: any `min` and `max` that answer an
+operand of least and greatest value give every chain of value-reading operations the value
+the selection gives it. -/
+theorem chain_any_tie_rule (mn mx : α → α → α) (ops : ι → α → α → α)
+    (gs : ι → XR → XR → XR)
+    (hmn : ∀ x y, valOf (num (mn x y)) = Min.min (valOf (num x)) (valOf (num y)))
+    (hmx : ∀ x y, valOf (num (mx x y)) = Max.max (valOf (num x)) (valOf (num y)))
+    (hops : ∀ i, ReadsValues num (ops i) (gs i)) (e : Chain ι α) :
+    valOf (num (e.run mn mx ops)) = valOf (num (e.run (selMin num) (selMax num) ops)) := by
+  rw [Chain.value_run num mn mx ops gs hmn hmx hops,
+    Chain.value_run num (selMin num) (selMax num) ops gs
+      (fun x y => valOf_selMin num (fin x) (fin y))
+      (fun x y => valOf_selMax num (fin x) (fin y)) hops]
+
+end Arithmetic
 
 /-! ## The C -/
 
@@ -411,21 +645,17 @@ def cCmpLossy (rnd : ℤ → XR) : CRead → CRead → Cmp
   | .dbl d, .big n => cmpOf (valOf (.flt d)) (rnd n)
   | a, b => cCmp a b
 
-/-- `-0.0` below `0` and `0.0` on a tie. -/
-def zeroTie (c : Cmp) (a b : Num) : Cmp :=
-  if c = .eq ∧ negZ a ≠ negZ b then (if negZ a then .lt else .gt) else c
-
 section C
 
 variable {α : Type} (read : α → CRead)
 
 /-- `petta_numeric_min_max` over a comparison `cmp`: the operand itself, by NaN, then the
-comparison, then the zeros, then the tie rule. -/
+comparison, then the tie rule. -/
 def selectBy (cmp : CRead → CRead → Cmp) (minimum : Bool) (x y : α) : α :=
   if isNaN (read x).num then x
   else if isNaN (read y).num then y
   else
-    match zeroTie (cmp (read x) (read y)) (read x).num (read y).num with
+    match cmp (read x) (read y) with
     | .eq => if minimum then x else y
     | .lt => if minimum then x else y
     | .gt => if minimum then y else x
@@ -468,19 +698,6 @@ theorem cCmp_exact {a b : CRead} (ha : a.WF) (hb : b.WF) :
           rw [cmpExactXR_exact, ← cmpOf_swap]
       | dbl e => rfl
 
-/-- **The value order with `-0.0` below the other zeros is the key order.** -/
-theorem zeroTie_key (a b : Num) :
-    zeroTie (cmpOf (valOf a) (valOf b)) a b = cmpOf (keyOf a) (keyOf b) := by
-  unfold zeroTie keyOf
-  rcases lt_trichotomy (valOf a) (valOf b) with h | h | h
-  · rw [cmpOf_lt h, cmpOf_lt (Prod.Lex.toLex_lt_toLex.mpr (.inl h))]
-    simp
-  · rw [h, cmpOf_self]
-    cases ha : negZ a <;> cases hb : negZ b <;>
-      simp [cmpOf, Prod.Lex.toLex_lt_toLex]
-  · rw [cmpOf_gt h, cmpOf_gt (Prod.Lex.toLex_lt_toLex.mpr (.inl h))]
-    simp
-
 /-- **The C is the selection**: `petta_numeric_min_max` answers `selMin` for `min` and
 `selMax` for `max`, on every pair. -/
 theorem c_select_eq {α : Type} (read : α → CRead) (x y : α) (hx : (read x).WF)
@@ -490,9 +707,9 @@ theorem c_select_eq {α : Type} (read : α → CRead) (x y : α) (hx : (read x).
   simp only [cSel, selectBy, selMin, selMax]
   cases hnx : isNaN (read x).num
   · cases hny : isNaN (read y).num
-    · rw [cCmp_exact hx hy, zeroTie_key]
+    · rw [cCmp_exact hx hy]
       simp only [Bool.false_eq_true, if_false]
-      rcases lt_trichotomy (keyOf (read x).num) (keyOf (read y).num) with h | h | h
+      rcases lt_trichotomy (valOf (read x).num) (valOf (read y).num) with h | h | h
       · rw [cmpOf_lt h]
         simp [not_lt.mpr h.le]
       · rw [h, cmpOf_self]
@@ -513,9 +730,8 @@ theorem int_paths (m n : ℤ) :
       Num.int (if m < n then m else n) = selMin id (Num.int m) (Num.int n) ∧
       Num.int (if n < m then m else n) = selMax id (Num.int m) (Num.int n) ∧
       (if n ≤ m then Num.int m else Num.int n) = selMax id (Num.int m) (Num.int n) := by
-  have key : keyOf (Num.int n) < keyOf (Num.int m) ↔ n < m := by
-    simp only [keyOf, valOf, negZ, Bool.not_false, Prod.Lex.toLex_lt_toLex, ofQ_lt_ofQ,
-      Int.cast_lt, lt_self_iff_false, and_false, or_false]
+  have key : valOf (Num.int n) < valOf (Num.int m) ↔ n < m := by
+    simp only [valOf, ofQ_lt_ofQ, Int.cast_lt]
   have h := stable_sort id (x := Num.int m) (y := Num.int n) rfl rfl
   simp only [id, key] at h
   by_cases hnm : n < m
@@ -621,15 +837,23 @@ theorem swi_breaks_sort :
       selMin id (Num.int 2) (dq 2) = .int 2 ∧ selMax id (Num.int 2) (dq 2) = dq 2 := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> decide +kernel
 
-/-- **On SWI's signed-zero and NaN cases the rules agree**: `(min -0.0 0)` is `-0.0`,
-`(max -0.0 0)` is `0`, `(min 0.0 -0.0)` is `-0.0`, `(max 0.0 -0.0)` is `0.0`, `(max nan 1)`
-is NaN. -/
+/-- **Where `-0.0` comes first, and at NaN, the rules agree**: `(min -0.0 0)` is `-0.0`,
+`(max -0.0 0)` is `0`, and `(max nan 1)` is NaN. -/
 theorem swi_agrees :
     selMin id (Num.flt .negZero) (.int 0) = swiMin nearest (.flt .negZero) (.int 0) ∧
       selMax id (Num.flt .negZero) (.int 0) = swiMax nearest (.flt .negZero) (.int 0) ∧
-      selMin id (dq 0) (.flt .negZero) = swiMin nearest (dq 0) (.flt .negZero) ∧
-      selMax id (dq 0) (.flt .negZero) = swiMax nearest (dq 0) (.flt .negZero) ∧
       selMax id (Num.flt .nan) (.int 1) = swiMax nearest (.flt .nan) (.int 1) := by
+  refine ⟨?_, ?_, ?_⟩ <;> decide +kernel
+
+/-- **SWI places `-0.0` below the other zeros; the selection does not**: `0.0 ≤ -0.0` as
+values, yet SWI answers `-0.0` for `(min 0.0 -0.0)` and `0.0` for `(max 0.0 -0.0)`; the
+selection answers `0.0` and `-0.0`, the stable sort, as Lean's `min` and `max` do. -/
+theorem swi_signed_zero :
+    valOf (dq 0) ≤ valOf (.flt .negZero) ∧
+      swiMin nearest (dq 0) (.flt .negZero) = .flt .negZero ∧
+      swiMax nearest (dq 0) (.flt .negZero) = dq 0 ∧
+      selMin id (dq 0) (.flt .negZero) = dq 0 ∧
+      selMax id (dq 0) (.flt .negZero) = .flt .negZero := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;> decide +kernel
 
 /-- The test select for `max`, `(if (>= x y) x y)`. -/
@@ -654,12 +878,12 @@ theorem nan_propagates :
   refine ⟨?_, ?_, ?_, ?_⟩ <;> decide +kernel
 
 /-- **The comparison test is not the selection**: `(if (<= x y) x y)`, comparing as PeTTa's
-`<=` does, answers the first operand at `(min 0.0 -0.0)`, `(min nan 1)` and `(min
-9007199254740993 9007199254740992.0)`, where the selection answers `-0.0`, `nan` and the
-double; at the mixed tie `(min 1 1.0)` both answer `1`. -/
+`<=` does, answers the first operand at `(min nan 1)` and `(min 9007199254740993
+9007199254740992.0)`, where the selection answers `nan` and the double; at the signed zeros
+`(min 0.0 -0.0)` and the mixed tie `(min 1 1.0)` both answer the first operand. -/
 theorem le_test_differs :
     leSelect nearest (dq 0) (.flt .negZero) = dq 0 ∧
-      selMin id (dq 0) (.flt .negZero) = .flt .negZero ∧
+      selMin id (dq 0) (.flt .negZero) = dq 0 ∧
       leSelect nearest (.flt .nan) (.int 1) = .int 1 ∧
       selMin id (Num.flt .nan) (.int 1) = .flt .nan ∧
       leSelect nearest (.int 9007199254740993) (dq 9007199254740992) = .int 9007199254740993 ∧
@@ -727,11 +951,15 @@ Its calls through user functions repeat these. -/
 def testCases : List (Bool × Operand × Operand × Operand) := [
   (true, ti 2, tf 2, ti 2), (true, tf 2, ti 2, tf 2),
   (false, ti 2, tf 2, tf 2), (false, tf 2, ti 2, ti 2),
-  (true, tnz, tf 0, tnz), (true, tf 0, tnz, tnz),
-  (false, tnz, tf 0, tf 0), (false, tf 0, tnz, tf 0),
-  (true, ti 0, tnz, tnz), (true, tnz, ti 0, tnz),
-  (false, ti 0, tnz, ti 0), (false, tnz, ti 0, ti 0),
+  (true, tnz, tf 0, tnz), (true, tf 0, tnz, tf 0),
+  (false, tnz, tf 0, tf 0), (false, tf 0, tnz, tnz),
+  (true, ti 0, tnz, ti 0), (true, tnz, ti 0, tnz),
+  (false, ti 0, tnz, tnz), (false, tnz, ti 0, ti 0),
   (true, tf 0, ti 0, tf 0), (false, ti 0, tf 0, tf 0),
+  (true, tf (-(1 / 10 ^ 300)), tnz, tf (-(1 / 10 ^ 300))),
+  (false, tf (1 / 10 ^ 300), tnz, tf (1 / 10 ^ 300)),
+  (false, tnz, tf (-(1 / 10 ^ 300)), tnz),
+  (true, .const .nan, tnz, .const .nan), (false, tnz, .const .nan, .const .nan),
   (true, ti 1, tf (5 / 2), ti 1), (true, ti 3, tf (5 / 2), tf (5 / 2)),
   (true, ti (2 ^ 63 - 1), ti (2 ^ 63), ti (2 ^ 63 - 1)),
   (false, ti 9007199254740993, tf 9007199254740992, ti 9007199254740993),
@@ -757,6 +985,51 @@ theorem test_expected :
       selMin Operand.num (ti (2 ^ 63 + 1)) (selMin Operand.num (tf (2 ^ 63)) (ti (2 ^ 63))) =
         tf (2 ^ 63) := by
   decide +kernel
+
+/-- IEEE's `1/x` at a zero: `inf` at `0.0`, `-inf` at `-0.0`; `none` elsewhere. -/
+def recipAtZero : Num → Option XR
+  | .flt .negZero => some ⊥
+  | .flt (.pt x) => if x = 0 then some ⊤ else none
+  | _ => none
+
+/-- **A sign reader sees the tie**: `1/x` tells `(min 0.0 -0.0)`, which is `0.0`, from
+`(min -0.0 0.0)`, which is `-0.0`; SWI answers `-0.0` in both orders. -/
+theorem sign_reader_sees_tie :
+    recipAtZero (selMin id (dq 0) (.flt .negZero)) = some ⊤ ∧
+      recipAtZero (selMin id (.flt .negZero) (dq 0)) = some ⊥ ∧
+      recipAtZero (swiMin nearest (dq 0) (.flt .negZero)) = some ⊥ ∧
+      recipAtZero (swiMin nearest (.flt .negZero) (dq 0)) = some ⊥ := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> decide +kernel
+
+/-- **A sign reader reads no function of values**: `0.0` and `-0.0` have one value and
+different reciprocals. -/
+theorem sign_reader_not_value : ¬ ∃ g : XR → Option XR, ∀ a, recipAtZero a = g (valOf a) := by
+  rintro ⟨g, hg⟩
+  have h1 := hg (dq 0)
+  have h2 := hg (.flt .negZero)
+  have hv : valOf (dq 0) = valOf (.flt .negZero) := by decide +kernel
+  have hr1 : recipAtZero (dq 0) = some ⊤ := by decide +kernel
+  have hr2 : recipAtZero (.flt .negZero) = some ⊥ := by decide +kernel
+  rw [hr1] at h1
+  rw [hr2, ← hv, ← h1] at h2
+  exact absurd h2 (by decide)
+
+/-- **`1` and `1.0`**: distinct numbers of one value, so no first-on-a-tie rule commutes on
+them (`no_commutative_le_rule`); the selection answers `1` and `1.0`. -/
+theorem one_and_one_point_zero :
+    (Num.int 1) ≠ dq 1 ∧ valOf (Num.int 1) = valOf (dq 1) ∧
+      selMin id (Num.int 1) (dq 1) = .int 1 ∧ selMin id (dq 1) (.int 1) = dq 1 := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> decide +kernel
+
+/-- **`clamp` keeps `x` on a tie with either bound**: `(clamp 1.0 1 2)` is `1.0`,
+`(clamp 2.0 1 2)` is `2.0`, `(clamp -0.0 0.0 1.0)` is `-0.0`, and `(clamp 0.0 -0.0 0.0)` is
+`0.0`. -/
+theorem clamp_ties_keep_x :
+    selClamp id (dq 1) (.int 1) (.int 2) = dq 1 ∧
+      selClamp id (dq 2) (.int 1) (.int 2) = dq 2 ∧
+      selClamp id (.flt .negZero) (dq 0) (dq 1) = .flt .negZero ∧
+      selClamp id (dq 0) (.flt .negZero) (dq 0) = dq 0 := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> decide +kernel
 
 end Controls
 

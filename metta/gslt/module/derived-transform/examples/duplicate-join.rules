@@ -1,0 +1,1 @@
+collect { read &q : (left $l $k) => { read &q : (right $k $r) => { emit $r } } }

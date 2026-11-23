@@ -1,0 +1,76 @@
+Streaming source continuations and their current boundary
+
+PeTTa/Streaming composes the existing unifier, dispatch and primitive phases
+with a depth-first continuation agenda. Each alternative retains its bindings
+and return frames. Store effects, input, output, private code and the logical
+allocation supply belong to one shared world; alternatives do not restore an
+older world when they resume.
+
+Collection, first demand and runtime exception scopes have separate closing
+markers. Returning an answer runs its caller before the next alternative.
+Collection records packets until its own producer is exhausted, then copies
+its results at the existing source copy boundary. First demand removes its
+own remaining producer jobs and keeps earlier effects. Returning from a callee
+removes its handler from the current continuation; caller errors cannot be
+caught by a pending callee marker.
+
+StreamingPhases, StreamingReturns and StreamingSpec specify independent
+placement, delivery and controller rules. Existing source phases cite the
+actual Unifying.Transition relation. The executable steps preserve and reflect
+these rules. FirstSelection proves that marker cuts retain the exact suffix
+after the first selected occurrence, and recording updates exactly one selected
+marker while retaining its prefix and suffix. Missing markers refuse; they do
+not provide successful empty answers.
+
+StreamingPrefixes connects every bounded endpoint and every finite rule path
+in both directions. Resumption keeps the entire paid residual. Completed answer
+packets form a retained prefix, and logical allocations and marker supplies are
+monotone. StreamingDemand supplies the actual provider to the existing generic
+first-answer client. Provider inspections, controller transitions, native work
+and elapsed time are different quantities.
+
+PeTTaStreamingContexts extends the existing source-shell grammar with once.
+It constructs layouts for arbitrary nesting and proves one entry transition
+per shell, followed by the actual hole above its saved callers and markers.
+Every later allowance then runs from that reached state. The proof assumes no
+completion or termination of the hole. Source case rows still use the actual
+case reader and retain their pattern role.
+
+StreamingModel consumes six independent source fixtures and checks 30
+observations, including constructor operands, lambda preparation, caught errors,
+answerless effects, first demand and an empty-list answer. The former
+constructor-streaming-frontier mismatch is resolved in this profile:
+left,suffix,right,suffix is preserved. The older completed-operand profile is
+still a separately named model with a different schedule.
+
+The initializer constraint remains a distinguishing source boundary:
+
+  (= (pick-constraint) (let $ignored1 (add-atom &self (event accepted)) a))
+  (= (pick-constraint) (let $ignored2 (add-atom &self (event rejected)) b))
+  !(collapse (let a (pick-constraint) chosen))
+  !(collapse (match &self (event $x) $x))
+
+SWI and the retained native snapshot answer (chosen), then (accepted). The
+streaming model answers (chosen), then (accepted rejected). The source compiler
+can constrain the callee output before entering a clause whose effects would
+otherwise run. A continuation that only matches after return is insufficient.
+The expected source behavior remains unchanged. OutputPlanCompiler now passes
+this fixture by exposing result terms before producing goals. This does not
+qualify the old post-return-binding frontend; it retains the mismatch above.
+The same fixture also checks an unconstrained binding: both clauses and their
+effects must remain available. Early propagation must not discard alternatives
+whose outputs are still permitted.
+
+The local output-plan gate, name and policy laws are in output-plans.txt.
+Next connections are whole compiler preservation/reflection, remaining
+functional/static-head/typed/eta policies and cross-branch source collection
+and readout. This work selects no Prime
+policy, changes no C runtime, and supplies no source-to-C or machine-code
+correspondence.
+
+The complete streaming binding-refinement and allocated-variable support
+transfer are now checked; see streaming-invariants.txt. They cover every
+actual transition and paid prefix, retained cells/output and saved work.
+Region-marker association is checked separately in streaming-regions.txt.
+Whole compiler/source correspondence remains open. Hygiene does not authorize
+abandoning an unfinished agenda.

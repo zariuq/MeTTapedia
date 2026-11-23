@@ -1,0 +1,51 @@
+# file | formula | term | budget | expected (established, refuted, suspended)
+# Backward search: the halting counter never halts from four, though it runs forever.
+Halting.module | (reach Halted) | (Counter (Succ (Succ (Succ (Succ Zero))))) | 6 | refuted
+Halting.module | (not (reach Halted)) | (Counter (Succ (Succ (Succ (Succ Zero))))) | 6 | established
+Halting.module | (reach Halted) | (Counter (Succ (Succ (Succ (Succ Zero))))) | 4 | suspended
+Halting.module | (reach Halted) | (Counter Zero) | 6 | established
+Halting.module | (reach (Counter (Succ (Succ Zero)))) | (Counter (Succ (Succ (Succ Zero)))) | 4 | refuted
+Counting.module | (reach Halted) | (Counter Zero) | 2 | refuted
+Counting.module | (dia top) | (Counter Zero) | 2 | established
+Crashing.module | (reach Halted) | (Counter (Succ Zero)) | 2 | established
+Crashing.module | (reach Halted) | Zero | 2 | refuted
+# Closed regions and exploration.
+Coins.module | (box (or (is H) (is T))) | Toss | 4 | established
+Coins.module | (dia (is H)) | Toss | 4 | established
+Coins.module | (dia (is H)) | H | 4 | refuted
+Coins.module | (dia (or (is H) (is T))) | (Show H) | 4 | established
+Courier.module | (dia (built Send (built Next (is A)) (is Nil))) | (Fwd A Nil) | 4 | established
+Courier.module | (dia top) | (Send A Nil) | 4 | refuted
+Levels.module | (box bot) | High | 4 | established
+Levels.module | (dia top) | High | 4 | refuted
+Levels.module | (mu X (or (is High) (dia X))) | Low | 4 | established
+# Ancestry by backward search from the term.
+Levels.module | (mu X (or (is High) (before X))) | Mid | 4 | refuted
+Levels.module | (not (mu X (or (is High) (before X)))) | Mid | 4 | established
+# Lassos beside a branch that grows forever.
+Spinner.module | (nu X (dia X)) | Loop | 3 | established
+Spinner.module | (nu X (mu Y (or (and (is Loop) (dia X)) (dia Y)))) | Loop | 3 | established
+Spinner.module | (nu X (mu Y (or (and (is Loop) (dia X)) (dia Y)))) | (Grow Z) | 3 | suspended
+# Context labels: the identity has no step of its own, and applied to Ok it steps, to Ok.
+FullLambda.module | (dia top) | (Lam (lam (bvar 0))) | 4 | refuted
+FullLambda.module | (dia (in h (App (fvar h) Ok) any) top) | (Lam (lam (bvar 0))) | 4 | established
+FullLambda.module | (box (in h (App (fvar h) Ok) any) (is Ok)) | (Lam (lam (bvar 0))) | 4 | established
+FullLambda.module | (dia (in h (App (fvar h) Ok) (rule AppLeft)) top) | (Lam (lam (bvar 0))) | 4 | refuted
+# Ok applied to anything is stuck; applied to the identity it steps.
+FullLambda.module | (dia (in h (App Ok (fvar h)) any) top) | (Lam (lam (bvar 0))) | 4 | refuted
+FullLambda.module | (dia (in h (App (fvar h) Ok) any) top) | Ok | 4 | refuted
+FullLambda.module | (dia (in h (App (Lam (lam (bvar 0))) (fvar h)) any) (is Ok)) | Ok | 4 | established
+# Context labels on the Petri net, modulo its bag laws: (bag A) lacks B for ConsumeAB, and beside D nothing fires.
+Petri.module | (dia top) | (bag A) | 4 | refuted
+Petri.module | (dia (in x (bag B ...x) any) top) | (bag A) | 4 | established
+Petri.module | (box (in x (bag B ...x) any) (is (bag D C))) | (bag A) | 4 | established
+Petri.module | (dia (in x (bag D ...x) any) top) | (bag A) | 4 | refuted
+Petri.module | (dia (in x (bag A ...x) (rule ConsumeAB)) top) | (bag B) | 4 | established
+Petri.module | (dia (in x (bag A ...x) (rule RecycleC)) top) | (bag B) | 4 | refuted
+Petri.module | (dia (in x (bag B ...x) any) (dia (in x (bag C ...x) any) top)) | (bag A) | 4 | established
+# CeTTa's core module format, read directly: carriers (Scalar = String), core rows with evaluation premises.
+RegexCore.module#RegexDerivatives | (dia any (is (rx:true))) | (rx:or (rx:false) (rx:true)) | 4 | established
+RegexCore.module#RegexDerivatives | (dia any (is (rx:false))) | (rx:or (rx:false) (rx:true)) | 4 | refuted
+RegexCore.module#RegexDerivatives | (dia any (is (rx:true))) | (rx:nullable (rx:union (rx:zero) (rx:epsilon))) | 4 | established
+RegexCore.module#RegexDerivatives | (dia any (is (rx:false))) | (rx:nullable (rx:union (rx:zero) (rx:epsilon))) | 4 | refuted
+RegexCore.module#RegexDerivatives | (dia any (is (rx:false))) | (rx:nullable (rx:concat (rx:star (rx:zero)) (rx:literal a))) | 6 | established

@@ -1,0 +1,22 @@
+Module Courier {
+  Theory Courier() {
+    Types {
+      Name;
+      Proc;
+    }
+    Terms {
+      "A" .  |-  : Name;
+      "B" .  |-  : Name;
+      "Next" . n0:Name |-  : Name;
+      "Nil" .  |-  : Proc;
+      "Send" . n:Name, p:Proc |-  : Proc;
+      "Fwd" . n:Name, p:Proc |-  : Proc;
+    }
+    Equations {
+    }
+    Rewrites {
+      "Forward" . n:Name, p:Proc |- "Fwd"(n, p) ~> "Send"("Next"(n), p);
+    }
+  }
+  theory Courier()
+}

@@ -1,0 +1,61 @@
+(; Positive Dedukti differential for the live MeTTaKernel LF curriculum (strict Lambda-Pi profile: --pts lf / dk check).
+   Uses Tarski universe codes (U : Type, def El : U -> Type) so all product and lambda domains have sort Type. ;)
+
+U : Type.
+def El : U -> Type.
+
+o : Type.
+prf : o -> Type.
+imp : o -> o -> o.
+A : o.
+B : o.
+
+impI : A0:o -> B0:o -> (prf A0 -> prf B0) -> prf (imp A0 B0).
+impE : A0:o -> B0:o -> prf (imp A0 B0) -> prf A0 -> prf B0.
+
+def hol_self_imp : prf (imp A A) := impI A A (h:prf A => h).
+def hol_k : prf (imp A (imp B A)) :=
+  impI A (imp B A) (h:prf A => impI B A (g:prf B => h)).
+
+nat : Type.
+u_nat : U.
+[] El u_nat --> nat.
+z : nat.
+s : nat -> nat.
+eqn : nat -> nat -> Type.
+rfl : x:nat -> eqn x x.
+
+def two : nat := s (s z).
+def rfl_z : eqn z z := rfl z.
+def id_o : o -> o := x:o => x.
+
+def NatRec : P:(nat -> U) -> El (P z) -> (n:nat -> El (P n) -> El (P (s n))) -> n:nat -> El (P n).
+[P,zcase,scase] NatRec P zcase scase z --> zcase.
+[P,zcase,scase,n] NatRec P zcase scase (s n) --> scase n (NatRec P zcase scase n).
+
+def plus : nat -> nat -> nat :=
+  n:nat => m:nat => NatRec (x:nat => u_nat) m (k:nat => rec:nat => s rec) n.
+
+def plus_z_z : eqn (plus z z) z := rfl z.
+def natrec_z : eqn (NatRec (x:nat => u_nat) z (k:nat => rec:nat => s rec) z) z := rfl z.
+
+Id : A0:U -> El A0 -> El A0 -> Type.
+u_id : A0:U -> El A0 -> El A0 -> U.
+[A0,x,y] El (u_id A0 x y) --> Id A0 x y.
+refl : A0:U -> x:El A0 -> Id A0 x x.
+def J : A0:U -> x:El A0 -> P:(y:El A0 -> Id A0 x y -> U) ->
+  El (P x (refl A0 x)) -> y:El A0 -> p:Id A0 x y -> El (P y p).
+[A0,x,P,pr] J A0 x P pr x (refl A0 x) --> pr.
+
+def j_refl_z : Id u_nat z z :=
+  J u_nat z (y:nat => p:Id u_nat z y => u_id u_nat z y) (refl u_nat z) z (refl u_nat z).
+
+set : Type.
+In : set -> set -> o.
+a : set.
+b : set.
+axMem : prf (In a b).
+axSym : prf (imp (In a b) (In b a)).
+
+def hotg_mem : prf (In a b) := axMem.
+def hotg_sym_from_axioms : prf (In b a) := impE (In a b) (In b a) axSym axMem.

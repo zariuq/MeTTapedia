@@ -1,0 +1,61 @@
+Concrete deletion work and mixed-store refusal
+=============================================
+
+PublicationWork measures two independently recursive algorithms. Immediate
+deletion computes survivors and the changed flag in one traversal. Prepared
+deletion gathers selected values, validates the selection and contracts by it.
+Both return the same value on a stable input. A changed selection can refuse;
+it is not silently interpreted as no match.
+
+Let n be input length, m selected length, k survivor length, and q the equality
+tests made by contraction. For predicate, equality and cell prices p, e and c:
+
+  immediate = p*n + c*k
+  prepared  = p*(2*n) + e*(m+q) + c*(2*m+k)
+  extra     = p*n + e*(m+q) + c*(2*m)
+
+These formulas follow from the functions' computed work fields. Natural
+prices are nonnegative; positive predicate price gives strict savings on a
+nonempty input. The counts cover predicate invocations, row equality tests
+and constructed list cells. They omit control, meter computation, native
+allocation/layout and elapsed time. An expensive predicate or equality test
+is not asserted to cost one instruction.
+
+ImmediateStoreCost uses the existing cursor protocol and natural-valued
+account. Any bounded client preserves its result and residual while its
+declared work does not increase. This includes clients that pause or choose
+later requests from earlier replies. The example pauses after removing both
+7s from [7,8,7], then resumes and removes 8, with no replay. A fixed resource
+budget need not select the same prefix after prices improve; only the same
+protocol-inspection prefix is compared by the observation theorem.
+
+The original profile covers pure, completed all-match deletion. The companion
+PublicationSpecializationWork module now covers append and first-only removal:
+first-only removal stops inspecting at its first match and shares the unused
+tail; its prepared comparison uses distinct physical identities. The append
+comparison counts a redundant empty-take contraction in an immutable-list
+implementation, not the native scalar writer's record setup. Both algorithms'
+outputs connect to actual ordered tcalc effects in SpecializedPublicationWork.
+Partial/effectful source selection and native cost correspondence remain open.
+Scoped symbol recognition is covered separately in scoped-heads.txt.
+
+HybridStorePublication reuses HybridShapeStore's compact set and ordinary
+multiset. It reserves ordinary staging capacity before changing either part.
+The counterexample has one compact 7 and one ordinary 7: refusing the row
+reservation must leave two copies. Deleting the compact copy first leaves one
+on refusal. A later primitive failure still preserves earlier completed calls.
+
+The exact-value fast path needs no ordinary staging when that value has no
+ordinary copy. In a unifying dialect, absence of an equal value alone does not
+establish absence of unifying open rows; the caller also needs the appropriate
+selection/eligibility evidence. The proved bag projection connects successful
+hybrid publication to the actual ordered tcalc effect. Bag equality does not
+license changing required order or prove native representation correspondence.
+
+Run from the Lean project root:
+
+  lake env lean --run ../../MettaKernel/Examples/ContextualDerivedForms/PublicationCostModel.lean
+
+Compare stdout with PublicationCostModel.expected. This is a derived consumer
+of the checked definitions, not a CeTTa evaluator or native benchmark. The C
+instruction/timing gate remains an independent acceptance requirement.

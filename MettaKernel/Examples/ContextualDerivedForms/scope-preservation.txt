@@ -1,0 +1,41 @@
+Logical-variable allocation through source execution
+===================================================
+
+UnifyingTransitionPreservation.transition_wellScoped proves allocation support
+for every independent transition of the maintained completed-operand machine.
+Running terms, branch substitutions, saved frames, retained cells and output
+stay below the reached variable-allocation supply. Public rows, private clauses
+and unread input are templates; their existing copy/use boundaries allocate
+their logical identities.
+
+UnifyingPrefixScopes lifts the result to actual bounded endpoints, arbitrary
+source paths, suspended configurations and the next scoped request. No producer
+termination or successful answer is required. Future activation names cannot
+alias returned values or the keys of their branch substitutions.
+
+The ordinary primitive-reply law is proved in StdLib beside the dispatcher.
+This matters for ordinary builds: Lean generates a large match splitter using
+the defining environment for local declarations but the post-import environment
+for imported declarations. A later theorem's local allowance does not change
+the imported realization's options. Keeping the law with the definition avoids
+special client build commands. The existing primitive definitions and earlier
+proofs remain byte-identical; clients instantiate the checked law.
+
+Source admission and support preservation are distinct obligations. To allocate
+scope n freshly against retained cells, their variables must already be below
+n. Merely being below the post-entry counter n+1 would allow reuse of n itself.
+next_request_apart_from_cells derives the required disjointness from the
+previous configuration's invariant and the actual retained supply.
+
+PeTTaScopePreservationControls includes every-fuel consumers for the lambda
+collision and arbitrary-input fixtures. Negative controls retain raw unscoped
+entry, a stale cell supply, missing primitive cell support and same-scope reuse.
+These conditions describe identity allocation; they introduce no runtime check
+and no restriction on legal source spellings.
+
+ScopeModel imports these checked controls and retains its seven executable
+observations. This support result is not source-compiler adequacy or a C
+correspondence theorem. Open-answer observation and inverse transport are now
+checked separately in open-answer-readout.txt. Recursive lambda translation,
+static computed-head admission and remaining source profiles stay separate.
+The logical identity supply is separate from evaluator fuel.

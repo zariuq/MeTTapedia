@@ -1,0 +1,33 @@
+import "../gold/SourceLexical.module" as lex
+
+Module Data {
+  Theory Grammar() {
+    lex.Grammar()
+    Types { DName; DNameTail; DTerm; DTerms; }
+    Terms {
+      DLowerName . a0:SrcLowerScalar, a1:DNameTail |- a0 a1 : DName;
+      DUpperName . a0:SrcUpperScalar, a1:DNameTail |- a0 a1 : DName;
+      DNameEnd . |- : DNameTail;
+      DNameRest . a0:SrcNameRestScalar, a1:DNameTail |- a0 a1 : DNameTail;
+      DNameDash . a0:DNameTail |- "-" a0 : DNameTail;
+      DNameColon . a0:DNameTail |- ":" a0 : DNameTail;
+      DNameBang . a0:DNameTail |- "!" a0 : DNameTail;
+      DNameQuestion . a0:DNameTail |- "?" a0 : DNameTail;
+      DSymbol . a0:DName |- a0 : DTerm;
+      DVariable . a0:DName |- "$" a0 : DTerm;
+      DSpace . a0:DName |- "&" a0 : DTerm;
+      DInteger . a0:SrcInteger |- a0 : DTerm;
+      DString . a0:SrcString |- a0 : DTerm;
+      DPlus . |- "+" : DTerm;
+      DMinus . |- "-" : DTerm;
+      DEqual . |- "==" : DTerm;
+      DComma . |- "," : DTerm;
+      DEmptyExpression . a0:SrcTrivia |- "(" a0 ")" : DTerm;
+      DExpression . a0:SrcTrivia, a1:DTerms, a2:SrcTrivia |- "(" a0 a1 a2 ")" : DTerm;
+      DTermsOne . a0:DTerm |- a0 : DTerms;
+      DTermsMore . a0:DTerm, a1:SrcSpacing, a2:DTerms |- a0 a1 a2 : DTerms;
+    }
+  }
+  Theory LexicalProfile() { lex.LexicalProfile() }
+  theory Grammar()
+}

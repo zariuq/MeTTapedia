@@ -1,0 +1,10 @@
+Module SourceIOBase {
+  Theory Grammar() {
+    Types { Term; }
+    Terms {
+      First . |- "x" : Term;
+      Other . |- "y" : Term;
+    }
+  }
+  theory Grammar()
+}

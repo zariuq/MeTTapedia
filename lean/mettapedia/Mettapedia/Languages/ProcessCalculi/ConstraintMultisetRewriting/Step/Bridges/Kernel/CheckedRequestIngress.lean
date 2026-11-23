@@ -28,17 +28,12 @@ def accept {request : RuleRequest} (checked : CheckedRequestReuse.Checked Source
     (claims : List Sequent) (sources : List SourceTerm) : Read Unit := do
   let before ← get
   let sourceEvent := CheckedRequestReuse.event checked parents sourceParents sourceIds origin witnesses claims
-  match checkedReplay : CheckedRequestReuse.apply checked before.registered parents sourceParents sourceIds
-      origin witnesses claims with
-  | none => fail "registered source event refused"
-  | some after =>
-      let accepted : ExportReplay.apply SourceProfileModels.policy before.registered sourceEvent = some after :=
-        (CheckedRequestReuse.apply_eq checked before.registered parents sourceParents sourceIds origin witnesses claims).symm.trans checkedReplay
-      modify fun _ => { before with
-        registered := after
-        history := ExportReceiptHistory.apply_history SourceProfile.primitiveContext
-          SourceProfileModels.policy before.history accepted
-        sourceConclusions := ExportCodec.addConclusions before.sourceConclusions sourceIds sources }
+  let result := CheckedRequestReuse.apply checked before.registered parents sourceParents sourceIds
+    origin witnesses claims
+  let replayed : registry.apply before sourceEvent = result :=
+    (CheckedRequestReuse.apply_eq checked before.registered parents sourceParents sourceIds
+      origin witnesses claims).symm
+  registry.complete before sourceEvent result replayed sources "registered source event refused"
 
 /-- Accepting a checked inference is the generic acceptance of the same source event: the reused
 replay and the generic replay compute the same result (`CheckedRequestReuse.apply_eq`), so they
@@ -50,19 +45,8 @@ theorem accept_eq {request : RuleRequest} (checked : CheckedRequestReuse.Checked
       SourceDAGReceive.acceptEvent
         (CheckedRequestReuse.event checked parents sourceParents sourceIds origin witnesses claims) sources := by
   funext before
-  have equivalent := CheckedRequestReuse.apply_eq checked before.registered parents sourceParents sourceIds
-    origin witnesses claims
-  simp only [accept, SourceDAGReceive.acceptEvent, get_bind_apply]
-  refine congrFun ?_ before
-  split <;> split
-  · rfl
-  · rename_i refused _ accepted
-    exact absurd (refused.symm.trans (equivalent.trans accepted)) (by simp)
-  · rename_i _ accepted refused
-    exact absurd (accepted.symm.trans (equivalent.trans refused)) (by simp)
-  · rename_i reused accepted generic replayed
-    obtain rfl : reused = generic := Option.some.inj (accepted.symm.trans (equivalent.trans replayed))
-    rfl
+  simp only [accept, SourceDAGReceive.acceptEvent, NumberedReplay.acceptEvent, get_bind_apply]
+  exact congrFun (registry.complete_eq before _ _ _ sources "registered source event refused") before
 
 def originalFinish (request : RuleRequest) (rule : String) (serial : Nat)
     (inputs : List (Nat × Theorem)) (sourceParents : List Nat) (outputs : Array Json)

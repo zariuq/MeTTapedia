@@ -1,0 +1,93 @@
+Authored surfaces, contextual expansion and update credits
+========================================================
+
+Classification: candidate-language and runtime calibration handoff.
+
+The expression and interaction grammars are in
+metta/gslt/module/derived-transform/. Their comparison is ergonomics.txt.
+The shared parser/expansion gate is
+metta/gslt/tools/test_derived_transform_surfaces.py. It accepts explicit
+evidence, runtime and reader locations; it does not build the shared runtime.
+
+Frontend evidence
+-----------------
+Fourteen paired programs have complete independently checked forests and
+selected certificate catalogues. Both source readings expand to the same
+PeTTa program. All 28 authored SWI-PeTTa observations match. The twelve refusal
+controls retain a genuine two-production ambiguity and detect missing or
+duplicated alternatives, pending catalogue construction, foreign packets,
+changed input text, trailing/malformed syntax and invalid chain binders.
+
+Observed answer streams are read with the actual PeTTa source reader and
+compared in order, retaining duplicate atoms. String print escapes are a
+representation difference; answer order, multiplicity and explicit diagnostics
+are not discarded. The SWI host's Janus initialization diagnostic is retained
+and compared explicitly. It is not evidence for a Python operation.
+
+Checked laws and their implementation obligations
+------------------------------------------------
+Experimental/DerivedTransformForms/Lowering.acceptance_has_source:
+  Accepted packets replay against the actual grammar and whole source, with
+  exact source readback. This does not prove the expansion's whole semantics.
+
+Experimental/DerivedTransformForms/ContextualExpansion:
+  read_rows, shell_ready and context_ready construct readiness from the actual
+  case and call policies. run_context/outcome_iff compile arbitrary nested
+  initializer, case, collection and count positions to real source frames.
+  accepted_context meets the source-packet law at the decoded Code. Entry
+  cost is explicit; held syntax and zero-budget prefixes remain distinct.
+
+ConstraintMultisetRewriting/Interface/ConsumableBudget:
+  spending_count_bound derives the bound from the existing conserved charge
+  and actual admitted run. Uncharged reads and routing remain in that run.
+  potential_counts_rows connects credits to unique physical occurrences.
+  no_spending_at_zero uses resource conservation; replenishment can enable
+  later work. These theorems do not charge every evaluator transition or
+  require a runtime counting pass.
+
+Experimental/DerivedTransformForms/BudgetCycle:
+  source_budget_exact and source_replenished compute the existing library
+  semantics. target_source_observations relates the canonical source result
+  to four real primitive events, take/route/take/route, with nonempty ambient
+  knowledge retained. update_bound follows from the conserved-charge law.
+  two_updates_four_events and event_count_is_not_credit_count refute applying
+  the update-credit bound to all primitive events. The unbudgeted source
+  control remains enabled: exhausting credits is not a global fixed point.
+  UpdateBudgetModel.lean executes these constructions and independent outputs.
+
+The cycle is a canonical ground example. Full grammar-to-operation adequacy,
+evaluated transform conjuncts, named-space/alias completeness, dynamic closures,
+HE streaming errors and finite evaluator-fuel correspondence remain open.
+No automatic fast-path certificate, C correctness or CPU-time bound follows.
+
+Native regressions
+------------------
+On immutable executable SHA-256
+6fca2ca7b58b216e87064d0322162ff7e14e82e2105f5771d07ffa91120621ed,
+the contextual matrix passes 17/20, and paired surface observations pass 24/28.
+Both claim/reply spellings and both update-credit cycle spellings fail.
+
+once-into-let-count.metta:
+  Expected: (observed 1), (a).
+  Observed: (a). The take and destination write occur, but the binding body
+  receives no answer.
+
+destination-let-collect.metta:
+  Expected: (observed (1)), (a), ().
+  Observed: (observed ()), (a), (). The effects occur, but the collection
+  bound by let loses the destination count.
+
+destination-let-held-collect.metta:
+  Expected: (1), (a), ().
+  Observed: (), (a), (). Returning the collected value as held data does not
+  repair the missing count.
+
+destination-let-bare.metta is a passing control on this artifact. Each fixture
+runs cold in a separate process. All three newly added destination-let fixture
+expectations agree with the complete authored SWI library. Earlier transient
+development executables also returned transform syntax as data; they are not
+the pinned artifact above and must not be conflated with its failures.
+
+The C lane needs to preserve count delivery through these continuations and
+requalify the expected answers and post-stores. This handoff records observed
+differences, not a C root cause, scheduling instruction or performance verdict.

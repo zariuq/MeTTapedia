@@ -1,0 +1,1 @@
+case { emit a } of { a => { emit yes } | $other => { emit no } }

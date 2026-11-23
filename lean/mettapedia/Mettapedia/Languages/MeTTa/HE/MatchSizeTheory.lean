@@ -1519,6 +1519,88 @@ private theorem encodeModelGround_injective :
   cases left <;> cases right <;>
     simp [encodeModelGround] at heq <;> simp_all
 
+theorem not_atomOccurs_of_varNonVar_equation
+    {valuation : String → Metta.Atom} {key : String} {value : Atom}
+    (hnonvar : DeclMatchSpec.Atom.isVarB value = false)
+    (hequation : MettaEquationSatisfied valuation
+      (encodeModelAtom (.var key), encodeModelAtom value)) :
+    ¬ AtomOccurs value key := by
+  apply not_atomOccurs_of_satisfied_nonvariable_equation
+  · intro target hvar
+    subst value
+    simp [DeclMatchSpec.Atom.isVarB] at hnonvar
+  · simpa [MettaEquationSatisfied, encodeModelAtom, applyClassSolution] using
+      hequation
+
+theorem not_atomOccurs_of_nonVarVar_equation
+    {valuation : String → Metta.Atom} {key : String} {value : Atom}
+    (hnonvar : DeclMatchSpec.Atom.isVarB value = false)
+    (hequation : MettaEquationSatisfied valuation
+      (encodeModelAtom value, encodeModelAtom (.var key))) :
+    ¬ AtomOccurs value key :=
+  not_atomOccurs_of_varNonVar_equation hnonvar hequation.symm
+
+/-- A satisfying head equation yields a dispatch branch with the actual
+head tags and its occurs-check guard. The variable/variable branch still
+requires an authorization from the original constraint graph. -/
+inductive ModelHeadCase (left right : Atom) : Prop where
+  | symbols (name : String) (source : left = .symbol name) (target : right = .symbol name)
+  | grounds (value : OSLFCore.GroundedValue) (source : left = .grounded value) (target : right = .grounded value)
+  | assignLeft (key : String) (source : left = .var key)
+      (nonvar : DeclMatchSpec.Atom.isVarB right = false) (occursFree : ¬ AtomOccurs right key)
+  | assignRight (key : String) (target : right = .var key)
+      (nonvar : DeclMatchSpec.Atom.isVarB left = false) (occursFree : ¬ AtomOccurs left key)
+  | twoVariables (first second : String) (source : left = .var first) (target : right = .var second)
+  | expressions (first second : List Atom)
+      (source : left = .expression first) (target : right = .expression second)
+
+theorem modelHeadCase_of_equation {valuation : String → Metta.Atom} {left right : Atom}
+    (satisfied : MettaEquationSatisfied valuation (encodeModelAtom left, encodeModelAtom right)) :
+    ModelHeadCase left right := by
+  cases left with
+  | symbol leftName =>
+      cases right with
+      | symbol rightName =>
+          have same : leftName = rightName := by
+            simpa [MettaEquationSatisfied, encodeModelAtom, applyClassSolution] using satisfied
+          subst rightName
+          exact .symbols leftName rfl rfl
+      | var key => exact .assignRight key rfl rfl (not_atomOccurs_of_nonVarVar_equation rfl satisfied)
+      | grounded _ | expression _ =>
+          simp [MettaEquationSatisfied, encodeModelAtom, applyClassSolution] at satisfied
+  | var key =>
+      cases right with
+      | var other => exact .twoVariables key other rfl rfl
+      | symbol _ | grounded _ | expression _ =>
+          exact .assignLeft key rfl rfl (not_atomOccurs_of_varNonVar_equation rfl satisfied)
+  | grounded leftValue =>
+      cases right with
+      | grounded rightValue =>
+          have same : leftValue = rightValue :=
+            encodeModelGround_injective (by
+              simpa [MettaEquationSatisfied, encodeModelAtom, applyClassSolution] using satisfied)
+          subst rightValue
+          exact .grounds leftValue rfl rfl
+      | var key => exact .assignRight key rfl rfl (not_atomOccurs_of_nonVarVar_equation rfl satisfied)
+      | symbol _ | expression _ =>
+          simp [MettaEquationSatisfied, encodeModelAtom, applyClassSolution] at satisfied
+  | expression first =>
+      cases right with
+      | expression second => exact .expressions first second rfl rfl
+      | var key => exact .assignRight key rfl rfl (not_atomOccurs_of_nonVarVar_equation rfl satisfied)
+      | symbol _ | grounded _ =>
+          simp [MettaEquationSatisfied, encodeModelAtom, applyClassSolution] at satisfied
+
+example : ModelHeadCase (.var "X") (.symbol "value") :=
+  modelHeadCase_of_equation (valuation := fun _ => .sym "value") (by
+    simp [MettaEquationSatisfied, encodeModelAtom, applyClassSolution])
+
+example : ¬ ModelHeadCase (.symbol "left") (.symbol "right") := by
+  intro classified
+  cases classified <;> simp_all
+  rename_i name source target
+  exact (by decide : "left" ≠ "right") (source.trans target.symm)
+
 /-- A semantically satisfiable HE leaf equation has a declarative matcher
 witness.  Expression/expression equations are reserved for the paired list /
 merge recursion. -/
@@ -1530,77 +1612,24 @@ theorem exists_matchRel_of_solution_leaf
     (hleaf : ¬ BothExpressions left right) :
     ∃ out, DeclMatchSpec.MatchRel left right out := by
   obtain ⟨valuation, hequation⟩ := hsat
-  cases left with
-  | symbol leftName =>
-      cases right with
-      | symbol rightName =>
-          have hname : leftName = rightName := by
-            simpa [MettaEquationSatisfied, encodeModelAtom,
-              applyClassSolution] using hequation
-          subst rightName
-          exact ⟨Bindings.empty, .symSym leftName⟩
-      | var rightName =>
-          exact ⟨Bindings.empty.assign rightName (.symbol leftName),
-            .nonVarVar (by simp [DeclMatchSpec.Atom.isVarB]) (by intro occurs; cases occurs)⟩
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution] at hequation
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution] at hequation
-  | var leftName =>
-      cases right with
-      | symbol rightName =>
-          exact ⟨Bindings.empty.assign leftName (.symbol rightName),
-            .varNonVar (by simp [DeclMatchSpec.Atom.isVarB]) (by intro occurs; cases occurs)⟩
-      | var rightName =>
-          exact ⟨Bindings.empty.addEquality leftName rightName,
-            .varVar leftName rightName⟩
-      | grounded rightGround =>
-          exact ⟨Bindings.empty.assign leftName (.grounded rightGround),
-            .varNonVar (by simp [DeclMatchSpec.Atom.isVarB]) (by intro occurs; cases occurs)⟩
-      | expression rightAtoms =>
-          have hoccurs : ¬AtomOccurs (.expression rightAtoms) leftName :=
-            not_atomOccurs_of_satisfied_nonvariable_equation (by simp)
-              (by simpa [MettaEquationSatisfied, encodeModelAtom,
-                applyClassSolution] using hequation)
-          exact ⟨Bindings.empty.assign leftName (.expression rightAtoms),
-            .varNonVar (by simp [DeclMatchSpec.Atom.isVarB]) hoccurs⟩
-  | grounded leftGround =>
-      cases right with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution] at hequation
-      | var rightName =>
-          exact ⟨Bindings.empty.assign rightName (.grounded leftGround),
-            .nonVarVar (by simp [DeclMatchSpec.Atom.isVarB]) (by intro occurs; cases occurs)⟩
-      | grounded rightGround =>
-          have hground : leftGround = rightGround :=
-            encodeModelGround_injective (by
-              simpa [MettaEquationSatisfied, encodeModelAtom,
-                applyClassSolution] using hequation)
-          subst rightGround
-          exact ⟨Bindings.empty, .grounded leftGround⟩
-      | expression rightAtoms =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution] at hequation
-  | expression leftAtoms =>
-      cases right with
-      | symbol rightName =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution] at hequation
-      | var rightName =>
-          have hoccurs : ¬AtomOccurs (.expression leftAtoms) rightName :=
-            not_atomOccurs_of_satisfied_nonvariable_equation (by simp)
-              (by simpa [MettaEquationSatisfied, encodeModelAtom,
-                applyClassSolution] using hequation.symm)
-          exact ⟨Bindings.empty.assign rightName (.expression leftAtoms),
-            .nonVarVar (by simp [DeclMatchSpec.Atom.isVarB]) hoccurs⟩
-      | grounded rightGround =>
-          simp [MettaEquationSatisfied, encodeModelAtom,
-            applyClassSolution] at hequation
-      | expression rightAtoms =>
-          exact (hleaf ⟨leftAtoms, rightAtoms, rfl, rfl⟩).elim
+  cases modelHeadCase_of_equation hequation with
+  | symbols name leftShape rightShape =>
+      subst left right
+      exact ⟨Bindings.empty, .symSym name⟩
+  | grounds value leftShape rightShape =>
+      subst left right
+      exact ⟨Bindings.empty, .grounded value⟩
+  | assignLeft key leftShape nonvar occursFree =>
+      subst left
+      exact ⟨Bindings.empty.assign key right, .varNonVar nonvar occursFree⟩
+  | assignRight key rightShape nonvar occursFree =>
+      subst right
+      exact ⟨Bindings.empty.assign key left, .nonVarVar nonvar occursFree⟩
+  | twoVariables first second leftShape rightShape =>
+      subst left right
+      exact ⟨Bindings.empty.addEquality first second, .varVar first second⟩
+  | expressions first second leftShape rightShape =>
+      exact (hleaf ⟨first, second, leftShape, rightShape⟩).elim
 
 /-- The semantic leaf witness is returned by the executable HE matcher at
 some finite fuel. -/

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.CompletedInvocation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.DeclaredHeads
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.EveryRun
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.TypeQueryFragment
@@ -191,31 +192,18 @@ theorem declared_source {results : List Result}
       f_types
     rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom] at scanned
     exact scan_outcome same scanned
-  cases derived with
-  | delivered entered => cases Entry.functional entered entry
-  | cast entered => cases Entry.functional entered entry
-  | tuple _ shaped occurs _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      rw [Entry.Value.erase_ofAtom] at occurs
-      have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-        f_types.occurrences
-      simp [Atom.undefinedType] at same
-  | function _ shaped chosen _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  obtain ⟨_, chosen, invocation⟩ :=
+    (Completed.AtomRel.iff_invocation entry shape (fun occurs => by
+        rw [Entry.Value.erase_ofAtom] at occurs
+        have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
+          f_types.occurrences
+        simp [Atom.undefinedType] at same)).mp derived
+  cases invocation with
+  | selected _ _ =>
       cases outcome chosen
-  | fallback _ shaped chosen _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  | fallback _ _ _ =>
       cases outcome chosen
-  | selectionFailed _ shaped chosen selected =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
+  | failed selected =>
       have exhausted := outcome chosen
       simp only [Completed.InvocationSelection.exhausted.injEq] at exhausted
       obtain ⟨rfl, _⟩ := exhausted

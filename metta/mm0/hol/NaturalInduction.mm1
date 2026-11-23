@@ -1,0 +1,95 @@
+import "NaturalClosure.mm1";
+
+-- Strengthen the predicate by retaining membership in the original closure.
+-- The step premise is required only at generated elements.
+def naturalStrengthening (A: type) (z s p: term) =
+  $ \ n: A. naturalClosure A z s n /\ p @ n $;
+
+theorem naturalClosureT (G: wff) (A: type) (z s n: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $):
+  $ G |- naturalClosure A z s n: bool $ =
+'(!! allcT p @ !! naturalInstanceT k (anwl hz) (anwl hs) (anwl hn) anr);
+
+theorem naturalClosureNumberCong (G: wff) (A: type) (z s a b: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (heq: $ G |- =[A] a = b $):
+  $ G |- naturalClosure A z s a <=> naturalClosure A z s b $ =
+'(!! alleq p @ bineq2 impT (appT anr (anwl hz)) @
+  bineq2 impT (!! naturalStepT k (anwl hs) anr) (aeq2 anr (anwl heq)));
+
+theorem naturalStrengtheningT (G: wff) (A: type) (z s p: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hp: $ G |- p: A -> bool $):
+  $ G |- naturalStrengthening A z s p: A -> bool $ =
+'(!! lamT n @ andcT (naturalClosureT (anwl hz) (anwl hs) anr)
+  (appT (anwl hp) anr));
+
+theorem naturalStrengtheningBeta (G: wff) (A: type) (z s n p: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (hp: $ G |- p: A -> bool $):
+  $ G |- naturalStrengthening A z s p @ n <=>
+    naturalClosure A z s n /\ p @ n $ =
+'(!! betac k
+  (andcT (naturalClosureT (anwl hz) (anwl hs) anr) (appT (anwl hp) anr))
+  hn (andcT (naturalClosureT hz hs hn) (appT hp hn)) @
+  bineq andT (naturalClosureNumberCong (anwl hz) (anwl hs) anr)
+    (aeq2 (anwl hp) anr));
+
+theorem naturalGuardedStepAt (G: wff) (A: type) (z s n p: term) {k: term}
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (hp: $ G |- p: A -> bool $):
+  $ G |- (!k: A. naturalClosure A z s k ==> p @ k ==> p @ (s @ k)) ==>
+    (naturalClosure A z s n ==> p @ n ==> p @ (s @ n)) $ =
+'(!! spec k
+  (impcT (naturalClosureT (anwl hz) (anwl hs) anr)
+    (impcT (appT (anwl hp) anr) (appT (anwl hp) (appT (anwl hs) anr))))
+  hn (impcT (naturalClosureT hz hs hn)
+    (impcT (appT hp hn) (appT hp (appT hs hn)))) @
+  bineq impT (naturalClosureNumberCong (anwl hz) (anwl hs) anr) @
+    bineq impT (aeq2 (anwl hp) anr) (aeq2 (anwl hp) (aeq2 (anwl hs) anr)));
+
+theorem naturalStrengtheningZero (G: wff) (A: type) (z s p: term)
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hp: $ G |- p: A -> bool $) (hzero: $ G |- p @ z $):
+  $ G |- naturalStrengthening A z s p @ z $ =
+'(!! eqmpr (naturalStrengtheningBeta hz hs hz hp)
+  (CONJ (naturalClosureZero hz hs) hzero));
+
+theorem naturalStrengtheningSuccessor (G: wff) (A: type) (z s n p: term) {k: term}
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (hp: $ G |- p: A -> bool $)
+  (hstep: $ G |- !k: A. naturalClosure A z s k ==> p @ k ==> p @ (s @ k) $)
+  (h: $ G |- naturalStrengthening A z s p @ n $):
+  $ G |- naturalStrengthening A z s p @ (s @ n) $ =
+(focus
+  (have 'Pair '(!! eqmp (naturalStrengtheningBeta hz hs hn hp) h))
+  (have 'Closed '(CONJUNCT1 Pair))
+  (have 'Property '(CONJUNCT2 Pair))
+  (have 'Next '(MP (MP (MP (!! naturalGuardedStepAt k hz hs hn hp) hstep) Closed) Property))
+  '(!! eqmpr (naturalStrengtheningBeta hz hs (appT hs hn) hp) @
+    CONJ (naturalClosureSuccessor hz hs hn Closed) Next));
+
+theorem naturalStrengtheningStep (G: wff) (A: type) (z s p: term) {k j: term}
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hp: $ G |- p: A -> bool $)
+  (hstep: $ G |- !k: A. naturalClosure A z s k ==> p @ k ==> p @ (s @ k) $):
+  $ G |- !j: A. naturalStrengthening A z s p @ j ==>
+    naturalStrengthening A z s p @ (s @ j) $ =
+'(!! GEN j @
+  DISCH (appT (naturalStrengtheningT (anwl hz) (anwl hs) (anwl hp)) anr)
+    (appT (naturalStrengtheningT (anwl hz) (anwl hs) (anwl hp)) (appT (anwl hs) anr)) @
+  !! naturalStrengtheningSuccessor k (anwll hz) (anwll hs) anlr (anwll hp) (anwll hstep) anr);
+
+pub theorem naturalClosureInduction (G: wff) (A: type) (z s n p: term) {k: term}
+  (hz: $ G |- z: A $) (hs: $ G |- s: A -> A $)
+  (hn: $ G |- n: A $) (hp: $ G |- p: A -> bool $)
+  (h: $ G |- naturalClosure A z s n $) (hzero: $ G |- p @ z $)
+  (hstep: $ G |- !k: A. naturalClosure A z s k ==> p @ k ==> p @ (s @ k) $):
+  $ G |- p @ n $ =
+(focus
+  (have 'Start '(!! naturalStrengtheningZero hz hs hp hzero))
+  (have 'Step '(!! naturalStrengtheningStep k j hz hs hp hstep))
+  (have 'At '(!! naturalClosureElimination j hz hs hn
+    (naturalStrengtheningT hz hs hp) h Start Step))
+  '(CONJUNCT2 @ !! eqmp (naturalStrengtheningBeta hz hs hn hp) At));

@@ -1,0 +1,82 @@
+Runtime calls, private captures and error prefixes
+=================================================
+
+Classification: source-model and calibration handoff.
+
+The maintained PeTTa Unifying machine now has runtime invocation control, a
+dispatch continuation and a runtime-call error boundary. Fixed written heads
+retain their request-time classification. Runtime lookup uses the current
+equations, including their current arities. Private partials reuse resolved
+stored values; authored data headed by the symbol partial is not that carrier.
+Unknown runtime heads remain data.
+
+The independent source Transition rules and the executable step agree in both
+directions. Branch substitution refinement, protected return continuations and
+caller-frame lifting have been requalified for the new controls. Runtime
+recovery retains completed root answers and the reached store, input, output
+and source-use counter. Arity rejection precedes entry into the invoked goal.
+
+DynamicRecovery supplies independent Recovers rules for the stack protocol.
+The source helper preserves and reflects them; recovery cannot skip its nearest
+call boundary or replace root answers with tentative argument data.
+PeTTaDynamicContexts connects private expansion to the actual source runner,
+including contextual entry and exact administrative costs. Its recovery laws
+consume the independent relation rather than assuming an evaluator result.
+
+UnifyingPrefixes connects the existing bounded deterministic runner to the
+actual source observer, proves source reachability of every retained endpoint,
+and proves resume_exhausted for arbitrary configurations and split budgets.
+No producer-termination assumption is made. An undefined internal unifier step
+still remains suspended; this supplies no internal-unifier suspension mechanism.
+
+The concrete recovery control pauses after the marker write and before the
+callee error is recovered. Its root answer first is retained. Continuing from
+the saved configuration leaves one marker. Restarting the original request at
+that reached store leaves two markers. DynamicCallModel.lean executes the same
+controls, with explicit failure if a purported completed observation is absent.
+
+Input policy is observable
+--------------------------
+dynamic-call-demand.metta contains:
+
+  (: hold (-> Atom Atom))
+  (= (hold $x) $x)
+  !(hold (println! 9))
+  !(let $f (quote hold) ($f (println! 9)))
+
+SWI-PeTTa holds the first argument as data, but the runtime-dispatched second
+call receives an already evaluated argument: it prints 9 and returns true.
+The corrected CeTTa executable instead holds both arguments. The formal
+replacing_runtime_head_by_static_changes_observation theorem records the SWI
+distinction. Knowing a function's eventual name alone therefore does not earn
+that source rewrite; its argument policy is another semantic obligation.
+
+CeTTa documents corrected contracts and signature-directed raw arguments.
+The comparison remains explicit, with its independent expectation retained.
+It is not attributed to transform integration or automatically classified as
+an implementation defect. No Prime default has been selected from this case.
+The two expectation files distinguish the runtimes' Boolean printer spelling;
+the missing demanded effect is a semantic difference, not a spelling issue.
+
+Calibration
+-----------
+The three new fixtures are dynamic-call-values, dynamic-call-demand and
+dynamic-call-recovery. Their independent SWI expectations all pass. They cover
+private stored values, later capture binding, unknown function data, raw-demand
+behavior and a successful answer followed by an effectful failing alternative.
+
+The enlarged contextual comparison passes 19/23 on stable copied executable
+SHA-256 cbb4ee00862a9a0e1f5521ca8c5e0ca4d71715ac69084e45e407251a0713eb24.
+The three prior destination-count regressions remain, together with the
+argument-policy comparison. This is executable evidence, not a C root cause,
+performance qualification or implementation correspondence theorem.
+
+Scope
+-----
+This is the completed-operand runtime-dispatch profile. Whole raw-source
+admission for statically known computed heads, staged lambda authoring and
+private code installation, all native partial arities, source freshness and
+streaming operand scheduling remain open in the larger goal. File calibration
+is separate from a proved source-reader/elaboration correspondence. No reader
+proof is inferred from successful execution, and no language-wide restriction
+is inferred from this profile's current coverage.

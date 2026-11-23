@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.CompletedInvocation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.TypedEveryRun
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.DialectsAsStrategies.TriangleFootprints.AtomDemands
 
@@ -491,123 +492,97 @@ theorem if_source (b : Bool) {results : List Result}
       Entry.Value.ofAtom (sym "yes") := fun frame => HERuns.read_closed policy frame (closed_symbol _)
   have readNo : ∀ frame : Frame, frame.read policy (Entry.Value.ofAtom (sym "no")) =
       Entry.Value.ofAtom (sym "no") := fun frame => HERuns.read_closed policy frame (closed_symbol _)
-  cases derived with
-  | delivered entered => cases Entry.functional entered entry
-  | cast entered => cases Entry.functional entered entry
-  | tuple _ shaped occurs _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      rw [Entry.Value.erase_ofAtom] at occurs
-      have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-        if_types.occurrences
-      simp [Atom.undefinedType] at same
-  | fallback _ shaped chosenRel _ _ _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      obtain ⟨_, _, _, _, impossible⟩ := outcome chosenRel
-      cases impossible
-  | selectionFailed _ shaped chosenRel _ =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, _⟩ := shaped
-      obtain ⟨_, _, _, _, impossible⟩ := outcome chosenRel
-      cases impossible
-  | function _ shaped chosenRel invoked priority =>
-      rw [shape] at shaped
-      simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-      obtain ⟨_, rfl, rfl⟩ := shaped
-      obtain ⟨signature, after, functionType, afterBindings, selected⟩ := outcome chosenRel
-      simp only [Completed.InvocationSelection.selected.injEq] at selected
-      obtain ⟨rfl, rfl⟩ := selected
+  obtain ⟨_, chosenRel, invocationResult⟩ :=
+    (Completed.AtomRel.iff_invocation entry shape (fun occurs => by
+        rw [Entry.Value.erase_ofAtom] at occurs
+        have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
+          if_types.occurrences
+        simp [Atom.undefinedType] at same)).mp derived
+  obtain ⟨signature, after, functionType, afterBindings, rfl⟩ := outcome chosenRel
+  cases invocationResult with
+  | selected invoked priority =>
       have projections := if_projections functionType
       have returnTypeOf : ∀ {s : SelectedTypePolicy}, s.returnType = .var "t" →
           Completed.invocationReturnType s = .var "t" := by
         intro s same
         simp [Completed.invocationReturnType, same, Atom.expressionType]
       have returnType := returnTypeOf projections.2
-      cases invoked with
-      | cons function calls rest =>
-          cases rest
-          cases function with
-          | evaluated _ operatorRel branches =>
-              rw [functionType] at operatorRel
-              obtain ⟨frF, rfl⟩ := typed_cast_source_at if_data
-                (symbol_cast_entry (by decide) (by decide) (by decide +kernel)) if_types
-                (ifArrow_accepts afterBindings) operatorRel
-              rw [projections.1] at branches
-              simp only [List.map_cons, List.map_nil, List.zip_cons_cons, List.zip_nil_right]
-                at branches
-              cases branches with
-              | stopped stopped _ =>
-                  rw [Entry.Value.erase_ofAtom] at stopped
-                  exact absurd stopped if_data.not_stopped
-              | continuing _ arguments restBranches =>
-                  cases restBranches
-                  cases arguments with
-                  | cons conditionRel conditionBranches =>
-                      obtain ⟨fr1, rfl⟩ := typed_cast_source (.grounded (.bool b)) (bool_cast_entry b)
-                        (bool_types b) bool_accepts conditionRel
-                      cases conditionBranches with
+      obtain ⟨_, function, calls⟩ := Completed.InvocationsRel.singleton_iff.mp invoked
+      cases function with
+      | evaluated _ operatorRel branches =>
+          rw [functionType] at operatorRel
+          obtain ⟨frF, rfl⟩ := typed_cast_source_at if_data
+            (symbol_cast_entry (by decide) (by decide) (by decide +kernel)) if_types
+            (ifArrow_accepts afterBindings) operatorRel
+          rw [projections.1] at branches
+          simp only [List.map_cons, List.map_nil, List.zip_cons_cons, List.zip_nil_right]
+            at branches
+          cases branches with
+          | stopped stopped _ =>
+              rw [Entry.Value.erase_ofAtom] at stopped
+              exact absurd stopped if_data.not_stopped
+          | continuing _ arguments restBranches =>
+              cases restBranches
+              cases arguments with
+              | cons conditionRel conditionBranches =>
+                  obtain ⟨fr1, rfl⟩ := typed_cast_source (.grounded (.bool b)) (bool_cast_entry b)
+                    (bool_types b) bool_accepts conditionRel
+                  obtain ⟨_, yesArguments, rfl⟩ :=
+                    (Completed.ArgumentBranchesRel.singleton_continuing_iff (fun stop =>
+                      (DataAtom.grounded (.bool b)).not_stopped (by
+                        simpa only [Entry.Value.erase_ofAtom] using stop.1))).mp conditionBranches
+                  cases yesArguments with
+                  | cons yesRel yesBranches =>
+                      have yesDelivered := atom_demand_source yesRel
+                      subst yesDelivered
+                      rw [readYes] at yesBranches
+                      cases yesBranches with
                       | stopped stopped _ =>
-                          obtain ⟨stoppedCondition, _⟩ := stopped
-                          rw [Entry.Value.erase_ofAtom] at stoppedCondition
-                          exact absurd stoppedCondition (DataAtom.grounded (.bool b)).not_stopped
-                      | continuing _ yesArguments restCondition =>
-                          cases restCondition
-                          cases yesArguments with
-                          | cons yesRel yesBranches =>
-                              have yesDelivered := atom_demand_source yesRel
-                              subst yesDelivered
-                              rw [readYes] at yesBranches
-                              cases yesBranches with
+                          obtain ⟨stoppedYes, _⟩ := stopped
+                          rw [Entry.Value.erase_ofAtom] at stoppedYes
+                          exact absurd stoppedYes
+                            (DataAtom.symbol (name := "yes") (by decide) (by decide)).not_stopped
+                      | continuing _ noArguments restYes =>
+                          cases restYes
+                          cases noArguments with
+                          | cons noRel noBranches =>
+                              have noDelivered := atom_demand_source noRel
+                              subst noDelivered
+                              rw [readNo] at noBranches
+                              cases noBranches with
                               | stopped stopped _ =>
-                                  obtain ⟨stoppedYes, _⟩ := stopped
-                                  rw [Entry.Value.erase_ofAtom] at stoppedYes
-                                  exact absurd stoppedYes
-                                    (DataAtom.symbol (name := "yes") (by decide) (by decide)).not_stopped
-                              | continuing _ noArguments restYes =>
-                                  cases restYes
-                                  cases noArguments with
-                                  | cons noRel noBranches =>
-                                      have noDelivered := atom_demand_source noRel
-                                      subst noDelivered
-                                      rw [readNo] at noBranches
-                                      cases noBranches with
-                                      | stopped stopped _ =>
-                                          obtain ⟨stoppedNo, _⟩ := stopped
-                                          rw [Entry.Value.erase_ofAtom] at stoppedNo
-                                          exact absurd stoppedNo
-                                            (DataAtom.symbol (name := "no") (by decide)
-                                              (by decide)).not_stopped
-                                      | continuing _ packets restNo =>
-                                          cases restNo
-                                          cases packets
-                                          rw [returnType] at calls
-                                          simp only [List.map_cons, List.map_nil, List.append_nil,
-                                            Completed.argumentPrepend_packet] at calls
-                                          cases calls with
-                                          | cons callRel restCalls =>
-                                              cases restCalls
-                                              have assembled : ∀ frame : Frame,
-                                                  (Completed.functionAssemble
-                                                    (Entry.Value.ofAtom (.symbol "if"))
-                                                    (Entry.Value.argumentPacket
-                                                      [Entry.Value.ofAtom (.grounded (.bool b)),
-                                                        Entry.Value.ofAtom (sym "yes"),
-                                                        Entry.Value.ofAtom (sym "no")], frame)).1.erase =
-                                                    ifCall b := fun frame => by
-                                                simp [Completed.functionAssemble, Entry.Value.erase,
-                                                  ifCall, app]
-                                              have answered := if_call_source b (assembled _) callRel
-                                              exact publish_answers
-                                                (by simp only [List.append_nil]; exact answered)
-                                                (fun a member => by
-                                                  rw [List.mem_singleton] at member
-                                                  subst member
-                                                  exact answerable_of_data (chosen_data b))
-                                                priority
+                                  obtain ⟨stoppedNo, _⟩ := stopped
+                                  rw [Entry.Value.erase_ofAtom] at stoppedNo
+                                  exact absurd stoppedNo
+                                    (DataAtom.symbol (name := "no") (by decide)
+                                      (by decide)).not_stopped
+                              | continuing _ packets restNo =>
+                                  cases restNo
+                                  cases packets
+                                  rw [returnType] at calls
+                                  simp only [List.map_cons, List.map_nil, List.append_nil,
+                                    Completed.argumentPrepend_packet] at calls
+                                  cases calls with
+                                  | cons callRel restCalls =>
+                                      cases restCalls
+                                      have assembled : ∀ frame : Frame,
+                                          (Completed.functionAssemble
+                                            (Entry.Value.ofAtom (.symbol "if"))
+                                            (Entry.Value.argumentPacket
+                                              [Entry.Value.ofAtom (.grounded (.bool b)),
+                                                Entry.Value.ofAtom (sym "yes"),
+                                                Entry.Value.ofAtom (sym "no")], frame)).1.erase =
+                                            ifCall b := fun frame => by
+                                        simp [Completed.functionAssemble, Entry.Value.erase,
+                                          ifCall, app]
+                                      have answered := if_call_source b (assembled _) callRel
+                                      exact publish_answers
+                                        (by simp only [List.append_nil]; exact answered)
+                                        (fun a member => by
+                                          rw [List.mem_singleton] at member
+                                          subst member
+                                          exact answerable_of_data (chosen_data b))
+                                        priority
 
 /-! ## A complete run -/
 

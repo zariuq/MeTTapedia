@@ -1,0 +1,46 @@
+{
+  "schema": "mm2-verifier-manifest-v1",
+  "source_data_schema": "mm2-source-data-v1",
+  "profile": "zar",
+  "version": 2,
+  "forms": 1092,
+  "top_level_exec": 221,
+  "parsed_sha256": "74c0240ee4f2c211c3bbfcaa4478bdbd0533162cf7755ae5498e92a0e12e693e",
+  "fragments": [
+    {
+      "file": "00-runtime-support.mm2",
+      "forms": 49,
+      "top_level_exec": 3,
+      "parsed_sha256": "9fb9f9ffce51071607235d486c03079e8ccdbce1f1a1c7f7b88e58a77a2a68dd"
+    },
+    {
+      "file": "10-dispatch.mm2",
+      "forms": 431,
+      "top_level_exec": 218,
+      "parsed_sha256": "8b21b236cb5c7449158acc6116c1c9d7147d7628980b9f008172437528439ad3"
+    },
+    {
+      "file": "20-declarations.mm2",
+      "forms": 203,
+      "top_level_exec": 0,
+      "parsed_sha256": "fc73d23d65d2a9f5a91b63f44888b184e941b45c24f0fd2a36747f757b737041"
+    },
+    {
+      "file": "30-compressed.mm2",
+      "forms": 398,
+      "top_level_exec": 0,
+      "parsed_sha256": "e966ca4483f914812b873c926ac6df0bf3287b3ff9f038935a1e66ab07421098"
+    },
+    {
+      "file": "40-admission.mm2",
+      "forms": 11,
+      "top_level_exec": 0,
+      "parsed_sha256": "db7d3ddedb54ffd85386a7bb19b657ab5ca1765264d246ac0c6500bcf8abb4c0"
+    }
+  ],
+  "baseline": {
+    "forms": 1084,
+    "top_level_exec": 218,
+    "parsed_sha256": "1c36d89e3ea77de28d820e3dfcc3643bfa9e51a58f491aeaa497fbe5c8975f46"
+  }
+}

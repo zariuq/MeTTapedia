@@ -1,0 +1,1 @@
+(collapse (match &q (left $l $k) (match &q (right $k $r) (value $r))))

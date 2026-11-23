@@ -1,0 +1,28 @@
+{
+  "format": "transform-hol-semantic-effects-certificate-v1",
+  "sources_sha256": {
+    "core.ml": "9e5503a2abcf32f3f38a5f8cba67cd649af437b89e45358c6d4eb3199a6a272d",
+    "frames.ml": "aa434b16699bb64cca2a11a7b6e7cb78fcb89ecb635f38edb34b514cfd3619e2",
+    "prepared.ml": "659bde3a770e60eb7190bca0fe22198bb2ae82321b0f05917a6351cb0a016539",
+    "semantic_effects.ml": "72972563b16e742d4df4855e77e579d79c30c424801dc3a2c92bba812b5edacc"
+  },
+  "certificate": "semantic-effects.holr",
+  "certificate_sha256": "bf35c8444427e2fecc9e684d44a185a8b9a17d37111a8dd13af612b1a39c2d52",
+  "theorems": [
+    "TC_PREPARED_IS_SEMANTIC",
+    "TC_PREPARED_KNOWLEDGE_EXACT",
+    "TC_ACTION_COMPOSE_ASSOC",
+    "TC_MODELS_COMPOSE_ASSOC",
+    "TC_SEMANTIC_MODELS_ALONG",
+    "TC_SEMANTIC_EXACT_MODELS",
+    "TC_STRICT_REFINEMENT_NOT_EXACT"
+  ],
+  "source_proof_nodes": 119999,
+  "replay_records": 357628,
+  "standard_axiom_dependencies": 2,
+  "nonstandard_axioms": 0,
+  "negative_controls": 3,
+  "metta_proof_handle_consumer": true,
+  "formal_cross_language_interpretation_established": false,
+  "native_implementation_refinement_established": false
+}

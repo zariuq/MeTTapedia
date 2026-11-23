@@ -1,0 +1,28 @@
+import "SourceIOBase.module" as base
+
+Module SourceIO {
+  Theory Grammar(g: base.Grammar) {
+    g Terms {
+      Second . |- "x" : Term;
+      Unicode . |- "λ🙂" : Term;
+      Empty . |- "" : Term;
+      Pair . left:Term, right:Term |- "(" left "," right ")" : Term;
+    }
+  }
+  Theory LexicalProfile() {
+    Types { Profile; }
+    Terms {
+      LNil . |- "LNil" : Profile;
+      GetLexicalProfile . |- "lexical-profile" : Profile;
+      GSLTParserProfileLayerV1 . profileName:Profile, startSort:Profile, classes:Profile, states:Profile
+        |- "profile" profileName startSort classes states : Profile;
+      SourceIOProfile . |- "SourceIOProfile" : Profile;
+      Term . |- "Term" : Profile;
+    }
+    Rewrites {
+      ReturnLexicalProfile : (GetLexicalProfile) ~>
+        "GSLTParserProfileLayerV1"("SourceIOProfile", "Term", "LNil", "LNil");
+    }
+  }
+  theory Grammar(base.Grammar())
+}

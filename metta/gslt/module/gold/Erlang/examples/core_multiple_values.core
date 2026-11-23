@@ -1,0 +1,7 @@
+module 'core_multiple_values' ['run'/0]
+    attributes []
+'run'/0 =
+    fun () ->
+        let <A,B> = <1,2>
+        in {A,B}
+end

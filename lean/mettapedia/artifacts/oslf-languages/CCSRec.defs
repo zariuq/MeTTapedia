@@ -1,0 +1,6 @@
+# CCS with recursion's definitions, one a line: arity | summands; generated, do not edit.
+1 | (CAct (bvar 0) (CCall CZ (CArgCons (bvar 0) CArgNil)))
+1 | (CCoAct (bvar 0) CNil)
+0 | (CTau (CCall (CS (CS CZ)) CArgNil))
+2 | (CAct (bvar 0) (CCall (CS (CS (CS CZ))) (CArgCons (bvar 1) (CArgCons (bvar 0) CArgNil))))
+0 | (CTau CNil)

@@ -1,0 +1,500 @@
+{
+  "schema": "contextual-transform-fixtures-v1",
+  "cases": [
+    {
+      "name": "written-call-contexts",
+      "source": "written-call-contexts.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaActivation.written_call_in_context",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaBindingContexts.known_operation_in_let_body",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaContexts.run_context"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "written-call-contexts.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "cold-native-transform",
+      "source": "cold-native-transform.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaBindingContexts.known_operation_in_let_body"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "cold-native-transform.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "warm-native-transform",
+      "source": "warm-native-transform.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaCallCache.warm_is_neutral"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "warm-native-transform.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "held-call-data",
+      "source": "held-call-data.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaActivation.quote_is_value",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaActivation.Controls.quotation_does_not_run_print"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "held-call-data.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "unused-binding-observable",
+      "source": "unused-binding-observable.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaActivation.Controls.binding_unused_in_body_is_not_globally_unused"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "unused-binding-observable.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "body-redefinition",
+      "source": "body-redefinition.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaCallCache.Controls.classification_is_not_an_answer_cache"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "body-redefinition.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "new-definition-after-negative",
+      "source": "new-definition-after-negative.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaCallCache.Controls.transfer_repairs_stale_negative"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "new-definition-after-negative.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "initializer-effect-on-clash",
+      "source": "initializer-effect-on-clash.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaBindingContexts.initializer_then_clash"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "initializer-effect-on-clash.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "he-chain-destination",
+      "source": "he-chain-destination.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEChainContexts.chain_step_exact",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEChainContexts.chain_run_exact"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "he",
+          "expected": "he-chain-destination.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "he-inert-chain-computation",
+      "source": "he-inert-chain-computation.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEInertBindings.inert_chain_exact",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEStatefulContexts.context_exact"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "he-inert-chain-computation.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "he-answerless-effect",
+      "source": "he-answerless-effect.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEWorldControls.answerless_effect_exact",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEWorldControls.answerless_is_not_rollback"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "he-answerless-effect.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "he-take-error-spaces",
+      "source": "he-take-error-spaces.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEWorldControls.take_then_fail_exact",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEWorldControls.execute_other_space"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "he-take-error-spaces.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "he-typed-context",
+      "source": "he-typed-context.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEReturnAndSpaces.typed_in_space_exact",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEInertBindings.inert_chain_exact"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "he-typed-context.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "he-empty-vs-invocation",
+      "source": "he-empty-vs-invocation.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEStatefulContexts.chain_empty_exact",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.HEReturnAndSpaces.typed_in_space_exact"
+      ],
+      "runs": [
+        {
+          "dialect": "he",
+          "profile": "extended",
+          "expected": "he-empty-vs-invocation.he.expected"
+        }
+      ]
+    },
+    {
+      "name": "application-demand-effects",
+      "source": "application-demand-effects.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaApplicationContexts.run_context",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaApplicationContexts.raw_argument_run",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaApplicationContexts.operand_then_arguments",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaContinuationContexts.operand_then_collection"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "application-demand-effects.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "transform-answerless-first",
+      "source": "transform-answerless-first.metta",
+      "classification": "calibration fixture",
+      "kind": "source-demand",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaTransformDemand.transform_once",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaTransformDemand.Controls.target_first_retains_the_answerless_take"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "transform-answerless-first.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "once-into-let-count",
+      "source": "once-into-let-count.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaBindingContexts.initializer_then_body"
+      ],
+      "scope": "The binding-continuation law is checked. Destination-transform count production is independently calibrated with the complete authored SWI library; this fixture is not a C correspondence theorem.",
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "once-into-let-count.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "destination-let-bare",
+      "source": "destination-let-bare.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaBindingContexts.initializer_then_body"
+      ],
+      "scope": "Authored-library destination count and post-store calibration. The conditional binding law does not prove native destination-transform execution.",
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "destination-let-bare.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "destination-let-collect",
+      "source": "destination-let-collect.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaBindingContexts.initializer_then_body"
+      ],
+      "scope": "Authored-library destination count and post-store calibration. The conditional binding law does not prove native destination-transform execution.",
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "destination-let-collect.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "destination-let-held-collect",
+      "source": "destination-let-held-collect.metta",
+      "classification": "calibration fixture",
+      "kind": "source-context",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaBindingContexts.initializer_then_body"
+      ],
+      "scope": "Authored-library destination count and post-store calibration. The conditional binding law does not prove native destination-transform execution.",
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": "extended",
+          "expected": "destination-let-held-collect.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "dynamic-call-values",
+      "source": "dynamic-call-values.metta",
+      "classification": "calibration fixture",
+      "kind": "source-dynamic-call",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.PeTTa.Unifying.DynamicCallControls.basic_source_results",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaDynamicContexts.partial_run"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": null,
+          "expected": "dynamic-call-values.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "dynamic-call-demand",
+      "source": "dynamic-call-demand.metta",
+      "classification": "calibration fixture",
+      "kind": "source-profile-comparison",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.PeTTa.Unifying.DynamicCallControls.runtime_arguments_are_already_evaluated",
+        "Mettapedia.Languages.MeTTa.PeTTa.Unifying.DynamicCallControls.replacing_runtime_head_by_static_changes_observation"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": null,
+          "expected": "dynamic-call-demand.petta.expected"
+        }
+      ],
+      "scope": "Independent SWI runtime-demand expectation. Corrected CeTTa dispatch uses the callee signature; retain this as an explicit profile comparison, not an attributed regression.",
+      "external_reference": {
+        "runtime": "SWI-PeTTa",
+        "expected": "dynamic-call-demand.swi.expected",
+        "scope": "The Boolean printer differs; the demanded effect and Boolean result remain the independent semantic expectation."
+      }
+    },
+    {
+      "name": "dynamic-call-recovery",
+      "source": "dynamic-call-recovery.metta",
+      "classification": "calibration fixture",
+      "kind": "source-dynamic-call",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.PeTTa.Unifying.DynamicCallControls.caught_error_keeps_completed_answers_and_effects",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaDynamicContexts.recovery_keeps_effects"
+      ],
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": null,
+          "expected": "dynamic-call-recovery.petta.expected"
+        }
+      ]
+    },
+    {
+      "name": "lambda-captures",
+      "source": "lambda-captures.metta",
+      "classification": "calibration fixture",
+      "kind": "source-closure-boundary",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaLambdaControls.captured_value_runs_in_actual_source",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaLambdaControls.captured_code_is_not_evaluated_again",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaLambdaControls.private_clause_is_not_a_public_atom"
+      ],
+      "scope": "Calibration of ordinary lambda capture/installation; no recursive source-compiler adequacy claim.",
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": null,
+          "expected": "lambda-captures.swi.expected"
+        }
+      ]
+    },
+    {
+      "name": "lambda-freshness-collision",
+      "source": "lambda-freshness-collision.metta",
+      "classification": "calibration fixture",
+      "kind": "source-scope-boundary",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaLambdaControls.scoped_literal_suffix_preserves_the_source_answer"
+      ],
+      "counterexample_contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaLambdaControls.literal_suffix_can_capture_caller_binding"
+      ],
+      "unresolved_source_model": false,
+      "scope": "Scoped admission matches independent source expectation b; raw entry remains a negative control. General configuration scope/readout adequacy remains open.",
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": null,
+          "expected": "lambda-freshness-collision.swi.expected"
+        }
+      ]
+    },
+    {
+      "name": "scope-imports",
+      "source": "scope-imports.metta",
+      "classification": "calibration fixture",
+      "kind": "source-scope-imports",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaScopeControls.parsed_variables_are_not_caller_variables",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaScopeControls.enumerated_rows_are_fresh_occurrences",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaScopeControls.assignment_copies_before_the_caller_is_bound"
+      ],
+      "scope": "Fresh variables at parse, enumeration and assignment boundaries; whole-machine/readout adequacy remains separate.",
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": null,
+          "expected": "scope-imports.swi.expected"
+        }
+      ]
+    },
+    {
+      "name": "scope-session",
+      "source": "scope-session.metta",
+      "classification": "calibration fixture",
+      "kind": "source-scope-session",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaScopeControls.retained_supply_preserves_later_requests"
+      ],
+      "counterexample_contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaScopeControls.resetting_the_supply_can_capture_a_retained_value"
+      ],
+      "scope": "Two real requests retain a copied open cell and the reached allocation supply; resetting the supply is a negative control.",
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": null,
+          "expected": "scope-session.swi.expected"
+        }
+      ]
+    },
+    {
+      "name": "runtime-match-binding",
+      "source": "runtime-match-binding.metta",
+      "classification": "calibration fixture",
+      "kind": "runtime-matching",
+      "contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaRuntimeMatchControls.runtime_match_binds_the_caller",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaRuntimeMatchControls.runtime_template_is_not_evaluated_twice",
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaRuntimeMatchControls.runtime_match_unifies_open_stored_rows"
+      ],
+      "counterexample_contracts": [
+        "Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaRuntimeMatchControls.ground_table_is_not_the_open_row_adapter"
+      ],
+      "scope": "Completed-operand runtime matching, branch bindings and fresh open rows. Written body execution is distinct from returning a runtime template value.",
+      "runs": [
+        {
+          "dialect": "petta",
+          "profile": null,
+          "expected": "runtime-match-binding.swi.expected"
+        }
+      ]
+    }
+  ]
+}

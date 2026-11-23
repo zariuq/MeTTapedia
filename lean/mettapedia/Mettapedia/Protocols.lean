@@ -12,6 +12,7 @@ import Mettapedia.Protocols.Mail.WaitAdmission
 import Mettapedia.Protocols.Mail.IdentityClaims
 import Mettapedia.Protocols.Repos.GitSkeleton
 import Mettapedia.Protocols.ClawMail
+import Mettapedia.Protocols.Web.RobotsExclusion
 import Mettapedia.Protocols.Nostr.Event
 import Mettapedia.Protocols.Nostr.Filter
 import Mettapedia.Protocols.Nostr.Relay

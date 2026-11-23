@@ -1,0 +1,49 @@
+Stateful HE priority phases and demand
+=====================================
+
+Machines/OrderedPriorityTraversal executes ordered work through local child
+transitions. It opens a child with saved control and resumes each later work
+item in the reached world. It never calls a service to evaluate a whole child.
+The existing HEProducerCompletion bank retains error occurrences until phase
+closure; successful occurrences become available immediately. Its independent
+reference is OrderedStateFlatMapRel followed by SuccessPriorityRel.
+
+HE/StatefulPriorityTraversal instantiates the machine with the existing HE
+contextual worker and independent Stateful source judgments. The local source
+reflection and completed-child execution theorems are proved from that worker.
+Completed phases preserve and reflect the exact source rows, order and final
+world. CallsRel and InvocationsRel are actual consumers; the existing AtomRel
+tuple and typed-function rules consume those same phases after their required
+operand traversal or type-frame selection. Each typed frame owns preparation
+and the subsequent calls before the next frame begins. Bindings are read from
+each retained result frame before classification.
+
+Machines/OrderedPriorityDemand uses the existing first-answer cursor client.
+A request performs one local transition or observes an answer, exhaustion or
+interruption. A missing local service reply is not source exhaustion. Completed
+phase history is not automatically delivered as a batch: the first consumer
+returns one occurrence, including when an all-error phase has buffered several.
+Its progress history is constructed from actual bounded traversal execution.
+The retained state preserves the world, unfinished child, remaining work and
+priority bank; scheduler splitting does not reconstruct the original request.
+
+HEPriorityControls supplies the existing explicit ordered-store host. Every
+executable local reply is proved to be a genuine HE worker transition. First
+demand retains a preceding answerless write and an error, suppresses the error
+when a success arrives, and stops before a later write. Full drain performs that
+later write. Pausing and resuming produces one earlier write; restarting produces
+two. All-error completion preserves duplicates, while first demand returns only
+the first error. Empty is non-error in this binary source phase; root Empty
+omission is a separate policy.
+
+HEPriorityModel.lean runs those definitions and the actual common cursor.
+Its independently written expected output also distinguishes pause, exhaustion
+and unavailable-service interruption. It is a model consumer, not a theorem
+about a CeTTa executable or a source-reader/compiler correspondence.
+
+Scope remains explicit: publication opens between completed children. This
+does not make operand/control frontiers lazy, move phase-wide error preference
+to an outer root, or authorize reordering consumer effects. Streaming within
+recursive operand barriers, full HE transform source interpretation, source
+fuel, native service adequacy and C ownership correspondence remain separate
+obligations of the larger contextual-derived-forms goal.

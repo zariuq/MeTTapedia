@@ -1,0 +1,6 @@
+!(let $f (|-> ($x) (let $g (|-> ($y) (pair $x $y)) ($g b))) ($f a))
+!(if True safe (|-> () (println! unwanted)))
+!(let $_ (add-atom &self (saved (|-> ($z) (println! $z))))
+   (match &self (saved (|-> ($w) (println! $w))) held))
+!(let $syntax (quote (|-> ($x) (pair $x $x)))
+   (== $syntax (quote (|-> ($x) (pair $x $x)))))

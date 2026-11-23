@@ -1,0 +1,30 @@
+import "../../Radix16.module" as radix
+import "Syntax.module" as sx
+import "Core.module" as core
+
+Module ScalarRealization {
+  Theory SyntaxScalars(s: sx.Grammar, w: radix.Words) {
+    s \/ w
+      Terms {
+        «dl-scalar:DlSingleIdentifierScalar» . point:R16Word24 |- point : DlSingleIdentifierScalar;
+        «dl-scalar:DlIdentifierFirstScalar» . point:R16Word24 |- point : DlIdentifierFirstScalar;
+        «dl-scalar:DlIdentifierRestScalar» . point:R16Word24 |- point : DlIdentifierRestScalar;
+        «dl-scalar:DlDigitScalar» . point:R16Word24 |- point : DlDigitScalar;
+        «dl-scalar:DlBinaryDigitScalar» . point:R16Word24 |- point : DlBinaryDigitScalar;
+        «dl-scalar:DlHexDigitScalar» . point:R16Word24 |- point : DlHexDigitScalar;
+        «dl-scalar:DlStringScalar» . point:R16Word24 |- point : DlStringScalar;
+        «dl-scalar:DlWhitespaceScalar» . point:R16Word24 |- point : DlWhitespaceScalar;
+        «dl-scalar:DlHorizontalSpaceScalar» . point:R16Word24 |- point : DlHorizontalSpaceScalar;
+        «dl-scalar:DlLineCommentScalar» . point:R16Word24 |- point : DlLineCommentScalar;
+        «dl-scalar:DlBlockCommentScalar» . point:R16Word24 |- point : DlBlockCommentScalar;
+        «dl-scalar:DlBlockCommentAfterStarScalar» . point:R16Word24 |- point : DlBlockCommentAfterStarScalar;
+      }
+  }
+  Theory DefaultCore() {
+    let s = sx.Grammar() in (
+      let w = radix.Words() in (
+        let realized = SyntaxScalars(s,w) in (
+          let d = core.ProgramData(realized) in (d \/ core.GroundSemantics(d)))))
+  }
+  theory DefaultCore()
+}

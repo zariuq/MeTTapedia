@@ -1,0 +1,5 @@
+(sort wff provable)
+(term wi ((a wff ()) (b wff ())) (wff ()))
+(term an ((a wff ()) (b wff ())) (wff ()))
+(axiom anl ((a wff ()) (b wff ())) () (wi (an a b) a))
+(theorem bad ((a wff ()) (b wff ())) () (wi (an a b) b) () (anl (a b)))

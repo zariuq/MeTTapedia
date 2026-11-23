@@ -1,0 +1,71 @@
+Independent answer copies and joint collection observations
+
+AtomRenamingApart combines actual per-term renaming maps into maps for the
+whole list when both lists separate variables between their terms. Individual
+observations alone are insufficient: they cannot distinguish two independent
+open answers from two answers sharing the same variable. This structural
+mathematics remains with the MORK Atom owner.
+
+CollectionCopyReadout connects the existing EagerDFS.Collection.IsCopy and
+Copies source contracts to canonical joint observations. Its structural
+adapters compare the existing variable inventories and renamers. Copies retain
+the value/associated-syntax sharing of each source tuple. Any two valid
+collectors of corresponding source variants have the same joint value view,
+without using the same concrete fresh-name allocator.
+
+UnifyingCollectionCopies proves that the actual Unifying.copies algorithm
+satisfies that independent source contract. Occurrence i receives the actual
+activation use+i. These maps are injective and have disjoint images between
+occurrences. Every previously supported value is apart from the new copies.
+The original caller's allocated substitution cannot capture either a fresh
+copy or the complete aggregate. The generic fixed-substitution law is owned
+by MORK/SubstitutionSupport and uses actual first-match lookup.
+
+StreamingCollectionReadout pairs independently solved source equation rows
+with the actual bank substitutions. Represents and the source solver result
+earn per-branch variants through the existing MGU bridge. The two actual
+collectors then earn one joint observation. No readout equality is assumed
+as an input. At the actual collection-closing step, full-frontier invariants
+earn idempotence and caller freshness; the reached world, identity charge and
+saved caller are retained. The copied variables are also apart from retained
+cells in the reached world.
+
+This closes the collection-copy/readout boundary for corresponding banks.
+The producer must still establish the bank-model relation. Whole producer/run
+correspondence and arbitrary future-caller equivariance remain open, along
+with the original typed, lambda, dynamic, HE and authority obligations. Display
+equality is not permission to replace executable names in an older world.
+
+The source and runtime controls solve x=y in opposite directions and have
+different raw representatives. Their copied joint readouts agree. A corrupt
+whole-bank renaming passes every individual-answer check but fails the joint
+one. A caller with an unallocated future key demonstrably captures a new copy;
+that caller fails the required preallocation invariant. The actual closing
+state satisfies binding, support and region invariants. CollectionReadoutModel
+checks nine observations, including zero-budget retention and paid resumption.
+
+The eight-query source-collection-sharing.metta fixture checks within-answer
+sharing, separation between answers, independence from a later caller binding,
+retention of an earlier write and the order of effects in a compound list head
+and its argument. SWI-PeTTa and the retained native snapshot agree. Their lower
+case boolean printer and the Lean carrier's capitalized boolean printer are
+recorded separately; the semantic expectations are the same.
+
+That fixture exposed a compiler admission gap: a statically known list head
+was rejected. OutputPlanCompiler now retains the source's plain-data-list
+case when its translated head is statically normal. Existing plan sequencing
+runs the head's goals before the arguments, then constructs data. DataTree is
+an independent structural judgment; its recognizer preserves and reflects it,
+and the formation rules consume that judgment. Bidirectional formation,
+successful-bound independence and runtime-policy alias neutrality are
+rechecked. No new runtime primitive or source parser was introduced.
+
+Known calls inside a quoted list head and variable heads still need their
+proper evaluation/dispatch regions; they do not enter static data emission.
+Those compiler declines do not assign failure or empty answers to the source
+program. Whole compiler execution adequacy remains separate from formation
+and the concrete executable calibration. OutputPlanModel retains its original
+49 observations and adds the fixture's eight, for 57 observations.
+
+No CeTTa C changes, C implementation correspondence, machine-code proof or
+native performance claim is part of this package.

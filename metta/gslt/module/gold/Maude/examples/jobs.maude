@@ -1,0 +1,4 @@
+fmod GOLD-JOBS is
+  sort Job .
+  ops alpha beta gamma : -> Job [ctor] .
+endfm

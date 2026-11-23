@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.RelatedSubstitution
 import Mettapedia.Logic.MetaInterpretiveLearning.CumulativeTheory.MILConversionParallel
 
 /-!
@@ -59,12 +60,8 @@ theorem par_rename {n m : Nat} (rho : Ren n m) {source target : Tower.Tm n} :
 weakened before its parallel development is reused. -/
 theorem parallel_liftSub {n m : Nat} {source target : Sub Tower.Head n m}
     (arguments : ∀ i, Par (source i) (target i)) :
-    ∀ i, Par (liftSub source i) (liftSub target i) := by
-  intro i
-  refine Fin.cases ?_ ?_ i
-  · exact .var 0
-  · intro prior
-    exact par_rename wk (arguments prior)
+    ∀ i, Par (liftSub source i) (liftSub target i) :=
+  RelatedSubstitution.lift (E := Par) (.var _) (par_rename wk) arguments
 
 /-- Simultaneous parallel substitution preserves both native branches. The
 authored coherence guards are transported, not recomputed or erased. -/
@@ -119,13 +116,9 @@ together, including any completed native root beneath that binder. -/
 theorem par_inst0 {n : Nat} {argument argument' : Tower.Tm n}
     {body body' : Tower.Tm (n + 1)} (argumentStep : Par argument argument')
     (bodyStep : Par body body') :
-    Par (inst0 argument body) (inst0 argument' body') := by
-  apply par_substitute (sourceSub := subst0 argument) (targetSub := subst0 argument') _ bodyStep
-  intro i
-  refine Fin.cases ?_ ?_ i
-  · exact argumentStep
-  · intro prior
-    exact .var prior
+    Par (inst0 argument body) (inst0 argument' body') :=
+  RelatedSubstitution.instantiate (E := Par)
+    (fun images evidence => par_substitute images evidence) Par.var argumentStep bodyStep
 
 namespace BindingExamples
 

@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Resumption
+import Mettapedia.Languages.MeTTa.PeTTa.Bridges.SpaceLanguageDef
 import Mathlib.Data.List.Chain
 
 /-!
@@ -690,6 +691,17 @@ def nativeStep (program : Program) (source : Snapshot) : Option Snapshot :=
   | none => none
   | some target => some (snapshot (supportAfter source.cellNames source.decode) target)
 
+/-- The ordinary evaluator of a space uses the presentation generated from
+its selected rows, with the same finite store and continuation readback. -/
+def nativeStepInSpace (rows : List Atom) (source : Snapshot) : Option Snapshot :=
+  match Bridges.SpaceLanguageDef.step rows source.decode with
+  | none => none
+  | some target => some (snapshot (supportAfter source.cellNames source.decode) target)
+
+theorem nativeStepInSpace_exact (rows : List Atom) (source : Snapshot) :
+    nativeStepInSpace rows source = nativeStep (SpaceSemantics.index rows) source := by
+  simp only [nativeStepInSpace, nativeStep, Bridges.SpaceLanguageDef.step_exact]
+
 theorem nativeStep_of_transition (program : Program) (source : Snapshot)
     (target : Configuration) (transition : DeclarativeSpec.Transition program source.decode target) :
     nativeStep program source =
@@ -1085,12 +1097,17 @@ inductive Transition : Configuration → Configuration → Prop where
       (execution : DeclarativeSpec.Transition program source target) :
       Transition source target
 
-/-- Execute the original dispatcher after indexing the actual current store. -/
+/-- Consult the presentation of the actual current store at each step. -/
 def step (source : Configuration) : Option Configuration :=
-  Eval.step (index source.state.core) source
+  Bridges.SpaceLanguageDef.step source.state.core source
+
+theorem step_eq_indexed (source : Configuration) :
+    step source = Eval.step (index source.state.core) source :=
+  Bridges.SpaceLanguageDef.step_exact _ _
 
 theorem step_exact (source target : Configuration) :
     step source = some target ↔ Transition source target := by
+  rw [step_eq_indexed]
   constructor
   · intro actual
     exact .indexed _ (SpaceSemantics.index_exact source.state.core)
@@ -1117,10 +1134,15 @@ def theory : Mettapedia.GSLT.GSLT where
     exact transition
 
 def nativeStep (source : Snapshot) : Option Snapshot :=
-  ProgramReplay.nativeStep (index source.core) source
+  ProgramReplay.nativeStepInSpace source.core source
+
+theorem nativeStep_eq_indexed (source : Snapshot) :
+    nativeStep source = ProgramReplay.nativeStep (index source.core) source :=
+  ProgramReplay.nativeStepInSpace_exact _ _
 
 theorem nativeStep_source (source target : Snapshot)
     (computed : nativeStep source = some target) : Transition source.decode target.decode := by
+  rw [nativeStep_eq_indexed] at computed
   exact .indexed _ (SpaceSemantics.index_exact source.core)
     (ProgramReplay.nativeStep_sound _ source target computed)
 
@@ -1128,6 +1150,7 @@ theorem nativeStep_of_source (source : Snapshot) (target : Configuration)
     (transition : Transition source.decode target) :
     nativeStep source = some (snapshot (supportAfter source.cellNames source.decode) target) ∧
       (snapshot (supportAfter source.cellNames source.decode) target).decode = target := by
+  rw [nativeStep_eq_indexed]
   cases transition with
   | indexed program declarations execution =>
       have same := declarations.unique (SpaceSemantics.index_exact source.core)
@@ -1231,7 +1254,8 @@ theorem emitTrace_endpoint (fuel : Nat) (source : Snapshot) :
       cases next : nativeStep source with
       | none =>
           have stopped : step source.decode = none := by
-            change ProgramReplay.nativeStep (index source.core) source = none at next
+            rw [nativeStep_eq_indexed] at next
+            rw [step_eq_indexed]
             exact (ProgramReplay.nativeStep_eq_none_iff _ source).mp next
           simp [emitTrace, next, traceEnd, advance, stopped]
       | some target =>
@@ -1352,7 +1376,7 @@ only when their actual dispatch, argument demand and selected bodies agree. -/
 theorem step_eq_pinned (program : Program) (source : Configuration)
     (agreement : ProgramAgreementAt (index source.state.core) program source) :
     step source = Eval.step program source :=
-  step_eq_of_program_agreement agreement
+  (step_eq_indexed source).trans (step_eq_of_program_agreement agreement)
 
 
 /-- Completed answers are public bags; the proof still retains every causal
@@ -1614,7 +1638,7 @@ theorem step_projection_eq_live (source : State)
       (index source.2.state.core) source.2) :
     (step source).map Prod.snd = LiveRegistry.step source.2 := by
   have actual := step_eq_of_program_agreement agreement
-  simpa [step, LiveRegistry.step, Option.map_map, Function.comp_def] using actual
+  simpa [step, LiveRegistry.step_eq_indexed, Option.map_map, Function.comp_def] using actual
 
 theorem step_projection_eq_live_on (source : State) (allowed : String → Bool)
     (within : configurationWithin allowed source.2)

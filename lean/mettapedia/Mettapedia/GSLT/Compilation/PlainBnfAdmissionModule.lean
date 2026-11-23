@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Compilation.CanonicalHornSemantics
+import Mettapedia.GSLT.Compilation.DeclaredHornReading
 import Mettapedia.GSLT.Parsing.PlainBnfScalarOrderSource
 
 /-!
@@ -200,16 +200,9 @@ theorem completed_authored_validation_answers (timing : SetStore.AskTiming)
     have zero : i = 0 := Fin.eq_zero i
     subst i
     exact (wrap_ground_iff grammar).mpr ground
-  have factsGround : ∀ atom ∈ validationProviders providers, atom.isGround := by
-    intro atom member
-    obtain ⟨original, known, rfl⟩ := Finset.mem_image.mp member
-    exact (wrap_atom_ground_iff original).mpr (providerGround original known)
-  refine (completed_validation_answers timing (validationProviders providers)
-    (wrapTerm grammar) (wrapTerm result) inputGround factsGround run finished).trans ?_
-  simpa only [validationProviders, Finset.coe_image] using least_iff_source modes sourceRules
-    moduleClauses rule_occurrence_compiles (providers : Set RawAtom) (validationGoal grammar result)
-    ⟨validationInput (wrapTerm grammar), validationOutput (wrapTerm result)⟩
-    (validation_goal_lowers grammar result)
+  exact DeclaredHornReading.labelled_answers modes sourceRules moduleClauses rule_occurrence_compiles
+    timing providers providerGround (validationGoal grammar result) _
+    (validation_goal_lowers grammar result) inputGround run finished
 
 #print axioms source_isSome
 #print axioms source_length

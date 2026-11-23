@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.RewriteValidationBatch
 import Mettapedia.Logic.HostingStyles.AmbientSpace.Tokens
 
 /-!
@@ -168,27 +169,17 @@ theorem contained_rewrites_checked :
       Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
 
+/-- The contained, scoped, and headed variants share these static declarations. -/
+theorem contained_signature_valid :
+    ({ containedRun with rewrites := [] } : LanguageDef).validate = [] := by
+  exact RewriteValidationCertificate.validate_signature_of_plain_equations (lang := containedRun)
+    (by decide +kernel) (by decide +kernel) (by decide +kernel) (by decide +kernel)
+    (by decide +kernel) (by decide +kernel) (by decide +kernel)
+
 /-- **The contained presentation passes the declaration gate.** -/
 theorem contained_validate : containedRun.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
-  case htypes => decide +kernel
-  case hconstructors => decide +kernel
-  case hequations => decide +kernel
-  case hrewrites => decide +kernel
-  case hcategory => decide +kernel
-  case hparams => decide +kernel
-  case hsyntax => decide +kernel
-  case hequationValid =>
-    intro equation member
-    exact LanguageDef.validateEquation_eq_nil_of_plainEquationOk
-      (List.all_eq_true.mp
-        (by decide +kernel :
-          containedRun.equations.all (LanguageDef.plainEquationOk containedRun) = true)
-        equation member)
-  case hrewriteValid =>
-    intro rewrite member
-    exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check (by decide +kernel)
-      (contained_rewrites_checked rewrite member)
+  exact RewriteValidationCertificate.validate_eq_nil_of_signature_and_checks (lang := containedRun)
+    contained_signature_valid (by decide +kernel) contained_rewrites_checked
 
 /-- The contained presentation, as a presentation. -/
 def containedPresentation : ValidatedLanguageDef := ⟨containedRun, contained_validate⟩
@@ -265,25 +256,8 @@ theorem scoped_rewrites_checked :
 
 /-- **The scoped presentation passes the declaration gate.** -/
 theorem scoped_validate : scopedRun.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
-  case htypes => decide +kernel
-  case hconstructors => decide +kernel
-  case hequations => decide +kernel
-  case hrewrites => decide +kernel
-  case hcategory => decide +kernel
-  case hparams => decide +kernel
-  case hsyntax => decide +kernel
-  case hequationValid =>
-    intro equation member
-    exact LanguageDef.validateEquation_eq_nil_of_plainEquationOk
-      (List.all_eq_true.mp
-        (by decide +kernel :
-          scopedRun.equations.all (LanguageDef.plainEquationOk scopedRun) = true)
-        equation member)
-  case hrewriteValid =>
-    intro rewrite member
-    exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check (by decide +kernel)
-      (scoped_rewrites_checked rewrite member)
+  exact RewriteValidationCertificate.validate_eq_nil_of_signature_and_checks (lang := scopedRun)
+    (RewriteValidationCertificate.validate_signature_of_same_data (left := containedRun) rfl rfl rfl contained_signature_valid) (by decide +kernel) scoped_rewrites_checked
 
 /-- The scoped presentation, as a presentation. -/
 def scopedPresentation : ValidatedLanguageDef := ⟨scopedRun, scoped_validate⟩

@@ -1,0 +1,344 @@
+{
+  "status": "pass",
+  "recorded_utc": "2026-10-11T10:30:52.562463+00:00",
+  "scope": "Generated native predicates, dependent output families, and certified operational readouts",
+  "aggregate": "Mettapedia.OSLF.Framework.Chapter19NativeOutputs",
+  "executable_display": "Mettapedia/OSLF/Framework/Chapter19NativeOutputDisplayExamples.lean",
+  "owned_modules": 18,
+  "owned_source_lines": 3515,
+  "strict_changed_module_checks": 18,
+  "runtime_guards": 29,
+  "kernel_declarations": 1122,
+  "theorems": 506,
+  "separate_runtime_implementations": 6,
+  "separate_compiler_only_declarations": 894,
+  "transitive_axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+  ],
+  "root_build": {
+    "target": "Mettapedia",
+    "exit_code": 0,
+    "jobs": 19140,
+    "log_sha256": "5723b8af25084c9fa12d539340d826c7baf902f020e2a6af57da8738152d6008",
+    "changed_module_warnings": 0,
+    "library_warning_lines": 3078,
+    "warning_boundary": "Changed modules pass warnings-as-errors; library-wide warnings remain.",
+    "root_reaches_every_owned_module": true,
+    "local_source_import_closure_count": 9770
+  },
+  "post_root_declaration_audit": {
+    "log_sha256": "ca001b59d8e157a612863da5647ba0fba3bccd6b8bad84a3561d91098c852371",
+    "summary": {
+      "compilerOnlyDeclarations": 894,
+      "containsAdmission": false,
+      "inventoryCount": 2022,
+      "kind": "summary",
+      "modules": 18,
+      "repeatedModuleEntries": 0,
+      "safeKernelDeclarations": 1122,
+      "separateRuntimeImplementations": 6,
+      "theorems": 506
+    },
+    "independent_inventory_agrees": true
+  },
+  "artifact_hashes": {
+    "INVENTORY_GATE.json": "001a255281bf431d35eae78c7776513d2b5a895f859dd5b20c3f95397b54aff4",
+    "SOURCE_GATE.json": "4c77ae07704dae0654a4ea0b2acaca70bb82db278199acf0199d89dee18bc9b0",
+    "DISPLAY_OUTPUT.txt": "429eab9a93b24c7177286614d1a49740b2d182489c31323550f9f1d9afcf6c05"
+  },
+  "strict_checks": [
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOperationalOutput",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeOperationalOutput.lean",
+      "exit_code": 0,
+      "source_sha256": "116476beeec3c408b98e5eb122da33e0a385ad3b54227c41b8170d9712998254",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeOperationalOutput-116476beeec3.log",
+      "log_sha256": "749fbbdcb17d82482919b187131eff09a1738d900e9d94950f415fed29b83e1a"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeFormulaComparison",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeFormulaComparison.lean",
+      "exit_code": 0,
+      "source_sha256": "0b77bd69c9fabf22463766ddb1607ab33f95f5153dede2fe7984fe551a8de316",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeFormulaComparison-0b77bd69c9fa.log",
+      "log_sha256": "749fbbdcb17d82482919b187131eff09a1738d900e9d94950f415fed29b83e1a"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutput",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeModalOutput.lean",
+      "exit_code": 0,
+      "source_sha256": "95cc78d7a9f4fdd27226671407cc70ed933f975c05f0042c9819c0747d563be5",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeModalOutput-95cc78d7a9f4.log",
+      "log_sha256": "749fbbdcb17d82482919b187131eff09a1738d900e9d94950f415fed29b83e1a"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputPossibility",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeModalOutputPossibility.lean",
+      "exit_code": 0,
+      "source_sha256": "fddc61c457a7d276f285f0457222ac073375ebb52f8b759d40ec2b47293fd97f",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeModalOutputPossibility-fddc61c457a7.log",
+      "log_sha256": "749fbbdcb17d82482919b187131eff09a1738d900e9d94950f415fed29b83e1a"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputFamilies",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputFamilies.lean",
+      "exit_code": 0,
+      "source_sha256": "465c7d8442d5b30e3f130fd7f720aff66d11dd5c1d0dff3b01c72c622e24fd92",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeOutputFamilies-465c7d8442d5.log",
+      "log_sha256": "749fbbdcb17d82482919b187131eff09a1738d900e9d94950f415fed29b83e1a"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputRoot",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeModalOutputRoot.lean",
+      "exit_code": 0,
+      "source_sha256": "5b93fce25e67342b309577e17bee623e800169c0ab74210da81353c9f981aa6f",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeModalOutputRoot-5b93fce25e67.log",
+      "log_sha256": "749fbbdcb17d82482919b187131eff09a1738d900e9d94950f415fed29b83e1a"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeStructuralOutput",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeStructuralOutput.lean",
+      "exit_code": 0,
+      "source_sha256": "9805f2a8ff1335115dac70dd0ab6651e12b9a9bea5db06706daaeb2bd8cf90c9",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeStructuralOutput-9805f2a8ff13.log",
+      "log_sha256": "fea7eac545bd993925d618d6abc689fdbfad4d19aeef255ebd3fe9ebada66c2f"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeStructuralOutputPropositional",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeStructuralOutputPropositional.lean",
+      "exit_code": 0,
+      "source_sha256": "9761ba3a2c62409e1e15bae50bad5f56c2205d8856a0312fff28a43255a7a2ce",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeStructuralOutputPropositional-9761ba3a2c62.log",
+      "log_sha256": "fc893d51122210608cb3df7951f4893d858375b609329acc5a96e79361ae85ed"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeGeneratedOutputs",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeGeneratedOutputs.lean",
+      "exit_code": 0,
+      "source_sha256": "b84eeaa1d7749d9dfa99cc1daf1d7cb975dd50f96351a8cb4763695dce426d2e",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeGeneratedOutputs-b84eeaa1d774.log",
+      "log_sha256": "749fbbdcb17d82482919b187131eff09a1738d900e9d94950f415fed29b83e1a"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputControls",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeModalOutputControls.lean",
+      "exit_code": 0,
+      "source_sha256": "8cd15d32b58ac204ee97a7cbdabec56cb82b658ee6193cae957d6090e071b7cd",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeModalOutputControls-8cd15d32b58a.log",
+      "log_sha256": "69c6d4bd1731cbf1f50b0213fa27e47760430e336af5b06f58a53de2b77ae3a9"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputReadout",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeModalOutputReadout.lean",
+      "exit_code": 0,
+      "source_sha256": "44070e161af580774af40fdccffa1c9dde23cdd06ef107588d5270c6f457705b",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeModalOutputReadout-44070e161af5.log",
+      "log_sha256": "749fbbdcb17d82482919b187131eff09a1738d900e9d94950f415fed29b83e1a"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeModalOutputRelyControls",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeModalOutputRelyControls.lean",
+      "exit_code": 0,
+      "source_sha256": "b1d587cba8221d19622f45631b050455b60b39331e4218484bb09106a2ff8f0e",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeModalOutputRelyControls-b1d587cba822.log",
+      "log_sha256": "69c6d4bd1731cbf1f50b0213fa27e47760430e336af5b06f58a53de2b77ae3a9"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputChecking",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputChecking.lean",
+      "exit_code": 0,
+      "source_sha256": "4276b82af0dfc596741dab49db9ec7cab3ae779b6d1861691db6cbff5fb3ded8",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeOutputChecking-4276b82af0df.log",
+      "log_sha256": "749fbbdcb17d82482919b187131eff09a1738d900e9d94950f415fed29b83e1a"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputDisplay",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputDisplay.lean",
+      "exit_code": 0,
+      "source_sha256": "7ce546357cd47e48e20e27034a07a961af8b8397f5e5927d69882352d59982c9",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeOutputDisplay-7ce546357cd4.log",
+      "log_sha256": "efcd6bef1e893581c88fd8eade8990848678e411841179c3f58b76e1233cc630"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputControls",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputControls.lean",
+      "exit_code": 0,
+      "source_sha256": "e823b19998546d175629b437ccee3a7b36d79f9eed21e38d6ae17945ab736f4b",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeOutputControls-e823b1999854.log",
+      "log_sha256": "efcd6bef1e893581c88fd8eade8990848678e411841179c3f58b76e1233cc630"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputDisplayExamples",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputDisplayExamples.lean",
+      "exit_code": 0,
+      "source_sha256": "94033b5887cc36609acc5fcd2c6c3062de479f32839b5110e7aadaf6b58c7008",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeOutputDisplayExamples-94033b5887cc.log",
+      "log_sha256": "25625a0368d97dd7787a35b8314caa86da0ec3100998460257b114d0fadbd9b9"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeStructuralOutputControls",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeStructuralOutputControls.lean",
+      "exit_code": 0,
+      "source_sha256": "d0ffb00b056f51e4e9d96f3d3bb97ed7cf72ab5a687848bfdbc901c19cf22c42",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeStructuralOutputControls-d0ffb00b056f.log",
+      "log_sha256": "eb5940a769870ff82c26b4525d39f6113926c83fa0a65579ec8c2069e7b9ab4e"
+    },
+    {
+      "module": "Mettapedia.OSLF.Framework.Chapter19NativeOutputs",
+      "source": "Mettapedia/OSLF/Framework/Chapter19NativeOutputs.lean",
+      "exit_code": 0,
+      "source_sha256": "6b1bf1d57cf753c082dbb1cb391b71867aafa3344d90a8a940cd0404f3c5c82e",
+      "source_unchanged": true,
+      "log_name": "qualified-strict-Chapter19NativeOutputs-6b1bf1d57cf7.log",
+      "log_sha256": "efcd6bef1e893581c88fd8eade8990848678e411841179c3f58b76e1233cc630"
+    }
+  ],
+  "key_contracts": {
+    "actual_generator_formation": [
+      "native_modal_formation_exact",
+      "native_m_form",
+      "native_modal_retains_raw_former"
+    ],
+    "native_meaning": [
+      "root_modal_output_raw_comparison",
+      "structural_output_generated_comparison",
+      "propositional_output_generated_comparison",
+      "native_question_exact"
+    ],
+    "complete_evidence": [
+      "modal_output_keeps_complete_family",
+      "Family.nativeResponse_exact_contract",
+      "reindex_projection_square",
+      "reindex_preserves_selected_witness"
+    ],
+    "executed_verdicts": [
+      "run_positive_native",
+      "run_negative_native",
+      "run_retains_actual_receipts",
+      "run_retains_counterexample_receipts",
+      "counterexample_refutes_outgoing_native",
+      "run_unknown_iff"
+    ],
+    "existing_formula_comparison": [
+      "native_diamond_comparison",
+      "native_incoming_box_comparison",
+      "predecessor_checker_native_sound"
+    ]
+  },
+  "chapter19_ledger": {
+    "before": {
+      "provedHere": 12,
+      "refutedHere": 4
+    },
+    "after": {
+      "provedHere": 12,
+      "refutedHere": 4
+    },
+    "new_source_closure_credit": 0,
+    "source_sha256": "dbe7d58664802c3beffcf2a8149090367c066d14bcab1816c4edf78407c47b07"
+  },
+  "boundaries": [
+    "Automatic executable generator comparison to the existing free-extension adjunction and monad is not proved by this package.",
+    "Native predicates use the same typed/scoped GeneralOccurrence GSLT; equality with the raw matcher relation is not asserted.",
+    "Full rely-family support quantifies over admitted requests; one successful execution certifies its operational question only.",
+    "Nonroot modal output denotes equation-class support; representative-level comparison is earned at the root.",
+    "Structural and propositional comparisons require primitive equation-preserving interpretations and actual formation.",
+    "Propositional leaf support does not replace complete modal receipt families.",
+    "Rho and lambda joint center admission remains unresolved in the runnable output.",
+    "Incoming OSLF box and outgoing universal questions are distinct.",
+    "No unrestricted decision procedure, full HDT\u03a3 action, or comprehensive upstream/C-readiness claim is made."
+  ],
+  "commits": 0,
+  "pushes": 0,
+  "qualified_contract_names": {
+    "actual_generator_formation": {
+      "native_modal_formation_exact": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeGeneratedOutputs.native_modal_formation_exact"
+      ],
+      "native_m_form": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeGeneratedOutputs.native_m_form"
+      ],
+      "native_modal_retains_raw_former": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeGeneratedOutputs.native_modal_retains_raw_former"
+      ]
+    },
+    "native_meaning": {
+      "root_modal_output_raw_comparison": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeGeneratedOutputs.root_modal_output_raw_comparison"
+      ],
+      "structural_output_generated_comparison": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeGeneratedOutputs.structural_output_generated_comparison"
+      ],
+      "propositional_output_generated_comparison": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeGeneratedOutputs.propositional_output_generated_comparison"
+      ],
+      "native_question_exact": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOperationalOutput.native_question_exact"
+      ]
+    },
+    "complete_evidence": {
+      "modal_output_keeps_complete_family": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOutputFamilies.modal_output_keeps_complete_family"
+      ],
+      "Family.nativeResponse_exact_contract": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeModalOutput.Family.nativeResponse_exact_contract"
+      ],
+      "reindex_projection_square": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOutputFamilies.NativeOutput.reindex_projection_square"
+      ],
+      "reindex_preserves_selected_witness": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOutputFamilies.NativeOutput.reindex_preserves_selected_witness"
+      ]
+    },
+    "executed_verdicts": {
+      "run_positive_native": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOutputChecking.run_positive_native"
+      ],
+      "run_negative_native": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOutputChecking.run_negative_native"
+      ],
+      "run_retains_actual_receipts": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOutputChecking.run_retains_actual_receipts"
+      ],
+      "run_retains_counterexample_receipts": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOutputChecking.run_retains_counterexample_receipts"
+      ],
+      "counterexample_refutes_outgoing_native": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOutputChecking.counterexample_refutes_outgoing_native"
+      ],
+      "run_unknown_iff": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeOutputChecking.run_unknown_iff"
+      ]
+    },
+    "existing_formula_comparison": {
+      "native_diamond_comparison": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeFormulaComparison.native_diamond_comparison"
+      ],
+      "native_incoming_box_comparison": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeFormulaComparison.native_incoming_box_comparison"
+      ],
+      "predecessor_checker_native_sound": [
+        "Mettapedia.OSLF.Framework.Chapter19NativeFormulaComparison.predecessor_checker_native_sound"
+      ]
+    }
+  }
+}

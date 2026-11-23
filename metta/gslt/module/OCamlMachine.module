@@ -1,0 +1,48 @@
+import "OCamlIR.module" as ir
+
+Module OCamlMachine {
+  Theory Core(d: ir.Data) {
+    d Rewrites {
+      ReturnDone : (MlReturn value (MlKDone)) ~> (MlDone value);
+      ReturnArgument : (MlReturn argument (MlKArgument function environment rest))
+        ~> (MlEvaluate function environment (MlKFunction argument rest));
+      ReturnFunction : (MlReturn function (MlKFunction argument rest)) ~> (MlApply function argument rest);
+      ReturnLet : (MlReturn value (MlKLet pattern body environment rest))
+        ~> (MlMatchOne pattern value body environment rest);
+      BranchTrue : (MlReturn (MlTrue) (MlKBranch yes no environment rest)) ~> (MlEvaluate yes environment rest);
+      BranchFalse : (MlReturn (MlFalse) (MlKBranch yes no environment rest)) ~> (MlEvaluate no environment rest);
+      AndFalse : (MlReturn (MlFalse) (MlKAnd right environment rest)) ~> (MlReturn (MlFalse) rest);
+      AndTrue : (MlReturn (MlTrue) (MlKAnd right environment rest)) ~> (MlEvaluate right environment (MlKBoolean rest));
+      OrTrue : (MlReturn (MlTrue) (MlKOr right environment rest)) ~> (MlReturn (MlTrue) rest);
+      OrFalse : (MlReturn (MlFalse) (MlKOr right environment rest)) ~> (MlEvaluate right environment (MlKBoolean rest));
+      BooleanTrue : (MlReturn (MlTrue) (MlKBoolean rest)) ~> (MlReturn (MlTrue) rest);
+      BooleanFalse : (MlReturn (MlFalse) (MlKBoolean rest)) ~> (MlReturn (MlFalse) rest);
+      ReturnConsTail : (MlReturn tail (MlKConsTail head environment rest))
+        ~> (MlEvaluate head environment (MlKConsHead tail rest));
+      ReturnConsHead : (MlReturn head (MlKConsHead tail rest)) ~> (MlReturn (MlCons head tail) rest);
+      ReturnBuildMore : (MlReturn value (MlKBuild kind (MlCodeCons next later) environment suffix rest))
+        ~> (MlEvaluate next environment (MlKBuild kind later environment (MlValueCons value suffix) rest));
+      ReturnBuildLast : (MlReturn value (MlKBuild kind (MlCodeNil) environment suffix rest))
+        ~> (MlBuildConfig kind (MlValueCons value suffix) rest);
+      BuildTuple : (MlBuildConfig (MlBuildTuple) values rest) ~> (MlReturn (MlTuple values) rest);
+      BuildVariant : (MlBuildConfig (MlBuildVariant tag) values rest) ~> (MlReturn (MlVariant tag values) rest);
+      BuildPrimitive : (MlBuildConfig (MlBuildPrimitive operator) values rest) ~> (MlPrimitiveRequest operator values rest);
+      ComputePrimitive . operator:MlPrimitive, arguments:MlValues, result:MlPrimitiveResult, rest:MlContinuation |
+        "ml-primitive"(operator, arguments, result) |-
+        (MlPrimitiveRequest operator arguments rest) ~> (MlPrimitiveReturned result rest);
+      PrimitiveValue : (MlPrimitiveReturned (MlPrimitiveValue value) rest) ~> (MlReturn value rest);
+      PrimitiveFault : (MlPrimitiveReturned (MlPrimitiveFault fault) rest) ~> (MlFault fault);
+      ReturnMatch : (MlReturn value (MlKMatch clauses environment rest)) ~> (MlSelect clauses value environment rest);
+      SelectEmpty : (MlSelect (MlClauseNil) value environment rest) ~> (MlFault (MlMatchFailure));
+      SelectClause : (MlSelect (MlClauseCons pattern body later) value environment rest)
+        ~> (MlTryClause pattern value body later environment rest);
+      MatchOneFailure . pattern:MlPattern, value:MlValue, body:MlCode, environment:MlEnvironment, rest:MlContinuation |
+        "ml-pattern-failure"(pattern, value) |-
+        (MlMatchOne pattern value body environment rest) ~> (MlFault (MlMatchFailure));
+      ClauseFailure . pattern:MlPattern, value:MlValue, body:MlCode, later:MlClauses,
+        environment:MlEnvironment, rest:MlContinuation | "ml-pattern-failure"(pattern, value) |-
+        (MlTryClause pattern value body later environment rest) ~> (MlSelect later value environment rest);
+    }
+  }
+  theory Core(ir.Data())
+}

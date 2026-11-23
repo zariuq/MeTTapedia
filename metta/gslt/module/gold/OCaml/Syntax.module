@@ -1,0 +1,285 @@
+import "../SourceLexical.module" as lex
+
+Module Syntax {
+  Theory Sorts(l: lex.Grammar) {
+    l Types { OcAdd; OcAnd; OcApply; OcAtom; OcBinding; OcBindings; OcClause; OcClauses; OcComment; OcCommentBody; OcCommentParen; OcCommentStar; OcCompare; OcCons; OcExpr; OcFile; OcList; OcMultiply; OcOr; OcParameters; OcPattern; OcPatternApply; OcPatternAtom; OcPatternTuple; OcRec; OcTop; OcTupleTail; OcType; OcTypeAtom; OcTypeParameters; OcUnary; OcVariant; OcVariants; }
+  }
+  Theory Expressions(s: Sorts) {
+    s Terms {
+      «ocaml-src:if» . a0:SrcSpacing, a1:OcExpr, a2:SrcSpacing, a3:SrcSpacing, a4:OcExpr, a5:SrcSpacing, a6:SrcSpacing, a7:OcExpr |- "if" a0 a1 a2 "then" a3 a4 a5 "else" a6 a7 : OcExpr;
+      «ocaml-src:fun» . a0:SrcSpacing, a1:OcParameters, a2:SrcTrivia, a3:SrcTrivia, a4:OcExpr |- "fun" a0 a1 a2 "->" a3 a4 : OcExpr;
+      «ocaml-src:let-in» . a0:SrcSpacing, a1:OcRec, a2:OcBindings, a3:SrcSpacing, a4:SrcSpacing, a5:OcExpr |- "let" a0 a1 a2 a3 "in" a4 a5 : OcExpr;
+      «ocaml-src:match» . a0:SrcSpacing, a1:OcExpr, a2:SrcSpacing, a3:SrcTrivia, a4:OcClauses |- "match" a0 a1 a2 "with" a3 a4 : OcExpr;
+      «ocaml-src:expr-value» . a0:OcOr |- a0 : OcExpr;
+      «ocaml-src:OcOr-base» . a0:OcAnd |- a0 : OcOr;
+      «ocaml-src:OcOr-op0» . a0:OcAnd, a1:SrcTrivia, a2:SrcTrivia, a3:OcOr |- a0 a1 "||" a2 a3 : OcOr;
+      «ocaml-src:OcAnd-base» . a0:OcCompare |- a0 : OcAnd;
+      «ocaml-src:OcAnd-op0» . a0:OcCompare, a1:SrcTrivia, a2:SrcTrivia, a3:OcAnd |- a0 a1 "&&" a2 a3 : OcAnd;
+      «ocaml-src:OcCompare-base» . a0:OcCons |- a0 : OcCompare;
+      «ocaml-src:OcCompare-op0» . a0:OcCons, a1:SrcTrivia, a2:SrcTrivia, a3:OcCons |- a0 a1 "=" a2 a3 : OcCompare;
+      «ocaml-src:OcCompare-op1» . a0:OcCons, a1:SrcTrivia, a2:SrcTrivia, a3:OcCons |- a0 a1 "<>" a2 a3 : OcCompare;
+      «ocaml-src:OcCompare-op2» . a0:OcCons, a1:SrcTrivia, a2:SrcTrivia, a3:OcCons |- a0 a1 "<" a2 a3 : OcCompare;
+      «ocaml-src:OcCompare-op3» . a0:OcCons, a1:SrcTrivia, a2:SrcTrivia, a3:OcCons |- a0 a1 "<=" a2 a3 : OcCompare;
+      «ocaml-src:OcCompare-op4» . a0:OcCons, a1:SrcTrivia, a2:SrcTrivia, a3:OcCons |- a0 a1 ">" a2 a3 : OcCompare;
+      «ocaml-src:OcCompare-op5» . a0:OcCons, a1:SrcTrivia, a2:SrcTrivia, a3:OcCons |- a0 a1 ">=" a2 a3 : OcCompare;
+      «ocaml-src:OcCons-base» . a0:OcAdd |- a0 : OcCons;
+      «ocaml-src:OcCons-op0» . a0:OcAdd, a1:SrcTrivia, a2:SrcTrivia, a3:OcCons |- a0 a1 "::" a2 a3 : OcCons;
+      «ocaml-src:OcAdd-base» . a0:OcMultiply |- a0 : OcAdd;
+      «ocaml-src:OcAdd-op0» . a0:OcAdd, a1:SrcTrivia, a2:SrcTrivia, a3:OcMultiply |- a0 a1 "+" a2 a3 : OcAdd;
+      «ocaml-src:OcAdd-op1» . a0:OcAdd, a1:SrcTrivia, a2:SrcTrivia, a3:OcMultiply |- a0 a1 "-" a2 a3 : OcAdd;
+      «ocaml-src:OcMultiply-base» . a0:OcUnary |- a0 : OcMultiply;
+      «ocaml-src:OcMultiply-op0» . a0:OcMultiply, a1:SrcTrivia, a2:SrcTrivia, a3:OcUnary |- a0 a1 "*" a2 a3 : OcMultiply;
+      «ocaml-src:OcMultiply-op1» . a0:OcMultiply, a1:SrcTrivia, a2:SrcTrivia, a3:OcUnary |- a0 a1 "/" a2 a3 : OcMultiply;
+      «ocaml-src:OcMultiply-op2» . a0:OcMultiply, a1:SrcSpacing, a2:SrcSpacing, a3:OcUnary |- a0 a1 "mod" a2 a3 : OcMultiply;
+      «ocaml-src:unary-base» . a0:OcApply |- a0 : OcUnary;
+      «ocaml-src:unary-minus» . a0:SrcTrivia, a1:OcUnary |- "-" a0 a1 : OcUnary;
+      «ocaml-src:apply-base» . a0:OcAtom |- a0 : OcApply;
+      «ocaml-src:apply» . a0:OcApply, a1:SrcSpacing, a2:OcAtom |- a0 a1 a2 : OcApply;
+      «ocaml-src:apply-parenthesized» . a0:OcApply, a1:SrcTrivia, a2:OcExpr, a3:SrcTrivia |- a0 "(" a1 a2 a3 ")" : OcApply;
+      «ocaml-src:name» . a0:SrcLowerName |- a0 : OcAtom;
+      «ocaml-src:constructor» . a0:SrcUpperName |- a0 : OcAtom;
+      «ocaml-src:integer» . a0:SrcDigits |- a0 : OcAtom;
+      «ocaml-src:string» . a0:SrcString |- a0 : OcAtom;
+      «ocaml-src:true» .  |- "true" : OcAtom;
+      «ocaml-src:false» .  |- "false" : OcAtom;
+      «ocaml-src:unit» . a0:SrcTrivia |- "(" a0 ")" : OcAtom;
+      «ocaml-src:parenthesized» . a0:SrcTrivia, a1:OcExpr, a2:SrcTrivia |- "(" a0 a1 a2 ")" : OcAtom;
+      «ocaml-src:tuple» . a0:SrcTrivia, a1:OcExpr, a2:SrcTrivia, a3:SrcTrivia, a4:OcTupleTail |- "(" a0 a1 a2 "," a3 a4 ")" : OcAtom;
+      «ocaml-src:tuple-one» . a0:OcExpr, a1:SrcTrivia |- a0 a1 : OcTupleTail;
+      «ocaml-src:tuple-more» . a0:OcExpr, a1:SrcTrivia, a2:SrcTrivia, a3:OcTupleTail |- a0 a1 "," a2 a3 : OcTupleTail;
+      «ocaml-src:list» . a0:SrcTrivia, a1:OcList |- "[" a0 a1 "]" : OcAtom;
+      «ocaml-src:list-empty» .  |-  : OcList;
+      «ocaml-src:list-one» . a0:OcExpr, a1:SrcTrivia |- a0 a1 : OcList;
+      «ocaml-src:list-more» . a0:OcExpr, a1:SrcTrivia, a2:SrcTrivia, a3:OcList |- a0 a1 ";" a2 a3 : OcList;
+    }
+  }
+  Theory Patterns(s: Sorts) {
+    s Terms {
+      «ocaml-src:pattern-base» . a0:OcPatternApply |- a0 : OcPattern;
+      «ocaml-src:pattern-cons» . a0:OcPatternApply, a1:SrcTrivia, a2:SrcTrivia, a3:OcPattern |- a0 a1 "::" a2 a3 : OcPattern;
+      «ocaml-src:pattern-atom» . a0:OcPatternAtom |- a0 : OcPatternApply;
+      «ocaml-src:pattern-constructor» . a0:SrcUpperName, a1:SrcSpacing, a2:OcPatternAtom |- a0 a1 a2 : OcPatternApply;
+      «ocaml-src:pattern-constructor-parenthesized» . a0:SrcUpperName, a1:SrcTrivia, a2:OcPatternTuple |- a0 "(" a1 a2 ")" : OcPatternApply;
+      «ocaml-src:pattern-variable» . a0:SrcLowerName |- a0 : OcPatternAtom;
+      «ocaml-src:pattern-integer» . a0:SrcInteger |- a0 : OcPatternAtom;
+      «ocaml-src:pattern-constructor-zero» . a0:SrcUpperName |- a0 : OcPatternAtom;
+      «ocaml-src:pattern-wildcard» .  |- "_" : OcPatternAtom;
+      «ocaml-src:pattern-true» .  |- "true" : OcPatternAtom;
+      «ocaml-src:pattern-false» .  |- "false" : OcPatternAtom;
+      «ocaml-src:pattern-empty-list» . a0:SrcTrivia |- "[" a0 "]" : OcPatternAtom;
+      «ocaml-src:pattern-parenthesized» . a0:SrcTrivia, a1:OcPatternTuple |- "(" a0 a1 ")" : OcPatternAtom;
+      «ocaml-src:pattern-tuple-one» . a0:OcPattern, a1:SrcTrivia |- a0 a1 : OcPatternTuple;
+      «ocaml-src:pattern-tuple-more» . a0:OcPattern, a1:SrcTrivia, a2:SrcTrivia, a3:OcPatternTuple |- a0 a1 "," a2 a3 : OcPatternTuple;
+      «ocaml-src:parameters-one» . a0:OcPatternAtom |- a0 : OcParameters;
+      «ocaml-src:parameters-more» . a0:OcPatternAtom, a1:SrcSpacing, a2:OcParameters |- a0 a1 a2 : OcParameters;
+    }
+  }
+  Theory Declarations(s: Sorts) {
+    s Terms {
+      «ocaml-src:rec-none» .  |-  : OcRec;
+      «ocaml-src:rec-some» . a0:SrcSpacing |- "rec" a0 : OcRec;
+      «ocaml-src:binding-value» . a0:OcPattern, a1:SrcTrivia, a2:SrcTrivia, a3:OcExpr |- a0 a1 "=" a2 a3 : OcBinding;
+      «ocaml-src:binding-function» . a0:SrcLowerName, a1:SrcSpacing, a2:OcParameters, a3:SrcTrivia, a4:SrcTrivia, a5:OcExpr |- a0 a1 a2 a3 "=" a4 a5 : OcBinding;
+      «ocaml-src:bindings-one» . a0:OcBinding |- a0 : OcBindings;
+      «ocaml-src:bindings-more» . a0:OcBinding, a1:SrcSpacing, a2:SrcSpacing, a3:OcBindings |- a0 a1 "and" a2 a3 : OcBindings;
+      «ocaml-src:clauses-one» . a0:OcClause |- a0 : OcClauses;
+      «ocaml-src:clauses-leading-bar» . a0:SrcTrivia, a1:OcClauses |- "|" a0 a1 : OcClauses;
+      «ocaml-src:clauses-more» . a0:OcClause, a1:SrcTrivia, a2:SrcTrivia, a3:OcClauses |- a0 a1 "|" a2 a3 : OcClauses;
+      «ocaml-src:clause» . a0:OcPattern, a1:SrcTrivia, a2:SrcTrivia, a3:OcExpr |- a0 a1 "->" a2 a3 : OcClause;
+      «ocaml-src:top-let» . a0:SrcSpacing, a1:OcRec, a2:OcBindings |- "let" a0 a1 a2 : OcTop;
+      «ocaml-src:top-type» . a0:SrcSpacing, a1:OcTypeParameters, a2:SrcLowerName, a3:SrcTrivia, a4:SrcTrivia, a5:OcVariants |- "type" a0 a1 a2 a3 "=" a4 a5 : OcTop;
+      «ocaml-src:type-parameters-none» .  |-  : OcTypeParameters;
+      «ocaml-src:type-parameters-one» . a0:SrcLowerName, a1:SrcSpacing |- "'" a0 a1 : OcTypeParameters;
+      «ocaml-src:variant-one» . a0:OcVariant |- a0 : OcVariants;
+      «ocaml-src:variant-leading-bar» . a0:SrcTrivia, a1:OcVariants |- "|" a0 a1 : OcVariants;
+      «ocaml-src:variant-more» . a0:OcVariant, a1:SrcTrivia, a2:SrcTrivia, a3:OcVariants |- a0 a1 "|" a2 a3 : OcVariants;
+      «ocaml-src:variant-constant» . a0:SrcUpperName |- a0 : OcVariant;
+      «ocaml-src:variant-fields» . a0:SrcUpperName, a1:SrcSpacing, a2:SrcSpacing, a3:OcType |- a0 a1 "of" a2 a3 : OcVariant;
+      «ocaml-src:type-base» . a0:OcTypeAtom |- a0 : OcType;
+      «ocaml-src:type-application» . a0:OcType, a1:SrcSpacing, a2:SrcLowerName |- a0 a1 a2 : OcType;
+      «ocaml-src:type-product» . a0:OcType, a1:SrcTrivia, a2:SrcTrivia, a3:OcType |- a0 a1 "*" a2 a3 : OcType;
+      «ocaml-src:type-arrow» . a0:OcType, a1:SrcTrivia, a2:SrcTrivia, a3:OcType |- a0 a1 "->" a2 a3 : OcType;
+      «ocaml-src:type-name» . a0:SrcLowerName |- a0 : OcTypeAtom;
+      «ocaml-src:type-variable» . a0:SrcLowerName |- "'" a0 : OcTypeAtom;
+      «ocaml-src:type-parenthesized» . a0:SrcTrivia, a1:OcType, a2:SrcTrivia |- "(" a0 a1 a2 ")" : OcTypeAtom;
+      «ocaml-src:program» . a0:SrcTrivia, a1:OcFile |- a0 a1 : SourceProgram;
+      «ocaml-src:file-empty» .  |-  : OcFile;
+      «ocaml-src:file-top» . a0:OcTop, a1:SrcTrivia, a2:OcFile |- a0 a1 a2 : OcFile;
+      «ocaml-src:file-top-terminated» . a0:OcTop, a1:SrcTrivia, a2:SrcTrivia, a3:OcFile |- a0 a1 ";;" a2 a3 : OcFile;
+      «ocaml-src:file-result» . a0:OcExpr, a1:SrcTrivia |- a0 a1 : OcFile;
+      «ocaml-src:file-result-terminated» . a0:OcExpr, a1:SrcTrivia, a2:SrcTrivia |- a0 a1 ";;" a2 : OcFile;
+    }
+  }
+  Theory Comments(s: Sorts) {
+    s Terms {
+      «ocaml-src:comment-trivia» . a0:OcComment, a1:SrcTrivia |- a0 a1 : SrcTrivia;
+      «ocaml-src:comment-spacing» . a0:OcComment, a1:SrcTrivia |- a0 a1 : SrcSpacing;
+      «ocaml-src:comment» . a0:OcCommentBody |- "(*" a0 "*)" : OcComment;
+      «ocaml-src:comment-body-empty» .  |-  : OcCommentBody;
+      «ocaml-src:comment-body-scalar» . a0:SrcCamlCommentScalar, a1:OcCommentBody |- a0 a1 : OcCommentBody;
+      «ocaml-src:comment-body-string» . a0:SrcString, a1:OcCommentBody |- a0 a1 : OcCommentBody;
+      «ocaml-src:comment-body-paren» . a0:OcCommentParen |- "(" a0 : OcCommentBody;
+      «ocaml-src:comment-body-star» . a0:OcCommentStar |- "*" a0 : OcCommentBody;
+      «ocaml-src:comment-paren-paren» . a0:OcCommentParen |- "(" a0 : OcCommentParen;
+      «ocaml-src:comment-paren-nested» . a0:OcCommentBody, a1:OcCommentBody |- "*" a0 "*)" a1 : OcCommentParen;
+      «ocaml-src:comment-paren-scalar» . a0:SrcCamlCommentScalar, a1:OcCommentBody |- a0 a1 : OcCommentParen;
+      «ocaml-src:comment-paren-string» . a0:SrcString, a1:OcCommentBody |- a0 a1 : OcCommentParen;
+      «ocaml-src:comment-star-empty» .  |-  : OcCommentStar;
+      «ocaml-src:comment-star-star» . a0:OcCommentStar |- "*" a0 : OcCommentStar;
+      «ocaml-src:comment-star-paren» . a0:OcCommentParen |- "(" a0 : OcCommentStar;
+      «ocaml-src:comment-star-scalar» . a0:SrcCamlAfterStarScalar, a1:OcCommentBody |- a0 a1 : OcCommentStar;
+      «ocaml-src:comment-star-string» . a0:SrcString, a1:OcCommentBody |- a0 a1 : OcCommentStar;
+    }
+  }
+  Theory SourceSelection() {
+    Types { SrcSelectionData; }
+    Terms {
+      «(*» .  |-  : SrcSelectionData;
+      «10» .  |-  : SrcSelectionData;
+      «100» .  |-  : SrcSelectionData;
+      «101» .  |-  : SrcSelectionData;
+      «102» .  |-  : SrcSelectionData;
+      «103» .  |-  : SrcSelectionData;
+      «104» .  |-  : SrcSelectionData;
+      «105» .  |-  : SrcSelectionData;
+      «106» .  |-  : SrcSelectionData;
+      «107» .  |-  : SrcSelectionData;
+      «108» .  |-  : SrcSelectionData;
+      «109» .  |-  : SrcSelectionData;
+      «11» .  |-  : SrcSelectionData;
+      «110» .  |-  : SrcSelectionData;
+      «111» .  |-  : SrcSelectionData;
+      «112» .  |-  : SrcSelectionData;
+      «113» .  |-  : SrcSelectionData;
+      «114» .  |-  : SrcSelectionData;
+      «115» .  |-  : SrcSelectionData;
+      «116» .  |-  : SrcSelectionData;
+      «117» .  |-  : SrcSelectionData;
+      «118» .  |-  : SrcSelectionData;
+      «119» .  |-  : SrcSelectionData;
+      «12» .  |-  : SrcSelectionData;
+      «120» .  |-  : SrcSelectionData;
+      «121» .  |-  : SrcSelectionData;
+      «122» .  |-  : SrcSelectionData;
+      «13» .  |-  : SrcSelectionData;
+      «32» .  |-  : SrcSelectionData;
+      «39» .  |-  : SrcSelectionData;
+      «48» .  |-  : SrcSelectionData;
+      «49» .  |-  : SrcSelectionData;
+      «50» .  |-  : SrcSelectionData;
+      «51» .  |-  : SrcSelectionData;
+      «52» .  |-  : SrcSelectionData;
+      «53» .  |-  : SrcSelectionData;
+      «54» .  |-  : SrcSelectionData;
+      «55» .  |-  : SrcSelectionData;
+      «56» .  |-  : SrcSelectionData;
+      «57» .  |-  : SrcSelectionData;
+      «65» .  |-  : SrcSelectionData;
+      «66» .  |-  : SrcSelectionData;
+      «67» .  |-  : SrcSelectionData;
+      «68» .  |-  : SrcSelectionData;
+      «69» .  |-  : SrcSelectionData;
+      «70» .  |-  : SrcSelectionData;
+      «71» .  |-  : SrcSelectionData;
+      «72» .  |-  : SrcSelectionData;
+      «73» .  |-  : SrcSelectionData;
+      «74» .  |-  : SrcSelectionData;
+      «75» .  |-  : SrcSelectionData;
+      «76» .  |-  : SrcSelectionData;
+      «77» .  |-  : SrcSelectionData;
+      «78» .  |-  : SrcSelectionData;
+      «79» .  |-  : SrcSelectionData;
+      «80» .  |-  : SrcSelectionData;
+      «81» .  |-  : SrcSelectionData;
+      «82» .  |-  : SrcSelectionData;
+      «83» .  |-  : SrcSelectionData;
+      «84» .  |-  : SrcSelectionData;
+      «85» .  |-  : SrcSelectionData;
+      «86» .  |-  : SrcSelectionData;
+      «87» .  |-  : SrcSelectionData;
+      «88» .  |-  : SrcSelectionData;
+      «89» .  |-  : SrcSelectionData;
+      «9» .  |-  : SrcSelectionData;
+      «90» .  |-  : SrcSelectionData;
+      «95» .  |-  : SrcSelectionData;
+      «97» .  |-  : SrcSelectionData;
+      «98» .  |-  : SrcSelectionData;
+      «99» .  |-  : SrcSelectionData;
+      «GetSourceSelection» .  |-  : SrcSelectionData;
+      «LCons» . a0:SrcSelectionData, a1:SrcSelectionData |- a0 a1 : SrcSelectionData;
+      «LNil» .  |-  : SrcSelectionData;
+      «MaximalToken» . a0:SrcSelectionData, a1:SrcSelectionData, a2:SrcSelectionData |- a0 a1 a2 : SrcSelectionData;
+      «RejectWords» . a0:SrcSelectionData, a1:SrcSelectionData |- a0 a1 : SrcSelectionData;
+      «SourceSelectionV1» . a0:SrcSelectionData |- a0 : SrcSelectionData;
+      «SrcLowerName» .  |-  : SrcSelectionData;
+      «SrcSpacing» .  |-  : SrcSelectionData;
+      «SrcTrivia» .  |-  : SrcSelectionData;
+      «SrcUpperName» .  |-  : SrcSelectionData;
+      «_» .  |-  : SrcSelectionData;
+      «and» .  |-  : SrcSelectionData;
+      «as» .  |-  : SrcSelectionData;
+      «asr» .  |-  : SrcSelectionData;
+      «assert» .  |-  : SrcSelectionData;
+      «begin» .  |-  : SrcSelectionData;
+      «class» .  |-  : SrcSelectionData;
+      «constraint» .  |-  : SrcSelectionData;
+      «do» .  |-  : SrcSelectionData;
+      «done» .  |-  : SrcSelectionData;
+      «downto» .  |-  : SrcSelectionData;
+      «else» .  |-  : SrcSelectionData;
+      «end» .  |-  : SrcSelectionData;
+      «exception» .  |-  : SrcSelectionData;
+      «external» .  |-  : SrcSelectionData;
+      «false» .  |-  : SrcSelectionData;
+      «for» .  |-  : SrcSelectionData;
+      «fun» .  |-  : SrcSelectionData;
+      «function» .  |-  : SrcSelectionData;
+      «functor» .  |-  : SrcSelectionData;
+      «if» .  |-  : SrcSelectionData;
+      «in» .  |-  : SrcSelectionData;
+      «include» .  |-  : SrcSelectionData;
+      «inherit» .  |-  : SrcSelectionData;
+      «initializer» .  |-  : SrcSelectionData;
+      «land» .  |-  : SrcSelectionData;
+      «lazy» .  |-  : SrcSelectionData;
+      «let» .  |-  : SrcSelectionData;
+      «lor» .  |-  : SrcSelectionData;
+      «lsl» .  |-  : SrcSelectionData;
+      «lsr» .  |-  : SrcSelectionData;
+      «lxor» .  |-  : SrcSelectionData;
+      «match» .  |-  : SrcSelectionData;
+      «method» .  |-  : SrcSelectionData;
+      «mod» .  |-  : SrcSelectionData;
+      «module» .  |-  : SrcSelectionData;
+      «mutable» .  |-  : SrcSelectionData;
+      «new» .  |-  : SrcSelectionData;
+      «nonrec» .  |-  : SrcSelectionData;
+      «object» .  |-  : SrcSelectionData;
+      «of» .  |-  : SrcSelectionData;
+      «open» .  |-  : SrcSelectionData;
+      «or» .  |-  : SrcSelectionData;
+      «private» .  |-  : SrcSelectionData;
+      «rec» .  |-  : SrcSelectionData;
+      «sig» .  |-  : SrcSelectionData;
+      «struct» .  |-  : SrcSelectionData;
+      «then» .  |-  : SrcSelectionData;
+      «to» .  |-  : SrcSelectionData;
+      «true» .  |-  : SrcSelectionData;
+      «try» .  |-  : SrcSelectionData;
+      «type» .  |-  : SrcSelectionData;
+      «val» .  |-  : SrcSelectionData;
+      «virtual» .  |-  : SrcSelectionData;
+      «when» .  |-  : SrcSelectionData;
+      «while» .  |-  : SrcSelectionData;
+      «with» .  |-  : SrcSelectionData;
+    }
+    Rewrites {
+      ReturnSourceSelection : (GetSourceSelection) ~> "SourceSelectionV1"("LCons"("RejectWords"("SrcLowerName", "LCons"("and", "LCons"("as", "LCons"("assert", "LCons"("asr", "LCons"("begin", "LCons"("class", "LCons"("constraint", "LCons"("do", "LCons"("done", "LCons"("downto", "LCons"("else", "LCons"("end", "LCons"("exception", "LCons"("external", "LCons"("false", "LCons"("for", "LCons"("fun", "LCons"("function", "LCons"("functor", "LCons"("if", "LCons"("in", "LCons"("include", "LCons"("inherit", "LCons"("initializer", "LCons"("land", "LCons"("lazy", "LCons"("let", "LCons"("lor", "LCons"("lsl", "LCons"("lsr", "LCons"("lxor", "LCons"("match", "LCons"("method", "LCons"("mod", "LCons"("module", "LCons"("mutable", "LCons"("new", "LCons"("nonrec", "LCons"("object", "LCons"("of", "LCons"("open", "LCons"("or", "LCons"("private", "LCons"("rec", "LCons"("sig", "LCons"("struct", "LCons"("then", "LCons"("to", "LCons"("true", "LCons"("try", "LCons"("type", "LCons"("val", "LCons"("virtual", "LCons"("when", "LCons"("while", "LCons"("with", "LCons"("_", "LNil")))))))))))))))))))))))))))))))))))))))))))))))))))))))))), "LCons"("MaximalToken"("SrcLowerName", "LCons"("65", "LCons"("66", "LCons"("67", "LCons"("68", "LCons"("69", "LCons"("70", "LCons"("71", "LCons"("72", "LCons"("73", "LCons"("74", "LCons"("75", "LCons"("76", "LCons"("77", "LCons"("78", "LCons"("79", "LCons"("80", "LCons"("81", "LCons"("82", "LCons"("83", "LCons"("84", "LCons"("85", "LCons"("86", "LCons"("87", "LCons"("88", "LCons"("89", "LCons"("90", "LCons"("97", "LCons"("98", "LCons"("99", "LCons"("100", "LCons"("101", "LCons"("102", "LCons"("103", "LCons"("104", "LCons"("105", "LCons"("106", "LCons"("107", "LCons"("108", "LCons"("109", "LCons"("110", "LCons"("111", "LCons"("112", "LCons"("113", "LCons"("114", "LCons"("115", "LCons"("116", "LCons"("117", "LCons"("118", "LCons"("119", "LCons"("120", "LCons"("121", "LCons"("122", "LCons"("48", "LCons"("49", "LCons"("50", "LCons"("51", "LCons"("52", "LCons"("53", "LCons"("54", "LCons"("55", "LCons"("56", "LCons"("57", "LCons"("95", "LCons"("39", "LNil")))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))), "LNil"), "LCons"("MaximalToken"("SrcUpperName", "LCons"("65", "LCons"("66", "LCons"("67", "LCons"("68", "LCons"("69", "LCons"("70", "LCons"("71", "LCons"("72", "LCons"("73", "LCons"("74", "LCons"("75", "LCons"("76", "LCons"("77", "LCons"("78", "LCons"("79", "LCons"("80", "LCons"("81", "LCons"("82", "LCons"("83", "LCons"("84", "LCons"("85", "LCons"("86", "LCons"("87", "LCons"("88", "LCons"("89", "LCons"("90", "LCons"("97", "LCons"("98", "LCons"("99", "LCons"("100", "LCons"("101", "LCons"("102", "LCons"("103", "LCons"("104", "LCons"("105", "LCons"("106", "LCons"("107", "LCons"("108", "LCons"("109", "LCons"("110", "LCons"("111", "LCons"("112", "LCons"("113", "LCons"("114", "LCons"("115", "LCons"("116", "LCons"("117", "LCons"("118", "LCons"("119", "LCons"("120", "LCons"("121", "LCons"("122", "LCons"("48", "LCons"("49", "LCons"("50", "LCons"("51", "LCons"("52", "LCons"("53", "LCons"("54", "LCons"("55", "LCons"("56", "LCons"("57", "LCons"("95", "LCons"("39", "LNil")))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))), "LNil"), "LCons"("MaximalToken"("SrcTrivia", "LCons"("9", "LCons"("10", "LCons"("11", "LCons"("12", "LCons"("13", "LCons"("32", "LNil")))))), "LCons"("(*", "LNil")), "LCons"("MaximalToken"("SrcSpacing", "LCons"("9", "LCons"("10", "LCons"("11", "LCons"("12", "LCons"("13", "LCons"("32", "LNil")))))), "LCons"("(*", "LNil")), "LNil"))))));
+    }
+  }
+  Theory Grammar() {
+    let s = Sorts(lex.Grammar()) in (Expressions(s) \/ Patterns(s) \/ Declarations(s) \/ Comments(s))
+  }
+  Theory LexicalProfile() { lex.LexicalProfile() }
+  theory Grammar()
+}

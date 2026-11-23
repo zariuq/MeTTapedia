@@ -1,0 +1,1 @@
+first { read &q : (job $j) => { bind $ignored <- { put (done $j) -> &out } ; { emit $j } } }

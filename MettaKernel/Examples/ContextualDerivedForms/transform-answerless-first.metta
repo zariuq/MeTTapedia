@@ -1,0 +1,12 @@
+; Calibration: first answer may follow a firing with no answer.
+(= (demand-answer a) (empty))
+(= (demand-answer b) b)
+(= (demand-answer c) c)
+!(bind! &q (new-space))
+!(add-atom &q (job a))
+!(add-atom &q (job b))
+!(add-atom &q (job c))
+!(collapse (once (transform &q (take (job $j)) (demand-answer $j))))
+!(collapse (match &q (job $j) $j))
+!(collapse (once (transform &q (take (job $j)) (demand-answer $j))))
+!(collapse (match &q (job $j) $j))

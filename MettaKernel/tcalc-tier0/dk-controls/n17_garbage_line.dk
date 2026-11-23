@@ -1,0 +1,4 @@
+Nat : Type.
+Z : Nat.
+this line is not dedukti at all
+def x : Nat := Z.

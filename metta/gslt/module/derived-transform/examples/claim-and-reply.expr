@@ -1,0 +1,1 @@
+(let $n (once (transform &q (, (take (job $j)) (take (receiver $r))) (done $j $r) &out)) (collapse (match &out (done $j $r) (value (done $j $r)))))

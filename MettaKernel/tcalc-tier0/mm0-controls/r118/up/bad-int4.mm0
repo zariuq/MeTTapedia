@@ -1,0 +1,5 @@
+sort s;
+term p: s;
+term plus: s;
+--                      V--  forbidden sign
+prefix plus: $ + $ prec -1;

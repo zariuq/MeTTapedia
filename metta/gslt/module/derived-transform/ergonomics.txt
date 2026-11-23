@@ -1,0 +1,108 @@
+Derived transform surfaces: expression and interaction candidates
+=================================================================
+
+Classification: candidate-language presentation and calibration examples.
+Neither presentation changes the shipped HE/PeTTa syntax or selects Prime.
+The executable expansion currently targets PeTTa with the transform library.
+
+The two authored grammars use the existing module loader, lexical declarations,
+structural compiler and retained packed-forest reader. Field interpretation is
+explicit: put reverses the written value/space order, and chain reverses the
+written binder/initializer order. These are syntax choices, not evaluator policy.
+
+The same programs
+-----------------
+
+1. Duplicate-preserving join (examples/duplicate-join.*)
+
+Expression:
+  (collapse (match &q (left $l $k)
+    (match &q (right $k $r) (value $r))))
+Interaction:
+  collect { read &q : (left $l $k) => {
+    read &q : (right $k $r) => { emit $r } } }
+
+Both return (x x). The interaction form makes the read region and continuation
+visible; the expression form composes with existing parentheses. Neither read
+is permission to reorder an effectful template, deduplicate answers or forget
+bindings. Store publication can disappear for a read, while answer work remains.
+
+2. Job claim and reply (examples/claim-and-reply.*)
+
+Expression uses let/once/transform and a subsequent match in &out. Interaction
+uses bind/first/fire and a subsequent read. The expected reply is (done a alice),
+with job b and receiver bob left. The selected atoms are not reserved by parsing,
+matching or specializing a branch. Publication must respect intervening effects.
+
+The current native let/once destination-count regression is preserved separately
+in the contextual fixture once-into-let-count.metta. Authored reference behavior
+is the expectation; a consumed job and written reply do not excuse losing the
+initializer answer. This example remains a native regression until repaired.
+
+3. Absence-guarded update (examples/absence-update.*)
+
+Both surfaces write their take and absent source conjuncts explicitly and route
+the result back to &q. A later query uses a fresh $seen name: the earlier $j is
+still a logical binding, not an automatically fresh lexical local. Invalidating
+an absence dependency can require validation even when take footprints differ.
+
+4. Independent all-match removal (examples/independent-removal.*)
+
+Expression uses remove-atom; interaction writes erase &q : (item $x). Each stored
+row gets its own unifier. This is different from claiming one occurrence or
+joining all removals through a shared $x substitution. Both leave the unrelated
+keep c row intact. A specialized direct deletion may reuse a stable selection;
+syntax alone does not establish stability across callbacks or other writers.
+
+5. First-demand query/update (examples/first-agent-cycle.*)
+
+Expression writes once around match/let/add-atom. Interaction writes first
+around read/bind/put. Only a is written to &out; a,b,c remain in the read store.
+This tests demand, not a finite logical-fuel bound.
+
+6. Update-credit budget (examples/budgeted-update-cycle.*)
+
+Both forms consume a job and one credit per update. With jobs a,b,c and two
+credits, they write a,b, return counts (1 1), and leave c pending. Supplying one
+new credit permits c to run without repeating the earlier writes. This is a
+resource policy expressed with ordinary takes, not a new evaluator primitive.
+It bounds updates; eager candidate enumeration or failed matching can still do
+work after credits are gone. It must not be presented as a computational-fuel
+bound or as proof that the store reached a global fixed point. Finite evaluator
+fuel and full parsed-source/cursor correspondence remain separate obligations.
+
+Open terms, multiplicity and held code
+-------------------------------------
+
+The open-stored-term example checks two-way matching of an open stored row.
+choice-multiplicity, count-choice and fold-choice distinguish ordered answer
+production from counting or folding it. case-choice and chain-binding make
+continuation binding explicit. held-code returns (println! forbidden) as data;
+it must not print forbidden. string-escape observes one string atom despite
+differences in how runtimes print escape characters.
+
+The value/emit forms hold their term. Code returning data, requesting evaluation
+and routing an instance are different operations. Source logic variables retain
+PeTTa's existing scopes; neither notation establishes a new hygiene theorem.
+Named spaces are explicit operands, not capabilities issued by the grammar.
+
+What the experiments do and do not decide
+----------------------------------------
+
+Expression notation is familiar for nested composition. Interaction notation
+separates read/consume/produce roles, but braces and repeated continuations can
+make deeply nested programs longer. Both should remain candidates while larger
+agent programs test capture, errors, budgets and authority. Token count does not
+settle the choice.
+
+Syntactic structure can expose an optimization condition. The corresponding
+semantic law must still establish stability, observer erasure, demand or another
+sufficient hypothesis. No syntax automatically supplies FrameMap.LicensedAt,
+a particular index, concurrency safety, a receipt or a runtime-cost theorem.
+
+Checked candidate context laws compile arbitrarily nested initializer, case,
+collection and count contexts to actual source frames. Entry costs remain
+explicit. Whole-family operational correspondence to transform/control, the
+remaining HE streaming/error source work and implementation correspondence are
+distinct obligations. Runtime calibration and grammar round trips replace none
+of them.
